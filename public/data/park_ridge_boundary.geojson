@@ -1,0 +1,23 @@
+{
+  "type": "FeatureCollection",
+  "name": "park_ridge_boundary_placeholder",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Park Ridge boundary placeholder",
+        "source_note": "Approximate synthetic boundary for v1 sample display. Replace with municipal GIS boundary during data build."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-87.8720, 42.0318],
+          [-87.8243, 42.0318],
+          [-87.8243, 41.9862],
+          [-87.8720, 41.9862],
+          [-87.8720, 42.0318]
+        ]]
+      }
+    }
+  ]
+}

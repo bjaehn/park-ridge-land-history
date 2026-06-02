@@ -1,0 +1,238 @@
+{
+  "type": "FeatureCollection",
+  "name": "synthetic_park_ridge_sample_parcels",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "pin_normalized": "09251010010000",
+        "pin_original": "09-25-101-001-0000",
+        "address": "101 Vine Avenue",
+        "municipality": "Park Ridge",
+        "property_class": "Single-family",
+        "year_built": 1912,
+        "decade_built": "1910s",
+        "building_sqft": 1780,
+        "land_sqft": 6900,
+        "improvement_count": 1,
+        "primary_building_selection_method": "synthetic_sample",
+        "data_quality_flags": [],
+        "source_note": "Synthetic sample parcel for local prototype rendering.",
+        "synthetic_sample": true
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-87.84675, 42.01390],
+          [-87.84595, 42.01390],
+          [-87.84595, 42.01318],
+          [-87.84675, 42.01318],
+          [-87.84675, 42.01390]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "pin_normalized": "09251010020000",
+        "pin_original": "09-25-101-002-0000",
+        "address": "115 Vine Avenue",
+        "municipality": "Park Ridge",
+        "property_class": "Single-family",
+        "year_built": 1928,
+        "decade_built": "1920s",
+        "building_sqft": 2230,
+        "land_sqft": 7300,
+        "improvement_count": 1,
+        "primary_building_selection_method": "synthetic_sample",
+        "data_quality_flags": [],
+        "source_note": "Synthetic sample parcel for local prototype rendering.",
+        "synthetic_sample": true
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-87.84588, 42.01390],
+          [-87.84505, 42.01390],
+          [-87.84505, 42.01318],
+          [-87.84588, 42.01318],
+          [-87.84588, 42.01390]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "pin_normalized": "09251010030000",
+        "pin_original": "09-25-101-003-0000",
+        "address": "205 Summit Avenue",
+        "municipality": "Park Ridge",
+        "property_class": "Two-to-six unit",
+        "year_built": 1949,
+        "decade_built": "1940s",
+        "building_sqft": 3160,
+        "land_sqft": 8500,
+        "improvement_count": 2,
+        "primary_building_selection_method": "largest_sqft_with_year_built",
+        "data_quality_flags": [],
+        "source_note": "Synthetic sample parcel for local prototype rendering.",
+        "synthetic_sample": true
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-87.84675, 42.01305],
+          [-87.84595, 42.01305],
+          [-87.84595, 42.01232],
+          [-87.84675, 42.01232],
+          [-87.84675, 42.01305]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "pin_normalized": "09251010040000",
+        "pin_original": "09-25-101-004-0000",
+        "address": "219 Summit Avenue",
+        "municipality": "Park Ridge",
+        "property_class": "Single-family",
+        "year_built": 1956,
+        "decade_built": "1950s",
+        "building_sqft": 1480,
+        "land_sqft": 6250,
+        "improvement_count": 1,
+        "primary_building_selection_method": "synthetic_sample",
+        "data_quality_flags": [],
+        "source_note": "Synthetic sample parcel for local prototype rendering.",
+        "synthetic_sample": true
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-87.84588, 42.01305],
+          [-87.84505, 42.01305],
+          [-87.84505, 42.01232],
+          [-87.84588, 42.01232],
+          [-87.84588, 42.01305]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "pin_normalized": "09251010050000",
+        "pin_original": "09-25-101-005-0000",
+        "address": "310 Garden Street",
+        "municipality": "Park Ridge",
+        "property_class": "Single-family",
+        "year_built": 1974,
+        "decade_built": "1970s",
+        "building_sqft": 2075,
+        "land_sqft": 7600,
+        "improvement_count": 1,
+        "primary_building_selection_method": "synthetic_sample",
+        "data_quality_flags": [],
+        "source_note": "Synthetic sample parcel for local prototype rendering.",
+        "synthetic_sample": true
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-87.84484, 42.01390],
+          [-87.84408, 42.01390],
+          [-87.84408, 42.01318],
+          [-87.84484, 42.01318],
+          [-87.84484, 42.01390]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "pin_normalized": "09251010060000",
+        "pin_original": "09-25-101-006-0000",
+        "address": "318 Garden Street",
+        "municipality": "Park Ridge",
+        "property_class": "Single-family",
+        "year_built": 2004,
+        "decade_built": "2000s",
+        "building_sqft": 3340,
+        "land_sqft": 8100,
+        "improvement_count": 1,
+        "primary_building_selection_method": "synthetic_sample",
+        "data_quality_flags": ["replacement_structure_possible"],
+        "source_note": "Synthetic sample parcel for local prototype rendering.",
+        "synthetic_sample": true
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-87.84484, 42.01305],
+          [-87.84408, 42.01305],
+          [-87.84408, 42.01232],
+          [-87.84484, 42.01232],
+          [-87.84484, 42.01305]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "pin_normalized": "09251010070000",
+        "pin_original": "09-25-101-007-0000",
+        "address": "400 Prospect Avenue",
+        "municipality": "Park Ridge",
+        "property_class": "Single-family",
+        "year_built": null,
+        "decade_built": "Unknown",
+        "building_sqft": 1710,
+        "land_sqft": 6700,
+        "improvement_count": 1,
+        "primary_building_selection_method": "synthetic_sample",
+        "data_quality_flags": ["missing_year_built"],
+        "source_note": "Synthetic sample parcel for local prototype rendering.",
+        "synthetic_sample": true
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-87.84390, 42.01390],
+          [-87.84312, 42.01390],
+          [-87.84312, 42.01318],
+          [-87.84390, 42.01318],
+          [-87.84390, 42.01390]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "pin_normalized": "09251010080000",
+        "pin_original": "09-25-101-008-0000",
+        "address": "414 Prospect Avenue",
+        "municipality": "Park Ridge",
+        "property_class": "Single-family",
+        "year_built": 2018,
+        "decade_built": "2010s",
+        "building_sqft": 3820,
+        "land_sqft": 7900,
+        "improvement_count": 1,
+        "primary_building_selection_method": "synthetic_sample",
+        "data_quality_flags": [],
+        "source_note": "Synthetic sample parcel for local prototype rendering.",
+        "synthetic_sample": true
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-87.84390, 42.01305],
+          [-87.84312, 42.01305],
+          [-87.84312, 42.01232],
+          [-87.84390, 42.01232],
+          [-87.84390, 42.01305]
+        ]]
+      }
+    }
+  ]
+}
