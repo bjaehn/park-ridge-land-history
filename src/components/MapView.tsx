@@ -7,6 +7,7 @@ import { parcelPopupHtml } from "./ParcelPopup";
 
 type MapViewProps = {
   parcels: ParcelCollection | null;
+  selectedParcel: ParcelFeature | null;
   boundary: GeoJSON.FeatureCollection | null;
   showOutlines: boolean;
   showBoundary: boolean;
@@ -15,13 +16,14 @@ type MapViewProps = {
 const emptyCollection: ParcelCollection = {
   type: "FeatureCollection",
   features: []
-};
+} as const;
 
-export function MapView({ parcels, boundary, showOutlines, showBoundary }: MapViewProps) {
+export function MapView({ parcels, selectedParcel, boundary, showOutlines, showBoundary }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const popupRef = useRef<maplibregl.Popup | null>(null);
   const latestParcelsRef = useRef<ParcelCollection>(emptyCollection);
+  const latestSelectedRef = useRef<GeoJSON.FeatureCollection>(emptyFeatureCollection());
   const latestBoundaryRef = useRef<GeoJSON.FeatureCollection>({
     type: "FeatureCollection",
     features: []
@@ -33,6 +35,7 @@ export function MapView({ parcels, boundary, showOutlines, showBoundary }: MapVi
 
   const visibleParcels = useMemo(() => parcels ?? emptyCollection, [parcels]);
   latestParcelsRef.current = visibleParcels;
+  latestSelectedRef.current = selectedParcel ? featureCollectionFromFeature(selectedParcel) : emptyFeatureCollection();
   latestBoundaryRef.current = boundary ?? { type: "FeatureCollection", features: [] };
 
   useEffect(() => {
@@ -59,6 +62,11 @@ export function MapView({ parcels, boundary, showOutlines, showBoundary }: MapVi
       map.addSource("hovered-parcel", {
         type: "geojson",
         data: hoveredRef.current
+      });
+
+      map.addSource("selected-parcel", {
+        type: "geojson",
+        data: latestSelectedRef.current
       });
 
       map.addSource("boundary", {
@@ -104,6 +112,26 @@ export function MapView({ parcels, boundary, showOutlines, showBoundary }: MapVi
         paint: {
           "line-color": "#111827",
           "line-width": 2.4
+        }
+      });
+
+      map.addLayer({
+        id: "selected-parcel-fill",
+        type: "fill",
+        source: "selected-parcel",
+        paint: {
+          "fill-color": "#f8fafc",
+          "fill-opacity": 0.46
+        }
+      });
+
+      map.addLayer({
+        id: "selected-parcel-outline",
+        type: "line",
+        source: "selected-parcel",
+        paint: {
+          "line-color": "#0f172a",
+          "line-width": 3.5
         }
       });
 
@@ -160,6 +188,34 @@ export function MapView({ parcels, boundary, showOutlines, showBoundary }: MapVi
   }, [visibleParcels]);
 
   useEffect(() => {
+    const map = mapRef.current;
+    const source = map?.getSource("selected-parcel") as GeoJSONSource | undefined;
+    const selectedCollection = selectedParcel ? featureCollectionFromFeature(selectedParcel) : emptyFeatureCollection();
+    source?.setData(selectedCollection);
+
+    if (!map || !selectedParcel) {
+      popupRef.current?.remove();
+      return;
+    }
+
+    const bounds = boundsForFeature(selectedParcel);
+    const center = centerForFeature(selectedParcel);
+    if (bounds) {
+      map.fitBounds(bounds, {
+        padding: { top: 80, right: 430, bottom: 80, left: 80 },
+        maxZoom: 17,
+        duration: 700
+      });
+    }
+    if (center) {
+      popupRef.current
+        ?.setLngLat(center)
+        .setHTML(parcelPopupHtml(selectedParcel.properties))
+        .addTo(map);
+    }
+  }, [selectedParcel]);
+
+  useEffect(() => {
     const source = mapRef.current?.getSource("boundary") as GeoJSONSource | undefined;
     source?.setData(boundary ?? { type: "FeatureCollection", features: [] });
   }, [boundary]);
@@ -177,4 +233,55 @@ export function MapView({ parcels, boundary, showOutlines, showBoundary }: MapVi
   }, [showBoundary]);
 
   return <div ref={containerRef} className="map-canvas" aria-label="Park Ridge parcel map" />;
+}
+
+function emptyFeatureCollection(): GeoJSON.FeatureCollection {
+  return {
+    type: "FeatureCollection",
+    features: []
+  };
+}
+
+function featureCollectionFromFeature(feature: ParcelFeature): GeoJSON.FeatureCollection {
+  return {
+    type: "FeatureCollection",
+    features: [feature]
+  };
+}
+
+function boundsForFeature(feature: ParcelFeature): maplibregl.LngLatBounds | null {
+  const coordinates = flattenCoordinates(feature.geometry.coordinates);
+  if (coordinates.length === 0) return null;
+  const bounds = new maplibregl.LngLatBounds(coordinates[0], coordinates[0]);
+  coordinates.forEach((coordinate) => bounds.extend(coordinate));
+  return bounds;
+}
+
+function centerForFeature(feature: ParcelFeature): [number, number] | null {
+  const coordinates = flattenCoordinates(feature.geometry.coordinates);
+  if (coordinates.length === 0) return null;
+  const total = coordinates.reduce(
+    (sum, coordinate) => {
+      sum[0] += coordinate[0];
+      sum[1] += coordinate[1];
+      return sum;
+    },
+    [0, 0]
+  );
+  return [total[0] / coordinates.length, total[1] / coordinates.length];
+}
+
+function flattenCoordinates(coordinates: GeoJSON.Position[][] | GeoJSON.Position[][][]): [number, number][] {
+  const positions: [number, number][] = [];
+  collectPositions(coordinates, positions);
+  return positions;
+}
+
+function collectPositions(value: unknown, positions: [number, number][]): void {
+  if (!Array.isArray(value)) return;
+  if (typeof value[0] === "number" && typeof value[1] === "number") {
+    positions.push([value[0], value[1]]);
+    return;
+  }
+  value.forEach((item) => collectPositions(item, positions));
 }

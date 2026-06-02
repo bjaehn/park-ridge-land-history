@@ -2,6 +2,7 @@ node_modules/
 .venv/
 .env
 .pytest_cache/
+.pytest-tmp/
 .npm-cache/
 .pip-cache/
 __pycache__/

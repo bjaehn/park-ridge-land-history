@@ -3,6 +3,7 @@ import { FilterPanel } from "./components/FilterPanel";
 import { LayerToggle } from "./components/LayerToggle";
 import { Legend } from "./components/Legend";
 import { MapView } from "./components/MapView";
+import { SearchPanel } from "./components/SearchPanel";
 import { TimelineControl } from "./components/TimelineControl";
 import { decadeOrder } from "./lib/colorScales";
 import type { ParcelCollection, ParcelFeature } from "./lib/parcelTypes";
@@ -18,6 +19,7 @@ export default function App() {
   const [showOutlines, setShowOutlines] = useState(true);
   const [showBoundary, setShowBoundary] = useState(true);
   const [maxBuiltYear, setMaxBuiltYear] = useState(2026);
+  const [selectedPin, setSelectedPin] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadParcels() {
@@ -68,6 +70,24 @@ export default function App() {
     return buckets;
   }, [selectedDecades, showUnknown]);
 
+  const visiblePins = useMemo(() => {
+    return new Set(
+      filteredParcels?.features
+        .map((feature) => feature.properties.pin_normalized || feature.properties.pin_original)
+        .filter((pin): pin is string => Boolean(pin)) ?? []
+    );
+  }, [filteredParcels]);
+
+  const selectedParcel = useMemo(() => {
+    if (!parcels || !selectedPin) return null;
+    return (
+      parcels.features.find((feature) => {
+        const pin = feature.properties.pin_normalized || feature.properties.pin_original;
+        return pin === selectedPin;
+      }) ?? null
+    );
+  }, [parcels, selectedPin]);
+
   function toggleDecade(decade: string) {
     setSelectedDecades((current) => {
       const next = new Set(current);
@@ -81,6 +101,7 @@ export default function App() {
     <main className="app-shell">
       <MapView
         parcels={filteredParcels}
+        selectedParcel={selectedParcel}
         boundary={boundary}
         showOutlines={showOutlines}
         showBoundary={showBoundary}
@@ -94,6 +115,15 @@ export default function App() {
           parcels={parcels}
           filteredCount={filteredParcels?.features.length ?? 0}
           isSampleData={isSampleData}
+        />
+        <SearchPanel
+          parcels={parcels}
+          selectedPin={selectedPin}
+          visiblePins={visiblePins}
+          onSelectParcel={(feature) => {
+            setSelectedPin(feature.properties.pin_normalized || feature.properties.pin_original || null);
+          }}
+          onClearSelection={() => setSelectedPin(null)}
         />
         <TimelineControl
           selectedDecades={selectedDecades}
