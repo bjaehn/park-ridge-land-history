@@ -34,6 +34,20 @@ npm run dev
 
 Open the Vite URL printed by the dev server. The app first requests `public/data/park_ridge_parcels_enriched.geojson`; if it is missing, it loads `public/data/sample_parcels.geojson` and shows a Sample Data notice.
 
+## Railway Deployment
+
+This prototype can be deployed as a static Node service on Railway. Railway will install dependencies, run `npm run build`, and start the app with `npm start`.
+
+For automatic builds:
+
+1. Push this repository to GitHub.
+2. In Railway, create a new project from the GitHub repository.
+3. Use the repository root as the service root.
+4. Let Railway read `railway.json`; it sets the build command, start command, and `/` healthcheck.
+5. Each push to the connected branch will trigger a new build.
+
+The deployed version serves whatever is in `public/data`. Until the real data pipeline exports `park_ridge_parcels_enriched.geojson`, Railway will serve the synthetic sample parcel layer.
+
 ## Python Setup
 
 macOS/Linux:
