@@ -1,9 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import maplibregl, { type GeoJSONSource, type LayerSpecification } from "maplibre-gl";
+import maplibregl, { type FilterSpecification, type GeoJSONSource, type LayerSpecification } from "maplibre-gl";
 import { mapLibreFillColor, decadeColors } from "../lib/colorScales";
 import { historicalLineColor, historicalLineDash, parcelChangeFillColorExpression } from "../lib/historicalLayerStyles";
 import { baseMapStyle, parkRidgeCenter } from "../lib/mapStyle";
 import type { LoadedHistoricalLayer } from "../lib/historicalLayerTypes";
+import {
+  parcelChangeLabels,
+  type ParcelChangeFeature,
+  type ParcelChangeType
+} from "../lib/parcelChangeTypes";
 import type { ParcelCollection, ParcelFeature } from "../lib/parcelTypes";
 import { parcelPopupHtml } from "./ParcelPopup";
 
@@ -14,7 +19,10 @@ type MapViewProps = {
   showOutlines: boolean;
   showBoundary: boolean;
   historicalOverlays: LoadedHistoricalLayer[];
+  selectedParcelChange: ParcelChangeFeature | null;
+  visibleChangeTypes: Set<ParcelChangeType>;
   onSelectParcel: (feature: ParcelFeature) => void;
+  onSelectParcelChange: (feature: ParcelChangeFeature) => void;
 };
 
 const emptyCollection: ParcelCollection = {
@@ -29,16 +37,23 @@ export function MapView({
   showOutlines,
   showBoundary,
   historicalOverlays,
-  onSelectParcel
+  selectedParcelChange,
+  visibleChangeTypes,
+  onSelectParcel,
+  onSelectParcelChange
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const historicalLayerIdsRef = useRef<string[]>([]);
   const popupRef = useRef<maplibregl.Popup | null>(null);
   const onSelectParcelRef = useRef(onSelectParcel);
+  const onSelectParcelChangeRef = useRef(onSelectParcelChange);
+  const registeredChangeLayerIdsRef = useRef<Set<string>>(new Set());
+  const activeChangeLayerIdsRef = useRef<Set<string>>(new Set());
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const latestParcelsRef = useRef<ParcelCollection>(emptyCollection);
   const latestSelectedRef = useRef<GeoJSON.FeatureCollection>(emptyFeatureCollection());
+  const latestSelectedChangeRef = useRef<GeoJSON.FeatureCollection>(emptyFeatureCollection());
   const latestBoundaryRef = useRef<GeoJSON.FeatureCollection>({
     type: "FeatureCollection",
     features: []
@@ -51,8 +66,12 @@ export function MapView({
   const visibleParcels = useMemo(() => parcels ?? emptyCollection, [parcels]);
   latestParcelsRef.current = visibleParcels;
   latestSelectedRef.current = selectedParcel ? featureCollectionFromFeature(selectedParcel) : emptyFeatureCollection();
+  latestSelectedChangeRef.current = selectedParcelChange
+    ? featureCollectionFromFeature(selectedParcelChange)
+    : emptyFeatureCollection();
   latestBoundaryRef.current = boundary ?? { type: "FeatureCollection", features: [] };
   onSelectParcelRef.current = onSelectParcel;
+  onSelectParcelChangeRef.current = onSelectParcelChange;
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -83,6 +102,11 @@ export function MapView({
       map.addSource("selected-parcel", {
         type: "geojson",
         data: latestSelectedRef.current
+      });
+
+      map.addSource("selected-parcel-change", {
+        type: "geojson",
+        data: latestSelectedChangeRef.current
       });
 
       map.addSource("boundary", {
@@ -152,6 +176,26 @@ export function MapView({
       });
 
       map.addLayer({
+        id: "selected-parcel-change-fill",
+        type: "fill",
+        source: "selected-parcel-change",
+        paint: {
+          "fill-color": "#fef3c7",
+          "fill-opacity": 0.34
+        }
+      });
+
+      map.addLayer({
+        id: "selected-parcel-change-outline",
+        type: "line",
+        source: "selected-parcel-change",
+        paint: {
+          "line-color": "#111827",
+          "line-width": 3.2
+        }
+      });
+
+      map.addLayer({
         id: "boundary-line",
         type: "line",
         source: "boundary",
@@ -183,6 +227,12 @@ export function MapView({
     });
 
     map.on("click", "parcel-fill", (event) => {
+      const changeLayerIds = Array.from(activeChangeLayerIdsRef.current).filter((layerId) => map.getLayer(layerId));
+      if (changeLayerIds.length > 0) {
+        const changeFeatures = map.queryRenderedFeatures(event.point, { layers: changeLayerIds });
+        if (changeFeatures.length > 0) return;
+      }
+
       const feature = event.features?.[0] as unknown as ParcelFeature | undefined;
       if (!feature) return;
       onSelectParcelRef.current(feature);
@@ -254,26 +304,39 @@ export function MapView({
       }
 
       if (hasChangeType(overlay.data)) {
+        const changeFilter = parcelChangeFilterExpression(visibleChangeTypes);
         if (!map.getLayer(fillLayerId)) {
           addLayer(map, {
             id: fillLayerId,
             type: "fill",
             source: sourceId,
+            filter: changeFilter,
             paint: {
               "fill-color": parcelChangeFillColorExpression(),
               "fill-opacity": Math.min(0.62, overlay.opacity)
             }
           });
+          registerParcelChangeInteractions(
+            map,
+            fillLayerId,
+            registeredChangeLayerIdsRef.current,
+            popupRef,
+            onSelectParcelChangeRef
+          );
         } else {
           map.setPaintProperty(fillLayerId, "fill-opacity", Math.min(0.62, overlay.opacity));
+          map.setFilter(fillLayerId, changeFilter);
         }
+        activeChangeLayerIdsRef.current.add(fillLayerId);
       }
 
       if (!map.getLayer(lineLayerId)) {
+        const lineFilter = hasChangeType(overlay.data) ? parcelChangeFilterExpression(visibleChangeTypes) : undefined;
         addLayer(map, {
           id: lineLayerId,
           type: "line",
           source: sourceId,
+          filter: lineFilter,
           paint: {
             "line-color": historicalLineColor(overlay.layer),
             "line-width": hasChangeType(overlay.data) ? 2.2 : 2,
@@ -283,11 +346,18 @@ export function MapView({
         });
       } else {
         map.setPaintProperty(lineLayerId, "line-opacity", overlay.opacity);
+        if (hasChangeType(overlay.data)) map.setFilter(lineLayerId, parcelChangeFilterExpression(visibleChangeTypes));
       }
     });
 
+    activeChangeLayerIdsRef.current = new Set(
+      historicalOverlays
+        .filter((overlay) => overlay.data && hasChangeType(overlay.data))
+        .map((overlay) => historicalFillLayerId(overlay.layer.id))
+    );
     historicalLayerIdsRef.current = Array.from(nextLayerIds);
-  }, [historicalOverlays, isMapLoaded]);
+    raiseSelectionLayers(map);
+  }, [historicalOverlays, isMapLoaded, visibleChangeTypes]);
 
   useEffect(() => {
     const source = mapRef.current?.getSource("parcels") as GeoJSONSource | undefined;
@@ -323,6 +393,15 @@ export function MapView({
   }, [selectedParcel]);
 
   useEffect(() => {
+    const map = mapRef.current;
+    const source = map?.getSource("selected-parcel-change") as GeoJSONSource | undefined;
+    const selectedCollection = selectedParcelChange
+      ? featureCollectionFromFeature(selectedParcelChange)
+      : emptyFeatureCollection();
+    source?.setData(selectedCollection);
+  }, [selectedParcelChange]);
+
+  useEffect(() => {
     const source = mapRef.current?.getSource("boundary") as GeoJSONSource | undefined;
     source?.setData(boundary ?? { type: "FeatureCollection", features: [] });
   }, [boundary]);
@@ -352,6 +431,35 @@ function addLayer(
     return;
   }
   map.addLayer(layer);
+}
+
+function registerParcelChangeInteractions(
+  map: maplibregl.Map,
+  layerId: string,
+  registeredLayerIds: Set<string>,
+  popupRef: { current: maplibregl.Popup | null },
+  onSelectParcelChangeRef: { current: (feature: ParcelChangeFeature) => void }
+): void {
+  if (registeredLayerIds.has(layerId)) return;
+  registeredLayerIds.add(layerId);
+
+  map.on("mousemove", layerId, () => {
+    map.getCanvas().style.cursor = "pointer";
+  });
+
+  map.on("mouseleave", layerId, () => {
+    map.getCanvas().style.cursor = "";
+  });
+
+  map.on("click", layerId, (event) => {
+    const feature = event.features?.[0] as unknown as ParcelChangeFeature | undefined;
+    if (!feature) return;
+    onSelectParcelChangeRef.current(feature);
+    popupRef.current
+      ?.setLngLat(event.lngLat)
+      .setHTML(parcelChangePopupHtml(feature.properties))
+      .addTo(map);
+  });
 }
 
 function removeHistoricalLayer(map: maplibregl.Map, layerId: string): void {
@@ -387,6 +495,29 @@ function hasChangeType(data: GeoJSON.FeatureCollection): boolean {
   return data.features.some((feature) => Boolean(feature.properties?.change_type));
 }
 
+function parcelChangeFilterExpression(visibleChangeTypes: Set<ParcelChangeType>): FilterSpecification {
+  if (visibleChangeTypes.size === 0) {
+    return ["==", ["get", "change_type"], "__no_visible_change_types__"] as FilterSpecification;
+  }
+
+  return [
+    "in",
+    ["get", "change_type"],
+    ["literal", Array.from(visibleChangeTypes)]
+  ] as FilterSpecification;
+}
+
+function raiseSelectionLayers(map: maplibregl.Map): void {
+  [
+    "selected-parcel-fill",
+    "selected-parcel-outline",
+    "selected-parcel-change-fill",
+    "selected-parcel-change-outline"
+  ].forEach((layerId) => {
+    if (map.getLayer(layerId)) map.moveLayer(layerId);
+  });
+}
+
 function emptyFeatureCollection(): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
@@ -394,7 +525,9 @@ function emptyFeatureCollection(): GeoJSON.FeatureCollection {
   };
 }
 
-function featureCollectionFromFeature(feature: ParcelFeature): GeoJSON.FeatureCollection {
+function featureCollectionFromFeature(
+  feature: GeoJSON.Feature<GeoJSON.Polygon | GeoJSON.MultiPolygon>
+): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
     features: [feature]
@@ -436,4 +569,50 @@ function collectPositions(value: unknown, positions: [number, number][]): void {
     return;
   }
   value.forEach((item) => collectPositions(item, positions));
+}
+
+function parcelChangePopupHtml(properties: ParcelChangeFeature["properties"]): string {
+  const changeType = properties.change_type as ParcelChangeType | undefined;
+  const label = changeType ? parcelChangeLabels[changeType] ?? String(changeType) : "Unknown";
+  return `
+    <div class="parcel-popup">
+      <h3>${escapeHtml(label)}</h3>
+      <dl>
+        ${popupRow("Old PIN", properties.old_pin || "None")}
+        ${popupRow("New PIN", properties.new_pin || "None")}
+        ${popupRow("Confidence", formatConfidence(properties.confidence))}
+        ${popupRow("Years", formatChangeYears(properties.old_year, properties.new_year))}
+        ${popupRow("Area change", formatAreaChange(properties.area_change_pct))}
+      </dl>
+    </div>
+  `;
+}
+
+function popupRow(label: string, value: string): string {
+  return `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`;
+}
+
+function formatConfidence(confidence: string | null | undefined): string {
+  if (!confidence) return "Unknown";
+  return confidence.charAt(0).toUpperCase() + confidence.slice(1);
+}
+
+function formatChangeYears(oldYear: number | null | undefined, newYear: number | null | undefined): string {
+  const oldLabel = typeof oldYear === "number" ? String(oldYear) : "Unknown";
+  const newLabel = typeof newYear === "number" ? String(newYear) : "Unknown";
+  return `${oldLabel} to ${newLabel}`;
+}
+
+function formatAreaChange(areaChangePct: number | null | undefined): string {
+  if (typeof areaChangePct !== "number") return "Unknown";
+  return `${areaChangePct.toLocaleString(undefined, { maximumFractionDigits: 2 })}%`;
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }

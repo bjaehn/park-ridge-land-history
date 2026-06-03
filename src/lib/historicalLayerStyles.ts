@@ -1,5 +1,6 @@
 import type { HistoricalLayer } from "./historicalLayerTypes";
 import type { ExpressionSpecification } from "maplibre-gl";
+import { parcelChangeColors } from "./parcelChangeTypes";
 
 export function historicalLineColor(layer: HistoricalLayer): string {
   if (layer.id.includes("2000")) return "#0f766e";
@@ -21,19 +22,19 @@ export function parcelChangeFillColorExpression(): ExpressionSpecification {
     "match",
     ["get", "change_type"],
     "unchanged",
-    "#94a3b8",
+    parcelChangeColors.unchanged,
     "new_pin",
-    "#22c55e",
+    parcelChangeColors.new_pin,
     "retired_pin",
-    "#ef4444",
+    parcelChangeColors.retired_pin,
     "likely_split",
-    "#f59e0b",
+    parcelChangeColors.likely_split,
     "likely_merge",
-    "#8b5cf6",
+    parcelChangeColors.likely_merge,
     "geometry_or_area_changed",
-    "#0ea5e9",
+    parcelChangeColors.geometry_or_area_changed,
     "uncertain_change",
-    "#64748b",
-    "#64748b"
+    parcelChangeColors.uncertain_change,
+    parcelChangeColors.uncertain_change
   ];
 }

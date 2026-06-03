@@ -11,6 +11,12 @@ import { TimelineControl } from "./components/TimelineControl";
 import { decadeOrder } from "./lib/colorScales";
 import { loadHistoricalLayerData, loadHistoricalLayerManifest } from "./lib/layerLoaders";
 import { layerCanToggle, type HistoricalLayer, type LoadedHistoricalLayer } from "./lib/historicalLayerTypes";
+import {
+  parcelChangeFilterOrder,
+  parcelChangeLayerId,
+  type ParcelChangeFeature,
+  type ParcelChangeType
+} from "./lib/parcelChangeTypes";
 import type { ParcelCollection, ParcelFeature } from "./lib/parcelTypes";
 
 const knownDecades = decadeOrder.filter((bucket) => bucket !== "Unknown" && bucket !== "Suspicious");
@@ -37,6 +43,10 @@ export default function App() {
   const [historicalLayers, setHistoricalLayers] = useState<HistoricalLayer[]>([]);
   const [activeHistoricalLayerIds, setActiveHistoricalLayerIds] = useState<Set<string>>(() => new Set());
   const [loadedHistoricalLayers, setLoadedHistoricalLayers] = useState<Record<string, LoadedHistoricalLayer>>({});
+  const [selectedParcelChange, setSelectedParcelChange] = useState<ParcelChangeFeature | null>(null);
+  const [visibleChangeTypes, setVisibleChangeTypes] = useState<Set<ParcelChangeType>>(
+    () => new Set(parcelChangeFilterOrder)
+  );
   const [compareLayerIds, setCompareLayerIds] = useState<[string | null, string | null]>([
     "cook_parcels_2000",
     "cook_parcels_2021"
@@ -173,6 +183,15 @@ export default function App() {
     setSelectedPin(feature.properties.pin_normalized || feature.properties.pin_original || null);
   }
 
+  function toggleChangeType(changeType: ParcelChangeType) {
+    setVisibleChangeTypes((current) => {
+      const next = new Set(current);
+      if (next.has(changeType)) next.delete(changeType);
+      else next.add(changeType);
+      return next;
+    });
+  }
+
   async function ensureHistoricalLayerLoaded(layer: HistoricalLayer) {
     if (!layerCanToggle(layer)) return;
     if (loadedHistoricalLayers[layer.id]?.data || loadedHistoricalLayers[layer.id]?.layer.tileUrl) return;
@@ -247,7 +266,10 @@ export default function App() {
         showOutlines={showOutlines}
         showBoundary={showBoundary}
         historicalOverlays={historicalOverlays}
+        selectedParcelChange={selectedParcelChange}
+        visibleChangeTypes={visibleChangeTypes}
         onSelectParcel={selectParcel}
+        onSelectParcelChange={setSelectedParcelChange}
       />
       <aside className="control-panel">
         <header className="app-header">
@@ -304,12 +326,24 @@ export default function App() {
           activeLayerIds={activeHistoricalLayerIds}
           loadedLayers={loadedHistoricalLayers}
           compareLayerIds={compareLayerIds}
+          selectedParcelChange={selectedParcelChange}
+          visibleChangeTypes={visibleChangeTypes}
           onToggleLayer={toggleHistoricalLayer}
           onSetOpacity={setHistoricalLayerOpacity}
           onSetCompareLayerIds={handleSetCompareLayerIds}
+          onClearParcelChangeSelection={() => setSelectedParcelChange(null)}
+          onToggleChangeType={toggleChangeType}
+          onSelectAllChangeTypes={() => setVisibleChangeTypes(new Set(parcelChangeFilterOrder))}
+          onShowChangedOnly={() => {
+            setVisibleChangeTypes(new Set(parcelChangeFilterOrder.filter((changeType) => changeType !== "unchanged")));
+          }}
         />
         <DecadeDistributionChart parcels={filteredParcels} />
-        <Legend visibleDecades={visibleLegendBuckets} />
+        <Legend
+          visibleDecades={visibleLegendBuckets}
+          showParcelChangeLegend={activeHistoricalLayerIds.has(parcelChangeLayerId)}
+          visibleChangeTypes={visibleChangeTypes}
+        />
       </aside>
     </main>
   );

@@ -1,5 +1,6 @@
 import { CompareYearsPanel } from "./CompareYearsPanel";
 import { HistoricalLayerToggle } from "./HistoricalLayerToggle";
+import { ParcelChangeDetailPanel } from "./ParcelChangeDetailPanel";
 import { ParcelChangeSummaryPanel } from "./ParcelChangeSummaryPanel";
 import {
   historicalLayerGroupLabels,
@@ -7,15 +8,22 @@ import {
   type HistoricalLayerGroup,
   type LoadedHistoricalLayer
 } from "../lib/historicalLayerTypes";
+import type { ParcelChangeFeature, ParcelChangeType } from "../lib/parcelChangeTypes";
 
 type HistoricalLayerPanelProps = {
   layers: HistoricalLayer[];
   activeLayerIds: Set<string>;
   loadedLayers: Record<string, LoadedHistoricalLayer>;
   compareLayerIds: [string | null, string | null];
+  selectedParcelChange: ParcelChangeFeature | null;
+  visibleChangeTypes: Set<ParcelChangeType>;
   onToggleLayer: (layer: HistoricalLayer) => void;
   onSetOpacity: (layerId: string, opacity: number) => void;
   onSetCompareLayerIds: (layerIds: [string | null, string | null]) => void;
+  onClearParcelChangeSelection: () => void;
+  onToggleChangeType: (changeType: ParcelChangeType) => void;
+  onSelectAllChangeTypes: () => void;
+  onShowChangedOnly: () => void;
 };
 
 const groupOrder: HistoricalLayerGroup[] = [
@@ -33,9 +41,15 @@ export function HistoricalLayerPanel({
   activeLayerIds,
   loadedLayers,
   compareLayerIds,
+  selectedParcelChange,
+  visibleChangeTypes,
   onToggleLayer,
   onSetOpacity,
-  onSetCompareLayerIds
+  onSetCompareLayerIds,
+  onClearParcelChangeSelection,
+  onToggleChangeType,
+  onSelectAllChangeTypes,
+  onShowChangedOnly
 }: HistoricalLayerPanelProps) {
   const layersByGroup = groupOrder.map((group) => ({
     group,
@@ -56,6 +70,14 @@ export function HistoricalLayerPanel({
       <ParcelChangeSummaryPanel
         activeLayerIds={activeLayerIds}
         loadedLayers={loadedLayers}
+        visibleChangeTypes={visibleChangeTypes}
+        onToggleChangeType={onToggleChangeType}
+        onSelectAllChangeTypes={onSelectAllChangeTypes}
+        onShowChangedOnly={onShowChangedOnly}
+      />
+      <ParcelChangeDetailPanel
+        changeFeature={selectedParcelChange}
+        onClearSelection={onClearParcelChangeSelection}
       />
       {layersByGroup.map(({ group, layers: groupLayers }) => (
         <div key={group} className="historical-group">
