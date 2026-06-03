@@ -7,7 +7,7 @@ This project uses public data sources and avoids owner-name display in v1. Publi
 - Cook County hosted parcel FeatureServer: `https://gis.cookcountyil.gov/hosting/rest/services/Hosted/Parcel/FeatureServer`
 - Cook County Open Data parcel snapshots, for example Parcel 2021: `https://datacatalog.cookcountyil.gov/Boundaries-Districts/ccgisdata-Parcel-2021/77tz-riq7`
 
-Use these for current parcel geometry and PIN-based mapping. The hosted service reports Illinois StatePlane CRS 3435 and supports JSON query output. Parcel snapshots may include fields such as `pin10` and `municipality`; inspect actual columns before using them.
+Use these for current parcel geometry and PIN-based mapping. The hosted service reports Illinois StatePlane CRS 3435, supports GeoJSON query output, and exposes PIN14 as the `name` field. The live downloader queries matching Park Ridge PINs in chunks and requests `outSR=4326` so browser-ready GeoJSON can be exported.
 
 ## Cook County Assessor Improvement Characteristics
 
@@ -16,12 +16,16 @@ Use these for current parcel geometry and PIN-based mapping. The hosted service 
 
 This is improvement-level data, not parcel-level data. One PIN can have multiple rows. The v1 pipeline derives a primary improvement per PIN by preferring records with `year_built`, then the largest building square footage.
 
+The live schema currently uses `char_yrblt` for year built, `char_bldg_sf` for building square feet, and `char_land_sf` for land square feet.
+
 ## Cook County Assessor Parcel Universe
 
 - Dataset: `https://datacatalog.cookcountyil.gov/Property-Taxation/Assessor-Parcel-Universe/nj4t-kc8j`
 - Socrata API pattern: `https://datacatalog.cookcountyil.gov/resource/nj4t-kc8j.csv`
 
 Use this as optional parcel metadata for municipality, class, address, and tax-year context. The dataset documentation emphasizes that PINs should be zero-padded and that spatial data is attached by centroid or tax code depending on field type.
+
+The live downloader filters Parcel Universe to `cook_municipality_name = 'CITY OF PARK RIDGE'` and a target assessment year, currently `2026`, before fetching assessor and geometry records.
 
 ## Park Ridge Public GIS
 

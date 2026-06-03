@@ -72,13 +72,15 @@ pip install -r requirements.txt
 
 ```bash
 python scripts/setup_data_dirs.py
-python scripts/download_sources.py
-python scripts/inspect_sources.py
-python scripts/build_park_ridge_dataset.py
+python -m scripts.download_cook_county_live --year 2026 --force
+python -m scripts.inspect_sources
+python -m scripts.build_park_ridge_dataset
 python scripts/export_geojson.py
 ```
 
-The downloader uses `.env` values. Copy `.env.example` to `.env`, fill in source URLs or local paths, and place manually downloaded files in `data/raw` when automatic export is not feasible.
+The live downloader queries Cook County Parcel Universe for `CITY OF PARK RIDGE`, downloads matching assessor improvement rows, fetches matching parcel geometries from the Cook County parcel FeatureServer, and writes local files into `data/raw`. The build script joins those files and exports `public/data/park_ridge_parcels_enriched.geojson` for the deployed app.
+
+As of the current v1 data build, the public GeoJSON contains 12,191 Park Ridge parcel polygons with matched assessor year-built data. Some Park Ridge PINs from Parcel Universe do not return polygon geometry from the current parcel boundary service, often because they are non-base or condominium-related records.
 
 ## PIN Normalization
 

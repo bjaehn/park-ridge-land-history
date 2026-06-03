@@ -23,9 +23,16 @@ from scripts.pipeline_utils import (
     year_quality_flags,
 )
 
-LAND_SQFT_COLUMN_CANDIDATES = ("land_sqft", "land_square_feet", "land_sf", "land_area", "lot_sqft")
+LAND_SQFT_COLUMN_CANDIDATES = ("land_sqft", "char_land_sf", "land_square_feet", "land_sf", "land_area", "lot_sqft")
 ADDRESS_COLUMN_CANDIDATES = ("address", "property_address", "site_address", "mail_address", "addr")
-MUNICIPALITY_COLUMN_CANDIDATES = ("municipality", "city", "tax_municipality", "location_city")
+MUNICIPALITY_COLUMN_CANDIDATES = (
+    "municipality",
+    "city",
+    "cook_municipality_name",
+    "tax_municipality_name",
+    "tax_municipality",
+    "location_city",
+)
 PROPERTY_CLASS_COLUMN_CANDIDATES = ("property_class", "class", "property_use", "major_class")
 
 
@@ -118,18 +125,25 @@ def enrich_with_universe(primary: pd.DataFrame, universe: pd.DataFrame) -> pd.Da
         return primary
 
     normalized = add_normalized_pin_columns(universe.copy(), pin_column)
-    keep_columns = ["pin_normalized"]
-    for candidate_group in [ADDRESS_COLUMN_CANDIDATES, MUNICIPALITY_COLUMN_CANDIDATES, PROPERTY_CLASS_COLUMN_CANDIDATES, LAND_SQFT_COLUMN_CANDIDATES]:
-        column = find_likely_column(normalized.columns, candidate_group)
-        if column and column not in keep_columns:
-            keep_columns.append(column)
+    universe_small = pd.DataFrame({"pin_normalized": normalized["pin_normalized"]})
+    universe_field_map = {
+        "address": find_likely_column(normalized.columns, ADDRESS_COLUMN_CANDIDATES),
+        "municipality": find_likely_column(normalized.columns, MUNICIPALITY_COLUMN_CANDIDATES),
+        "property_class": find_likely_column(normalized.columns, PROPERTY_CLASS_COLUMN_CANDIDATES),
+        "land_sqft": find_likely_column(normalized.columns, LAND_SQFT_COLUMN_CANDIDATES),
+    }
+    for target, source in universe_field_map.items():
+        if source:
+            universe_small[f"{target}_universe"] = normalized[source]
 
-    universe_small = normalized[keep_columns].drop_duplicates("pin_normalized")
-    joined = primary.merge(universe_small, on="pin_normalized", how="left", suffixes=("", "_universe"))
+    universe_small = universe_small.drop_duplicates("pin_normalized")
+    joined = primary.merge(universe_small, on="pin_normalized", how="left")
 
     for target in ["address", "municipality", "property_class", "land_sqft"]:
-        fallback = next((column for column in joined.columns if normalize_column_name(column).startswith(target) and column.endswith("_universe")), None)
-        if fallback and target in joined:
+        fallback = f"{target}_universe"
+        if fallback in joined:
+            if target not in joined:
+                joined[target] = None
             joined[target] = joined[target].combine_first(joined[fallback])
     return joined
 

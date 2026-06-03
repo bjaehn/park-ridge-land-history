@@ -10,6 +10,7 @@ PIN_DIGIT_COUNT = 14
 PIN_COLUMN_CANDIDATES = (
     "pin",
     "pin14",
+    "name",
     "pin_normalized",
     "parcel_pin",
     "parcel_id",
@@ -19,6 +20,7 @@ PIN_COLUMN_CANDIDATES = (
 
 YEAR_BUILT_COLUMN_CANDIDATES = (
     "year_built",
+    "char_yrblt",
     "yr_built",
     "yearbuilt",
     "age",
@@ -28,6 +30,7 @@ YEAR_BUILT_COLUMN_CANDIDATES = (
 
 BUILDING_SQFT_COLUMN_CANDIDATES = (
     "building_sqft",
+    "char_bldg_sf",
     "bldg_sqft",
     "building_square_feet",
     "sqft",
