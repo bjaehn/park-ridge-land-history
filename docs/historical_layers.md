@@ -14,9 +14,9 @@ Assessor `year_built` helps estimate when a structure was built. It does not pro
 
 - Cook County Parcels 2000: official Cook County parcel snapshot spatially filtered to Park Ridge.
 - Cook County Parcels 2021: official Cook County parcel snapshot filtered to Park Ridge.
-- Sample Parcel Changes 2000-2021: synthetic split, merge, new PIN, retired PIN, unchanged, and area-change candidates.
+- Parcel Changes 2000-2021: computed split, merge, new PIN, retired PIN, unchanged, and area-change candidates from real Cook County 2000 and 2021 layers.
 
-Sample layers are for workflow testing only. They are marked `syntheticSample: true` in the registry and GeoJSON properties. The 2000 and 2021 parcel-year layers are now real Cook County source data.
+Sample layers are for workflow testing only. They are marked `syntheticSample: true` in the registry and GeoJSON properties. The 2000 and 2021 parcel-year layers and the 2000-2021 change layer are now generated from real Cook County source data.
 
 ## Registered Future Layers
 
@@ -37,5 +37,5 @@ python -m scripts.historical_layers.inspect_historical_sources
 python -m scripts.historical_layers.build_historical_parcel_layers --samples-only
 python -m scripts.historical_layers.download_cook_2000_parcels
 python -m scripts.historical_layers.download_cook_2021_parcels
-python -m scripts.historical_layers.compare_parcel_years public/data/historical/sample_historical_parcels_2000.geojson public/data/historical/sample_historical_parcels_2021.geojson public/data/historical/sample_parcel_changes_2000_2021.geojson --old-year 2000 --new-year 2021
+python -m scripts.historical_layers.compare_parcel_years public/data/historical/cook_parcels_2000.geojson public/data/historical/cook_parcels_2021.geojson public/data/historical/parcel_changes_2000_2021.geojson --old-year 2000 --new-year 2021 --overlap-threshold-pct 20
 ```

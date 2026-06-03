@@ -19,3 +19,17 @@ Run:
 python -m scripts.historical_layers.compare_parcel_years OLD.geojson NEW.geojson OUTPUT.geojson --old-year 2000 --new-year 2021
 ```
 
+The current Park Ridge output compares real Cook County 2000 and 2021 parcel layers:
+
+```bash
+python -m scripts.historical_layers.compare_parcel_years public/data/historical/cook_parcels_2000.geojson public/data/historical/cook_parcels_2021.geojson public/data/historical/parcel_changes_2000_2021.geojson --old-year 2000 --new-year 2021 --overlap-threshold-pct 20
+```
+
+Current candidate counts:
+
+- `unchanged`: 12,789
+- `likely_split`: 76
+- `likely_merge`: 54
+- `new_pin`: 520
+- `retired_pin`: 227
+- `geometry_or_area_changed`: 145

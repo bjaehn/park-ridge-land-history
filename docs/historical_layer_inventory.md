@@ -22,5 +22,5 @@ This inventory is generated from the registry and local raw files.
 | Park Ridge Historic Landmarks | manual_research_required | not present |  |
 | Park Ridge 100 Year-Old Homes | manual_research_required | not present | This is preservation/context evidence, not subdivision evidence. |
 | PLSS Sections | needs_download | not present |  |
-| Sample Parcel Changes 2000-2021 | ready | public/data/historical/sample_parcel_changes_2000_2021.geojson | Change types are candidates and need verification against official records. |
+| Parcel Changes 2000-2021 | ready | public/data/historical/parcel_changes_2000_2021.geojson | Change types are spatial candidates and need verification against recorded plats, tax records, and survey evidence. |
 | Sanborn Map Sheets | future | not present | Access and licensing vary; do not assume open API access. |

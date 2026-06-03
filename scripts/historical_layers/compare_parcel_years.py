@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from shapely.geometry import mapping, shape
+from shapely.strtree import STRtree
 
 
 def compare_parcel_years(
@@ -18,8 +19,8 @@ def compare_parcel_years(
 ) -> dict[str, Any]:
     old_features = prepare_features(old_collection)
     new_features = prepare_features(new_collection)
-    old_by_pin = {feature["pin"]: feature for feature in old_features if feature["pin"]}
     new_by_pin = {feature["pin"]: feature for feature in new_features if feature["pin"]}
+    new_index_by_pin = {feature["pin"]: index for index, feature in enumerate(new_features) if feature["pin"]}
     used_old: set[int] = set()
     used_new: set[int] = set()
     changes: list[dict[str, Any]] = []
@@ -28,7 +29,7 @@ def compare_parcel_years(
         pin = old_feature["pin"]
         if not pin or pin not in new_by_pin:
             continue
-        new_index = new_features.index(new_by_pin[pin])
+        new_index = new_index_by_pin[pin]
         new_feature = new_by_pin[pin]
         area_delta = area_change_pct(old_feature["geometry"].area, new_feature["geometry"].area)
         change_type = "geometry_or_area_changed" if area_delta > area_threshold_pct else "unchanged"
@@ -86,6 +87,7 @@ def compare_parcel_years(
 
     return {
         "type": "FeatureCollection",
+        "name": f"parcel_changes_{old_year}_{new_year}",
         "features": changes,
     }
 
@@ -109,8 +111,13 @@ def build_overlap_index(
 ) -> dict[str, dict[int, list[int]]]:
     old_to_new: dict[int, list[int]] = {}
     new_to_old: dict[int, list[int]] = {}
+    new_geometries = [feature["geometry"] for feature in new_features]
+    spatial_index = STRtree(new_geometries)
+
     for old_index, old_feature in enumerate(old_features):
-        for new_index, new_feature in enumerate(new_features):
+        for raw_new_index in spatial_index.query(old_feature["geometry"]):
+            new_index = int(raw_new_index)
+            new_feature = new_features[new_index]
             intersection_area = old_feature["geometry"].intersection(new_feature["geometry"]).area
             if intersection_area <= 0:
                 continue
@@ -170,13 +177,22 @@ def main() -> None:
     parser.add_argument("output_geojson", type=Path)
     parser.add_argument("--old-year", type=int, required=True)
     parser.add_argument("--new-year", type=int, required=True)
+    parser.add_argument("--area-threshold-pct", type=float, default=10)
+    parser.add_argument("--overlap-threshold-pct", type=float, default=10)
     args = parser.parse_args()
 
     old_collection = json.loads(args.old_geojson.read_text(encoding="utf-8"))
     new_collection = json.loads(args.new_geojson.read_text(encoding="utf-8"))
-    result = compare_parcel_years(old_collection, new_collection, args.old_year, args.new_year)
+    result = compare_parcel_years(
+        old_collection,
+        new_collection,
+        args.old_year,
+        args.new_year,
+        area_threshold_pct=args.area_threshold_pct,
+        overlap_threshold_pct=args.overlap_threshold_pct,
+    )
     args.output_geojson.parent.mkdir(parents=True, exist_ok=True)
-    args.output_geojson.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+    args.output_geojson.write_text(json.dumps(result, separators=(",", ":")), encoding="utf-8")
     print(f"Wrote {len(result['features'])} parcel change candidates to {args.output_geojson}")
 
 

@@ -493,6 +493,7 @@ input {
 }
 
 .compare-panel h3,
+.change-summary-panel h3,
 .historical-group h3 {
   margin: 0;
   color: #172033;
@@ -533,6 +534,55 @@ input {
   color: var(--ink-soft);
   font-size: 0.76rem;
   line-height: 1.3;
+}
+
+.change-summary-panel {
+  display: grid;
+  gap: 9px;
+  margin-bottom: 14px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.change-summary-panel p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.76rem;
+  line-height: 1.3;
+}
+
+.change-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  margin: 0;
+}
+
+.change-summary-grid div {
+  min-height: 48px;
+  padding: 8px;
+  border: 1px solid #e7e5df;
+  border-radius: 6px;
+  background: #fbfaf6;
+}
+
+.change-summary-grid dt {
+  color: var(--ink-soft);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.change-summary-grid dd {
+  margin: 2px 0 0;
+  color: #172033;
+  font-size: 1.05rem;
+  font-weight: 900;
+}
+
+.change-summary-footnote {
+  padding-top: 2px;
 }
 
 .historical-group {

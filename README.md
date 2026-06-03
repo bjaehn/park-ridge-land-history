@@ -81,6 +81,7 @@ python -m scripts.build_park_ridge_dataset
 python scripts/export_geojson.py
 python -m scripts.historical_layers.download_cook_2000_parcels
 python -m scripts.historical_layers.download_cook_2021_parcels
+python -m scripts.historical_layers.compare_parcel_years public/data/historical/cook_parcels_2000.geojson public/data/historical/cook_parcels_2021.geojson public/data/historical/parcel_changes_2000_2021.geojson --old-year 2000 --new-year 2021 --overlap-threshold-pct 20
 python -m scripts.historical_layers.build_layer_manifest
 python -m scripts.historical_layers.inspect_historical_sources
 ```

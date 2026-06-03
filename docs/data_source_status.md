@@ -8,6 +8,7 @@
 | Cook County Parcels 2019 | Needs download | Locate and normalize official historical snapshot |
 | Cook County Parcels 2020 | Needs download | Locate and normalize official historical snapshot |
 | Cook County Parcels 2021 | Real Park Ridge layer registered | Refresh with `python -m scripts.historical_layers.download_cook_2021_parcels` if source changes |
+| Parcel Changes 2000-2021 | Real computed candidate layer registered | Verify candidates against recorded plats, tax records, and survey evidence |
 | Recorded subdivision plats | Manual research required | Define records workflow and source fields |
 | ILHAP 1938/1939 | Needs georeferencing | Download Park Ridge frames and georeference |
 | CMAP 1970-1995 aerials | Needs download | Confirm accessible imagery or prepare tiles |

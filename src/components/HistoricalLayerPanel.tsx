@@ -1,5 +1,6 @@
 import { CompareYearsPanel } from "./CompareYearsPanel";
 import { HistoricalLayerToggle } from "./HistoricalLayerToggle";
+import { ParcelChangeSummaryPanel } from "./ParcelChangeSummaryPanel";
 import {
   historicalLayerGroupLabels,
   type HistoricalLayer,
@@ -51,6 +52,10 @@ export function HistoricalLayerPanel({
         layers={layers}
         compareLayerIds={compareLayerIds}
         onSetCompareLayerIds={onSetCompareLayerIds}
+      />
+      <ParcelChangeSummaryPanel
+        activeLayerIds={activeLayerIds}
+        loadedLayers={loadedLayers}
       />
       {layersByGroup.map(({ group, layers: groupLayers }) => (
         <div key={group} className="historical-group">

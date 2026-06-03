@@ -30,3 +30,18 @@ def test_real_2000_historical_layer_has_park_ridge_parcels():
     assert first["source_year"] == 2000
     assert first["park_ridge_filter_method"] == "centroid_within_2024_tiger_boundary"
     assert first["synthetic_sample"] is False
+
+
+def test_real_2000_to_2021_change_layer_has_expected_candidate_types():
+    payload = json.loads(Path("public/data/historical/parcel_changes_2000_2021.geojson").read_text())
+    change_types = {feature["properties"]["change_type"] for feature in payload["features"]}
+
+    assert len(payload["features"]) > 10000
+    assert {
+        "unchanged",
+        "likely_split",
+        "likely_merge",
+        "new_pin",
+        "retired_pin",
+        "geometry_or_area_changed",
+    }.issubset(change_types)

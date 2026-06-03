@@ -7,7 +7,7 @@ def test_registry_has_required_historical_layer_families():
 
     assert "cook_parcels_2000" in layer_ids
     assert "cook_parcels_2021" in layer_ids
-    assert "sample_parcel_changes_2000_2021" in layer_ids
+    assert "parcel_changes_2000_2021" in layer_ids
     assert "ilhap_cook_1938_1939" in layer_ids
     assert "cook_recorded_subdivision_plats" in layer_ids
     assert "sanborn_park_ridge_placeholder" in layer_ids
