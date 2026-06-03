@@ -33,6 +33,12 @@ The live downloader filters Parcel Universe to `cook_municipality_name = 'CITY O
 
 The gallery includes Property Search, Community Map Viewer, Zoning Map, Historic Landmarks, and 100 Year-Old Homes. If underlying ArcGIS REST layers are publicly accessible, document exact FeatureServer or MapServer endpoints before ingesting. Do not scrape aggressively.
 
+## Park Ridge Municipal Boundary
+
+- U.S. Census Bureau TIGER/Line 2024 Illinois places: `https://www2.census.gov/geo/tiger/TIGER2024/PLACE/tl_2024_17_place.zip`
+
+The app uses the Park Ridge city place polygon from TIGER/Line as the municipal boundary display layer. This replaces the earlier synthetic rectangular placeholder.
+
 ## Illinois Historical Aerial Photography
 
 - Cook County 1938/1939 JPEG index: `https://clearinghouse.isgs.illinois.edu/webdocs/ilhap/county/j_cook.html`

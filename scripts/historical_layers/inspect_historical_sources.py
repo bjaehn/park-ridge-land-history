@@ -20,7 +20,10 @@ def inspect_sources(output_path: Path = DEFAULT_OUTPUT) -> str:
     ]
     for layer in load_registry():
         raw_matches = sorted(RAW_DIR.glob(f"{layer['id']}.*"))
+        public_path = public_data_path(layer)
         raw_label = raw_matches[0].as_posix() if raw_matches else "not present"
+        if public_path and public_path.exists():
+            raw_label = public_path.as_posix()
         notes = str(layer.get("notes", ""))
         lines.append(f"| {layer['name']} | {layer['status']} | {raw_label} | {notes} |")
 
@@ -28,6 +31,13 @@ def inspect_sources(output_path: Path = DEFAULT_OUTPUT) -> str:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(content, encoding="utf-8")
     return content
+
+
+def public_data_path(layer: dict[str, object]) -> Path | None:
+    data_path = layer.get("dataPath")
+    if not isinstance(data_path, str):
+        return None
+    return Path("public") / data_path.lstrip("/")
 
 
 def main() -> None:

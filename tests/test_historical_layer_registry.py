@@ -22,3 +22,9 @@ def test_ready_layers_have_public_data_or_tiles():
 def test_registry_separates_year_built_from_subdivision_evidence():
     notes = " ".join(str(layer.get("notes", "")) for layer in load_registry()).lower()
     assert "year built is not subdivision date" in notes or "assessor year-built is not sufficient" in notes
+
+
+def test_2021_layer_uses_real_cook_county_data_path():
+    layer = next(layer for layer in load_registry() if layer["id"] == "cook_parcels_2021")
+    assert layer["dataPath"] == "/data/historical/cook_parcels_2021.geojson"
+    assert layer.get("syntheticSample") is not True

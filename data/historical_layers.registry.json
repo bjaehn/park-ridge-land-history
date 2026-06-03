@@ -77,19 +77,18 @@
     {
       "id": "cook_parcels_2021",
       "name": "Cook County Parcels 2021",
-      "description": "Synthetic sample representing a later parcel boundary year for comparison.",
+      "description": "Official Cook County 2021 parcel snapshot filtered to Park Ridge municipal parcels.",
       "type": "vector",
       "status": "ready",
       "year": 2021,
-      "sourceName": "Cook County historical parcel layers",
+      "sourceName": "Cook County ccgisdata - Parcel 2021",
       "sourceUrl": "https://datacatalog.cookcountyil.gov/Boundaries-Districts/ccgisdata-Parcel-2021/77tz-riq7",
-      "attribution": "Synthetic sample; real layer should cite Cook County GIS.",
+      "attribution": "Cook County GIS / Cook County Open Data.",
       "historicalQuestion": "What changed between parcel boundary years?",
       "layerGroup": "parcel_boundaries",
-      "dataPath": "/data/historical/sample_historical_parcels_2021.geojson",
+      "dataPath": "/data/historical/cook_parcels_2021.geojson",
       "opacityDefault": 0.85,
-      "syntheticSample": true,
-      "notes": "Sample data for testing compare mode only."
+      "notes": "Downloaded from the Cook County 2021 parcel snapshot and filtered to municipality = Park Ridge."
     },
     {
       "id": "cook_recorded_subdivision_plats",

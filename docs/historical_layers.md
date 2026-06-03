@@ -13,10 +13,10 @@ Assessor `year_built` helps estimate when a structure was built. It does not pro
 ## Current Map-Ready Layers
 
 - Cook County Parcels 2000: synthetic sample boundary layer.
-- Cook County Parcels 2021: synthetic sample boundary layer.
+- Cook County Parcels 2021: official Cook County parcel snapshot filtered to Park Ridge.
 - Sample Parcel Changes 2000-2021: synthetic split, merge, new PIN, retired PIN, unchanged, and area-change candidates.
 
-These sample layers are for workflow testing only. They are marked `syntheticSample: true` in the registry and GeoJSON properties.
+Sample layers are for workflow testing only. They are marked `syntheticSample: true` in the registry and GeoJSON properties. The 2021 layer is now real Cook County source data.
 
 ## Registered Future Layers
 
@@ -35,6 +35,6 @@ These sample layers are for workflow testing only. They are marked `syntheticSam
 python -m scripts.historical_layers.build_layer_manifest
 python -m scripts.historical_layers.inspect_historical_sources
 python -m scripts.historical_layers.build_historical_parcel_layers --samples-only
+python -m scripts.historical_layers.download_cook_2021_parcels
 python -m scripts.historical_layers.compare_parcel_years public/data/historical/sample_historical_parcels_2000.geojson public/data/historical/sample_historical_parcels_2021.geojson public/data/historical/sample_parcel_changes_2000_2021.geojson --old-year 2000 --new-year 2021
 ```
-
