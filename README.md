@@ -38,6 +38,8 @@ Open the Vite URL printed by the dev server. The app first requests `public/data
 
 This prototype can be deployed as a static Node service on Railway. Railway will install dependencies, run `npm run build`, and start the app with `npm start`.
 
+The repository also contains Python data-pipeline scripts, so `railpack.json` explicitly sets the Railpack provider to `node`. Without that, Railway may detect `requirements.txt` first, install only Python, and then fail at `npm run build`.
+
 For automatic builds:
 
 1. Push this repository to GitHub.
