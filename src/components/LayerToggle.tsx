@@ -1,5 +1,3 @@
-import { historicalLayerPlaceholders } from "../lib/mapStyle";
-
 type LayerToggleProps = {
   showOutlines: boolean;
   showBoundary: boolean;
@@ -32,12 +30,6 @@ export function LayerToggle({
         />
         <span>Park Ridge boundary</span>
       </label>
-      {historicalLayerPlaceholders.map((layer) => (
-        <label className="check-row disabled-row" key={layer.id} title={layer.note}>
-          <input type="checkbox" disabled checked={layer.enabled} readOnly />
-          <span>{layer.label}</span>
-        </label>
-      ))}
     </section>
   );
 }

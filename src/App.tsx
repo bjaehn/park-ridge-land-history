@@ -4,10 +4,13 @@ import { LayerToggle } from "./components/LayerToggle";
 import { Legend } from "./components/Legend";
 import { MapView } from "./components/MapView";
 import { DecadeDistributionChart } from "./components/DecadeDistributionChart";
+import { HistoricalLayerPanel } from "./components/HistoricalLayerPanel";
 import { ParcelDetailPanel } from "./components/ParcelDetailPanel";
 import { SearchPanel } from "./components/SearchPanel";
 import { TimelineControl } from "./components/TimelineControl";
 import { decadeOrder } from "./lib/colorScales";
+import { loadHistoricalLayerData, loadHistoricalLayerManifest } from "./lib/layerLoaders";
+import { layerCanToggle, type HistoricalLayer, type LoadedHistoricalLayer } from "./lib/historicalLayerTypes";
 import type { ParcelCollection, ParcelFeature } from "./lib/parcelTypes";
 
 const knownDecades = decadeOrder.filter((bucket) => bucket !== "Unknown" && bucket !== "Suspicious");
@@ -31,6 +34,13 @@ export default function App() {
   const [selectedPin, setSelectedPin] = useState<string | null>(null);
   const [isBuildoutPlaying, setIsBuildoutPlaying] = useState(false);
   const [animationSpeed, setAnimationSpeed] = useState<AnimationSpeed>("normal");
+  const [historicalLayers, setHistoricalLayers] = useState<HistoricalLayer[]>([]);
+  const [activeHistoricalLayerIds, setActiveHistoricalLayerIds] = useState<Set<string>>(() => new Set());
+  const [loadedHistoricalLayers, setLoadedHistoricalLayers] = useState<Record<string, LoadedHistoricalLayer>>({});
+  const [compareLayerIds, setCompareLayerIds] = useState<[string | null, string | null]>([
+    "cook_parcels_2000",
+    "cook_parcels_2021"
+  ]);
 
   useEffect(() => {
     async function loadParcels() {
@@ -48,6 +58,7 @@ export default function App() {
 
     loadParcels();
     fetchJson<GeoJSON.FeatureCollection>("/data/park_ridge_boundary.geojson").then(setBoundary);
+    loadHistoricalLayerManifest().then(setHistoricalLayers);
   }, []);
 
   const yearRange = useMemo(() => {
@@ -128,6 +139,12 @@ export default function App() {
     );
   }, [parcels, selectedPin]);
 
+  const historicalOverlays = useMemo(() => {
+    return Array.from(activeHistoricalLayerIds)
+      .map((layerId) => loadedHistoricalLayers[layerId])
+      .filter((loadedLayer): loadedLayer is LoadedHistoricalLayer => Boolean(loadedLayer));
+  }, [activeHistoricalLayerIds, loadedHistoricalLayers]);
+
   function toggleDecade(decade: string) {
     setSelectedDecades((current) => {
       const next = new Set(current);
@@ -156,6 +173,71 @@ export default function App() {
     setSelectedPin(feature.properties.pin_normalized || feature.properties.pin_original || null);
   }
 
+  async function ensureHistoricalLayerLoaded(layer: HistoricalLayer) {
+    if (!layerCanToggle(layer)) return;
+    if (loadedHistoricalLayers[layer.id]?.data || loadedHistoricalLayers[layer.id]?.layer.tileUrl) return;
+
+    setLoadedHistoricalLayers((current) => ({
+      ...current,
+      [layer.id]: {
+        layer,
+        opacity: current[layer.id]?.opacity ?? layer.opacityDefault ?? 0.75
+      }
+    }));
+
+    const data = await loadHistoricalLayerData(layer);
+    setLoadedHistoricalLayers((current) => ({
+      ...current,
+      [layer.id]: {
+        layer,
+        data: data ?? undefined,
+        opacity: current[layer.id]?.opacity ?? layer.opacityDefault ?? 0.75,
+        loadError: data || layer.tileUrl ? undefined : "Layer data could not be loaded."
+      }
+    }));
+  }
+
+  function toggleHistoricalLayer(layer: HistoricalLayer) {
+    if (!layerCanToggle(layer)) return;
+    setActiveHistoricalLayerIds((current) => {
+      const next = new Set(current);
+      if (next.has(layer.id)) next.delete(layer.id);
+      else next.add(layer.id);
+      return next;
+    });
+    void ensureHistoricalLayerLoaded(layer);
+  }
+
+  function setHistoricalLayerOpacity(layerId: string, opacity: number) {
+    const layer = historicalLayers.find((candidate) => candidate.id === layerId);
+    if (!layer) return;
+    setLoadedHistoricalLayers((current) => ({
+      ...current,
+      [layerId]: {
+        layer,
+        data: current[layerId]?.data,
+        opacity,
+        loadError: current[layerId]?.loadError
+      }
+    }));
+  }
+
+  function handleSetCompareLayerIds(layerIds: [string | null, string | null]) {
+    setCompareLayerIds(layerIds);
+    const selectedIds = layerIds.filter((layerId): layerId is string => Boolean(layerId));
+    const selectedLayers = selectedIds
+      .map((layerId) => historicalLayers.find((layer) => layer.id === layerId))
+      .filter((layer): layer is HistoricalLayer => Boolean(layer))
+      .filter(layerCanToggle);
+
+    setActiveHistoricalLayerIds((current) => {
+      const next = new Set(current);
+      selectedLayers.forEach((layer) => next.add(layer.id));
+      return next;
+    });
+    selectedLayers.forEach((layer) => void ensureHistoricalLayerLoaded(layer));
+  }
+
   return (
     <main className="app-shell">
       <MapView
@@ -164,6 +246,7 @@ export default function App() {
         boundary={boundary}
         showOutlines={showOutlines}
         showBoundary={showBoundary}
+        historicalOverlays={historicalOverlays}
         onSelectParcel={selectParcel}
       />
       <aside className="control-panel">
@@ -215,6 +298,15 @@ export default function App() {
           showBoundary={showBoundary}
           onSetShowOutlines={setShowOutlines}
           onSetShowBoundary={setShowBoundary}
+        />
+        <HistoricalLayerPanel
+          layers={historicalLayers}
+          activeLayerIds={activeHistoricalLayerIds}
+          loadedLayers={loadedHistoricalLayers}
+          compareLayerIds={compareLayerIds}
+          onToggleLayer={toggleHistoricalLayer}
+          onSetOpacity={setHistoricalLayerOpacity}
+          onSetCompareLayerIds={handleSetCompareLayerIds}
         />
         <DecadeDistributionChart parcels={filteredParcels} />
         <Legend visibleDecades={visibleLegendBuckets} />

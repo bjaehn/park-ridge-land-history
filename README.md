@@ -11,6 +11,8 @@ The first version is intentionally simple: a static React map reads generated Ge
 - Filters visible parcels by decade and by "built by year".
 - Shows parcel details on click: PIN, address, year built, square footage, class, improvement count, and quality flags.
 - Includes layer toggles for parcel outlines, boundary display, and a disabled placeholder for future 1938/1939 aerial overlays.
+- Registers historical evidence layers for parcel boundary years, aerial imagery, subdivision plats, local preservation context, PLSS, and Sanborn/map sheets.
+- Includes sample 2000/2021 parcel-year overlays and sample parcel-change candidates so the historical layer workflow can be tested before real source files are added.
 
 ## Data Sources
 
@@ -76,11 +78,31 @@ python -m scripts.download_cook_county_live --year 2026 --force
 python -m scripts.inspect_sources
 python -m scripts.build_park_ridge_dataset
 python scripts/export_geojson.py
+python -m scripts.historical_layers.build_layer_manifest
+python -m scripts.historical_layers.inspect_historical_sources
 ```
 
 The live downloader queries Cook County Parcel Universe for `CITY OF PARK RIDGE`, downloads matching assessor improvement rows, fetches matching parcel geometries from the Cook County parcel FeatureServer, and writes local files into `data/raw`. The build script joins those files and exports `public/data/park_ridge_parcels_enriched.geojson` for the deployed app.
 
 As of the current v1 data build, the public GeoJSON contains 12,191 Park Ridge parcel polygons with matched assessor year-built data. Some Park Ridge PINs from Parcel Universe do not return polygon geometry from the current parcel boundary service, often because they are non-base or condominium-related records.
+
+## Historical Layer Pipeline
+
+The historical layer registry lives at `data/historical_layers.registry.json`. It is the source of truth for layer IDs, status, source attribution, and map-ready data paths.
+
+Generate the public manifest after registry changes:
+
+```bash
+python -m scripts.historical_layers.build_layer_manifest
+```
+
+Compare two parcel years:
+
+```bash
+python -m scripts.historical_layers.compare_parcel_years OLD.geojson NEW.geojson OUTPUT.geojson --old-year 2000 --new-year 2021
+```
+
+See `docs/historical_layers.md`, `docs/parcel_change_detection.md`, `docs/georeferencing_historical_imagery.md`, and `docs/subdivision_plat_research.md`.
 
 ## PIN Normalization
 

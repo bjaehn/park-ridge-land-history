@@ -1,0 +1,96 @@
+{
+  "type": "FeatureCollection",
+  "name": "sample_historical_parcels_2021",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "pin_original": "09-25-101-001-0000",
+        "pin_normalized": "09251010010000",
+        "source_year": 2021,
+        "source_name": "Synthetic sample",
+        "synthetic_sample": true,
+        "historical_note": "Unchanged sample parcel."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-87.84675, 42.0139], [-87.84595, 42.0139], [-87.84595, 42.0132], [-87.84675, 42.0132], [-87.84675, 42.0139]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "pin_original": "09-25-101-201-0000",
+        "pin_normalized": "09251012010000",
+        "source_year": 2021,
+        "source_name": "Synthetic sample",
+        "synthetic_sample": true,
+        "historical_note": "One child of the sample 2000 parent parcel."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-87.84585, 42.0139], [-87.845, 42.0139], [-87.845, 42.0132], [-87.84585, 42.0132], [-87.84585, 42.0139]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "pin_original": "09-25-101-202-0000",
+        "pin_normalized": "09251012020000",
+        "source_year": 2021,
+        "source_name": "Synthetic sample",
+        "synthetic_sample": true,
+        "historical_note": "One child of the sample 2000 parent parcel."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-87.845, 42.0139], [-87.84415, 42.0139], [-87.84415, 42.0132], [-87.845, 42.0132], [-87.845, 42.0139]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "pin_original": "09-25-101-300-0000",
+        "pin_normalized": "09251013000000",
+        "source_year": 2021,
+        "source_name": "Synthetic sample",
+        "synthetic_sample": true,
+        "historical_note": "Merged parcel from two sample 2000 parcels."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-87.84675, 42.01305], [-87.84505, 42.01305], [-87.84505, 42.01235], [-87.84675, 42.01235], [-87.84675, 42.01305]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "pin_original": "09-25-101-005-0000",
+        "pin_normalized": "09251010050000",
+        "source_year": 2021,
+        "source_name": "Synthetic sample",
+        "synthetic_sample": true,
+        "historical_note": "Same PIN with a larger sample area."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-87.84495, 42.01305], [-87.84405, 42.01305], [-87.84405, 42.01225], [-87.84495, 42.01225], [-87.84495, 42.01305]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "pin_original": "09-25-101-400-0000",
+        "pin_normalized": "09251014000000",
+        "source_year": 2021,
+        "source_name": "Synthetic sample",
+        "synthetic_sample": true,
+        "historical_note": "New PIN in the later sample year."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-87.84585, 42.0122], [-87.84505, 42.0122], [-87.84505, 42.0115], [-87.84585, 42.0115], [-87.84585, 42.0122]]]
+      }
+    }
+  ]
+}

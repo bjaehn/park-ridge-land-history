@@ -19,6 +19,12 @@ data/processed/*
 !data/raw/.gitkeep
 !data/interim/.gitkeep
 !data/processed/.gitkeep
+!data/raw/historical/
+!data/raw/historical/.gitkeep
+!data/interim/historical/
+!data/interim/historical/.gitkeep
+!data/processed/historical/
+!data/processed/historical/.gitkeep
 
 *.gpkg
 *.gdb/

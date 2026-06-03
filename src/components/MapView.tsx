@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useRef } from "react";
-import maplibregl, { type GeoJSONSource } from "maplibre-gl";
+import { useEffect, useMemo, useRef, useState } from "react";
+import maplibregl, { type GeoJSONSource, type LayerSpecification } from "maplibre-gl";
 import { mapLibreFillColor, decadeColors } from "../lib/colorScales";
+import { historicalLineColor, historicalLineDash, parcelChangeFillColorExpression } from "../lib/historicalLayerStyles";
 import { baseMapStyle, parkRidgeCenter } from "../lib/mapStyle";
+import type { LoadedHistoricalLayer } from "../lib/historicalLayerTypes";
 import type { ParcelCollection, ParcelFeature } from "../lib/parcelTypes";
 import { parcelPopupHtml } from "./ParcelPopup";
 
@@ -11,6 +13,7 @@ type MapViewProps = {
   boundary: GeoJSON.FeatureCollection | null;
   showOutlines: boolean;
   showBoundary: boolean;
+  historicalOverlays: LoadedHistoricalLayer[];
   onSelectParcel: (feature: ParcelFeature) => void;
 };
 
@@ -25,12 +28,15 @@ export function MapView({
   boundary,
   showOutlines,
   showBoundary,
+  historicalOverlays,
   onSelectParcel
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
+  const historicalLayerIdsRef = useRef<string[]>([]);
   const popupRef = useRef<maplibregl.Popup | null>(null);
   const onSelectParcelRef = useRef(onSelectParcel);
+  const [isMapLoaded, setIsMapLoaded] = useState(false);
   const latestParcelsRef = useRef<ParcelCollection>(emptyCollection);
   const latestSelectedRef = useRef<GeoJSON.FeatureCollection>(emptyFeatureCollection());
   const latestBoundaryRef = useRef<GeoJSON.FeatureCollection>({
@@ -156,6 +162,8 @@ export function MapView({
           "line-opacity": 0.9
         }
       });
+
+      setIsMapLoaded(true);
     });
 
     map.on("mousemove", "parcel-fill", (event) => {
@@ -190,8 +198,96 @@ export function MapView({
       popupRef.current?.remove();
       map.remove();
       mapRef.current = null;
+      setIsMapLoaded(false);
     };
   }, []);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !isMapLoaded) return;
+
+    const nextLayerIds = new Set(historicalOverlays.map((overlay) => overlay.layer.id));
+    historicalLayerIdsRef.current
+      .filter((layerId) => !nextLayerIds.has(layerId))
+      .forEach((layerId) => removeHistoricalLayer(map, layerId));
+
+    historicalOverlays.forEach((overlay) => {
+      const sourceId = historicalSourceId(overlay.layer.id);
+      const rasterLayerId = historicalRasterLayerId(overlay.layer.id);
+      const fillLayerId = historicalFillLayerId(overlay.layer.id);
+      const lineLayerId = historicalLineLayerId(overlay.layer.id);
+
+      if (overlay.layer.tileUrl) {
+        if (!map.getSource(sourceId)) {
+          map.addSource(sourceId, {
+            type: "raster",
+            tiles: [overlay.layer.tileUrl],
+            tileSize: 256,
+            attribution: overlay.layer.attribution
+          });
+        }
+        if (!map.getLayer(rasterLayerId)) {
+          addLayer(map, {
+            id: rasterLayerId,
+            type: "raster",
+            source: sourceId,
+            paint: {
+              "raster-opacity": overlay.opacity
+            }
+          }, "parcel-fill");
+        } else {
+          map.setPaintProperty(rasterLayerId, "raster-opacity", overlay.opacity);
+        }
+        return;
+      }
+
+      if (!overlay.data) return;
+
+      const source = map.getSource(sourceId) as GeoJSONSource | undefined;
+      if (source) {
+        source.setData(overlay.data);
+      } else {
+        map.addSource(sourceId, {
+          type: "geojson",
+          data: overlay.data
+        });
+      }
+
+      if (hasChangeType(overlay.data)) {
+        if (!map.getLayer(fillLayerId)) {
+          addLayer(map, {
+            id: fillLayerId,
+            type: "fill",
+            source: sourceId,
+            paint: {
+              "fill-color": parcelChangeFillColorExpression(),
+              "fill-opacity": Math.min(0.62, overlay.opacity)
+            }
+          });
+        } else {
+          map.setPaintProperty(fillLayerId, "fill-opacity", Math.min(0.62, overlay.opacity));
+        }
+      }
+
+      if (!map.getLayer(lineLayerId)) {
+        addLayer(map, {
+          id: lineLayerId,
+          type: "line",
+          source: sourceId,
+          paint: {
+            "line-color": historicalLineColor(overlay.layer),
+            "line-width": hasChangeType(overlay.data) ? 2.2 : 2,
+            "line-opacity": overlay.opacity,
+            "line-dasharray": historicalLineDash(overlay.layer)
+          }
+        });
+      } else {
+        map.setPaintProperty(lineLayerId, "line-opacity", overlay.opacity);
+      }
+    });
+
+    historicalLayerIdsRef.current = Array.from(nextLayerIds);
+  }, [historicalOverlays, isMapLoaded]);
 
   useEffect(() => {
     const source = mapRef.current?.getSource("parcels") as GeoJSONSource | undefined;
@@ -244,6 +340,51 @@ export function MapView({
   }, [showBoundary]);
 
   return <div ref={containerRef} className="map-canvas" aria-label="Park Ridge parcel map" />;
+}
+
+function addLayer(
+  map: maplibregl.Map,
+  layer: LayerSpecification,
+  beforeLayerId?: string
+): void {
+  if (beforeLayerId && map.getLayer(beforeLayerId)) {
+    map.addLayer(layer, beforeLayerId);
+    return;
+  }
+  map.addLayer(layer);
+}
+
+function removeHistoricalLayer(map: maplibregl.Map, layerId: string): void {
+  [
+    historicalRasterLayerId(layerId),
+    historicalFillLayerId(layerId),
+    historicalLineLayerId(layerId)
+  ].forEach((mapLayerId) => {
+    if (map.getLayer(mapLayerId)) map.removeLayer(mapLayerId);
+  });
+
+  const sourceId = historicalSourceId(layerId);
+  if (map.getSource(sourceId)) map.removeSource(sourceId);
+}
+
+function historicalSourceId(layerId: string): string {
+  return `historical-source-${layerId}`;
+}
+
+function historicalRasterLayerId(layerId: string): string {
+  return `historical-raster-${layerId}`;
+}
+
+function historicalFillLayerId(layerId: string): string {
+  return `historical-fill-${layerId}`;
+}
+
+function historicalLineLayerId(layerId: string): string {
+  return `historical-line-${layerId}`;
+}
+
+function hasChangeType(data: GeoJSON.FeatureCollection): boolean {
+  return data.features.some((feature) => Boolean(feature.properties?.change_type));
 }
 
 function emptyFeatureCollection(): GeoJSON.FeatureCollection {
