@@ -20,3 +20,13 @@ def test_real_2021_historical_layer_has_park_ridge_parcels():
     assert first["source_year"] == 2021
     assert first["municipality"] == "Park Ridge"
     assert first["synthetic_sample"] is False
+
+
+def test_real_2000_historical_layer_has_park_ridge_parcels():
+    payload = json.loads(Path("public/data/historical/cook_parcels_2000.geojson").read_text())
+
+    assert len(payload["features"]) > 10000
+    first = payload["features"][0]["properties"]
+    assert first["source_year"] == 2000
+    assert first["park_ridge_filter_method"] == "centroid_within_2024_tiger_boundary"
+    assert first["synthetic_sample"] is False

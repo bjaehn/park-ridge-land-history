@@ -12,7 +12,7 @@ The first version is intentionally simple: a static React map reads generated Ge
 - Shows parcel details on click: PIN, address, year built, square footage, class, improvement count, and quality flags.
 - Includes layer toggles for parcel outlines, boundary display, and a disabled placeholder for future 1938/1939 aerial overlays.
 - Registers historical evidence layers for parcel boundary years, aerial imagery, subdivision plats, local preservation context, PLSS, and Sanborn/map sheets.
-- Includes a real Cook County 2021 historical parcel overlay, a sample 2000 parcel-year overlay, and sample parcel-change candidates so the historical layer workflow can be tested while older source files are added.
+- Includes real Cook County 2000 and 2021 historical parcel overlays plus sample parcel-change candidates so the historical layer workflow can be tested while formal change detection is expanded.
 
 ## Data Sources
 
@@ -79,6 +79,7 @@ python -m scripts.download_park_ridge_boundary
 python -m scripts.inspect_sources
 python -m scripts.build_park_ridge_dataset
 python scripts/export_geojson.py
+python -m scripts.historical_layers.download_cook_2000_parcels
 python -m scripts.historical_layers.download_cook_2021_parcels
 python -m scripts.historical_layers.build_layer_manifest
 python -m scripts.historical_layers.inspect_historical_sources

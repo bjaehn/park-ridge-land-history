@@ -6,8 +6,11 @@ This project uses public data sources and avoids owner-name display in v1. Publi
 
 - Cook County hosted parcel FeatureServer: `https://gis.cookcountyil.gov/hosting/rest/services/Hosted/Parcel/FeatureServer`
 - Cook County Open Data parcel snapshots, for example Parcel 2021: `https://datacatalog.cookcountyil.gov/Boundaries-Districts/ccgisdata-Parcel-2021/77tz-riq7`
+- Cook County Open Data 2000 parcel snapshot: `https://datacatalog.cookcountyil.gov/Property-Taxation/2000Parcels/bbcr-ryng`
 
 Use these for current parcel geometry and PIN-based mapping. The hosted service reports Illinois StatePlane CRS 3435, supports GeoJSON query output, and exposes PIN14 as the `name` field. The live downloader queries matching Park Ridge PINs in chunks and requests `outSR=4326` so browser-ready GeoJSON can be exported.
+
+The 2000 historical parcel snapshot does not expose the same `municipality` field used by the 2021 snapshot. The 2000 downloader fetches parcels in the Park Ridge boundary extent, then keeps parcels whose centroids fall inside the current Park Ridge municipal boundary.
 
 ## Cook County Assessor Improvement Characteristics
 

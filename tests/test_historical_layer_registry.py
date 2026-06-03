@@ -28,3 +28,9 @@ def test_2021_layer_uses_real_cook_county_data_path():
     layer = next(layer for layer in load_registry() if layer["id"] == "cook_parcels_2021")
     assert layer["dataPath"] == "/data/historical/cook_parcels_2021.geojson"
     assert layer.get("syntheticSample") is not True
+
+
+def test_2000_layer_uses_real_cook_county_data_path():
+    layer = next(layer for layer in load_registry() if layer["id"] == "cook_parcels_2000")
+    assert layer["dataPath"] == "/data/historical/cook_parcels_2000.geojson"
+    assert layer.get("syntheticSample") is not True

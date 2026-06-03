@@ -8,20 +8,19 @@ export const defaultHistoricalLayers: HistoricalLayer[] = [
   {
     id: "cook_parcels_2000",
     name: "Cook County Parcels 2000",
-    description: "Synthetic sample representing a historical parcel boundary year. Replace with downloaded Cook County 2000 parcel data when available.",
+    description: "Official Cook County 2000 parcel snapshot spatially filtered to Park Ridge.",
     type: "vector",
     status: "ready",
     year: 2000,
-    sourceName: "Cook County historical parcel layers",
-    sourceUrl: cookPortal,
-    attribution: "Synthetic sample; real layer should cite Cook County GIS.",
+    sourceName: "Cook County 2000Parcels",
+    sourceUrl: "https://datacatalog.cookcountyil.gov/Property-Taxation/2000Parcels/bbcr-ryng",
+    attribution: "Cook County GIS / Cook County Open Data.",
     historicalQuestion: "What did parcel boundaries look like in this tax year?",
     layerGroup: "parcel_boundaries",
-    dataPath: "/data/historical/sample_historical_parcels_2000.geojson",
+    dataPath: "/data/historical/cook_parcels_2000.geojson",
     opacityDefault: 0.85,
     enabledDefault: false,
-    syntheticSample: true,
-    notes: "Sample data for testing only. Year built is not subdivision date."
+    notes: "Downloaded from the Cook County 2000 parcel snapshot and filtered by centroid within the current Park Ridge municipal boundary. Year built is not subdivision date."
   },
   {
     id: "cook_parcels_2004",

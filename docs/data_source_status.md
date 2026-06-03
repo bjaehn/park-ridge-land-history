@@ -2,7 +2,7 @@
 
 | Source | Current status | Next step |
 | --- | --- | --- |
-| Cook County Parcels 2000 | Synthetic sample registered | Replace with official downloaded parcel snapshot |
+| Cook County Parcels 2000 | Real Park Ridge layer registered | Refresh with `python -m scripts.historical_layers.download_cook_2000_parcels` if source changes |
 | Cook County Parcels 2004 | Needs download | Locate and normalize official historical snapshot |
 | Cook County Parcels 2009 | Needs download | Locate and normalize official historical snapshot |
 | Cook County Parcels 2019 | Needs download | Locate and normalize official historical snapshot |

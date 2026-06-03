@@ -4,7 +4,7 @@ This inventory is generated from the registry and local raw files.
 
 | Layer | Status | Raw file | Notes |
 | --- | --- | --- | --- |
-| Cook County Parcels 2000 | ready | public/data/historical/sample_historical_parcels_2000.geojson | Sample data for testing only. Year built is not subdivision date. |
+| Cook County Parcels 2000 | ready | public/data/historical/cook_parcels_2000.geojson | Downloaded from the Cook County 2000 parcel snapshot and filtered by centroid within the current Park Ridge municipal boundary. Year built is not subdivision date. |
 | Cook County Parcels 2004 | needs_download | not present | Register downloaded and normalized data at public/data/historical/parcels_2004.geojson. |
 | Cook County Parcels 2009 | needs_download | not present |  |
 | Cook County Parcels 2019 | needs_download | not present |  |
