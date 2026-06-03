@@ -3,6 +3,8 @@ import { FilterPanel } from "./components/FilterPanel";
 import { LayerToggle } from "./components/LayerToggle";
 import { Legend } from "./components/Legend";
 import { MapView } from "./components/MapView";
+import { DecadeDistributionChart } from "./components/DecadeDistributionChart";
+import { ParcelDetailPanel } from "./components/ParcelDetailPanel";
 import { SearchPanel } from "./components/SearchPanel";
 import { TimelineControl } from "./components/TimelineControl";
 import { decadeOrder } from "./lib/colorScales";
@@ -150,6 +152,10 @@ export default function App() {
     });
   }
 
+  function selectParcel(feature: ParcelFeature) {
+    setSelectedPin(feature.properties.pin_normalized || feature.properties.pin_original || null);
+  }
+
   return (
     <main className="app-shell">
       <MapView
@@ -158,6 +164,7 @@ export default function App() {
         boundary={boundary}
         showOutlines={showOutlines}
         showBoundary={showBoundary}
+        onSelectParcel={selectParcel}
       />
       <aside className="control-panel">
         <header className="app-header">
@@ -173,9 +180,11 @@ export default function App() {
           parcels={parcels}
           selectedPin={selectedPin}
           visiblePins={visiblePins}
-          onSelectParcel={(feature) => {
-            setSelectedPin(feature.properties.pin_normalized || feature.properties.pin_original || null);
-          }}
+          onSelectParcel={selectParcel}
+          onClearSelection={() => setSelectedPin(null)}
+        />
+        <ParcelDetailPanel
+          parcel={selectedParcel}
           onClearSelection={() => setSelectedPin(null)}
         />
         <TimelineControl
@@ -207,6 +216,7 @@ export default function App() {
           onSetShowOutlines={setShowOutlines}
           onSetShowBoundary={setShowBoundary}
         />
+        <DecadeDistributionChart parcels={filteredParcels} />
         <Legend visibleDecades={visibleLegendBuckets} />
       </aside>
     </main>

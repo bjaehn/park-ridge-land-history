@@ -11,6 +11,7 @@ type MapViewProps = {
   boundary: GeoJSON.FeatureCollection | null;
   showOutlines: boolean;
   showBoundary: boolean;
+  onSelectParcel: (feature: ParcelFeature) => void;
 };
 
 const emptyCollection: ParcelCollection = {
@@ -18,10 +19,18 @@ const emptyCollection: ParcelCollection = {
   features: []
 } as const;
 
-export function MapView({ parcels, selectedParcel, boundary, showOutlines, showBoundary }: MapViewProps) {
+export function MapView({
+  parcels,
+  selectedParcel,
+  boundary,
+  showOutlines,
+  showBoundary,
+  onSelectParcel
+}: MapViewProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const popupRef = useRef<maplibregl.Popup | null>(null);
+  const onSelectParcelRef = useRef(onSelectParcel);
   const latestParcelsRef = useRef<ParcelCollection>(emptyCollection);
   const latestSelectedRef = useRef<GeoJSON.FeatureCollection>(emptyFeatureCollection());
   const latestBoundaryRef = useRef<GeoJSON.FeatureCollection>({
@@ -37,6 +46,7 @@ export function MapView({ parcels, selectedParcel, boundary, showOutlines, showB
   latestParcelsRef.current = visibleParcels;
   latestSelectedRef.current = selectedParcel ? featureCollectionFromFeature(selectedParcel) : emptyFeatureCollection();
   latestBoundaryRef.current = boundary ?? { type: "FeatureCollection", features: [] };
+  onSelectParcelRef.current = onSelectParcel;
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -167,6 +177,7 @@ export function MapView({ parcels, selectedParcel, boundary, showOutlines, showB
     map.on("click", "parcel-fill", (event) => {
       const feature = event.features?.[0] as unknown as ParcelFeature | undefined;
       if (!feature) return;
+      onSelectParcelRef.current(feature);
       popupRef.current
         ?.setLngLat(event.lngLat)
         .setHTML(parcelPopupHtml(feature.properties))

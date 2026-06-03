@@ -217,6 +217,57 @@ input {
   margin: 0;
 }
 
+.parcel-detail-section {
+  background: #f7f7f1;
+}
+
+.parcel-empty {
+  margin: 0;
+}
+
+.detail-title {
+  margin: 0 0 10px;
+  overflow-wrap: anywhere;
+  color: #172033;
+  font-size: 0.98rem;
+  line-height: 1.25;
+}
+
+.detail-list {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.detail-list div {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr);
+  gap: 10px;
+  padding: 8px 10px;
+  border-top: 1px solid #e7e5df;
+}
+
+.detail-list div:first-child {
+  border-top: 0;
+}
+
+.detail-list dt {
+  color: var(--ink-soft);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.detail-list dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: #172033;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -349,6 +400,47 @@ input {
 .buildout-stat strong {
   color: #172033;
   font-size: 0.9rem;
+}
+
+.decade-chart {
+  display: grid;
+  gap: 7px;
+}
+
+.chart-empty {
+  margin: 0;
+}
+
+.chart-row {
+  display: grid;
+  grid-template-columns: 60px minmax(0, 1fr) 42px;
+  gap: 8px;
+  align-items: center;
+  min-height: 20px;
+}
+
+.chart-label,
+.chart-value {
+  color: #263145;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.chart-value {
+  text-align: right;
+}
+
+.chart-track {
+  height: 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e4e1d8;
+}
+
+.chart-bar {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
 }
 
 .decade-list {
