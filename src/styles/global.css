@@ -262,6 +262,95 @@ input {
   accent-color: var(--accent);
 }
 
+.buildout-player {
+  display: grid;
+  gap: 8px;
+  margin: -2px 0 14px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.buildout-actions {
+  display: grid;
+  grid-template-columns: 72px 72px 1fr;
+  gap: 8px;
+  align-items: end;
+}
+
+.buildout-actions button {
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #ffffff;
+  color: #172033;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.buildout-actions button:hover {
+  border-color: var(--accent);
+}
+
+.buildout-actions .primary-action {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.speed-control {
+  display: grid;
+  gap: 4px;
+}
+
+.speed-control span {
+  color: var(--ink-soft);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.speed-control select {
+  min-height: 34px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #ffffff;
+  color: #172033;
+  padding: 5px 8px;
+}
+
+.buildout-progress {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e4e1d8;
+}
+
+.buildout-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width 140ms linear;
+}
+
+.buildout-stat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  line-height: 1.25;
+}
+
+.buildout-stat strong {
+  color: #172033;
+  font-size: 0.9rem;
+}
+
 .decade-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

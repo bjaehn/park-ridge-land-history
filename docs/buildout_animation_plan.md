@@ -19,15 +19,21 @@ Let users watch Park Ridge fill in over time by animating parcels whose primary 
 5. Display a compact counter: visible parcels, current year, and percent of known-year parcels built.
 6. Add reset and jump-to-decade controls once the basic animation works.
 
-## Implementation Steps
+## Implemented Baseline
 
-1. Extract timeline state into a small hook, for example `useBuildoutTimeline`.
-2. Add `isPlaying`, `animationYear`, `speed`, `play`, `pause`, and `reset` state.
-3. Reuse the existing `maxBuiltYear` filter as the animation year instead of creating a parallel filter.
-4. Use `window.setInterval` or `requestAnimationFrame` with cleanup when playback is active.
-5. Pause animation automatically when the user drags the slider manually.
-6. Add a visual progress strip under the slider showing decade distribution.
-7. Add tests for the pure timeline helpers if year stepping or speed logic becomes non-trivial.
+- Play/pause control beside the existing built-by-year slider.
+- Reset control that returns the map to the earliest valid year.
+- Slow, normal, and fast playback speeds.
+- Cumulative parcel count and percent of known-year parcels built.
+- Manual slider changes pause playback and immediately update the map.
+- Existing decade filters remain active while the animation year acts as the upper bound.
+
+## Future Implementation Steps
+
+1. Extract timeline state into a small hook, for example `useBuildoutTimeline`, if timeline behavior grows.
+2. Add jump-to-decade buttons.
+3. Add a visual progress strip showing decade distribution rather than only cumulative percent.
+4. Add tests for pure timeline helpers if year stepping or speed logic becomes non-trivial.
 
 ## Design Notes
 
@@ -38,8 +44,8 @@ Let users watch Park Ridge fill in over time by animating parcels whose primary 
 
 ## Acceptance Criteria
 
-- Play starts at the earliest valid year and progresses to the latest valid year.
+- Play starts from the current year, or restarts at the earliest valid year when already at the end.
 - Pause freezes the map at the current year.
-- Reset returns to the full configured range or earliest year, depending on selected mode.
+- Reset returns to the earliest valid year.
 - Manual slider changes immediately update the map.
 - The app remains usable with sample data and generated real data.

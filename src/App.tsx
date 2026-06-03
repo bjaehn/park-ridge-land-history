@@ -9,6 +9,13 @@ import { decadeOrder } from "./lib/colorScales";
 import type { ParcelCollection, ParcelFeature } from "./lib/parcelTypes";
 
 const knownDecades = decadeOrder.filter((bucket) => bucket !== "Unknown" && bucket !== "Suspicious");
+const animationIntervals = {
+  slow: 420,
+  normal: 220,
+  fast: 90
+} as const;
+
+type AnimationSpeed = keyof typeof animationIntervals;
 
 export default function App() {
   const [parcels, setParcels] = useState<ParcelCollection | null>(null);
@@ -20,6 +27,8 @@ export default function App() {
   const [showBoundary, setShowBoundary] = useState(true);
   const [maxBuiltYear, setMaxBuiltYear] = useState(2026);
   const [selectedPin, setSelectedPin] = useState<string | null>(null);
+  const [isBuildoutPlaying, setIsBuildoutPlaying] = useState(false);
+  const [animationSpeed, setAnimationSpeed] = useState<AnimationSpeed>("normal");
 
   useEffect(() => {
     async function loadParcels() {
@@ -51,7 +60,24 @@ export default function App() {
 
   useEffect(() => {
     setMaxBuiltYear(yearRange.max);
+    setIsBuildoutPlaying(false);
   }, [yearRange.max]);
+
+  useEffect(() => {
+    if (!isBuildoutPlaying) return;
+
+    const intervalId = window.setInterval(() => {
+      setMaxBuiltYear((currentYear) => {
+        if (currentYear >= yearRange.max) {
+          setIsBuildoutPlaying(false);
+          return yearRange.max;
+        }
+        return currentYear + 1;
+      });
+    }, animationIntervals[animationSpeed]);
+
+    return () => window.clearInterval(intervalId);
+  }, [animationSpeed, isBuildoutPlaying, yearRange.max]);
 
   const filteredParcels = useMemo<ParcelCollection | null>(() => {
     if (!parcels) return null;
@@ -78,6 +104,18 @@ export default function App() {
     );
   }, [filteredParcels]);
 
+  const buildoutStats = useMemo(() => {
+    const knownYears = parcels?.features
+      .map((feature) => feature.properties.year_built)
+      .filter((year): year is number => typeof year === "number" && year >= 1800 && year <= yearRange.max) ?? [];
+    const builtByYear = knownYears.filter((year) => year <= maxBuiltYear).length;
+    return {
+      builtByYear,
+      knownYearTotal: knownYears.length,
+      percentBuilt: knownYears.length ? Math.round((builtByYear / knownYears.length) * 100) : 0
+    };
+  }, [maxBuiltYear, parcels, yearRange.max]);
+
   const selectedParcel = useMemo(() => {
     if (!parcels || !selectedPin) return null;
     return (
@@ -94,6 +132,21 @@ export default function App() {
       if (next.has(decade)) next.delete(decade);
       else next.add(decade);
       return next;
+    });
+  }
+
+  function handleSetMaxBuiltYear(year: number) {
+    setIsBuildoutPlaying(false);
+    setMaxBuiltYear(year);
+  }
+
+  function toggleBuildoutPlayback() {
+    setIsBuildoutPlaying((current) => {
+      if (current) return false;
+      if (maxBuiltYear >= yearRange.max) {
+        setMaxBuiltYear(yearRange.min);
+      }
+      return true;
     });
   }
 
@@ -130,9 +183,20 @@ export default function App() {
           maxBuiltYear={maxBuiltYear}
           minAvailableYear={yearRange.min}
           maxAvailableYear={yearRange.max}
+          isBuildoutPlaying={isBuildoutPlaying}
+          animationSpeed={animationSpeed}
+          builtByYearCount={buildoutStats.builtByYear}
+          knownYearTotal={buildoutStats.knownYearTotal}
+          percentBuilt={buildoutStats.percentBuilt}
           showUnknown={showUnknown}
           onToggleDecade={toggleDecade}
-          onSetMaxBuiltYear={setMaxBuiltYear}
+          onSetMaxBuiltYear={handleSetMaxBuiltYear}
+          onToggleBuildoutPlayback={toggleBuildoutPlayback}
+          onResetBuildout={() => {
+            setIsBuildoutPlaying(false);
+            setMaxBuiltYear(yearRange.min);
+          }}
+          onSetAnimationSpeed={setAnimationSpeed}
           onSetShowUnknown={setShowUnknown}
           onSelectAll={() => setSelectedDecades(new Set(knownDecades))}
           onClearKnown={() => setSelectedDecades(new Set())}
