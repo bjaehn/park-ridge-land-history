@@ -22,13 +22,7 @@ export function summarizeNearbyActivity(
   permitPressureWindow: PermitPressureWindow
 ): NearbyActivitySummary | null {
   if (!selectedParcel || !parcels) return null;
-  const selectedCenter = centerForFeature(selectedParcel);
-  if (!selectedCenter) return null;
-
-  const nearby = parcels.features.filter((feature) => {
-    const center = centerForFeature(feature);
-    return center ? distanceFeet(selectedCenter, center) <= nearbyRadiusFeet : false;
-  });
+  const nearby = nearbyParcels(selectedParcel, parcels, nearbyRadiusFeet);
 
   if (nearby.length === 0) return null;
 
@@ -55,6 +49,30 @@ export function summarizeNearbyActivity(
     signal,
     headline: nearbyHeadline(signal)
   };
+}
+
+export function nearbyParcels(
+  selectedParcel: ParcelFeature,
+  parcels: ParcelCollection,
+  radiusFeet: number = nearbyRadiusFeet
+): ParcelFeature[] {
+  const selectedCenter = centerForFeature(selectedParcel);
+  if (!selectedCenter) return [];
+
+  return parcels.features.filter((feature) => {
+    const center = centerForFeature(feature);
+    return center ? distanceFeet(selectedCenter, center) <= radiusFeet : false;
+  });
+}
+
+export function featureCenter(feature: ParcelFeature): [number, number] | null {
+  return centerForFeature(feature);
+}
+
+export function featureDistanceFeet(left: ParcelFeature, right: ParcelFeature): number | null {
+  const leftCenter = centerForFeature(left);
+  const rightCenter = centerForFeature(right);
+  return leftCenter && rightCenter ? distanceFeet(leftCenter, rightCenter) : null;
 }
 
 function isChangingStability(stabilityType: PermitStabilityType | null | undefined): boolean {

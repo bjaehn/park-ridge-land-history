@@ -3,13 +3,21 @@ import { layerCanToggle, type HistoricalLayer } from "../lib/historicalLayerType
 type CompareYearsPanelProps = {
   layers: HistoricalLayer[];
   compareLayerIds: [string | null, string | null];
+  swipeEnabled: boolean;
+  swipePosition: number;
   onSetCompareLayerIds: (layerIds: [string | null, string | null]) => void;
+  onSetSwipeEnabled: (enabled: boolean) => void;
+  onSetSwipePosition: (position: number) => void;
 };
 
 export function CompareYearsPanel({
   layers,
   compareLayerIds,
-  onSetCompareLayerIds
+  swipeEnabled,
+  swipePosition,
+  onSetCompareLayerIds,
+  onSetSwipeEnabled,
+  onSetSwipePosition
 }: CompareYearsPanelProps) {
   const parcelYearLayers = layers
     .filter((layer) => layer.layerGroup === "parcel_boundaries" && typeof layer.year === "number")
@@ -57,6 +65,27 @@ export function CompareYearsPanel({
       ) : (
         <p className="compare-message">At least two parcel-year layers need data before comparison is map-ready.</p>
       )}
+      <div className="swipe-controls">
+        <label className="check-row check-row-strong">
+          <input
+            type="checkbox"
+            checked={swipeEnabled}
+            onChange={(event) => onSetSwipeEnabled(event.target.checked)}
+          />
+          <span>Then / now swipe</span>
+        </label>
+        <label className="range-control swipe-range">
+          <span>Split {swipePosition}%</span>
+          <input
+            type="range"
+            min={20}
+            max={80}
+            step={1}
+            value={swipePosition}
+            onChange={(event) => onSetSwipePosition(Number(event.target.value))}
+          />
+        </label>
+      </div>
     </div>
   );
 }

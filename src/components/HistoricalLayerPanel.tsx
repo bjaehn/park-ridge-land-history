@@ -15,11 +15,15 @@ type HistoricalLayerPanelProps = {
   activeLayerIds: Set<string>;
   loadedLayers: Record<string, LoadedHistoricalLayer>;
   compareLayerIds: [string | null, string | null];
+  swipeEnabled: boolean;
+  swipePosition: number;
   selectedParcelChange: ParcelChangeFeature | null;
   visibleChangeTypes: Set<ParcelChangeType>;
   onToggleLayer: (layer: HistoricalLayer) => void;
   onSetOpacity: (layerId: string, opacity: number) => void;
   onSetCompareLayerIds: (layerIds: [string | null, string | null]) => void;
+  onSetSwipeEnabled: (enabled: boolean) => void;
+  onSetSwipePosition: (position: number) => void;
   onClearParcelChangeSelection: () => void;
   onToggleChangeType: (changeType: ParcelChangeType) => void;
   onSelectAllChangeTypes: () => void;
@@ -41,11 +45,15 @@ export function HistoricalLayerPanel({
   activeLayerIds,
   loadedLayers,
   compareLayerIds,
+  swipeEnabled,
+  swipePosition,
   selectedParcelChange,
   visibleChangeTypes,
   onToggleLayer,
   onSetOpacity,
   onSetCompareLayerIds,
+  onSetSwipeEnabled,
+  onSetSwipePosition,
   onClearParcelChangeSelection,
   onToggleChangeType,
   onSelectAllChangeTypes,
@@ -65,7 +73,11 @@ export function HistoricalLayerPanel({
       <CompareYearsPanel
         layers={layers}
         compareLayerIds={compareLayerIds}
+        swipeEnabled={swipeEnabled}
+        swipePosition={swipePosition}
         onSetCompareLayerIds={onSetCompareLayerIds}
+        onSetSwipeEnabled={onSetSwipeEnabled}
+        onSetSwipePosition={onSetSwipePosition}
       />
       <ParcelChangeSummaryPanel
         activeLayerIds={activeLayerIds}

@@ -1,6 +1,7 @@
 import { formatFlags, formatNumber, formatYear } from "../lib/formatters";
 import type { PermitPressureWindow } from "../lib/permitPressure";
 import type { ParcelCollection, ParcelFeature } from "../lib/parcelTypes";
+import { BlockStoryCard } from "./BlockStoryCard";
 import { HouseEvolutionTimeline } from "./HouseEvolutionTimeline";
 import { NearbyActivitySummary } from "./NearbyActivitySummary";
 
@@ -58,6 +59,11 @@ export function ParcelDetailPanel({
               </div>
             ))}
           </dl>
+          <BlockStoryCard
+            parcel={parcel}
+            parcels={parcels}
+            permitPressureWindow={permitPressureWindow}
+          />
           <NearbyActivitySummary
             parcel={parcel}
             parcels={parcels}

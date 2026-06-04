@@ -9,6 +9,7 @@ import { mapLibreFillColor, decadeColors } from "../lib/colorScales";
 import { historicalLineColor, historicalLineDash, parcelChangeFillColorExpression } from "../lib/historicalLayerStyles";
 import { baseMapStyle, parkRidgeCenter } from "../lib/mapStyle";
 import type { LoadedHistoricalLayer } from "../lib/historicalLayerTypes";
+import type { HotspotCollection, HotspotFeature, HotspotType } from "../lib/hotspots";
 import {
   parcelChangeLabels,
   type ParcelChangeFeature,
@@ -27,10 +28,15 @@ type MapViewProps = {
   showPermitPressure: boolean;
   permitPressureMapMode: PermitPressureMapMode;
   historicalOverlays: LoadedHistoricalLayer[];
+  swipeEnabled: boolean;
+  swipePosition: number;
+  hotspots: HotspotCollection;
+  selectedHotspot: HotspotFeature | null;
   selectedParcelChange: ParcelChangeFeature | null;
   visibleChangeTypes: Set<ParcelChangeType>;
   onSelectParcel: (feature: ParcelFeature) => void;
   onSelectParcelChange: (feature: ParcelChangeFeature) => void;
+  onSelectHotspot: (feature: HotspotFeature) => void;
 };
 
 const emptyCollection: ParcelCollection = {
@@ -47,17 +53,26 @@ export function MapView({
   showPermitPressure,
   permitPressureMapMode,
   historicalOverlays,
+  swipeEnabled,
+  swipePosition,
+  hotspots,
+  selectedHotspot,
   selectedParcelChange,
   visibleChangeTypes,
   onSelectParcel,
-  onSelectParcelChange
+  onSelectParcelChange,
+  onSelectHotspot
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
+  const swipeContainerRef = useRef<HTMLDivElement | null>(null);
+  const swipeMapRef = useRef<maplibregl.Map | null>(null);
+  const swipeLayerIdsRef = useRef<string[]>([]);
   const historicalLayerIdsRef = useRef<string[]>([]);
   const popupRef = useRef<maplibregl.Popup | null>(null);
   const onSelectParcelRef = useRef(onSelectParcel);
   const onSelectParcelChangeRef = useRef(onSelectParcelChange);
+  const onSelectHotspotRef = useRef(onSelectHotspot);
   const registeredChangeLayerIdsRef = useRef<Set<string>>(new Set());
   const activeChangeLayerIdsRef = useRef<Set<string>>(new Set());
   const [isMapLoaded, setIsMapLoaded] = useState(false);
@@ -68,6 +83,8 @@ export function MapView({
     type: "FeatureCollection",
     features: []
   });
+  const latestHotspotsRef = useRef<HotspotCollection>(hotspots);
+  const latestHistoricalOverlaysRef = useRef<LoadedHistoricalLayer[]>([]);
   const hoveredRef = useRef<GeoJSON.FeatureCollection>({
     type: "FeatureCollection",
     features: []
@@ -80,8 +97,11 @@ export function MapView({
     ? featureCollectionFromFeature(selectedParcelChange)
     : emptyFeatureCollection();
   latestBoundaryRef.current = boundary ?? { type: "FeatureCollection", features: [] };
+  latestHotspotsRef.current = hotspots;
+  latestHistoricalOverlaysRef.current = historicalOverlays;
   onSelectParcelRef.current = onSelectParcel;
   onSelectParcelChangeRef.current = onSelectParcelChange;
+  onSelectHotspotRef.current = onSelectHotspot;
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -122,6 +142,11 @@ export function MapView({
       map.addSource("boundary", {
         type: "geojson",
         data: latestBoundaryRef.current
+      });
+
+      map.addSource("hotspots", {
+        type: "geojson",
+        data: latestHotspotsRef.current
       });
 
       map.addLayer({
@@ -227,6 +252,44 @@ export function MapView({
         }
       });
 
+      map.addLayer({
+        id: "hotspot-circle",
+        type: "circle",
+        source: "hotspots",
+        paint: {
+          "circle-color": hotspotColorExpression(),
+          "circle-radius": [
+            "interpolate",
+            ["linear"],
+            ["coalesce", ["get", "score"], 0],
+            0,
+            7,
+            40,
+            13
+          ],
+          "circle-opacity": 0.88,
+          "circle-stroke-color": "#ffffff",
+          "circle-stroke-width": 2
+        }
+      });
+
+      map.addLayer({
+        id: "hotspot-label",
+        type: "symbol",
+        source: "hotspots",
+        layout: {
+          "text-field": ["get", "title"],
+          "text-size": 11,
+          "text-offset": [0, 1.25],
+          "text-anchor": "top"
+        },
+        paint: {
+          "text-color": "#172033",
+          "text-halo-color": "#ffffff",
+          "text-halo-width": 1.4
+        }
+      });
+
       setIsMapLoaded(true);
     });
 
@@ -262,6 +325,26 @@ export function MapView({
         .addTo(map);
     });
 
+    map.on("mousemove", "hotspot-circle", () => {
+      map.getCanvas().style.cursor = "pointer";
+    });
+
+    map.on("mouseleave", "hotspot-circle", () => {
+      map.getCanvas().style.cursor = "";
+    });
+
+    map.on("click", "hotspot-circle", (event) => {
+      const feature = event.features?.[0] as unknown as HotspotFeature | undefined;
+      if (!feature) return;
+      const coordinates = pointCoordinates(feature);
+      if (!coordinates) return;
+      onSelectHotspotRef.current(feature);
+      popupRef.current
+        ?.setLngLat(coordinates)
+        .setHTML(hotspotPopupHtml(feature.properties))
+        .addTo(map);
+    });
+
     mapRef.current = map;
 
     return () => {
@@ -276,12 +359,13 @@ export function MapView({
     const map = mapRef.current;
     if (!map || !isMapLoaded) return;
 
-    const nextLayerIds = new Set(historicalOverlays.map((overlay) => overlay.layer.id));
+    const mainOverlays = swipeEnabled ? [] : historicalOverlays;
+    const nextLayerIds = new Set(mainOverlays.map((overlay) => overlay.layer.id));
     historicalLayerIdsRef.current
       .filter((layerId) => !nextLayerIds.has(layerId))
       .forEach((layerId) => removeHistoricalLayer(map, layerId));
 
-    historicalOverlays.forEach((overlay) => {
+    mainOverlays.forEach((overlay) => {
       const sourceId = historicalSourceId(overlay.layer.id);
       const rasterLayerId = historicalRasterLayerId(overlay.layer.id);
       const fillLayerId = historicalFillLayerId(overlay.layer.id);
@@ -371,13 +455,59 @@ export function MapView({
     });
 
     activeChangeLayerIdsRef.current = new Set(
-      historicalOverlays
+      mainOverlays
         .filter((overlay) => overlay.data && hasChangeType(overlay.data))
         .map((overlay) => historicalFillLayerId(overlay.layer.id))
     );
     historicalLayerIdsRef.current = Array.from(nextLayerIds);
     raiseSelectionLayers(map);
-  }, [historicalOverlays, isMapLoaded, visibleChangeTypes]);
+  }, [historicalOverlays, isMapLoaded, swipeEnabled, visibleChangeTypes]);
+
+  useEffect(() => {
+    const mainMap = mapRef.current;
+    const container = swipeContainerRef.current;
+    if (!swipeEnabled || !container || !mainMap || swipeMapRef.current) return;
+
+    const swipeMap = new maplibregl.Map({
+      container,
+      style: baseMapStyle,
+      center: mainMap.getCenter(),
+      zoom: mainMap.getZoom(),
+      bearing: mainMap.getBearing(),
+      pitch: mainMap.getPitch(),
+      interactive: false,
+      attributionControl: false
+    });
+
+    const syncSwipeMap = () => {
+      if (!swipeMapRef.current || !mapRef.current) return;
+      swipeMapRef.current.jumpTo({
+        center: mapRef.current.getCenter(),
+        zoom: mapRef.current.getZoom(),
+        bearing: mapRef.current.getBearing(),
+        pitch: mapRef.current.getPitch()
+      });
+    };
+
+    mainMap.on("move", syncSwipeMap);
+    swipeMap.on("load", () => {
+      swipeMapRef.current = swipeMap;
+      syncSwipeMap();
+      updateSwipeHistoricalLayers(swipeMap, latestHistoricalOverlaysRef.current, swipeLayerIdsRef.current);
+    });
+
+    return () => {
+      mainMap.off("move", syncSwipeMap);
+      swipeLayerIdsRef.current = [];
+      swipeMap.remove();
+      swipeMapRef.current = null;
+    };
+  }, [swipeEnabled]);
+
+  useEffect(() => {
+    if (!swipeEnabled || !swipeMapRef.current) return;
+    updateSwipeHistoricalLayers(swipeMapRef.current, historicalOverlays, swipeLayerIdsRef.current);
+  }, [historicalOverlays, swipeEnabled]);
 
   useEffect(() => {
     const source = mapRef.current?.getSource("parcels") as GeoJSONSource | undefined;
@@ -427,6 +557,27 @@ export function MapView({
   }, [boundary]);
 
   useEffect(() => {
+    const source = mapRef.current?.getSource("hotspots") as GeoJSONSource | undefined;
+    source?.setData(hotspots);
+  }, [hotspots]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !selectedHotspot) return;
+    const coordinates = pointCoordinates(selectedHotspot);
+    if (!coordinates) return;
+    map.easeTo({
+      center: coordinates,
+      zoom: Math.max(map.getZoom(), 15),
+      duration: 650
+    });
+    popupRef.current
+      ?.setLngLat(coordinates)
+      .setHTML(hotspotPopupHtml(selectedHotspot.properties))
+      .addTo(map);
+  }, [selectedHotspot]);
+
+  useEffect(() => {
     if (mapRef.current?.getLayer("parcel-outline")) {
       mapRef.current.setPaintProperty("parcel-outline", "line-opacity", showOutlines ? 0.55 : 0);
     }
@@ -453,7 +604,26 @@ export function MapView({
     }
   }, [permitPressureMapMode, showPermitPressure]);
 
-  return <div ref={containerRef} className="map-canvas" aria-label="Park Ridge parcel map" />;
+  return (
+    <>
+      <div ref={containerRef} className="map-canvas" aria-label="Park Ridge parcel map" />
+      {swipeEnabled && (
+        <div
+          className="swipe-map-shell"
+          style={{ width: `${swipePosition}%` }}
+          aria-hidden="true"
+        >
+          <div ref={swipeContainerRef} className="swipe-map-canvas" />
+        </div>
+      )}
+      {swipeEnabled && (
+        <div className="swipe-divider" style={{ left: `${swipePosition}%` }} aria-hidden="true">
+          <span>Then</span>
+          <span>Now</span>
+        </div>
+      )}
+    </>
+  );
 }
 
 function addLayer(
@@ -508,6 +678,70 @@ function removeHistoricalLayer(map: maplibregl.Map, layerId: string): void {
 
   const sourceId = historicalSourceId(layerId);
   if (map.getSource(sourceId)) map.removeSource(sourceId);
+}
+
+function updateSwipeHistoricalLayers(
+  map: maplibregl.Map,
+  overlays: LoadedHistoricalLayer[],
+  registeredLayerIds: string[]
+): void {
+  const nextLayerIds = new Set(overlays.map((overlay) => overlay.layer.id));
+  registeredLayerIds
+    .filter((layerId) => !nextLayerIds.has(layerId))
+    .forEach((layerId) => removeHistoricalLayer(map, layerId));
+
+  overlays.forEach((overlay) => {
+    if (overlay.layer.tileUrl) {
+      const sourceId = historicalSourceId(overlay.layer.id);
+      const rasterLayerId = historicalRasterLayerId(overlay.layer.id);
+      if (!map.getSource(sourceId)) {
+        map.addSource(sourceId, {
+          type: "raster",
+          tiles: [overlay.layer.tileUrl],
+          tileSize: 256,
+          attribution: overlay.layer.attribution
+        });
+      }
+      if (!map.getLayer(rasterLayerId)) {
+        addLayer(map, {
+          id: rasterLayerId,
+          type: "raster",
+          source: sourceId,
+          paint: { "raster-opacity": overlay.opacity }
+        });
+      } else {
+        map.setPaintProperty(rasterLayerId, "raster-opacity", overlay.opacity);
+      }
+      return;
+    }
+
+    if (!overlay.data) return;
+    const sourceId = historicalSourceId(overlay.layer.id);
+    const lineLayerId = historicalLineLayerId(overlay.layer.id);
+    const source = map.getSource(sourceId) as GeoJSONSource | undefined;
+    if (source) {
+      source.setData(overlay.data);
+    } else {
+      map.addSource(sourceId, { type: "geojson", data: overlay.data });
+    }
+    if (!map.getLayer(lineLayerId)) {
+      addLayer(map, {
+        id: lineLayerId,
+        type: "line",
+        source: sourceId,
+        paint: {
+          "line-color": historicalLineColor(overlay.layer),
+          "line-width": hasChangeType(overlay.data) ? 2.2 : 2,
+          "line-opacity": overlay.opacity,
+          "line-dasharray": historicalLineDash(overlay.layer)
+        }
+      });
+    } else {
+      map.setPaintProperty(lineLayerId, "line-opacity", overlay.opacity);
+    }
+  });
+
+  registeredLayerIds.splice(0, registeredLayerIds.length, ...Array.from(nextLayerIds));
 }
 
 function historicalSourceId(layerId: string): string {
@@ -594,6 +828,17 @@ function permitPressureFillOpacityExpression(
   ] as ExpressionSpecification;
 }
 
+function hotspotColorExpression(): ExpressionSpecification {
+  const colors: Record<HotspotType, string> = {
+    teardown_cluster: "#b91c1c",
+    changing_area: "#c65f2d",
+    old_home_pocket: "#5f6f2e",
+    stable_area: "#3f7d58"
+  };
+  const matchValues = Object.entries(colors).flatMap(([type, color]) => [type, color]);
+  return ["match", ["get", "hotspot_type"], ...matchValues, "#246a73"] as unknown as ExpressionSpecification;
+}
+
 function raiseSelectionLayers(map: maplibregl.Map): void {
   [
     "selected-parcel-fill",
@@ -658,6 +903,11 @@ function collectPositions(value: unknown, positions: [number, number][]): void {
   value.forEach((item) => collectPositions(item, positions));
 }
 
+function pointCoordinates(feature: HotspotFeature): [number, number] | null {
+  const [lng, lat] = feature.geometry.coordinates;
+  return typeof lng === "number" && typeof lat === "number" ? [lng, lat] : null;
+}
+
 function parcelChangePopupHtml(properties: ParcelChangeFeature["properties"]): string {
   const changeType = properties.change_type as ParcelChangeType | undefined;
   const label = changeType ? parcelChangeLabels[changeType] ?? String(changeType) : "Unknown";
@@ -670,6 +920,19 @@ function parcelChangePopupHtml(properties: ParcelChangeFeature["properties"]): s
         ${popupRow("Confidence", formatConfidence(properties.confidence))}
         ${popupRow("Years", formatChangeYears(properties.old_year, properties.new_year))}
         ${popupRow("Area change", formatAreaChange(properties.area_change_pct))}
+      </dl>
+    </div>
+  `;
+}
+
+function hotspotPopupHtml(properties: HotspotFeature["properties"]): string {
+  return `
+    <div class="parcel-popup">
+      <h3>${escapeHtml(properties.title)}</h3>
+      <p>${escapeHtml(properties.description)}</p>
+      <dl>
+        ${popupRow("Parcels", String(properties.parcel_count))}
+        ${popupRow("Score", Math.round(properties.score).toLocaleString())}
       </dl>
     </div>
   `;

@@ -6,6 +6,7 @@ import { Legend } from "./components/Legend";
 import { MapView } from "./components/MapView";
 import { DecadeDistributionChart } from "./components/DecadeDistributionChart";
 import { HistoricalLayerPanel } from "./components/HistoricalLayerPanel";
+import { HotspotPanel } from "./components/HotspotPanel";
 import { ParcelDetailPanel } from "./components/ParcelDetailPanel";
 import { SearchPanel } from "./components/SearchPanel";
 import { TimelineControl } from "./components/TimelineControl";
@@ -13,6 +14,7 @@ import { VisualizationPanel, type VisualizationPreset } from "./components/Visua
 import { decadeOrder } from "./lib/colorScales";
 import { loadHistoricalLayerData, loadHistoricalLayerManifest } from "./lib/layerLoaders";
 import { layerCanToggle, type HistoricalLayer, type LoadedHistoricalLayer } from "./lib/historicalLayerTypes";
+import { buildHotspots, type HotspotFeature } from "./lib/hotspots";
 import {
   parcelChangeFilterOrder,
   parcelChangeLayerId,
@@ -57,6 +59,9 @@ export default function App() {
     "cook_parcels_2000",
     "cook_parcels_2021"
   ]);
+  const [swipeEnabled, setSwipeEnabled] = useState(false);
+  const [swipePosition, setSwipePosition] = useState(50);
+  const [selectedHotspot, setSelectedHotspot] = useState<HotspotFeature | null>(null);
 
   useEffect(() => {
     async function loadParcels() {
@@ -127,6 +132,11 @@ export default function App() {
   const pressureDecoratedParcels = useMemo(
     () => decoratePermitPressure(parcels, permitPressureWindow),
     [parcels, permitPressureWindow]
+  );
+
+  const hotspots = useMemo(
+    () => buildHotspots(pressureDecoratedFilteredParcels),
+    [pressureDecoratedFilteredParcels]
   );
 
   const visibleLegendBuckets = useMemo(() => {
@@ -279,6 +289,23 @@ export default function App() {
     selectedLayers.forEach((layer) => void ensureHistoricalLayerLoaded(layer));
   }
 
+  function setComparisonSwipeEnabled(enabled: boolean) {
+    setSwipeEnabled(enabled);
+    if (!enabled) return;
+    const selectedLayers = compareLayerIds
+      .filter((layerId): layerId is string => Boolean(layerId))
+      .map((layerId) => historicalLayers.find((layer) => layer.id === layerId))
+      .filter((layer): layer is HistoricalLayer => Boolean(layer))
+      .filter(layerCanToggle);
+
+    setActiveHistoricalLayerIds((current) => {
+      const next = new Set(current);
+      selectedLayers.forEach((layer) => next.add(layer.id));
+      return next;
+    });
+    selectedLayers.forEach((layer) => void ensureHistoricalLayerLoaded(layer));
+  }
+
   function selectVisualizationPreset(preset: VisualizationPreset) {
     setIsBuildoutPlaying(false);
     if (preset !== "buildout") setMaxBuiltYear(yearRange.max);
@@ -316,10 +343,15 @@ export default function App() {
         showPermitPressure={showPermitPressure}
         permitPressureMapMode={permitPressureMapMode}
         historicalOverlays={historicalOverlays}
+        swipeEnabled={swipeEnabled}
+        swipePosition={swipePosition}
+        hotspots={hotspots}
+        selectedHotspot={selectedHotspot}
         selectedParcelChange={selectedParcelChange}
         visibleChangeTypes={visibleChangeTypes}
         onSelectParcel={selectParcel}
         onSelectParcelChange={setSelectedParcelChange}
+        onSelectHotspot={setSelectedHotspot}
       />
       <aside className="control-panel">
         <header className="app-header">
@@ -348,6 +380,11 @@ export default function App() {
             parcels={pressureDecoratedParcels}
             permitPressureWindow={permitPressureWindow}
             onClearSelection={() => setSelectedPin(null)}
+          />
+          <HotspotPanel
+            hotspots={hotspots}
+            selectedHotspotId={selectedHotspot?.properties.id ?? null}
+            onSelectHotspot={setSelectedHotspot}
           />
         </AccordionSection>
 
@@ -402,11 +439,15 @@ export default function App() {
             activeLayerIds={activeHistoricalLayerIds}
             loadedLayers={loadedHistoricalLayers}
             compareLayerIds={compareLayerIds}
+            swipeEnabled={swipeEnabled}
+            swipePosition={swipePosition}
             selectedParcelChange={selectedParcelChange}
             visibleChangeTypes={visibleChangeTypes}
             onToggleLayer={toggleHistoricalLayer}
             onSetOpacity={setHistoricalLayerOpacity}
             onSetCompareLayerIds={handleSetCompareLayerIds}
+            onSetSwipeEnabled={setComparisonSwipeEnabled}
+            onSetSwipePosition={setSwipePosition}
             onClearParcelChangeSelection={() => setSelectedParcelChange(null)}
             onToggleChangeType={toggleChangeType}
             onSelectAllChangeTypes={() => setVisibleChangeTypes(new Set(parcelChangeFilterOrder))}
