@@ -19,13 +19,14 @@ export function SearchPanel({
 }: SearchPanelProps) {
   const [query, setQuery] = useState("");
   const normalizedQuery = normalizeSearch(query);
+  const hasAddressData = Boolean(parcels?.features.some((feature) => feature.properties.address));
 
   const results = useMemo(() => {
     if (!parcels || normalizedQuery.length < 2) return [];
     return parcels.features
-      .filter((feature) => featureMatchesQuery(feature, normalizedQuery))
+      .filter((feature) => featureMatchesQuery(feature, query, normalizedQuery))
       .slice(0, 8);
-  }, [normalizedQuery, parcels]);
+  }, [normalizedQuery, parcels, query]);
 
   return (
     <section className="panel-section" aria-label="Parcel search">
@@ -46,6 +47,9 @@ export function SearchPanel({
           onChange={(event) => setQuery(event.target.value)}
         />
       </label>
+      {!hasAddressData && parcels && (
+        <p className="quiet-note search-hint">Address data is unavailable; search by PIN.</p>
+      )}
 
       {normalizedQuery.length >= 2 && (
         <div className="search-results" role="list">
@@ -77,15 +81,36 @@ export function SearchPanel({
   );
 }
 
-function featureMatchesQuery(feature: ParcelFeature, normalizedQuery: string): boolean {
+function featureMatchesQuery(feature: ParcelFeature, query: string, normalizedQuery: string): boolean {
   const address = normalizeSearch(feature.properties.address);
   const pin = normalizeSearch(feature.properties.pin_normalized);
   const originalPin = normalizeSearch(feature.properties.pin_original);
-  return address.includes(normalizedQuery) || pin.includes(normalizedQuery) || originalPin.includes(normalizedQuery);
+  return (
+    address.includes(normalizedQuery)
+    || addressMatchesTokens(feature.properties.address, query)
+    || pin.includes(normalizedQuery)
+    || originalPin.includes(normalizedQuery)
+  );
 }
 
 function normalizeSearch(value?: string | null): string {
   return String(value ?? "")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "");
+}
+
+function addressMatchesTokens(address: string | null | undefined, query: string): boolean {
+  const queryTokens = searchTokens(query);
+  if (queryTokens.length === 0) return false;
+  const addressTokens = searchTokens(address);
+  return queryTokens.every((queryToken) =>
+    addressTokens.some((addressToken) => addressToken.startsWith(queryToken))
+  );
+}
+
+function searchTokens(value?: string | null): string[] {
+  return String(value ?? "")
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean);
 }

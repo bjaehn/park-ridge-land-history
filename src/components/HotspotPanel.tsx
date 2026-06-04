@@ -2,12 +2,14 @@ import type { HotspotCollection, HotspotFeature } from "../lib/hotspots";
 
 type HotspotPanelProps = {
   hotspots: HotspotCollection;
+  enabled: boolean;
   selectedHotspotId: string | null;
   onSelectHotspot: (hotspot: HotspotFeature) => void;
 };
 
 export function HotspotPanel({
   hotspots,
+  enabled,
   selectedHotspotId,
   onSelectHotspot
 }: HotspotPanelProps) {
@@ -16,7 +18,9 @@ export function HotspotPanel({
   return (
     <section className="panel-section hotspot-section" aria-label="Interesting places">
       <h2>Interesting Places</h2>
-      {visibleHotspots.length === 0 ? (
+      {!enabled ? (
+        <p className="quiet-note hotspot-empty">Turn on Teardown and trend clusters in Map Layers to show teardown, change, and old-home pockets.</p>
+      ) : visibleHotspots.length === 0 ? (
         <p className="quiet-note hotspot-empty">No hotspots in the current view.</p>
       ) : (
         <div className="hotspot-list">

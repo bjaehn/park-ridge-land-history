@@ -47,6 +47,14 @@ def test_real_2000_to_2021_change_layer_has_expected_candidate_types():
     }.issubset(change_types)
 
 
+def test_public_parcels_include_searchable_addresses():
+    payload = json.loads(Path("public/data/park_ridge_parcels_enriched.geojson").read_text())
+    addresses = [feature["properties"].get("address") for feature in payload["features"]]
+
+    assert sum(1 for address in addresses if address) > 10000
+    assert any("VINE" in address for address in addresses if address)
+
+
 def test_historic_character_layer_has_century_home_candidates():
     payload = json.loads(Path("public/data/historical/park_ridge_historic_character.geojson").read_text())
     properties = [feature["properties"] for feature in payload["features"]]

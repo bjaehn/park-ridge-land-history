@@ -63,6 +63,14 @@ DATA_SOURCES: list[DataSource] = [
         description="Optional parcel metadata, addresses, property classes, and municipality fields."
     ),
     DataSource(
+        name="Cook County Assessor parcel addresses",
+        env_url="ASSESSOR_PARCEL_ADDRESSES_SOURCE_URL",
+        env_path="ASSESSOR_PARCEL_ADDRESSES_LOCAL_PATH",
+        default_path=Path("data/raw/assessor_parcel_addresses.csv"),
+        required_for_build=False,
+        description="Assessor parcel situs addresses used for address search and parcel labels."
+    ),
+    DataSource(
         name="Park Ridge municipal boundary",
         env_url="PARK_RIDGE_BOUNDARY_SOURCE_URL",
         env_path="PARK_RIDGE_BOUNDARY_LOCAL_PATH",

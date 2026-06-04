@@ -25,7 +25,14 @@ from scripts.pipeline_utils import (
 )
 
 LAND_SQFT_COLUMN_CANDIDATES = ("land_sqft", "char_land_sf", "land_square_feet", "land_sf", "land_area", "lot_sqft")
-ADDRESS_COLUMN_CANDIDATES = ("address", "property_address", "site_address", "mail_address", "addr")
+ADDRESS_COLUMN_CANDIDATES = (
+    "address",
+    "property_address",
+    "site_address",
+    "prop_address_full",
+    "mail_address",
+    "addr",
+)
 MUNICIPALITY_COLUMN_CANDIDATES = (
     "municipality",
     "city",
@@ -308,6 +315,29 @@ def enrich_with_universe(primary: pd.DataFrame, universe: pd.DataFrame) -> pd.Da
     return joined
 
 
+def enrich_with_addresses(primary: pd.DataFrame, addresses: pd.DataFrame) -> pd.DataFrame:
+    pin_column = find_likely_column(addresses.columns, PIN_COLUMN_CANDIDATES)
+    address_column = find_likely_column(addresses.columns, ADDRESS_COLUMN_CANDIDATES)
+    if not pin_column or not address_column:
+        print("Assessor address file found, but no likely PIN/address columns were detected.")
+        return primary
+
+    normalized = add_normalized_pin_columns(addresses.copy(), pin_column)
+    normalized["address_source_rank"] = normalized[address_column].isna().astype(int)
+    address_small = (
+        normalized.dropna(subset=["pin_normalized"])
+        .sort_values(["pin_normalized", "address_source_rank"])
+        .drop_duplicates("pin_normalized")
+        [["pin_normalized", address_column]]
+        .rename(columns={address_column: "address_assessor"})
+    )
+    joined = primary.merge(address_small, on="pin_normalized", how="left")
+    if "address" not in joined:
+        joined["address"] = None
+    joined["address"] = joined["address"].combine_first(joined["address_assessor"])
+    return joined.drop(columns=["address_assessor"], errors="ignore")
+
+
 def filter_to_municipality(parcels: Any, boundary_path: Path | None, metadata: pd.DataFrame | None) -> tuple[Any, str]:
     import geopandas as gpd
 
@@ -371,6 +401,11 @@ def build_dataset() -> None:
     if universe_path:
         universe = pd.DataFrame(read_table(universe_path).drop(columns="geometry", errors="ignore"))
         primary = enrich_with_universe(primary, universe)
+
+    addresses_path = optional_source("Cook County Assessor parcel addresses")
+    if addresses_path:
+        addresses = pd.DataFrame(read_table(addresses_path).drop(columns="geometry", errors="ignore"))
+        primary = enrich_with_addresses(primary, addresses)
 
     filtered_parcels, filter_method = filter_to_municipality(
         parcels,

@@ -17,6 +17,7 @@ from scripts.data_sources import PROJECT_ROOT
 from scripts.pipeline_utils import normalize_pin
 
 SOCRATA_UNIVERSE = "https://datacatalog.cookcountyil.gov/resource/nj4t-kc8j.json"
+SOCRATA_ADDRESSES = "https://datacatalog.cookcountyil.gov/resource/3723-97qp.json"
 SOCRATA_IMPROVEMENTS = "https://datacatalog.cookcountyil.gov/resource/x54s-btds.json"
 SOCRATA_PERMITS = "https://datacatalog.cookcountyil.gov/resource/6yjf-dfxs.json"
 PARCEL_FEATURE_SERVER = "https://gis.cookcountyil.gov/hosting/rest/services/Hosted/Parcel/FeatureServer/0/query"
@@ -70,6 +71,16 @@ PERMIT_FIELDS = [
     "work_description",
 ]
 
+ADDRESS_FIELDS = [
+    "pin",
+    "pin10",
+    "year",
+    "prop_address_full",
+    "prop_address_city_name",
+    "prop_address_state",
+    "prop_address_zipcode_1",
+]
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(
@@ -92,6 +103,7 @@ def main() -> None:
     universe_path = raw_dir / "parcel_universe.csv"
     improvements_path = raw_dir / "assessor_improvements.csv"
     permits_path = raw_dir / "assessor_permits.csv"
+    addresses_path = raw_dir / "assessor_parcel_addresses.csv"
     parcels_path = raw_dir / "cook_county_parcels.geojson"
 
     universe_rows = fetch_universe(args.municipality, year)
@@ -112,6 +124,9 @@ def main() -> None:
 
     improvement_rows = fetch_improvements(pins, year, args.chunk_size)
     write_csv(improvements_path, improvement_rows, IMPROVEMENT_FIELDS, args.force)
+
+    address_rows = fetch_addresses(args.municipality, year)
+    write_csv(addresses_path, address_rows, ADDRESS_FIELDS, args.force)
 
     permit_rows = fetch_permits(pins, args.chunk_size)
     write_csv(permits_path, permit_rows, PERMIT_FIELDS, args.force)
@@ -166,6 +181,19 @@ def fetch_improvements(pins: list[str], year: str, chunk_size: int) -> list[dict
         )
         print_progress(index, len(pins), chunk_size, "improvement chunks")
     return rows
+
+
+def fetch_addresses(municipality: str, year: str) -> list[dict[str, Any]]:
+    print("Downloading assessor parcel address rows...")
+    city_name = municipality.removeprefix("CITY OF ").upper()
+    return socrata_get_all(
+        SOCRATA_ADDRESSES,
+        {
+            "$select": ",".join(ADDRESS_FIELDS),
+            "$where": f"prop_address_city_name='{city_name}' and year={year}",
+            "$order": "pin",
+        },
+    )
 
 
 def fetch_permits(pins: list[str], chunk_size: int) -> list[dict[str, Any]]:

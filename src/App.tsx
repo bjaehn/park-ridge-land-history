@@ -8,13 +8,14 @@ import { DecadeDistributionChart } from "./components/DecadeDistributionChart";
 import { HistoricalLayerPanel } from "./components/HistoricalLayerPanel";
 import { HotspotPanel } from "./components/HotspotPanel";
 import { ParcelDetailPanel } from "./components/ParcelDetailPanel";
+import { ProductGuide } from "./components/ProductGuide";
 import { SearchPanel } from "./components/SearchPanel";
 import { TimelineControl } from "./components/TimelineControl";
 import { VisualizationPanel, type VisualizationPreset } from "./components/VisualizationPanel";
 import { decadeOrder } from "./lib/colorScales";
 import { loadHistoricalLayerData, loadHistoricalLayerManifest } from "./lib/layerLoaders";
 import { layerCanToggle, type HistoricalLayer, type LoadedHistoricalLayer } from "./lib/historicalLayerTypes";
-import { buildHotspots, type HotspotFeature } from "./lib/hotspots";
+import { buildHotspots, type HotspotCollection, type HotspotFeature } from "./lib/hotspots";
 import {
   parcelChangeFilterOrder,
   parcelChangeLayerId,
@@ -33,6 +34,11 @@ const animationIntervals = {
 
 type AnimationSpeed = keyof typeof animationIntervals;
 
+const emptyHotspots: HotspotCollection = {
+  type: "FeatureCollection",
+  features: []
+};
+
 export default function App() {
   const [parcels, setParcels] = useState<ParcelCollection | null>(null);
   const [boundary, setBoundary] = useState<GeoJSON.FeatureCollection | null>(null);
@@ -42,6 +48,7 @@ export default function App() {
   const [showOutlines, setShowOutlines] = useState(true);
   const [showBoundary, setShowBoundary] = useState(true);
   const [showPermitPressure, setShowPermitPressure] = useState(true);
+  const [showHotspots, setShowHotspots] = useState(false);
   const [permitPressureWindow, setPermitPressureWindow] = useState<PermitPressureWindow>(5);
   const [permitPressureMapMode, setPermitPressureMapMode] = useState<PermitPressureMapMode>("stability");
   const [maxBuiltYear, setMaxBuiltYear] = useState(2026);
@@ -138,6 +145,12 @@ export default function App() {
     () => buildHotspots(pressureDecoratedFilteredParcels),
     [pressureDecoratedFilteredParcels]
   );
+
+  const mapHotspots = showHotspots ? hotspots : emptyHotspots;
+
+  useEffect(() => {
+    if (!showHotspots) setSelectedHotspot(null);
+  }, [showHotspots]);
 
   const visibleLegendBuckets = useMemo(() => {
     const buckets = new Set(selectedDecades);
@@ -345,8 +358,8 @@ export default function App() {
         historicalOverlays={historicalOverlays}
         swipeEnabled={swipeEnabled}
         swipePosition={swipePosition}
-        hotspots={hotspots}
-        selectedHotspot={selectedHotspot}
+        hotspots={mapHotspots}
+        selectedHotspot={showHotspots ? selectedHotspot : null}
         selectedParcelChange={selectedParcelChange}
         visibleChangeTypes={visibleChangeTypes}
         onSelectParcel={selectParcel}
@@ -359,6 +372,7 @@ export default function App() {
           <h1>Park Ridge Land History</h1>
         </header>
         <AccordionSection title="Overview" summary="Counts and distribution" defaultOpen>
+          <ProductGuide />
           <FilterPanel
             parcels={parcels}
             filteredCount={filteredParcels?.features.length ?? 0}
@@ -383,6 +397,7 @@ export default function App() {
           />
           <HotspotPanel
             hotspots={hotspots}
+            enabled={showHotspots}
             selectedHotspotId={selectedHotspot?.properties.id ?? null}
             onSelectHotspot={setSelectedHotspot}
           />
@@ -423,11 +438,13 @@ export default function App() {
             showOutlines={showOutlines}
             showBoundary={showBoundary}
             showPermitPressure={showPermitPressure}
+            showHotspots={showHotspots}
             permitPressureWindow={permitPressureWindow}
             permitPressureMapMode={permitPressureMapMode}
             onSetShowOutlines={setShowOutlines}
             onSetShowBoundary={setShowBoundary}
             onSetShowPermitPressure={setShowPermitPressure}
+            onSetShowHotspots={setShowHotspots}
             onSetPermitPressureWindow={setPermitPressureWindow}
             onSetPermitPressureMapMode={setPermitPressureMapMode}
           />
