@@ -45,3 +45,6 @@ def test_built_environment_layers_are_map_ready():
     assert layers["park_ridge_historic_character"]["dataPath"] == "/data/historical/park_ridge_historic_character.geojson"
     assert layers["cook_county_building_footprints_2017"]["layerGroup"] == "built_environment"
     assert layers["park_ridge_lot_coverage"]["layerGroup"] == "built_environment"
+    assert layers["park_ridge_historic_character"]["renderMode"] == "highlight"
+    assert layers["cook_county_building_footprints_2017"]["renderMode"] == "footprint"
+    assert layers["park_ridge_lot_coverage"]["renderMode"] == "parcel_heat"

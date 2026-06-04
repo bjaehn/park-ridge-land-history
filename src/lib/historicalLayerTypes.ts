@@ -27,6 +27,13 @@ export type HistoricalLayerGroup =
   | "sanborn"
   | "reference";
 
+export type HistoricalLayerRenderMode =
+  | "line"
+  | "change_candidates"
+  | "parcel_heat"
+  | "footprint"
+  | "highlight";
+
 export type HistoricalLayer = {
   id: string;
   name: string;
@@ -44,6 +51,7 @@ export type HistoricalLayer = {
   tileUrl?: string;
   bounds?: [number, number, number, number];
   opacityDefault?: number;
+  renderMode?: HistoricalLayerRenderMode;
   enabledDefault?: boolean;
   requiresGeoreferencing?: boolean;
   notes?: string;

@@ -259,6 +259,7 @@
       "layerGroup": "local_history",
       "dataPath": "/data/historical/park_ridge_historic_character.geojson",
       "opacityDefault": 0.68,
+      "renderMode": "highlight",
       "notes": "Derived from assessor year_built as of 2026. This is not an official City of Park Ridge landmark or 100-year-home designation."
     },
     {
@@ -275,6 +276,7 @@
       "layerGroup": "built_environment",
       "dataPath": "/data/historical/cook_county_building_footprints_2017.geojson",
       "opacityDefault": 0.72,
+      "renderMode": "footprint",
       "notes": "Downloaded from the Cook County building footprint service and clipped to Park Ridge. The source service includes capture-year and height-style fields where available."
     },
     {
@@ -289,6 +291,7 @@
       "layerGroup": "built_environment",
       "dataPath": "/data/historical/park_ridge_lot_coverage.geojson",
       "opacityDefault": 0.58,
+      "renderMode": "parcel_heat",
       "notes": "Computed by assigning building footprint representative points to parcels. It is a planning insight layer, not a zoning determination."
     },
     {
@@ -317,6 +320,7 @@
       "layerGroup": "parcel_boundaries",
       "dataPath": "/data/historical/parcel_changes_2000_2021.geojson",
       "opacityDefault": 0.55,
+      "renderMode": "change_candidates",
       "notes": "Change types are spatial candidates and need verification against recorded plats, tax records, and survey evidence."
     },
     {
