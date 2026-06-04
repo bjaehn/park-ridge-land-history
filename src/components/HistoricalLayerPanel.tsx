@@ -67,9 +67,9 @@ export function HistoricalLayerPanel({
 
   return (
     <section className="panel-section historical-panel" aria-label="Historical evidence layers">
-      <h2>Historical Layers</h2>
+      <h2>Optional Data Layers</h2>
       <p className="historical-note">
-        Historical layers are evidence sources. Assessor year built helps date structures, but it is not a subdivision date.
+        Turn these on when you want extra evidence above the current map mode. Start with one or two layers at a time.
       </p>
       <CompareYearsPanel
         layers={layers}

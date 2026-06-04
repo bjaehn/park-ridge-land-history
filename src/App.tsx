@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { AnalysisTabs, type AnalysisScale } from "./components/AnalysisTabs";
 import { AccordionSection } from "./components/AccordionSection";
 import { FilterPanel } from "./components/FilterPanel";
 import { LayerToggle } from "./components/LayerToggle";
@@ -69,6 +70,7 @@ export default function App() {
   const [swipeEnabled, setSwipeEnabled] = useState(false);
   const [swipePosition, setSwipePosition] = useState(50);
   const [selectedHotspot, setSelectedHotspot] = useState<HotspotFeature | null>(null);
+  const [activeAnalysisScale, setActiveAnalysisScale] = useState<AnalysisScale>("home");
 
   useEffect(() => {
     async function loadParcels() {
@@ -226,6 +228,12 @@ export default function App() {
 
   function selectParcel(feature: ParcelFeature) {
     setSelectedPin(feature.properties.pin_normalized || feature.properties.pin_original || null);
+    setActiveAnalysisScale("home");
+  }
+
+  function selectHotspot(hotspot: HotspotFeature) {
+    setSelectedHotspot(hotspot);
+    setActiveAnalysisScale("cluster");
   }
 
   function toggleChangeType(changeType: ParcelChangeType) {
@@ -364,78 +372,96 @@ export default function App() {
         visibleChangeTypes={visibleChangeTypes}
         onSelectParcel={selectParcel}
         onSelectParcelChange={setSelectedParcelChange}
-        onSelectHotspot={setSelectedHotspot}
+        onSelectHotspot={selectHotspot}
       />
+      <div className="map-legend-overlay">
+        <Legend
+          visibleDecades={visibleLegendBuckets}
+          showParcelChangeLegend={activeHistoricalLayerIds.has(parcelChangeLayerId)}
+          visibleChangeTypes={visibleChangeTypes}
+          showPermitPressureLegend={showPermitPressure}
+          permitPressureMapMode={permitPressureMapMode}
+          compact
+        />
+      </div>
       <aside className="control-panel">
         <header className="app-header">
           <p>Local prototype</p>
           <h1>Park Ridge Land History</h1>
         </header>
-        <AccordionSection title="Start Here" summary="Pick an analysis scale" defaultOpen>
-          <ProductGuide />
-        </AccordionSection>
+        <ProductGuide />
+        <AnalysisTabs activeScale={activeAnalysisScale} onSetScale={setActiveAnalysisScale} />
 
-        <AccordionSection title="Single Home Analysis" summary={selectedParcel ? "Home selected" : "Search one address"} defaultOpen>
-          <SearchPanel
-            parcels={parcels}
-            selectedPin={selectedPin}
-            visiblePins={visiblePins}
-            onSelectParcel={selectParcel}
-            onClearSelection={() => setSelectedPin(null)}
-          />
-          <ParcelDetailPanel
-            parcel={selectedParcel}
-            parcels={pressureDecoratedParcels}
-            permitPressureWindow={permitPressureWindow}
-            onClearSelection={() => setSelectedPin(null)}
-          />
-        </AccordionSection>
+        <div className="analysis-tab-panel" role="tabpanel">
+          {activeAnalysisScale === "home" && (
+            <>
+              <SearchPanel
+                parcels={parcels}
+                selectedPin={selectedPin}
+                visiblePins={visiblePins}
+                onSelectParcel={selectParcel}
+                onClearSelection={() => setSelectedPin(null)}
+              />
+              <ParcelDetailPanel
+                parcel={selectedParcel}
+                parcels={pressureDecoratedParcels}
+                permitPressureWindow={permitPressureWindow}
+                onClearSelection={() => setSelectedPin(null)}
+              />
+            </>
+          )}
 
-        <AccordionSection title="Cluster Analysis" summary={showHotspots ? "Clusters on" : "Clusters off"}>
-          <HotspotPanel
-            hotspots={hotspots}
-            enabled={showHotspots}
-            onSetEnabled={setShowHotspots}
-            selectedHotspotId={selectedHotspot?.properties.id ?? null}
-            onSelectHotspot={setSelectedHotspot}
-          />
-        </AccordionSection>
+          {activeAnalysisScale === "cluster" && (
+            <HotspotPanel
+              hotspots={hotspots}
+              enabled={showHotspots}
+              onSetEnabled={(enabled) => {
+                setShowHotspots(enabled);
+                if (enabled) setActiveAnalysisScale("cluster");
+              }}
+              selectedHotspotId={selectedHotspot?.properties.id ?? null}
+              onSelectHotspot={selectHotspot}
+            />
+          )}
 
-        <AccordionSection title="Citywide Analysis" summary="Map modes and time" defaultOpen>
-          <VisualizationPanel
-            activePreset={activeVisualizationPreset}
-            onSelectPreset={selectVisualizationPreset}
-          />
-          <TimelineControl
-            selectedDecades={selectedDecades}
-            maxBuiltYear={maxBuiltYear}
-            minAvailableYear={yearRange.min}
-            maxAvailableYear={yearRange.max}
-            isBuildoutPlaying={isBuildoutPlaying}
-            animationSpeed={animationSpeed}
-            builtByYearCount={buildoutStats.builtByYear}
-            knownYearTotal={buildoutStats.knownYearTotal}
-            percentBuilt={buildoutStats.percentBuilt}
-            showUnknown={showUnknown}
-            onToggleDecade={toggleDecade}
-            onSetMaxBuiltYear={handleSetMaxBuiltYear}
-            onToggleBuildoutPlayback={toggleBuildoutPlayback}
-            onResetBuildout={() => {
-              setIsBuildoutPlaying(false);
-              setMaxBuiltYear(yearRange.min);
-            }}
-            onSetAnimationSpeed={setAnimationSpeed}
-            onSetShowUnknown={setShowUnknown}
-            onSelectAll={() => setSelectedDecades(new Set(knownDecades))}
-            onClearKnown={() => setSelectedDecades(new Set())}
-          />
-          <FilterPanel
-            parcels={parcels}
-            filteredCount={filteredParcels?.features.length ?? 0}
-            isSampleData={isSampleData}
-          />
-          <DecadeDistributionChart parcels={filteredParcels} />
-        </AccordionSection>
+          {activeAnalysisScale === "city" && (
+            <>
+              <VisualizationPanel
+                activePreset={activeVisualizationPreset}
+                onSelectPreset={selectVisualizationPreset}
+              />
+              <TimelineControl
+                selectedDecades={selectedDecades}
+                maxBuiltYear={maxBuiltYear}
+                minAvailableYear={yearRange.min}
+                maxAvailableYear={yearRange.max}
+                isBuildoutPlaying={isBuildoutPlaying}
+                animationSpeed={animationSpeed}
+                builtByYearCount={buildoutStats.builtByYear}
+                knownYearTotal={buildoutStats.knownYearTotal}
+                percentBuilt={buildoutStats.percentBuilt}
+                showUnknown={showUnknown}
+                onToggleDecade={toggleDecade}
+                onSetMaxBuiltYear={handleSetMaxBuiltYear}
+                onToggleBuildoutPlayback={toggleBuildoutPlayback}
+                onResetBuildout={() => {
+                  setIsBuildoutPlaying(false);
+                  setMaxBuiltYear(yearRange.min);
+                }}
+                onSetAnimationSpeed={setAnimationSpeed}
+                onSetShowUnknown={setShowUnknown}
+                onSelectAll={() => setSelectedDecades(new Set(knownDecades))}
+                onClearKnown={() => setSelectedDecades(new Set())}
+              />
+              <FilterPanel
+                parcels={parcels}
+                filteredCount={filteredParcels?.features.length ?? 0}
+                isSampleData={isSampleData}
+              />
+              <DecadeDistributionChart parcels={filteredParcels} />
+            </>
+          )}
+        </div>
 
         <AccordionSection title="Map Layers" summary="Boundaries and permit layer">
           <LayerToggle
@@ -452,7 +478,7 @@ export default function App() {
           />
         </AccordionSection>
 
-        <AccordionSection title="Historical Evidence" summary="Year layers and change detection">
+        <AccordionSection title="Data Layers" summary="Optional evidence overlays" defaultOpen>
           <HistoricalLayerPanel
             layers={historicalLayers}
             activeLayerIds={activeHistoricalLayerIds}
@@ -476,15 +502,6 @@ export default function App() {
           />
         </AccordionSection>
 
-        <AccordionSection title="Legend" summary="Color keys">
-          <Legend
-            visibleDecades={visibleLegendBuckets}
-            showParcelChangeLegend={activeHistoricalLayerIds.has(parcelChangeLayerId)}
-            visibleChangeTypes={visibleChangeTypes}
-            showPermitPressureLegend={showPermitPressure}
-            permitPressureMapMode={permitPressureMapMode}
-          />
-        </AccordionSection>
       </aside>
     </main>
   );

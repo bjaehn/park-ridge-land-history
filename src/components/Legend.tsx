@@ -21,6 +21,7 @@ type LegendProps = {
   visibleChangeTypes: Set<ParcelChangeType>;
   showPermitPressureLegend: boolean;
   permitPressureMapMode: PermitPressureMapMode;
+  compact?: boolean;
 };
 
 export function Legend({
@@ -28,10 +29,11 @@ export function Legend({
   showParcelChangeLegend,
   visibleChangeTypes,
   showPermitPressureLegend,
-  permitPressureMapMode
+  permitPressureMapMode,
+  compact = false
 }: LegendProps) {
   return (
-    <section className="panel-section" aria-label="Decade color legend">
+    <section className={`legend-panel ${compact ? "legend-panel-compact" : "panel-section"}`} aria-label="Map color legend">
       <h2>Legend</h2>
       <div className="legend-grid">
         {decadeOrder.map((bucket) => (
