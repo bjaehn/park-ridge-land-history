@@ -386,7 +386,7 @@ export default function App() {
       </div>
       <aside className="control-panel">
         <header className="app-header">
-          <p>Local prototype</p>
+          <p>Work in progress</p>
           <h1>Park Ridge Land History</h1>
         </header>
         <ProductGuide />
