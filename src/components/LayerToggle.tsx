@@ -9,13 +9,11 @@ type LayerToggleProps = {
   showOutlines: boolean;
   showBoundary: boolean;
   showPermitPressure: boolean;
-  showHotspots: boolean;
   permitPressureWindow: PermitPressureWindow;
   permitPressureMapMode: PermitPressureMapMode;
   onSetShowOutlines: (show: boolean) => void;
   onSetShowBoundary: (show: boolean) => void;
   onSetShowPermitPressure: (show: boolean) => void;
-  onSetShowHotspots: (show: boolean) => void;
   onSetPermitPressureWindow: (window: PermitPressureWindow) => void;
   onSetPermitPressureMapMode: (mode: PermitPressureMapMode) => void;
 };
@@ -24,13 +22,11 @@ export function LayerToggle({
   showOutlines,
   showBoundary,
   showPermitPressure,
-  showHotspots,
   permitPressureWindow,
   permitPressureMapMode,
   onSetShowOutlines,
   onSetShowBoundary,
   onSetShowPermitPressure,
-  onSetShowHotspots,
   onSetPermitPressureWindow,
   onSetPermitPressureMapMode
 }: LayerToggleProps) {
@@ -73,14 +69,6 @@ export function LayerToggle({
           </select>
         </label>
       </div>
-      <label className="check-row check-row-strong">
-        <input
-          type="checkbox"
-          checked={showHotspots}
-          onChange={(event) => onSetShowHotspots(event.target.checked)}
-        />
-        <span>Teardown and trend clusters</span>
-      </label>
       <label className="check-row check-row-strong">
         <input
           type="checkbox"

@@ -3,6 +3,7 @@ import type { HotspotCollection, HotspotFeature } from "../lib/hotspots";
 type HotspotPanelProps = {
   hotspots: HotspotCollection;
   enabled: boolean;
+  onSetEnabled: (enabled: boolean) => void;
   selectedHotspotId: string | null;
   onSelectHotspot: (hotspot: HotspotFeature) => void;
 };
@@ -10,6 +11,7 @@ type HotspotPanelProps = {
 export function HotspotPanel({
   hotspots,
   enabled,
+  onSetEnabled,
   selectedHotspotId,
   onSelectHotspot
 }: HotspotPanelProps) {
@@ -17,9 +19,17 @@ export function HotspotPanel({
 
   return (
     <section className="panel-section hotspot-section" aria-label="Interesting places">
-      <h2>Interesting Places</h2>
+      <h2>Trend Clusters</h2>
+      <label className="check-row check-row-strong cluster-toggle-row">
+        <input
+          type="checkbox"
+          checked={enabled}
+          onChange={(event) => onSetEnabled(event.target.checked)}
+        />
+        <span>Show teardown and trend clusters on the map</span>
+      </label>
       {!enabled ? (
-        <p className="quiet-note hotspot-empty">Turn on Teardown and trend clusters in Map Layers to show teardown, change, and old-home pockets.</p>
+        <p className="quiet-note hotspot-empty">Clusters stay hidden until you turn them on.</p>
       ) : visibleHotspots.length === 0 ? (
         <p className="quiet-note hotspot-empty">No hotspots in the current view.</p>
       ) : (

@@ -371,17 +371,11 @@ export default function App() {
           <p>Local prototype</p>
           <h1>Park Ridge Land History</h1>
         </header>
-        <AccordionSection title="Overview" summary="Counts and distribution" defaultOpen>
+        <AccordionSection title="Start Here" summary="Pick an analysis scale" defaultOpen>
           <ProductGuide />
-          <FilterPanel
-            parcels={parcels}
-            filteredCount={filteredParcels?.features.length ?? 0}
-            isSampleData={isSampleData}
-          />
-          <DecadeDistributionChart parcels={filteredParcels} />
         </AccordionSection>
 
-        <AccordionSection title="Find & Inspect" summary={selectedParcel ? "Parcel selected" : "Search parcels"} defaultOpen>
+        <AccordionSection title="Single Home Analysis" summary={selectedParcel ? "Home selected" : "Search one address"} defaultOpen>
           <SearchPanel
             parcels={parcels}
             selectedPin={selectedPin}
@@ -395,15 +389,19 @@ export default function App() {
             permitPressureWindow={permitPressureWindow}
             onClearSelection={() => setSelectedPin(null)}
           />
+        </AccordionSection>
+
+        <AccordionSection title="Cluster Analysis" summary={showHotspots ? "Clusters on" : "Clusters off"}>
           <HotspotPanel
             hotspots={hotspots}
             enabled={showHotspots}
+            onSetEnabled={setShowHotspots}
             selectedHotspotId={selectedHotspot?.properties.id ?? null}
             onSelectHotspot={setSelectedHotspot}
           />
         </AccordionSection>
 
-        <AccordionSection title="Visualizations" summary="Main map view" defaultOpen>
+        <AccordionSection title="Citywide Analysis" summary="Map modes and time" defaultOpen>
           <VisualizationPanel
             activePreset={activeVisualizationPreset}
             onSelectPreset={selectVisualizationPreset}
@@ -431,20 +429,24 @@ export default function App() {
             onSelectAll={() => setSelectedDecades(new Set(knownDecades))}
             onClearKnown={() => setSelectedDecades(new Set())}
           />
+          <FilterPanel
+            parcels={parcels}
+            filteredCount={filteredParcels?.features.length ?? 0}
+            isSampleData={isSampleData}
+          />
+          <DecadeDistributionChart parcels={filteredParcels} />
         </AccordionSection>
 
-        <AccordionSection title="Map Layers" summary="Overlays and boundaries" defaultOpen>
+        <AccordionSection title="Map Layers" summary="Boundaries and permit layer">
           <LayerToggle
             showOutlines={showOutlines}
             showBoundary={showBoundary}
             showPermitPressure={showPermitPressure}
-            showHotspots={showHotspots}
             permitPressureWindow={permitPressureWindow}
             permitPressureMapMode={permitPressureMapMode}
             onSetShowOutlines={setShowOutlines}
             onSetShowBoundary={setShowBoundary}
             onSetShowPermitPressure={setShowPermitPressure}
-            onSetShowHotspots={setShowHotspots}
             onSetPermitPressureWindow={setPermitPressureWindow}
             onSetPermitPressureMapMode={setPermitPressureMapMode}
           />
