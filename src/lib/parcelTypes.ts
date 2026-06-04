@@ -34,6 +34,10 @@ export type ParcelProperties = {
   permit_count?: number | null;
   latest_permit_year?: number | null;
   nearby_teardown_count?: number | null;
+  sale_count?: number | null;
+  latest_sale_year?: number | null;
+  latest_sale_price?: number | null;
+  max_sale_price?: number | null;
   house_evolution_timeline?: HouseEvolutionEvent[] | string | null;
   permit_pressure_score?: number | null;
   permit_pressure_type?: PermitPressureType | null;
@@ -42,7 +46,7 @@ export type ParcelProperties = {
   recent_teardown_count?: number | null;
 };
 
-export type HouseEvolutionEventType = "original_build" | "permit" | "nearby_teardown";
+export type HouseEvolutionEventType = "original_build" | "sale" | "permit" | "nearby_teardown";
 export type PermitPressureType =
   | "none"
   | "recent_permit"
@@ -61,6 +65,8 @@ export type HouseEvolutionEvent = {
   event_type: HouseEvolutionEventType;
   status?: string | null;
   permit_number?: string | null;
+  document_number?: string | null;
+  price?: number | null;
   source?: string | null;
   pin?: string | null;
   is_nearby?: boolean;

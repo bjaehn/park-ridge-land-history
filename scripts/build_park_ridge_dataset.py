@@ -48,6 +48,11 @@ PERMIT_DESCRIPTION_COLUMN_CANDIDATES = ("work_description", "description", "perm
 PERMIT_STATUS_COLUMN_CANDIDATES = ("status", "permit_status")
 PERMIT_NUMBER_COLUMN_CANDIDATES = ("permit_number", "local_permit_number")
 PERMIT_AMOUNT_COLUMN_CANDIDATES = ("amount", "permit_amount")
+SALE_DATE_COLUMN_CANDIDATES = ("sale_date", "date_of_sale")
+SALE_YEAR_COLUMN_CANDIDATES = ("year", "sale_year")
+SALE_PRICE_COLUMN_CANDIDATES = ("sale_price", "price", "amount")
+SALE_DOC_COLUMN_CANDIDATES = ("doc_no", "document_number", "deed_no")
+SALE_DEED_COLUMN_CANDIDATES = ("deed_type", "mydec_deed_type")
 NEARBY_TEARDOWN_DISTANCE_FT = 500
 NEARBY_TEARDOWN_LIMIT = 5
 
@@ -170,6 +175,83 @@ def build_permit_history(permits: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(records)
 
 
+def build_sale_history(sales: pd.DataFrame) -> pd.DataFrame:
+    pin_column = find_likely_column(sales.columns, PIN_COLUMN_CANDIDATES)
+    date_column = find_likely_column(sales.columns, SALE_DATE_COLUMN_CANDIDATES)
+    year_column = find_likely_column(sales.columns, SALE_YEAR_COLUMN_CANDIDATES)
+    price_column = find_likely_column(sales.columns, SALE_PRICE_COLUMN_CANDIDATES)
+    doc_column = find_likely_column(sales.columns, SALE_DOC_COLUMN_CANDIDATES)
+    deed_column = find_likely_column(sales.columns, SALE_DEED_COLUMN_CANDIDATES)
+
+    if not pin_column:
+        raise ValueError(f"No likely PIN column found in sale columns: {list(sales.columns)}")
+    if not date_column and not year_column:
+        raise ValueError("Sale data needs either a sale_date or sale_year-style column.")
+
+    normalized = add_normalized_pin_columns(sales.copy(), pin_column)
+    normalized = normalized[normalized.apply(is_market_sale_record, axis=1)]
+    records: list[dict[str, Any]] = []
+
+    for pin, group in normalized.dropna(subset=["pin_normalized"]).groupby("pin_normalized"):
+        events = [
+            build_sale_event(row, date_column, year_column, price_column, doc_column, deed_column)
+            for row in group.to_dict(orient="records")
+        ]
+        events = sorted(events, key=timeline_sort_key)
+        years = [event["year"] for event in events if event.get("year")]
+        prices = [event.get("price") for event in events if event.get("price") is not None]
+        latest = events[-1] if events else {}
+        records.append(
+            {
+                "pin_normalized": pin,
+                "sale_count": len(events),
+                "latest_sale_year": max(years) if years else None,
+                "latest_sale_price": latest.get("price") if latest else None,
+                "max_sale_price": max(prices) if prices else None,
+                "sale_timeline": events,
+            }
+        )
+
+    return pd.DataFrame(records)
+
+
+def is_market_sale_record(row: Any) -> bool:
+    return not any(
+        truthy(row.get(column))
+        for column in [
+            "sale_filter_same_sale_within_365",
+            "sale_filter_less_than_10k",
+            "sale_filter_deed_type",
+        ]
+    )
+
+
+def build_sale_event(
+    row: dict[str, Any],
+    date_column: str | None,
+    year_column: str | None,
+    price_column: str | None,
+    doc_column: str | None,
+    deed_column: str | None,
+) -> dict[str, Any]:
+    date = clean_text(row.get(date_column)) if date_column else None
+    price = numeric_or_none(row.get(price_column)) if price_column else None
+    event = {
+        "year": permit_year(date, row.get(year_column) if year_column else None),
+        "date": date,
+        "title": "Recorded sale",
+        "description": sale_description(price, clean_text(row.get(deed_column)) if deed_column else None),
+        "event_type": "sale",
+        "source": "Cook County Assessor Parcel Sales",
+    }
+    document_number = clean_text(row.get(doc_column)) if doc_column else None
+    if document_number:
+        event["document_number"] = document_number
+    if price is not None:
+        event["price"] = price
+    return event
+
+
 def build_permit_event(
     row: dict[str, Any],
     date_column: str | None,
@@ -215,12 +297,13 @@ def attach_house_evolution_timelines(enriched: Any) -> Any:
                     "source": "Cook County Assessor",
                 }
             )
+        events.extend(parse_timeline_value(row.get("sale_timeline")))
         events.extend(parse_timeline_value(row.get("permit_timeline")))
         events.extend(parse_timeline_value(row.get("nearby_teardown_timeline")))
         timelines.append(json.dumps(sorted(events, key=timeline_sort_key), separators=(",", ":")))
 
     enriched["house_evolution_timeline"] = timelines
-    return enriched.drop(columns=["permit_timeline", "nearby_teardown_timeline"], errors="ignore")
+    return enriched.drop(columns=["permit_timeline", "sale_timeline", "nearby_teardown_timeline"], errors="ignore")
 
 
 def append_nearby_teardown_events(enriched: Any) -> Any:
@@ -416,12 +499,19 @@ def build_dataset() -> None:
     if permit_history is not None:
         enriched = enriched.merge(permit_history, on="pin_normalized", how="left")
 
-    for column in ["address", "municipality", "property_class", "year_built", "decade_built", "building_sqft", "land_sqft", "improvement_count", "permit_count", "latest_permit_year", "nearby_teardown_count", "primary_building_selection_method"]:
+    sales_path = optional_source("Cook County Assessor parcel sales")
+    if sales_path:
+        sales = pd.DataFrame(read_table(sales_path).drop(columns="geometry", errors="ignore"))
+        sale_history = build_sale_history(sales)
+        enriched = enriched.merge(sale_history, on="pin_normalized", how="left")
+
+    for column in ["address", "municipality", "property_class", "year_built", "decade_built", "building_sqft", "land_sqft", "improvement_count", "permit_count", "latest_permit_year", "nearby_teardown_count", "sale_count", "latest_sale_year", "latest_sale_price", "max_sale_price", "primary_building_selection_method"]:
         if column not in enriched:
             enriched[column] = None
 
     enriched["decade_built"] = enriched["decade_built"].fillna("Unknown")
     enriched["permit_count"] = enriched["permit_count"].fillna(0).astype(int)
+    enriched["sale_count"] = enriched["sale_count"].fillna(0).astype(int)
     enriched["data_quality_flags"] = enriched["data_quality_flags"].apply(normalize_flags)
     enriched["source_note"] = "Cook County parcel and assessor data. Owner names intentionally omitted."
     enriched = attach_house_evolution_timelines(enriched)
@@ -440,6 +530,10 @@ def build_dataset() -> None:
         "permit_count",
         "latest_permit_year",
         "nearby_teardown_count",
+        "sale_count",
+        "latest_sale_year",
+        "latest_sale_price",
+        "max_sale_price",
         "house_evolution_timeline",
         "primary_building_selection_method",
         "data_quality_flags",
@@ -503,6 +597,21 @@ def numeric_or_none(value: Any) -> float | None:
         return float(value)
     except (TypeError, ValueError):
         return None
+
+
+def truthy(value: Any) -> bool:
+    if value is None or pd.isna(value):
+        return False
+    return str(value).strip().lower() in {"true", "1", "yes", "y"}
+
+
+def sale_description(price: float | None, deed_type: str | None) -> str:
+    parts: list[str] = []
+    if price is not None:
+        parts.append(f"Sale price ${price:,.0f}")
+    if deed_type:
+        parts.append(deed_type)
+    return "; ".join(parts) if parts else "Recorded assessor sale."
 
 
 def normalize_flags(value: Any) -> list[str]:

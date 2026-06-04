@@ -55,6 +55,23 @@ def test_public_parcels_include_searchable_addresses():
     assert any("VINE" in address for address in addresses if address)
 
 
+def test_public_parcels_include_sale_history():
+    payload = json.loads(Path("public/data/park_ridge_parcels_enriched.geojson").read_text())
+    sale_parcels = [
+        feature["properties"]
+        for feature in payload["features"]
+        if feature["properties"].get("sale_count", 0) > 0
+    ]
+
+    assert len(sale_parcels) > 5000
+    assert any(property_.get("latest_sale_price") for property_ in sale_parcels)
+    assert any(
+        event.get("event_type") == "sale"
+        for property_ in sale_parcels
+        for event in property_.get("house_evolution_timeline", [])
+    )
+
+
 def test_historic_character_layer_has_century_home_candidates():
     payload = json.loads(Path("public/data/historical/park_ridge_historic_character.geojson").read_text())
     properties = [feature["properties"] for feature in payload["features"]]

@@ -20,6 +20,7 @@ SOCRATA_UNIVERSE = "https://datacatalog.cookcountyil.gov/resource/nj4t-kc8j.json
 SOCRATA_ADDRESSES = "https://datacatalog.cookcountyil.gov/resource/3723-97qp.json"
 SOCRATA_IMPROVEMENTS = "https://datacatalog.cookcountyil.gov/resource/x54s-btds.json"
 SOCRATA_PERMITS = "https://datacatalog.cookcountyil.gov/resource/6yjf-dfxs.json"
+SOCRATA_SALES = "https://datacatalog.cookcountyil.gov/resource/wvhk-k5uv.json"
 PARCEL_FEATURE_SERVER = "https://gis.cookcountyil.gov/hosting/rest/services/Hosted/Parcel/FeatureServer/0/query"
 
 UNIVERSE_FIELDS = [
@@ -81,6 +82,22 @@ ADDRESS_FIELDS = [
     "prop_address_zipcode_1",
 ]
 
+SALE_FIELDS = [
+    "pin",
+    "year",
+    "sale_date",
+    "sale_price",
+    "doc_no",
+    "deed_type",
+    "mydec_deed_type",
+    "is_multisale",
+    "num_parcels_sale",
+    "sale_filter_same_sale_within_365",
+    "sale_filter_less_than_10k",
+    "sale_filter_deed_type",
+    "row_id",
+]
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(
@@ -103,6 +120,7 @@ def main() -> None:
     universe_path = raw_dir / "parcel_universe.csv"
     improvements_path = raw_dir / "assessor_improvements.csv"
     permits_path = raw_dir / "assessor_permits.csv"
+    sales_path = raw_dir / "assessor_parcel_sales.csv"
     addresses_path = raw_dir / "assessor_parcel_addresses.csv"
     parcels_path = raw_dir / "cook_county_parcels.geojson"
 
@@ -130,6 +148,9 @@ def main() -> None:
 
     permit_rows = fetch_permits(pins, args.chunk_size)
     write_csv(permits_path, permit_rows, PERMIT_FIELDS, args.force)
+
+    sale_rows = fetch_sales(pins, args.chunk_size)
+    write_csv(sales_path, sale_rows, SALE_FIELDS, args.force)
 
     parcel_geojson = fetch_parcel_geometries(pins, args.chunk_size)
     parcels_path.write_text(json.dumps(parcel_geojson), encoding="utf-8")
@@ -211,6 +232,24 @@ def fetch_permits(pins: list[str], chunk_size: int) -> list[dict[str, Any]]:
             )
         )
         print_progress(index, len(pins), chunk_size, "permit chunks")
+    return rows
+
+
+def fetch_sales(pins: list[str], chunk_size: int) -> list[dict[str, Any]]:
+    print("Downloading assessor parcel sale rows...")
+    rows: list[dict[str, Any]] = []
+    for index, chunk in enumerate(chunks(pins, chunk_size), start=1):
+        rows.extend(
+            socrata_get_all(
+                SOCRATA_SALES,
+                {
+                    "$select": ",".join(SALE_FIELDS),
+                    "$where": f"pin in ({quoted_list(chunk)})",
+                    "$order": "pin,sale_date,doc_no",
+                },
+            )
+        )
+        print_progress(index, len(pins), chunk_size, "sale chunks")
     return rows
 
 

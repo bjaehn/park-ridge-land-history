@@ -1,7 +1,9 @@
+import { formatCurrency } from "./formatters";
 import type { HouseEvolutionEvent, ParcelProperties } from "./parcelTypes";
 
 const eventTypeLabels: Record<HouseEvolutionEvent["event_type"], string> = {
   original_build: "Original build",
+  sale: "Sale",
   permit: "Permit",
   nearby_teardown: "Nearby teardown"
 };
@@ -32,7 +34,13 @@ export function formatEvolutionYear(event: HouseEvolutionEvent): string {
 }
 
 export function formatEvolutionMeta(event: HouseEvolutionEvent): string {
-  const parts = [eventTypeLabels[event.event_type], event.status, event.permit_number ? `Permit ${event.permit_number}` : null]
+  const parts = [
+    eventTypeLabels[event.event_type],
+    event.status,
+    event.permit_number ? `Permit ${event.permit_number}` : null,
+    event.document_number ? `Document ${event.document_number}` : null,
+    event.price ? formatCurrency(event.price) : null
+  ]
     .filter(Boolean)
     .map(String);
   return parts.join(" · ");

@@ -3,6 +3,15 @@ export function formatNumber(value?: number | null): string {
   return new Intl.NumberFormat("en-US").format(value);
 }
 
+export function formatCurrency(value?: number | null): string {
+  if (value === null || value === undefined || Number.isNaN(value)) return "Unknown";
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0
+  }).format(value);
+}
+
 export function formatYear(value?: number | null): string {
   if (!value) return "Unknown";
   return String(value);

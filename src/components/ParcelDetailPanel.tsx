@@ -1,4 +1,4 @@
-import { formatFlags, formatNumber, formatYear } from "../lib/formatters";
+import { formatCurrency, formatFlags, formatNumber, formatYear } from "../lib/formatters";
 import type { PermitPressureWindow } from "../lib/permitPressure";
 import type { ParcelCollection, ParcelFeature } from "../lib/parcelTypes";
 import { BlockStoryCard } from "./BlockStoryCard";
@@ -30,6 +30,9 @@ export function ParcelDetailPanel({
         ["Property class", properties.property_class || "Unknown"],
         ["Improvements", formatNumber(properties.improvement_count)],
         ["Permits", formatNumber(properties.permit_count)],
+        ["Sales since 1999", formatNumber(properties.sale_count)],
+        ["Latest sale", formatSaleSummary(properties.latest_sale_year, properties.latest_sale_price)],
+        ["Highest sale", formatCurrency(properties.max_sale_price)],
         ["Selection", properties.primary_building_selection_method || "Unknown"],
         ["Flags", formatFlags(properties.data_quality_flags)]
       ]
@@ -75,4 +78,13 @@ export function ParcelDetailPanel({
       )}
     </section>
   );
+}
+
+function formatSaleSummary(year?: number | null, price?: number | null): string {
+  const yearLabel = formatYear(year);
+  const priceLabel = formatCurrency(price);
+  if (yearLabel === "Unknown" && priceLabel === "Unknown") return "Unknown";
+  if (priceLabel === "Unknown") return yearLabel;
+  if (yearLabel === "Unknown") return priceLabel;
+  return `${yearLabel} · ${priceLabel}`;
 }

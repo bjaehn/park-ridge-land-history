@@ -647,6 +647,11 @@ input {
   color: #9a3412;
 }
 
+.evolution-sale time,
+.evolution-sale strong {
+  color: #0f766e;
+}
+
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
