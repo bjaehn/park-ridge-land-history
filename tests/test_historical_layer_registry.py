@@ -11,6 +11,9 @@ def test_registry_has_required_historical_layer_families():
     assert "ilhap_cook_1938_1939" in layer_ids
     assert "cook_recorded_subdivision_plats" in layer_ids
     assert "sanborn_park_ridge_placeholder" in layer_ids
+    assert "park_ridge_historic_character" in layer_ids
+    assert "cook_county_building_footprints_2017" in layer_ids
+    assert "park_ridge_lot_coverage" in layer_ids
 
 
 def test_ready_layers_have_public_data_or_tiles():
@@ -34,3 +37,11 @@ def test_2000_layer_uses_real_cook_county_data_path():
     layer = next(layer for layer in load_registry() if layer["id"] == "cook_parcels_2000")
     assert layer["dataPath"] == "/data/historical/cook_parcels_2000.geojson"
     assert layer.get("syntheticSample") is not True
+
+
+def test_built_environment_layers_are_map_ready():
+    layers = {layer["id"]: layer for layer in load_registry()}
+
+    assert layers["park_ridge_historic_character"]["dataPath"] == "/data/historical/park_ridge_historic_character.geojson"
+    assert layers["cook_county_building_footprints_2017"]["layerGroup"] == "built_environment"
+    assert layers["park_ridge_lot_coverage"]["layerGroup"] == "built_environment"

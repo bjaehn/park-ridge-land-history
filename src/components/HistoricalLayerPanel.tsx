@@ -35,6 +35,7 @@ const groupOrder: HistoricalLayerGroup[] = [
   "subdivision_plats",
   "aerial_imagery",
   "local_history",
+  "built_environment",
   "survey_grid",
   "sanborn",
   "reference"

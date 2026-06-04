@@ -22,6 +22,7 @@ export type HistoricalLayerGroup =
   | "subdivision_plats"
   | "aerial_imagery"
   | "local_history"
+  | "built_environment"
   | "survey_grid"
   | "sanborn"
   | "reference";
@@ -66,6 +67,7 @@ export const historicalLayerGroupLabels: Record<HistoricalLayerGroup, string> = 
   subdivision_plats: "Subdivision Plats",
   aerial_imagery: "Aerial Imagery",
   local_history: "Local History",
+  built_environment: "Built Environment",
   survey_grid: "Survey Grid",
   sanborn: "Sanborn / Historic Maps",
   reference: "Reference"

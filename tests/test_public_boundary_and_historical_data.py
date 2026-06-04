@@ -45,3 +45,23 @@ def test_real_2000_to_2021_change_layer_has_expected_candidate_types():
         "retired_pin",
         "geometry_or_area_changed",
     }.issubset(change_types)
+
+
+def test_historic_character_layer_has_century_home_candidates():
+    payload = json.loads(Path("public/data/historical/park_ridge_historic_character.geojson").read_text())
+    properties = [feature["properties"] for feature in payload["features"]]
+
+    assert len(properties) > 500
+    assert all(property_["layer_kind"] == "historic_character" for property_ in properties)
+    assert max(property_["year_built"] for property_ in properties if property_["year_built"]) <= 1926
+
+
+def test_building_footprints_and_lot_coverage_layers_are_populated():
+    footprints = json.loads(Path("public/data/historical/cook_county_building_footprints_2017.geojson").read_text())
+    coverage = json.loads(Path("public/data/historical/park_ridge_lot_coverage.geojson").read_text())
+    coverage_properties = [feature["properties"] for feature in coverage["features"]]
+
+    assert len(footprints["features"]) > 10000
+    assert len(coverage["features"]) > 10000
+    assert any(property_["lot_coverage_pct"] > 0.35 for property_ in coverage_properties)
+    assert all("lot_coverage_class" in property_ for property_ in coverage_properties)

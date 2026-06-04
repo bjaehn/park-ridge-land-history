@@ -6,7 +6,13 @@ import maplibregl, {
   type LayerSpecification
 } from "maplibre-gl";
 import { mapLibreFillColor, decadeColors } from "../lib/colorScales";
-import { historicalLineColor, historicalLineDash, parcelChangeFillColorExpression } from "../lib/historicalLayerStyles";
+import {
+  historicalLineColor,
+  historicalLineDash,
+  historicCharacterFillColorExpression,
+  lotCoverageFillColorExpression,
+  parcelChangeFillColorExpression
+} from "../lib/historicalLayerStyles";
 import { baseMapStyle, parkRidgeCenter } from "../lib/mapStyle";
 import type { LoadedHistoricalLayer } from "../lib/historicalLayerTypes";
 import type { HotspotCollection, HotspotFeature, HotspotType } from "../lib/hotspots";
@@ -434,6 +440,38 @@ export function MapView({
         activeChangeLayerIdsRef.current.add(fillLayerId);
       }
 
+      if (hasLotCoverage(overlay.data)) {
+        if (!map.getLayer(fillLayerId)) {
+          addLayer(map, {
+            id: fillLayerId,
+            type: "fill",
+            source: sourceId,
+            paint: {
+              "fill-color": lotCoverageFillColorExpression(),
+              "fill-opacity": Math.min(0.66, overlay.opacity)
+            }
+          });
+        } else {
+          map.setPaintProperty(fillLayerId, "fill-opacity", Math.min(0.66, overlay.opacity));
+        }
+      }
+
+      if (hasHistoricCharacter(overlay.data)) {
+        if (!map.getLayer(fillLayerId)) {
+          addLayer(map, {
+            id: fillLayerId,
+            type: "fill",
+            source: sourceId,
+            paint: {
+              "fill-color": historicCharacterFillColorExpression(),
+              "fill-opacity": Math.min(0.54, overlay.opacity)
+            }
+          });
+        } else {
+          map.setPaintProperty(fillLayerId, "fill-opacity", Math.min(0.54, overlay.opacity));
+        }
+      }
+
       if (!map.getLayer(lineLayerId)) {
         const lineFilter = hasChangeType(overlay.data) ? parcelChangeFilterExpression(visibleChangeTypes) : undefined;
         addLayer(map, {
@@ -443,7 +481,7 @@ export function MapView({
           filter: lineFilter,
           paint: {
             "line-color": historicalLineColor(overlay.layer),
-            "line-width": hasChangeType(overlay.data) ? 2.2 : 2,
+            "line-width": historicalLineWidth(overlay),
             "line-opacity": overlay.opacity,
             "line-dasharray": historicalLineDash(overlay.layer)
           }
@@ -717,12 +755,35 @@ function updateSwipeHistoricalLayers(
 
     if (!overlay.data) return;
     const sourceId = historicalSourceId(overlay.layer.id);
+    const fillLayerId = historicalFillLayerId(overlay.layer.id);
     const lineLayerId = historicalLineLayerId(overlay.layer.id);
     const source = map.getSource(sourceId) as GeoJSONSource | undefined;
     if (source) {
       source.setData(overlay.data);
     } else {
       map.addSource(sourceId, { type: "geojson", data: overlay.data });
+    }
+    if (hasLotCoverage(overlay.data) && !map.getLayer(fillLayerId)) {
+      addLayer(map, {
+        id: fillLayerId,
+        type: "fill",
+        source: sourceId,
+        paint: {
+          "fill-color": lotCoverageFillColorExpression(),
+          "fill-opacity": Math.min(0.66, overlay.opacity)
+        }
+      });
+    }
+    if (hasHistoricCharacter(overlay.data) && !map.getLayer(fillLayerId)) {
+      addLayer(map, {
+        id: fillLayerId,
+        type: "fill",
+        source: sourceId,
+        paint: {
+          "fill-color": historicCharacterFillColorExpression(),
+          "fill-opacity": Math.min(0.54, overlay.opacity)
+        }
+      });
     }
     if (!map.getLayer(lineLayerId)) {
       addLayer(map, {
@@ -731,13 +792,14 @@ function updateSwipeHistoricalLayers(
         source: sourceId,
         paint: {
           "line-color": historicalLineColor(overlay.layer),
-          "line-width": hasChangeType(overlay.data) ? 2.2 : 2,
+          "line-width": historicalLineWidth(overlay),
           "line-opacity": overlay.opacity,
           "line-dasharray": historicalLineDash(overlay.layer)
         }
       });
     } else {
       map.setPaintProperty(lineLayerId, "line-opacity", overlay.opacity);
+      if (map.getLayer(fillLayerId)) map.setPaintProperty(fillLayerId, "fill-opacity", overlay.opacity);
     }
   });
 
@@ -762,6 +824,22 @@ function historicalLineLayerId(layerId: string): string {
 
 function hasChangeType(data: GeoJSON.FeatureCollection): boolean {
   return data.features.some((feature) => Boolean(feature.properties?.change_type));
+}
+
+function hasLotCoverage(data: GeoJSON.FeatureCollection): boolean {
+  return data.features.some((feature) => feature.properties?.layer_kind === "lot_coverage");
+}
+
+function hasHistoricCharacter(data: GeoJSON.FeatureCollection): boolean {
+  return data.features.some((feature) => feature.properties?.layer_kind === "historic_character");
+}
+
+function historicalLineWidth(overlay: LoadedHistoricalLayer): number {
+  if (!overlay.data) return 2;
+  if (hasChangeType(overlay.data)) return 2.2;
+  if (overlay.layer.id.includes("building_footprints")) return 0.8;
+  if (hasLotCoverage(overlay.data)) return 0.35;
+  return 2;
 }
 
 function parcelChangeFilterExpression(visibleChangeTypes: Set<ParcelChangeType>): FilterSpecification {
