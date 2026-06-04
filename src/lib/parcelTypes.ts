@@ -35,9 +35,21 @@ export type ParcelProperties = {
   latest_permit_year?: number | null;
   nearby_teardown_count?: number | null;
   house_evolution_timeline?: HouseEvolutionEvent[] | string | null;
+  permit_pressure_score?: number | null;
+  permit_pressure_type?: PermitPressureType | null;
+  recent_permit_count?: number | null;
+  recent_teardown_count?: number | null;
 };
 
 export type HouseEvolutionEventType = "original_build" | "permit" | "nearby_teardown";
+export type PermitPressureType =
+  | "none"
+  | "recent_permit"
+  | "remodel"
+  | "addition"
+  | "new_construction"
+  | "direct_teardown"
+  | "nearby_teardown";
 
 export type HouseEvolutionEvent = {
   year?: number | null;

@@ -5,17 +5,24 @@ import {
   parcelChangeLegendOrder,
   type ParcelChangeType
 } from "../lib/parcelChangeTypes";
+import {
+  permitPressureColors,
+  permitPressureLabel,
+  permitPressureLegendOrder
+} from "../lib/permitPressure";
 
 type LegendProps = {
   visibleDecades: Set<string>;
   showParcelChangeLegend: boolean;
   visibleChangeTypes: Set<ParcelChangeType>;
+  showPermitPressureLegend: boolean;
 };
 
 export function Legend({
   visibleDecades,
   showParcelChangeLegend,
-  visibleChangeTypes
+  visibleChangeTypes,
+  showPermitPressureLegend
 }: LegendProps) {
   return (
     <section className="panel-section" aria-label="Decade color legend">
@@ -28,6 +35,19 @@ export function Legend({
           </div>
         ))}
       </div>
+      {showPermitPressureLegend && (
+        <div className="change-legend" aria-label="Permit pressure color legend">
+          <h3>Permit Pressure</h3>
+          <div className="legend-grid">
+            {permitPressureLegendOrder.map((pressureType) => (
+              <div className="legend-item" key={pressureType}>
+                <span className="legend-swatch" style={{ backgroundColor: permitPressureColors[pressureType] }} />
+                <span>{permitPressureLabel(pressureType)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       {showParcelChangeLegend && (
         <div className="change-legend" aria-label="Historical change color legend">
           <h3>Historical Change</h3>

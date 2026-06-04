@@ -545,6 +545,35 @@ input {
   color: #8a8f9a;
 }
 
+.layer-control-group {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e7e5df;
+}
+
+.select-control {
+  display: grid;
+  gap: 5px;
+}
+
+.select-control span {
+  color: var(--ink-soft);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.select-control select {
+  min-height: 34px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #ffffff;
+  color: #172033;
+  padding: 5px 8px;
+}
+
 .historical-panel {
   background: #fbfaf6;
 }

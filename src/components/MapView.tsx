@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import maplibregl, { type FilterSpecification, type GeoJSONSource, type LayerSpecification } from "maplibre-gl";
+import maplibregl, {
+  type ExpressionSpecification,
+  type FilterSpecification,
+  type GeoJSONSource,
+  type LayerSpecification
+} from "maplibre-gl";
 import { mapLibreFillColor, decadeColors } from "../lib/colorScales";
 import { historicalLineColor, historicalLineDash, parcelChangeFillColorExpression } from "../lib/historicalLayerStyles";
 import { baseMapStyle, parkRidgeCenter } from "../lib/mapStyle";
@@ -9,6 +14,7 @@ import {
   type ParcelChangeFeature,
   type ParcelChangeType
 } from "../lib/parcelChangeTypes";
+import { permitPressureColors } from "../lib/permitPressure";
 import type { ParcelCollection, ParcelFeature } from "../lib/parcelTypes";
 import { parcelPopupHtml } from "./ParcelPopup";
 
@@ -18,6 +24,7 @@ type MapViewProps = {
   boundary: GeoJSON.FeatureCollection | null;
   showOutlines: boolean;
   showBoundary: boolean;
+  showPermitPressure: boolean;
   historicalOverlays: LoadedHistoricalLayer[];
   selectedParcelChange: ParcelChangeFeature | null;
   visibleChangeTypes: Set<ParcelChangeType>;
@@ -36,6 +43,7 @@ export function MapView({
   boundary,
   showOutlines,
   showBoundary,
+  showPermitPressure,
   historicalOverlays,
   selectedParcelChange,
   visibleChangeTypes,
@@ -132,6 +140,16 @@ export function MapView({
           "line-color": "#1f2937",
           "line-width": 0.7,
           "line-opacity": 0.55
+        }
+      });
+
+      map.addLayer({
+        id: "permit-pressure-fill",
+        type: "fill",
+        source: "parcels",
+        paint: {
+          "fill-color": permitPressureFillColorExpression(),
+          "fill-opacity": permitPressureFillOpacityExpression(true)
         }
       });
 
@@ -418,6 +436,16 @@ export function MapView({
     }
   }, [showBoundary]);
 
+  useEffect(() => {
+    if (mapRef.current?.getLayer("permit-pressure-fill")) {
+      mapRef.current.setPaintProperty(
+        "permit-pressure-fill",
+        "fill-opacity",
+        permitPressureFillOpacityExpression(showPermitPressure)
+      );
+    }
+  }, [showPermitPressure]);
+
   return <div ref={containerRef} className="map-canvas" aria-label="Park Ridge parcel map" />;
 }
 
@@ -505,6 +533,34 @@ function parcelChangeFilterExpression(visibleChangeTypes: Set<ParcelChangeType>)
     ["get", "change_type"],
     ["literal", Array.from(visibleChangeTypes)]
   ] as FilterSpecification;
+}
+
+function permitPressureFillColorExpression(): ExpressionSpecification {
+  const matchValues = Object.entries(permitPressureColors).flatMap(([pressureType, color]) => [
+    pressureType,
+    color
+  ]);
+  return ["match", ["get", "permit_pressure_type"], ...matchValues, "rgba(255,255,255,0)"] as unknown as ExpressionSpecification;
+}
+
+function permitPressureFillOpacityExpression(showPermitPressure: boolean): ExpressionSpecification | number {
+  if (!showPermitPressure) return 0;
+  return [
+    "case",
+    ["==", ["get", "permit_pressure_type"], "none"],
+    0,
+    [
+      "interpolate",
+      ["linear"],
+      ["coalesce", ["get", "permit_pressure_score"], 0],
+      0,
+      0.16,
+      0.5,
+      0.46,
+      1,
+      0.72
+    ]
+  ] as ExpressionSpecification;
 }
 
 function raiseSelectionLayers(map: maplibregl.Map): void {

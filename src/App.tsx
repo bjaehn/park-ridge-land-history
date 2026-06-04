@@ -17,6 +17,7 @@ import {
   type ParcelChangeFeature,
   type ParcelChangeType
 } from "./lib/parcelChangeTypes";
+import { decoratePermitPressure, type PermitPressureWindow } from "./lib/permitPressure";
 import type { ParcelCollection, ParcelFeature } from "./lib/parcelTypes";
 
 const knownDecades = decadeOrder.filter((bucket) => bucket !== "Unknown" && bucket !== "Suspicious");
@@ -36,6 +37,8 @@ export default function App() {
   const [showUnknown, setShowUnknown] = useState(true);
   const [showOutlines, setShowOutlines] = useState(true);
   const [showBoundary, setShowBoundary] = useState(true);
+  const [showPermitPressure, setShowPermitPressure] = useState(true);
+  const [permitPressureWindow, setPermitPressureWindow] = useState<PermitPressureWindow>(5);
   const [maxBuiltYear, setMaxBuiltYear] = useState(2026);
   const [selectedPin, setSelectedPin] = useState<string | null>(null);
   const [isBuildoutPlaying, setIsBuildoutPlaying] = useState(false);
@@ -112,6 +115,11 @@ export default function App() {
       )
     };
   }, [maxBuiltYear, parcels, selectedDecades, showUnknown]);
+
+  const pressureDecoratedParcels = useMemo(
+    () => decoratePermitPressure(filteredParcels, permitPressureWindow),
+    [filteredParcels, permitPressureWindow]
+  );
 
   const visibleLegendBuckets = useMemo(() => {
     const buckets = new Set(selectedDecades);
@@ -260,11 +268,12 @@ export default function App() {
   return (
     <main className="app-shell">
       <MapView
-        parcels={filteredParcels}
+        parcels={pressureDecoratedParcels}
         selectedParcel={selectedParcel}
         boundary={boundary}
         showOutlines={showOutlines}
         showBoundary={showBoundary}
+        showPermitPressure={showPermitPressure}
         historicalOverlays={historicalOverlays}
         selectedParcelChange={selectedParcelChange}
         visibleChangeTypes={visibleChangeTypes}
@@ -318,8 +327,12 @@ export default function App() {
         <LayerToggle
           showOutlines={showOutlines}
           showBoundary={showBoundary}
+          showPermitPressure={showPermitPressure}
+          permitPressureWindow={permitPressureWindow}
           onSetShowOutlines={setShowOutlines}
           onSetShowBoundary={setShowBoundary}
+          onSetShowPermitPressure={setShowPermitPressure}
+          onSetPermitPressureWindow={setPermitPressureWindow}
         />
         <HistoricalLayerPanel
           layers={historicalLayers}
@@ -343,6 +356,7 @@ export default function App() {
           visibleDecades={visibleLegendBuckets}
           showParcelChangeLegend={activeHistoricalLayerIds.has(parcelChangeLayerId)}
           visibleChangeTypes={visibleChangeTypes}
+          showPermitPressureLegend={showPermitPressure}
         />
       </aside>
     </main>
