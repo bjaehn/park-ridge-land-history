@@ -102,6 +102,60 @@
         "building_sqft": 1480,
         "land_sqft": 6250,
         "improvement_count": 1,
+        "permit_count": 3,
+        "latest_permit_year": 2017,
+        "nearby_teardown_count": 1,
+        "house_evolution_timeline": [
+          {
+            "year": 1956,
+            "title": "Original build",
+            "description": "Assessor year built for the primary structure.",
+            "event_type": "original_build",
+            "source": "Cook County Assessor"
+          },
+          {
+            "year": 1988,
+            "date": "1988-06-14T00:00:00",
+            "title": "Garage permit",
+            "description": "Construct detached two-car garage.",
+            "event_type": "permit",
+            "status": "Closed",
+            "permit_number": "PR-1988-0417",
+            "source": "Cook County Assessor Permits"
+          },
+          {
+            "year": 2004,
+            "date": "2004-09-20T00:00:00",
+            "title": "Addition permit",
+            "description": "Rear family room addition.",
+            "event_type": "permit",
+            "status": "Closed",
+            "permit_number": "PR-2004-1182",
+            "source": "Cook County Assessor Permits"
+          },
+          {
+            "year": 2017,
+            "date": "2017-03-08T00:00:00",
+            "title": "Remodel or renovation permit",
+            "description": "Kitchen remodel and interior alteration.",
+            "event_type": "permit",
+            "status": "Closed",
+            "permit_number": "PR-2017-0264",
+            "source": "Cook County Assessor Permits"
+          },
+          {
+            "year": 2025,
+            "date": "2025-05-12T00:00:00",
+            "title": "Nearby demolition or teardown permit",
+            "description": "310 Garden Street: Demolition of single-family residence.",
+            "event_type": "nearby_teardown",
+            "status": "Open",
+            "permit_number": "PR-2025-0719",
+            "source": "Cook County Assessor Permits",
+            "pin": "09251010050000",
+            "is_nearby": true
+          }
+        ],
         "primary_building_selection_method": "synthetic_sample",
         "data_quality_flags": [],
         "source_note": "Synthetic sample parcel for local prototype rendering.",
@@ -131,6 +185,28 @@
         "building_sqft": 2075,
         "land_sqft": 7600,
         "improvement_count": 1,
+        "permit_count": 1,
+        "latest_permit_year": 2025,
+        "nearby_teardown_count": 0,
+        "house_evolution_timeline": [
+          {
+            "year": 1974,
+            "title": "Original build",
+            "description": "Assessor year built for the primary structure.",
+            "event_type": "original_build",
+            "source": "Cook County Assessor"
+          },
+          {
+            "year": 2025,
+            "date": "2025-05-12T00:00:00",
+            "title": "Demolition or teardown permit",
+            "description": "Demolition of single-family residence.",
+            "event_type": "permit",
+            "status": "Open",
+            "permit_number": "PR-2025-0719",
+            "source": "Cook County Assessor Permits"
+          }
+        ],
         "primary_building_selection_method": "synthetic_sample",
         "data_quality_flags": [],
         "source_note": "Synthetic sample parcel for local prototype rendering.",

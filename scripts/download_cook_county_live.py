@@ -18,6 +18,7 @@ from scripts.pipeline_utils import normalize_pin
 
 SOCRATA_UNIVERSE = "https://datacatalog.cookcountyil.gov/resource/nj4t-kc8j.json"
 SOCRATA_IMPROVEMENTS = "https://datacatalog.cookcountyil.gov/resource/x54s-btds.json"
+SOCRATA_PERMITS = "https://datacatalog.cookcountyil.gov/resource/6yjf-dfxs.json"
 PARCEL_FEATURE_SERVER = "https://gis.cookcountyil.gov/hosting/rest/services/Hosted/Parcel/FeatureServer/0/query"
 
 UNIVERSE_FIELDS = [
@@ -52,6 +53,23 @@ IMPROVEMENT_FIELDS = [
     "row_id",
 ]
 
+PERMIT_FIELDS = [
+    "pin",
+    "year",
+    "permit_number",
+    "local_permit_number",
+    "date_issued",
+    "estimated_date_of_completion",
+    "status",
+    "assessable",
+    "amount",
+    "municipality",
+    "township",
+    "property_address",
+    "job_code_primary",
+    "work_description",
+]
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(
@@ -73,6 +91,7 @@ def main() -> None:
 
     universe_path = raw_dir / "parcel_universe.csv"
     improvements_path = raw_dir / "assessor_improvements.csv"
+    permits_path = raw_dir / "assessor_permits.csv"
     parcels_path = raw_dir / "cook_county_parcels.geojson"
 
     universe_rows = fetch_universe(args.municipality, year)
@@ -93,6 +112,9 @@ def main() -> None:
 
     improvement_rows = fetch_improvements(pins, year, args.chunk_size)
     write_csv(improvements_path, improvement_rows, IMPROVEMENT_FIELDS, args.force)
+
+    permit_rows = fetch_permits(pins, args.chunk_size)
+    write_csv(permits_path, permit_rows, PERMIT_FIELDS, args.force)
 
     parcel_geojson = fetch_parcel_geometries(pins, args.chunk_size)
     parcels_path.write_text(json.dumps(parcel_geojson), encoding="utf-8")
@@ -143,6 +165,24 @@ def fetch_improvements(pins: list[str], year: str, chunk_size: int) -> list[dict
             )
         )
         print_progress(index, len(pins), chunk_size, "improvement chunks")
+    return rows
+
+
+def fetch_permits(pins: list[str], chunk_size: int) -> list[dict[str, Any]]:
+    print("Downloading assessor permit rows...")
+    rows: list[dict[str, Any]] = []
+    for index, chunk in enumerate(chunks(pins, chunk_size), start=1):
+        rows.extend(
+            socrata_get_all(
+                SOCRATA_PERMITS,
+                {
+                    "$select": ",".join(PERMIT_FIELDS),
+                    "$where": f"pin in ({quoted_list(chunk)})",
+                    "$order": "pin,date_issued,permit_number",
+                },
+            )
+        )
+        print_progress(index, len(pins), chunk_size, "permit chunks")
     return rows
 
 

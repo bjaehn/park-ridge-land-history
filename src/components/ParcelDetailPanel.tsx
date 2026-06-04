@@ -1,5 +1,6 @@
 import { formatFlags, formatNumber, formatYear } from "../lib/formatters";
 import type { ParcelFeature } from "../lib/parcelTypes";
+import { HouseEvolutionTimeline } from "./HouseEvolutionTimeline";
 
 type ParcelDetailPanelProps = {
   parcel: ParcelFeature | null;
@@ -18,6 +19,7 @@ export function ParcelDetailPanel({ parcel, onClearSelection }: ParcelDetailPane
         ["Land sqft", formatNumber(properties.land_sqft)],
         ["Property class", properties.property_class || "Unknown"],
         ["Improvements", formatNumber(properties.improvement_count)],
+        ["Permits", formatNumber(properties.permit_count)],
         ["Selection", properties.primary_building_selection_method || "Unknown"],
         ["Flags", formatFlags(properties.data_quality_flags)]
       ]
@@ -47,6 +49,7 @@ export function ParcelDetailPanel({ parcel, onClearSelection }: ParcelDetailPane
               </div>
             ))}
           </dl>
+          <HouseEvolutionTimeline properties={properties} />
           <p className="quiet-note">{properties.source_note || "Cook County assessor and parcel data."}</p>
         </>
       )}

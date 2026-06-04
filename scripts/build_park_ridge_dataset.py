@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
@@ -34,6 +35,14 @@ MUNICIPALITY_COLUMN_CANDIDATES = (
     "location_city",
 )
 PROPERTY_CLASS_COLUMN_CANDIDATES = ("property_class", "class", "property_use", "major_class")
+PERMIT_DATE_COLUMN_CANDIDATES = ("date_issued", "issued_date", "permit_date")
+PERMIT_YEAR_COLUMN_CANDIDATES = ("year", "permit_year")
+PERMIT_DESCRIPTION_COLUMN_CANDIDATES = ("work_description", "description", "permit_description")
+PERMIT_STATUS_COLUMN_CANDIDATES = ("status", "permit_status")
+PERMIT_NUMBER_COLUMN_CANDIDATES = ("permit_number", "local_permit_number")
+PERMIT_AMOUNT_COLUMN_CANDIDATES = ("amount", "permit_amount")
+NEARBY_TEARDOWN_DISTANCE_FT = 500
+NEARBY_TEARDOWN_LIMIT = 5
 
 
 def read_table(path: Path) -> Any:
@@ -116,6 +125,157 @@ def build_primary_improvements(improvements: pd.DataFrame) -> pd.DataFrame:
         )
 
     return pd.DataFrame(records)
+
+
+def build_permit_history(permits: pd.DataFrame) -> pd.DataFrame:
+    pin_column = find_likely_column(permits.columns, PIN_COLUMN_CANDIDATES)
+    date_column = find_likely_column(permits.columns, PERMIT_DATE_COLUMN_CANDIDATES)
+    year_column = find_likely_column(permits.columns, PERMIT_YEAR_COLUMN_CANDIDATES)
+    description_column = find_likely_column(permits.columns, PERMIT_DESCRIPTION_COLUMN_CANDIDATES)
+    status_column = find_likely_column(permits.columns, PERMIT_STATUS_COLUMN_CANDIDATES)
+    number_column = find_likely_column(permits.columns, PERMIT_NUMBER_COLUMN_CANDIDATES)
+    amount_column = find_likely_column(permits.columns, PERMIT_AMOUNT_COLUMN_CANDIDATES)
+
+    if not pin_column:
+        raise ValueError(f"No likely PIN column found in permit columns: {list(permits.columns)}")
+    if not date_column and not year_column:
+        raise ValueError("Permit data needs either a date_issued or permit_year-style column.")
+
+    normalized = add_normalized_pin_columns(permits.copy(), pin_column)
+    records: list[dict[str, Any]] = []
+
+    for pin, group in normalized.dropna(subset=["pin_normalized"]).groupby("pin_normalized"):
+        events = [
+            build_permit_event(row, date_column, year_column, description_column, status_column, number_column, amount_column)
+            for row in group.to_dict(orient="records")
+        ]
+        events = sorted(events, key=timeline_sort_key)
+        years = [event["year"] for event in events if event.get("year")]
+        records.append(
+            {
+                "pin_normalized": pin,
+                "permit_count": len(events),
+                "latest_permit_year": max(years) if years else None,
+                "permit_timeline": events,
+            }
+        )
+
+    return pd.DataFrame(records)
+
+
+def build_permit_event(
+    row: dict[str, Any],
+    date_column: str | None,
+    year_column: str | None,
+    description_column: str | None,
+    status_column: str | None,
+    number_column: str | None,
+    amount_column: str | None,
+) -> dict[str, Any]:
+    description = clean_text(row.get(description_column)) if description_column else None
+    date_issued = clean_text(row.get(date_column)) if date_column else None
+    year = permit_year(date_issued, row.get(year_column) if year_column else None)
+    amount = numeric_or_none(row.get(amount_column)) if amount_column else None
+    event = {
+        "year": year,
+        "date": date_issued,
+        "title": permit_title(description),
+        "description": description,
+        "event_type": "permit",
+        "status": clean_text(row.get(status_column)) if status_column else None,
+        "permit_number": clean_text(row.get(number_column)) if number_column else None,
+        "source": "Cook County Assessor Permits",
+    }
+    if amount is not None:
+        event["amount"] = amount
+    return event
+
+
+def attach_house_evolution_timelines(enriched: Any) -> Any:
+    enriched = append_nearby_teardown_events(enriched)
+    timelines: list[str] = []
+
+    for _, row in enriched.iterrows():
+        events: list[dict[str, Any]] = []
+        year_built = parse_year(row.get("year_built"))
+        if year_built:
+            events.append(
+                {
+                    "year": year_built,
+                    "title": "Original build",
+                    "description": "Assessor year built for the primary structure.",
+                    "event_type": "original_build",
+                    "source": "Cook County Assessor",
+                }
+            )
+        events.extend(parse_timeline_value(row.get("permit_timeline")))
+        events.extend(parse_timeline_value(row.get("nearby_teardown_timeline")))
+        timelines.append(json.dumps(sorted(events, key=timeline_sort_key), separators=(",", ":")))
+
+    enriched["house_evolution_timeline"] = timelines
+    return enriched.drop(columns=["permit_timeline", "nearby_teardown_timeline"], errors="ignore")
+
+
+def append_nearby_teardown_events(enriched: Any) -> Any:
+    if "permit_timeline" not in enriched or not hasattr(enriched, "geometry"):
+        enriched["nearby_teardown_count"] = 0
+        enriched["nearby_teardown_timeline"] = [[] for _ in range(len(enriched))]
+        return enriched
+
+    teardown_rows: list[dict[str, Any]] = []
+    for index, row in enriched.iterrows():
+        pin = row.get("pin_normalized")
+        for event in parse_timeline_value(row.get("permit_timeline")):
+            if is_teardown_event(event):
+                teardown_rows.append({"source_index": index, "pin": pin, "address": row.get("address"), "event": event})
+
+    if not teardown_rows:
+        enriched["nearby_teardown_count"] = 0
+        enriched["nearby_teardown_timeline"] = [[] for _ in range(len(enriched))]
+        return enriched
+
+    import geopandas as gpd
+
+    projected = enriched.to_crs("EPSG:3435")
+    teardown_geometries = [projected.loc[row["source_index"]].geometry.centroid for row in teardown_rows]
+    teardown_gdf = gpd.GeoDataFrame(teardown_rows, geometry=teardown_geometries, crs=projected.crs)
+    spatial_index = teardown_gdf.sindex
+    nearby_counts: list[int] = []
+    nearby_timelines: list[list[dict[str, Any]]] = []
+
+    for index, parcel in projected.iterrows():
+        geometry = parcel.geometry
+        if geometry is None or geometry.is_empty:
+            nearby_counts.append(0)
+            nearby_timelines.append([])
+            continue
+
+        search_area = geometry.centroid.buffer(NEARBY_TEARDOWN_DISTANCE_FT)
+        candidates = teardown_gdf.iloc[list(spatial_index.query(search_area, predicate="intersects"))]
+        nearby_events: list[tuple[float, dict[str, Any]]] = []
+        for _, candidate in candidates.iterrows():
+            if candidate.get("pin") == parcel.get("pin_normalized"):
+                continue
+            distance = geometry.centroid.distance(candidate.geometry)
+            if distance > NEARBY_TEARDOWN_DISTANCE_FT:
+                continue
+            event = dict(candidate["event"])
+            source_label = clean_text(candidate.get("address")) or f"PIN {candidate.get('pin')}"
+            event["title"] = "Nearby demolition or teardown permit"
+            event["description"] = f"{source_label}: {event.get('description') or 'Demolition-like permit work description.'}"
+            event["event_type"] = "nearby_teardown"
+            event["pin"] = candidate.get("pin")
+            event["is_nearby"] = True
+            nearby_events.append((distance, event))
+
+        nearby_events.sort(key=lambda item: (timeline_sort_key(item[1]), item[0]))
+        capped = [event for _, event in nearby_events[:NEARBY_TEARDOWN_LIMIT]]
+        nearby_counts.append(len(capped))
+        nearby_timelines.append(capped)
+
+    enriched["nearby_teardown_count"] = nearby_counts
+    enriched["nearby_teardown_timeline"] = nearby_timelines
+    return enriched
 
 
 def enrich_with_universe(primary: pd.DataFrame, universe: pd.DataFrame) -> pd.DataFrame:
@@ -201,6 +361,12 @@ def build_dataset() -> None:
     parcels = add_normalized_pin_columns(parcels.copy(), parcel_pin_column)
     primary = build_primary_improvements(pd.DataFrame(improvements.drop(columns="geometry", errors="ignore")))
 
+    permits_path = optional_source("Cook County Assessor permits")
+    permit_history = None
+    if permits_path:
+        permits = pd.DataFrame(read_table(permits_path).drop(columns="geometry", errors="ignore"))
+        permit_history = build_permit_history(permits)
+
     universe_path = optional_source("Cook County parcel universe")
     if universe_path:
         universe = pd.DataFrame(read_table(universe_path).drop(columns="geometry", errors="ignore"))
@@ -212,14 +378,18 @@ def build_dataset() -> None:
         primary,
     )
     enriched = filtered_parcels.merge(primary, on="pin_normalized", how="left", suffixes=("_parcel", ""))
+    if permit_history is not None:
+        enriched = enriched.merge(permit_history, on="pin_normalized", how="left")
 
-    for column in ["address", "municipality", "property_class", "year_built", "decade_built", "building_sqft", "land_sqft", "improvement_count", "primary_building_selection_method"]:
+    for column in ["address", "municipality", "property_class", "year_built", "decade_built", "building_sqft", "land_sqft", "improvement_count", "permit_count", "latest_permit_year", "nearby_teardown_count", "primary_building_selection_method"]:
         if column not in enriched:
             enriched[column] = None
 
     enriched["decade_built"] = enriched["decade_built"].fillna("Unknown")
+    enriched["permit_count"] = enriched["permit_count"].fillna(0).astype(int)
     enriched["data_quality_flags"] = enriched["data_quality_flags"].apply(normalize_flags)
     enriched["source_note"] = "Cook County parcel and assessor data. Owner names intentionally omitted."
+    enriched = attach_house_evolution_timelines(enriched)
 
     output_columns = [
         "pin_normalized",
@@ -232,6 +402,10 @@ def build_dataset() -> None:
         "building_sqft",
         "land_sqft",
         "improvement_count",
+        "permit_count",
+        "latest_permit_year",
+        "nearby_teardown_count",
+        "house_evolution_timeline",
         "primary_building_selection_method",
         "data_quality_flags",
         "source_note",
@@ -276,6 +450,8 @@ def write_summary(enriched: Any, filter_method: str) -> None:
         "build_timestamp": datetime.now(timezone.utc).isoformat(),
         "known_limitations": [
             "Year built is assessor structure age, not subdivision date.",
+            "Permit history reflects permits submitted to and known by the Cook County Assessor.",
+            "Open, pending, and current-tax-year permits may change after publication.",
             "Current parcel polygons do not reconstruct historical parcel splits or consolidations.",
             "Primary building selection is a transparent v1 heuristic."
         ],
@@ -300,6 +476,59 @@ def normalize_flags(value: Any) -> list[str]:
     if value is None or pd.isna(value):
         return ["missing_assessor_join"]
     return [str(value)]
+
+
+def clean_text(value: Any) -> str | None:
+    if value is None or pd.isna(value):
+        return None
+    text = str(value).strip()
+    return text if text and text.lower() not in {"nan", "none", "null"} else None
+
+
+def permit_year(date_issued: str | None, fallback: Any) -> int | None:
+    if date_issued:
+        match = re.search(r"\b(18|19|20)\d{2}\b", date_issued)
+        if match:
+            return int(match.group(0))
+    return parse_year(fallback)
+
+
+def permit_title(description: str | None) -> str:
+    text = (description or "").lower()
+    if re.search(r"\b(demo|demolition|tear\s*down|teardown|wreck)", text):
+        return "Demolition or teardown permit"
+    if re.search(r"\b(addition|addn|add|expand|second story|2nd story)\b", text):
+        return "Addition permit"
+    if re.search(r"\b(garage|carport)\b", text):
+        return "Garage permit"
+    if re.search(r"\b(porch|deck|patio)\b", text):
+        return "Porch, deck, or patio permit"
+    if re.search(r"\b(kitchen|bath|remodel|renovation|alteration|interior)\b", text):
+        return "Remodel or renovation permit"
+    if re.search(r"\b(new construction|new single family|single family residence|new residence)\b", text):
+        return "New construction permit"
+    return "Building permit"
+
+
+def is_teardown_event(event: dict[str, Any]) -> bool:
+    return event.get("title") == "Demolition or teardown permit"
+
+
+def parse_timeline_value(value: Any) -> list[dict[str, Any]]:
+    if isinstance(value, list):
+        return [event for event in value if isinstance(event, dict)]
+    if isinstance(value, str) and value.strip():
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError:
+            return []
+        return [event for event in parsed if isinstance(event, dict)] if isinstance(parsed, list) else []
+    return []
+
+
+def timeline_sort_key(event: dict[str, Any]) -> tuple[int, str]:
+    year = parse_year(event.get("year")) or permit_year(clean_text(event.get("date")), None) or 9999
+    return year, clean_text(event.get("date")) or ""
 
 
 if __name__ == "__main__":

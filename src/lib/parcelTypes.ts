@@ -31,6 +31,25 @@ export type ParcelProperties = {
   data_quality_flags?: string[] | string | null;
   source_note?: string | null;
   synthetic_sample?: boolean;
+  permit_count?: number | null;
+  latest_permit_year?: number | null;
+  nearby_teardown_count?: number | null;
+  house_evolution_timeline?: HouseEvolutionEvent[] | string | null;
+};
+
+export type HouseEvolutionEventType = "original_build" | "permit" | "nearby_teardown";
+
+export type HouseEvolutionEvent = {
+  year?: number | null;
+  date?: string | null;
+  title: string;
+  description?: string | null;
+  event_type: HouseEvolutionEventType;
+  status?: string | null;
+  permit_number?: string | null;
+  source?: string | null;
+  pin?: string | null;
+  is_nearby?: boolean;
 };
 
 export type ParcelFeature = GeoJSON.Feature<GeoJSON.Polygon | GeoJSON.MultiPolygon, ParcelProperties>;

@@ -14,6 +14,7 @@ export function parcelPopupHtml(properties: ParcelPopupProps["properties"]): str
     ["Land sqft", formatNumber(properties.land_sqft)],
     ["Property class", properties.property_class || "Unknown"],
     ["Improvements", formatNumber(properties.improvement_count)],
+    ["Permits", formatNumber(properties.permit_count)],
     ["Flags", formatFlags(properties.data_quality_flags)]
   ];
 

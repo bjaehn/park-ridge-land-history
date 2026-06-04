@@ -47,6 +47,14 @@ DATA_SOURCES: list[DataSource] = [
         description="Improvement-level assessor characteristics, including year built."
     ),
     DataSource(
+        name="Cook County Assessor permits",
+        env_url="ASSESSOR_PERMITS_SOURCE_URL",
+        env_path="ASSESSOR_PERMITS_LOCAL_PATH",
+        default_path=Path("data/raw/assessor_permits.csv"),
+        required_for_build=False,
+        description="Permit-level building history, including issued dates, statuses, and work descriptions."
+    ),
+    DataSource(
         name="Cook County parcel universe or address data",
         env_url="PARCEL_UNIVERSE_SOURCE_URL",
         env_path="PARCEL_UNIVERSE_LOCAL_PATH",

@@ -15,10 +15,12 @@ The v1 prototype is a static map application with a reproducible local data pipe
 3. Inspect schemas and write `docs/data_dictionary.md`.
 4. Normalize parcel and assessor PINs to 14 digit strings.
 5. Derive one primary improvement record per PIN.
-6. Filter parcels to the target municipality by boundary, then attributes as fallback.
-7. Join parcel polygons to assessor-derived fields.
-8. Export GeoJSON and summary JSON.
-9. The React app loads generated GeoJSON, or sample data if generated data is absent.
+6. Optionally derive permit history timelines per PIN from Assessor Permits rows.
+7. Filter parcels to the target municipality by boundary, then attributes as fallback.
+8. Join parcel polygons to assessor-derived fields.
+9. Append a house evolution timeline from original year built, direct permit events, and capped nearby teardown permit context.
+10. Export GeoJSON and summary JSON.
+11. The React app loads generated GeoJSON, or sample data if generated data is absent.
 
 ## Municipality Extensibility
 

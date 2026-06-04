@@ -21,6 +21,15 @@ This is improvement-level data, not parcel-level data. One PIN can have multiple
 
 The live schema currently uses `char_yrblt` for year built, `char_bldg_sf` for building square feet, and `char_land_sf` for land square feet.
 
+## Cook County Assessor Permits
+
+- Dataset: `https://datacatalog.cookcountyil.gov/Property-Taxation/Assessor-Permits/6yjf-dfxs`
+- Socrata API pattern: `https://datacatalog.cookcountyil.gov/resource/6yjf-dfxs.csv`
+
+Use this optional source for the house evolution timeline. Rows are permit-level records associated with a parcel PIN and can include closed, open, and pending permits. The portal notes that rows are unique by `pin`, `permit_number`, and `date_issued`; `date_issued` is preferred for temporal comparisons; and `work_description` should be treated as the canonical work description because job and improvement codes are not always reliable.
+
+The dataset is updated monthly and may include current-tax-year records that are not final. It also reflects permits submitted to and known by the Cook County Assessor, not the complete universe of every municipal permit ever issued. The project exports permit number, issued date, status, amount, and work description, but does not export applicant or mailing fields.
+
 ## Cook County Assessor Parcel Universe
 
 - Dataset: `https://datacatalog.cookcountyil.gov/Property-Taxation/Assessor-Parcel-Universe/nj4t-kc8j`
