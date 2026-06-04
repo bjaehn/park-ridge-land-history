@@ -14,7 +14,7 @@ import {
   type ParcelChangeFeature,
   type ParcelChangeType
 } from "../lib/parcelChangeTypes";
-import { permitPressureColors } from "../lib/permitPressure";
+import { permitPressureColors, permitStabilityColors, type PermitPressureMapMode } from "../lib/permitPressure";
 import type { ParcelCollection, ParcelFeature } from "../lib/parcelTypes";
 import { parcelPopupHtml } from "./ParcelPopup";
 
@@ -25,6 +25,7 @@ type MapViewProps = {
   showOutlines: boolean;
   showBoundary: boolean;
   showPermitPressure: boolean;
+  permitPressureMapMode: PermitPressureMapMode;
   historicalOverlays: LoadedHistoricalLayer[];
   selectedParcelChange: ParcelChangeFeature | null;
   visibleChangeTypes: Set<ParcelChangeType>;
@@ -44,6 +45,7 @@ export function MapView({
   showOutlines,
   showBoundary,
   showPermitPressure,
+  permitPressureMapMode,
   historicalOverlays,
   selectedParcelChange,
   visibleChangeTypes,
@@ -148,8 +150,8 @@ export function MapView({
         type: "fill",
         source: "parcels",
         paint: {
-          "fill-color": permitPressureFillColorExpression(),
-          "fill-opacity": permitPressureFillOpacityExpression(true)
+          "fill-color": permitPressureFillColorExpression("stability"),
+          "fill-opacity": permitPressureFillOpacityExpression(true, "stability")
         }
       });
 
@@ -440,11 +442,16 @@ export function MapView({
     if (mapRef.current?.getLayer("permit-pressure-fill")) {
       mapRef.current.setPaintProperty(
         "permit-pressure-fill",
+        "fill-color",
+        permitPressureFillColorExpression(permitPressureMapMode)
+      );
+      mapRef.current.setPaintProperty(
+        "permit-pressure-fill",
         "fill-opacity",
-        permitPressureFillOpacityExpression(showPermitPressure)
+        permitPressureFillOpacityExpression(showPermitPressure, permitPressureMapMode)
       );
     }
-  }, [showPermitPressure]);
+  }, [permitPressureMapMode, showPermitPressure]);
 
   return <div ref={containerRef} className="map-canvas" aria-label="Park Ridge parcel map" />;
 }
@@ -535,20 +542,44 @@ function parcelChangeFilterExpression(visibleChangeTypes: Set<ParcelChangeType>)
   ] as FilterSpecification;
 }
 
-function permitPressureFillColorExpression(): ExpressionSpecification {
-  const matchValues = Object.entries(permitPressureColors).flatMap(([pressureType, color]) => [
+function permitPressureFillColorExpression(mapMode: PermitPressureMapMode): ExpressionSpecification {
+  const colors = mapMode === "stability" ? permitStabilityColors : permitPressureColors;
+  const propertyName = mapMode === "stability" ? "permit_stability_type" : "permit_pressure_type";
+  const fallback = mapMode === "stability" ? permitStabilityColors.stable : "rgba(255,255,255,0)";
+  const matchValues = Object.entries(colors).flatMap(([pressureType, color]) => [
     pressureType,
     color
   ]);
-  return ["match", ["get", "permit_pressure_type"], ...matchValues, "rgba(255,255,255,0)"] as unknown as ExpressionSpecification;
+  return ["match", ["get", propertyName], ...matchValues, fallback] as unknown as ExpressionSpecification;
 }
 
-function permitPressureFillOpacityExpression(showPermitPressure: boolean): ExpressionSpecification | number {
+function permitPressureFillOpacityExpression(
+  showPermitPressure: boolean,
+  mapMode: PermitPressureMapMode
+): ExpressionSpecification | number {
   if (!showPermitPressure) return 0;
+  if (mapMode === "activity") {
+    return [
+      "case",
+      ["==", ["get", "permit_pressure_type"], "none"],
+      0,
+      [
+        "interpolate",
+        ["linear"],
+        ["coalesce", ["get", "permit_pressure_score"], 0],
+        0,
+        0.16,
+        0.5,
+        0.46,
+        1,
+        0.72
+      ]
+    ] as ExpressionSpecification;
+  }
   return [
     "case",
-    ["==", ["get", "permit_pressure_type"], "none"],
-    0,
+    ["==", ["get", "permit_stability_type"], "stable"],
+    0.24,
     [
       "interpolate",
       ["linear"],

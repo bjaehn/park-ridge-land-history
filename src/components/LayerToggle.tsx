@@ -1,14 +1,21 @@
-import { permitPressureWindowLabels, type PermitPressureWindow } from "../lib/permitPressure";
+import {
+  permitPressureMapModeLabels,
+  permitPressureWindowLabels,
+  type PermitPressureMapMode,
+  type PermitPressureWindow
+} from "../lib/permitPressure";
 
 type LayerToggleProps = {
   showOutlines: boolean;
   showBoundary: boolean;
   showPermitPressure: boolean;
   permitPressureWindow: PermitPressureWindow;
+  permitPressureMapMode: PermitPressureMapMode;
   onSetShowOutlines: (show: boolean) => void;
   onSetShowBoundary: (show: boolean) => void;
   onSetShowPermitPressure: (show: boolean) => void;
   onSetPermitPressureWindow: (window: PermitPressureWindow) => void;
+  onSetPermitPressureMapMode: (mode: PermitPressureMapMode) => void;
 };
 
 export function LayerToggle({
@@ -16,10 +23,12 @@ export function LayerToggle({
   showBoundary,
   showPermitPressure,
   permitPressureWindow,
+  permitPressureMapMode,
   onSetShowOutlines,
   onSetShowBoundary,
   onSetShowPermitPressure,
-  onSetPermitPressureWindow
+  onSetPermitPressureWindow,
+  onSetPermitPressureMapMode
 }: LayerToggleProps) {
   return (
     <section className="panel-section" aria-label="Layer controls">
@@ -32,6 +41,19 @@ export function LayerToggle({
             onChange={(event) => onSetShowPermitPressure(event.target.checked)}
           />
           <span>Permit pressure</span>
+        </label>
+        <label className="select-control">
+          <span>Permit view</span>
+          <select
+            value={permitPressureMapMode}
+            onChange={(event) => onSetPermitPressureMapMode(parsePermitPressureMapMode(event.target.value))}
+          >
+            {Object.entries(permitPressureMapModeLabels).map(([value, label]) => (
+              <option value={value} key={value}>
+                {label}
+              </option>
+            ))}
+          </select>
         </label>
         <label className="select-control">
           <span>Permit window</span>
@@ -65,6 +87,10 @@ export function LayerToggle({
       </label>
     </section>
   );
+}
+
+function parsePermitPressureMapMode(value: string): PermitPressureMapMode {
+  return value === "activity" ? "activity" : "stability";
 }
 
 function parsePermitPressureWindow(value: string): PermitPressureWindow {

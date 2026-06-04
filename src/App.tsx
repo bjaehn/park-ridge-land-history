@@ -17,7 +17,7 @@ import {
   type ParcelChangeFeature,
   type ParcelChangeType
 } from "./lib/parcelChangeTypes";
-import { decoratePermitPressure, type PermitPressureWindow } from "./lib/permitPressure";
+import { decoratePermitPressure, type PermitPressureMapMode, type PermitPressureWindow } from "./lib/permitPressure";
 import type { ParcelCollection, ParcelFeature } from "./lib/parcelTypes";
 
 const knownDecades = decadeOrder.filter((bucket) => bucket !== "Unknown" && bucket !== "Suspicious");
@@ -39,6 +39,7 @@ export default function App() {
   const [showBoundary, setShowBoundary] = useState(true);
   const [showPermitPressure, setShowPermitPressure] = useState(true);
   const [permitPressureWindow, setPermitPressureWindow] = useState<PermitPressureWindow>(5);
+  const [permitPressureMapMode, setPermitPressureMapMode] = useState<PermitPressureMapMode>("stability");
   const [maxBuiltYear, setMaxBuiltYear] = useState(2026);
   const [selectedPin, setSelectedPin] = useState<string | null>(null);
   const [isBuildoutPlaying, setIsBuildoutPlaying] = useState(false);
@@ -116,9 +117,14 @@ export default function App() {
     };
   }, [maxBuiltYear, parcels, selectedDecades, showUnknown]);
 
-  const pressureDecoratedParcels = useMemo(
+  const pressureDecoratedFilteredParcels = useMemo(
     () => decoratePermitPressure(filteredParcels, permitPressureWindow),
     [filteredParcels, permitPressureWindow]
+  );
+
+  const pressureDecoratedParcels = useMemo(
+    () => decoratePermitPressure(parcels, permitPressureWindow),
+    [parcels, permitPressureWindow]
   );
 
   const visibleLegendBuckets = useMemo(() => {
@@ -148,14 +154,14 @@ export default function App() {
   }, [maxBuiltYear, parcels, yearRange.max]);
 
   const selectedParcel = useMemo(() => {
-    if (!parcels || !selectedPin) return null;
+    if (!pressureDecoratedParcels || !selectedPin) return null;
     return (
-      parcels.features.find((feature) => {
+      pressureDecoratedParcels.features.find((feature) => {
         const pin = feature.properties.pin_normalized || feature.properties.pin_original;
         return pin === selectedPin;
       }) ?? null
     );
-  }, [parcels, selectedPin]);
+  }, [pressureDecoratedParcels, selectedPin]);
 
   const historicalOverlays = useMemo(() => {
     return Array.from(activeHistoricalLayerIds)
@@ -268,12 +274,13 @@ export default function App() {
   return (
     <main className="app-shell">
       <MapView
-        parcels={pressureDecoratedParcels}
+        parcels={pressureDecoratedFilteredParcels}
         selectedParcel={selectedParcel}
         boundary={boundary}
         showOutlines={showOutlines}
         showBoundary={showBoundary}
         showPermitPressure={showPermitPressure}
+        permitPressureMapMode={permitPressureMapMode}
         historicalOverlays={historicalOverlays}
         selectedParcelChange={selectedParcelChange}
         visibleChangeTypes={visibleChangeTypes}
@@ -299,6 +306,8 @@ export default function App() {
         />
         <ParcelDetailPanel
           parcel={selectedParcel}
+          parcels={pressureDecoratedParcels}
+          permitPressureWindow={permitPressureWindow}
           onClearSelection={() => setSelectedPin(null)}
         />
         <TimelineControl
@@ -329,10 +338,12 @@ export default function App() {
           showBoundary={showBoundary}
           showPermitPressure={showPermitPressure}
           permitPressureWindow={permitPressureWindow}
+          permitPressureMapMode={permitPressureMapMode}
           onSetShowOutlines={setShowOutlines}
           onSetShowBoundary={setShowBoundary}
           onSetShowPermitPressure={setShowPermitPressure}
           onSetPermitPressureWindow={setPermitPressureWindow}
+          onSetPermitPressureMapMode={setPermitPressureMapMode}
         />
         <HistoricalLayerPanel
           layers={historicalLayers}
@@ -357,6 +368,7 @@ export default function App() {
           showParcelChangeLegend={activeHistoricalLayerIds.has(parcelChangeLayerId)}
           visibleChangeTypes={visibleChangeTypes}
           showPermitPressureLegend={showPermitPressure}
+          permitPressureMapMode={permitPressureMapMode}
         />
       </aside>
     </main>

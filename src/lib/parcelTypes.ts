@@ -37,6 +37,7 @@ export type ParcelProperties = {
   house_evolution_timeline?: HouseEvolutionEvent[] | string | null;
   permit_pressure_score?: number | null;
   permit_pressure_type?: PermitPressureType | null;
+  permit_stability_type?: PermitStabilityType | null;
   recent_permit_count?: number | null;
   recent_teardown_count?: number | null;
 };
@@ -50,6 +51,7 @@ export type PermitPressureType =
   | "new_construction"
   | "direct_teardown"
   | "nearby_teardown";
+export type PermitStabilityType = "stable" | "watch" | "changing" | "teardown_pressure";
 
 export type HouseEvolutionEvent = {
   year?: number | null;

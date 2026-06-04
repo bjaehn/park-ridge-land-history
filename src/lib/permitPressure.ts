@@ -1,7 +1,14 @@
 import { getHouseEvolutionTimeline } from "./houseEvolution";
-import type { HouseEvolutionEvent, ParcelCollection, ParcelFeature, PermitPressureType } from "./parcelTypes";
+import type {
+  HouseEvolutionEvent,
+  ParcelCollection,
+  ParcelFeature,
+  PermitPressureType,
+  PermitStabilityType
+} from "./parcelTypes";
 
 export type PermitPressureWindow = 1 | 5 | 10 | "all";
+export type PermitPressureMapMode = "activity" | "stability";
 
 export const permitPressureCurrentYear = 2026;
 
@@ -10,6 +17,11 @@ export const permitPressureWindowLabels: Record<PermitPressureWindow, string> = 
   5: "5 years",
   10: "10 years",
   all: "All"
+};
+
+export const permitPressureMapModeLabels: Record<PermitPressureMapMode, string> = {
+  activity: "Activity type",
+  stability: "Stable vs changing"
 };
 
 export const permitPressureColors: Record<PermitPressureType, string> = {
@@ -22,6 +34,13 @@ export const permitPressureColors: Record<PermitPressureType, string> = {
   nearby_teardown: "#e11d48"
 };
 
+export const permitStabilityColors: Record<PermitStabilityType, string> = {
+  stable: "#3f7d58",
+  watch: "#d4a72c",
+  changing: "#c65f2d",
+  teardown_pressure: "#b91c1c"
+};
+
 export const permitPressureLegendOrder: PermitPressureType[] = [
   "direct_teardown",
   "nearby_teardown",
@@ -29,6 +48,13 @@ export const permitPressureLegendOrder: PermitPressureType[] = [
   "addition",
   "remodel",
   "recent_permit"
+];
+
+export const permitStabilityLegendOrder: PermitStabilityType[] = [
+  "teardown_pressure",
+  "changing",
+  "watch",
+  "stable"
 ];
 
 export function decoratePermitPressure(
@@ -56,6 +82,16 @@ export function permitPressureLabel(pressureType: PermitPressureType): string {
   return labels[pressureType];
 }
 
+export function permitStabilityLabel(stabilityType: PermitStabilityType): string {
+  const labels: Record<PermitStabilityType, string> = {
+    stable: "Stable",
+    watch: "Watch",
+    changing: "Changing",
+    teardown_pressure: "Teardown pressure"
+  };
+  return labels[stabilityType];
+}
+
 function decorateFeature(feature: ParcelFeature, pressureWindow: PermitPressureWindow): ParcelFeature {
   const events = getHouseEvolutionTimeline(feature.properties).filter((event) => isWithinWindow(event, pressureWindow));
   const directPermits = events.filter((event) => event.event_type === "permit");
@@ -70,11 +106,29 @@ function decorateFeature(feature: ParcelFeature, pressureWindow: PermitPressureW
     properties: {
       ...feature.properties,
       permit_pressure_type: pressureType,
+      permit_stability_type: classifyStabilityType(pressureType, recentPermitCount, recentTeardownCount),
       permit_pressure_score: pressureScore(recentPermitCount, recentTeardownCount, pressureType),
       recent_permit_count: recentPermitCount,
       recent_teardown_count: recentTeardownCount
     }
   };
+}
+
+function classifyStabilityType(
+  pressureType: PermitPressureType,
+  recentPermitCount: number,
+  recentTeardownCount: number
+): PermitStabilityType {
+  if (pressureType === "direct_teardown" || pressureType === "nearby_teardown" || recentTeardownCount > 0) {
+    return "teardown_pressure";
+  }
+  if (pressureType === "new_construction" || pressureType === "addition" || recentPermitCount >= 3) {
+    return "changing";
+  }
+  if (pressureType === "remodel" || pressureType === "recent_permit" || recentPermitCount > 0) {
+    return "watch";
+  }
+  return "stable";
 }
 
 function classifyPressureType(

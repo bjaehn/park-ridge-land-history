@@ -8,7 +8,11 @@ import {
 import {
   permitPressureColors,
   permitPressureLabel,
-  permitPressureLegendOrder
+  permitPressureLegendOrder,
+  permitStabilityColors,
+  permitStabilityLabel,
+  permitStabilityLegendOrder,
+  type PermitPressureMapMode
 } from "../lib/permitPressure";
 
 type LegendProps = {
@@ -16,13 +20,15 @@ type LegendProps = {
   showParcelChangeLegend: boolean;
   visibleChangeTypes: Set<ParcelChangeType>;
   showPermitPressureLegend: boolean;
+  permitPressureMapMode: PermitPressureMapMode;
 };
 
 export function Legend({
   visibleDecades,
   showParcelChangeLegend,
   visibleChangeTypes,
-  showPermitPressureLegend
+  showPermitPressureLegend,
+  permitPressureMapMode
 }: LegendProps) {
   return (
     <section className="panel-section" aria-label="Decade color legend">
@@ -37,14 +43,21 @@ export function Legend({
       </div>
       {showPermitPressureLegend && (
         <div className="change-legend" aria-label="Permit pressure color legend">
-          <h3>Permit Pressure</h3>
+          <h3>{permitPressureMapMode === "stability" ? "Stable vs Changing" : "Permit Pressure"}</h3>
           <div className="legend-grid">
-            {permitPressureLegendOrder.map((pressureType) => (
-              <div className="legend-item" key={pressureType}>
-                <span className="legend-swatch" style={{ backgroundColor: permitPressureColors[pressureType] }} />
-                <span>{permitPressureLabel(pressureType)}</span>
-              </div>
-            ))}
+            {permitPressureMapMode === "stability"
+              ? permitStabilityLegendOrder.map((stabilityType) => (
+                  <div className="legend-item" key={stabilityType}>
+                    <span className="legend-swatch" style={{ backgroundColor: permitStabilityColors[stabilityType] }} />
+                    <span>{permitStabilityLabel(stabilityType)}</span>
+                  </div>
+                ))
+              : permitPressureLegendOrder.map((pressureType) => (
+                  <div className="legend-item" key={pressureType}>
+                    <span className="legend-swatch" style={{ backgroundColor: permitPressureColors[pressureType] }} />
+                    <span>{permitPressureLabel(pressureType)}</span>
+                  </div>
+                ))}
           </div>
         </div>
       )}
