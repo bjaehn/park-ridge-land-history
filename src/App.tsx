@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { AccordionSection } from "./components/AccordionSection";
 import { FilterPanel } from "./components/FilterPanel";
 import { LayerToggle } from "./components/LayerToggle";
 import { Legend } from "./components/Legend";
@@ -8,6 +9,7 @@ import { HistoricalLayerPanel } from "./components/HistoricalLayerPanel";
 import { ParcelDetailPanel } from "./components/ParcelDetailPanel";
 import { SearchPanel } from "./components/SearchPanel";
 import { TimelineControl } from "./components/TimelineControl";
+import { VisualizationPanel, type VisualizationPreset } from "./components/VisualizationPanel";
 import { decadeOrder } from "./lib/colorScales";
 import { loadHistoricalLayerData, loadHistoricalLayerManifest } from "./lib/layerLoaders";
 import { layerCanToggle, type HistoricalLayer, type LoadedHistoricalLayer } from "./lib/historicalLayerTypes";
@@ -153,6 +155,12 @@ export default function App() {
     };
   }, [maxBuiltYear, parcels, yearRange.max]);
 
+  const activeVisualizationPreset = useMemo<VisualizationPreset>(() => {
+    if (isBuildoutPlaying || maxBuiltYear < yearRange.max) return "buildout";
+    if (!showPermitPressure) return "age";
+    return permitPressureMapMode === "activity" ? "activity" : "stability";
+  }, [isBuildoutPlaying, maxBuiltYear, permitPressureMapMode, showPermitPressure, yearRange.max]);
+
   const selectedParcel = useMemo(() => {
     if (!pressureDecoratedParcels || !selectedPin) return null;
     return (
@@ -271,6 +279,32 @@ export default function App() {
     selectedLayers.forEach((layer) => void ensureHistoricalLayerLoaded(layer));
   }
 
+  function selectVisualizationPreset(preset: VisualizationPreset) {
+    setIsBuildoutPlaying(false);
+    if (preset !== "buildout") setMaxBuiltYear(yearRange.max);
+
+    if (preset === "stability") {
+      setShowPermitPressure(true);
+      setPermitPressureMapMode("stability");
+      return;
+    }
+
+    if (preset === "activity") {
+      setShowPermitPressure(true);
+      setPermitPressureMapMode("activity");
+      return;
+    }
+
+    if (preset === "buildout") {
+      setShowPermitPressure(false);
+      setMaxBuiltYear(yearRange.min);
+      setIsBuildoutPlaying(true);
+      return;
+    }
+
+    setShowPermitPressure(false);
+  }
+
   return (
     <main className="app-shell">
       <MapView
@@ -292,84 +326,105 @@ export default function App() {
           <p>Local prototype</p>
           <h1>Park Ridge Land History</h1>
         </header>
-        <FilterPanel
-          parcels={parcels}
-          filteredCount={filteredParcels?.features.length ?? 0}
-          isSampleData={isSampleData}
-        />
-        <SearchPanel
-          parcels={parcels}
-          selectedPin={selectedPin}
-          visiblePins={visiblePins}
-          onSelectParcel={selectParcel}
-          onClearSelection={() => setSelectedPin(null)}
-        />
-        <ParcelDetailPanel
-          parcel={selectedParcel}
-          parcels={pressureDecoratedParcels}
-          permitPressureWindow={permitPressureWindow}
-          onClearSelection={() => setSelectedPin(null)}
-        />
-        <TimelineControl
-          selectedDecades={selectedDecades}
-          maxBuiltYear={maxBuiltYear}
-          minAvailableYear={yearRange.min}
-          maxAvailableYear={yearRange.max}
-          isBuildoutPlaying={isBuildoutPlaying}
-          animationSpeed={animationSpeed}
-          builtByYearCount={buildoutStats.builtByYear}
-          knownYearTotal={buildoutStats.knownYearTotal}
-          percentBuilt={buildoutStats.percentBuilt}
-          showUnknown={showUnknown}
-          onToggleDecade={toggleDecade}
-          onSetMaxBuiltYear={handleSetMaxBuiltYear}
-          onToggleBuildoutPlayback={toggleBuildoutPlayback}
-          onResetBuildout={() => {
-            setIsBuildoutPlaying(false);
-            setMaxBuiltYear(yearRange.min);
-          }}
-          onSetAnimationSpeed={setAnimationSpeed}
-          onSetShowUnknown={setShowUnknown}
-          onSelectAll={() => setSelectedDecades(new Set(knownDecades))}
-          onClearKnown={() => setSelectedDecades(new Set())}
-        />
-        <LayerToggle
-          showOutlines={showOutlines}
-          showBoundary={showBoundary}
-          showPermitPressure={showPermitPressure}
-          permitPressureWindow={permitPressureWindow}
-          permitPressureMapMode={permitPressureMapMode}
-          onSetShowOutlines={setShowOutlines}
-          onSetShowBoundary={setShowBoundary}
-          onSetShowPermitPressure={setShowPermitPressure}
-          onSetPermitPressureWindow={setPermitPressureWindow}
-          onSetPermitPressureMapMode={setPermitPressureMapMode}
-        />
-        <HistoricalLayerPanel
-          layers={historicalLayers}
-          activeLayerIds={activeHistoricalLayerIds}
-          loadedLayers={loadedHistoricalLayers}
-          compareLayerIds={compareLayerIds}
-          selectedParcelChange={selectedParcelChange}
-          visibleChangeTypes={visibleChangeTypes}
-          onToggleLayer={toggleHistoricalLayer}
-          onSetOpacity={setHistoricalLayerOpacity}
-          onSetCompareLayerIds={handleSetCompareLayerIds}
-          onClearParcelChangeSelection={() => setSelectedParcelChange(null)}
-          onToggleChangeType={toggleChangeType}
-          onSelectAllChangeTypes={() => setVisibleChangeTypes(new Set(parcelChangeFilterOrder))}
-          onShowChangedOnly={() => {
-            setVisibleChangeTypes(new Set(parcelChangeFilterOrder.filter((changeType) => changeType !== "unchanged")));
-          }}
-        />
-        <DecadeDistributionChart parcels={filteredParcels} />
-        <Legend
-          visibleDecades={visibleLegendBuckets}
-          showParcelChangeLegend={activeHistoricalLayerIds.has(parcelChangeLayerId)}
-          visibleChangeTypes={visibleChangeTypes}
-          showPermitPressureLegend={showPermitPressure}
-          permitPressureMapMode={permitPressureMapMode}
-        />
+        <AccordionSection title="Overview" summary="Counts and distribution" defaultOpen>
+          <FilterPanel
+            parcels={parcels}
+            filteredCount={filteredParcels?.features.length ?? 0}
+            isSampleData={isSampleData}
+          />
+          <DecadeDistributionChart parcels={filteredParcels} />
+        </AccordionSection>
+
+        <AccordionSection title="Find & Inspect" summary={selectedParcel ? "Parcel selected" : "Search parcels"} defaultOpen>
+          <SearchPanel
+            parcels={parcels}
+            selectedPin={selectedPin}
+            visiblePins={visiblePins}
+            onSelectParcel={selectParcel}
+            onClearSelection={() => setSelectedPin(null)}
+          />
+          <ParcelDetailPanel
+            parcel={selectedParcel}
+            parcels={pressureDecoratedParcels}
+            permitPressureWindow={permitPressureWindow}
+            onClearSelection={() => setSelectedPin(null)}
+          />
+        </AccordionSection>
+
+        <AccordionSection title="Visualizations" summary="Main map view" defaultOpen>
+          <VisualizationPanel
+            activePreset={activeVisualizationPreset}
+            onSelectPreset={selectVisualizationPreset}
+          />
+          <TimelineControl
+            selectedDecades={selectedDecades}
+            maxBuiltYear={maxBuiltYear}
+            minAvailableYear={yearRange.min}
+            maxAvailableYear={yearRange.max}
+            isBuildoutPlaying={isBuildoutPlaying}
+            animationSpeed={animationSpeed}
+            builtByYearCount={buildoutStats.builtByYear}
+            knownYearTotal={buildoutStats.knownYearTotal}
+            percentBuilt={buildoutStats.percentBuilt}
+            showUnknown={showUnknown}
+            onToggleDecade={toggleDecade}
+            onSetMaxBuiltYear={handleSetMaxBuiltYear}
+            onToggleBuildoutPlayback={toggleBuildoutPlayback}
+            onResetBuildout={() => {
+              setIsBuildoutPlaying(false);
+              setMaxBuiltYear(yearRange.min);
+            }}
+            onSetAnimationSpeed={setAnimationSpeed}
+            onSetShowUnknown={setShowUnknown}
+            onSelectAll={() => setSelectedDecades(new Set(knownDecades))}
+            onClearKnown={() => setSelectedDecades(new Set())}
+          />
+        </AccordionSection>
+
+        <AccordionSection title="Map Layers" summary="Overlays and boundaries" defaultOpen>
+          <LayerToggle
+            showOutlines={showOutlines}
+            showBoundary={showBoundary}
+            showPermitPressure={showPermitPressure}
+            permitPressureWindow={permitPressureWindow}
+            permitPressureMapMode={permitPressureMapMode}
+            onSetShowOutlines={setShowOutlines}
+            onSetShowBoundary={setShowBoundary}
+            onSetShowPermitPressure={setShowPermitPressure}
+            onSetPermitPressureWindow={setPermitPressureWindow}
+            onSetPermitPressureMapMode={setPermitPressureMapMode}
+          />
+        </AccordionSection>
+
+        <AccordionSection title="Historical Evidence" summary="Year layers and change detection">
+          <HistoricalLayerPanel
+            layers={historicalLayers}
+            activeLayerIds={activeHistoricalLayerIds}
+            loadedLayers={loadedHistoricalLayers}
+            compareLayerIds={compareLayerIds}
+            selectedParcelChange={selectedParcelChange}
+            visibleChangeTypes={visibleChangeTypes}
+            onToggleLayer={toggleHistoricalLayer}
+            onSetOpacity={setHistoricalLayerOpacity}
+            onSetCompareLayerIds={handleSetCompareLayerIds}
+            onClearParcelChangeSelection={() => setSelectedParcelChange(null)}
+            onToggleChangeType={toggleChangeType}
+            onSelectAllChangeTypes={() => setVisibleChangeTypes(new Set(parcelChangeFilterOrder))}
+            onShowChangedOnly={() => {
+              setVisibleChangeTypes(new Set(parcelChangeFilterOrder.filter((changeType) => changeType !== "unchanged")));
+            }}
+          />
+        </AccordionSection>
+
+        <AccordionSection title="Legend" summary="Color keys">
+          <Legend
+            visibleDecades={visibleLegendBuckets}
+            showParcelChangeLegend={activeHistoricalLayerIds.has(parcelChangeLayerId)}
+            visibleChangeTypes={visibleChangeTypes}
+            showPermitPressureLegend={showPermitPressure}
+            permitPressureMapMode={permitPressureMapMode}
+          />
+        </AccordionSection>
       </aside>
     </main>
   );

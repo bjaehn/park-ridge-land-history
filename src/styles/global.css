@@ -82,6 +82,123 @@ input {
   font-size: 0.96rem;
 }
 
+.accordion-section {
+  border-bottom: 1px solid var(--line);
+}
+
+.accordion-heading {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 12px 18px;
+  color: #172033;
+  cursor: pointer;
+  list-style: none;
+}
+
+.accordion-heading::-webkit-details-marker {
+  display: none;
+}
+
+.accordion-heading::after {
+  content: "+";
+  margin-left: auto;
+  color: var(--accent);
+  font-size: 1.1rem;
+  font-weight: 900;
+}
+
+.accordion-section[open] > .accordion-heading::after {
+  content: "-";
+}
+
+.accordion-heading span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.accordion-heading strong {
+  color: #172033;
+  font-size: 0.94rem;
+  line-height: 1.2;
+}
+
+.accordion-heading small {
+  overflow: hidden;
+  color: var(--ink-soft);
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.accordion-heading:hover {
+  background: #f1efe7;
+}
+
+.accordion-body {
+  padding: 0 18px 16px;
+}
+
+.accordion-body > .panel-section {
+  padding: 0;
+  border-bottom: 0;
+}
+
+.accordion-body > .panel-section + .panel-section {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #e7e5df;
+}
+
+.visualization-section h2 {
+  margin-bottom: 10px;
+}
+
+.preset-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.preset-button {
+  display: grid;
+  gap: 3px;
+  min-height: 58px;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #ffffff;
+  color: #172033;
+  cursor: pointer;
+  padding: 9px 10px;
+  text-align: left;
+}
+
+.preset-button:hover {
+  border-color: var(--accent);
+}
+
+.preset-button.is-active {
+  border-color: var(--accent);
+  background: #e8f6f4;
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.preset-button span {
+  overflow-wrap: anywhere;
+  font-size: 0.82rem;
+  font-weight: 900;
+  line-height: 1.18;
+}
+
+.preset-button small {
+  color: var(--ink-soft);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
 .section-heading {
   display: flex;
   align-items: center;
