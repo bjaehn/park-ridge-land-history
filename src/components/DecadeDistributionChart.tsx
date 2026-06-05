@@ -25,7 +25,8 @@ export function DecadeDistributionChart({ parcels }: DecadeDistributionChartProp
 
   return (
     <section className="panel-section" aria-label="Visible parcels by decade">
-      <h2>Decades</h2>
+      <h2>Visible Homes by Age</h2>
+      <p className="mode-note">This updates when you change the home age filter above.</p>
       <div className="decade-chart">
         {rows.length === 0 && <p className="quiet-note chart-empty">No visible parcels</p>}
         {rows.map((row) => (

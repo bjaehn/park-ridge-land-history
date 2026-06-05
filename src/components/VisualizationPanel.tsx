@@ -6,10 +6,10 @@ type VisualizationPanelProps = {
 };
 
 const presets: Array<{ id: VisualizationPreset; label: string; meta: string }> = [
-  { id: "age", label: "Age map", meta: "Color parcels by build decade" },
-  { id: "buildout", label: "Buildout over time", meta: "Play the city forward by year built" },
-  { id: "stability", label: "Stable vs changing", meta: "Color parcels by change pressure" },
-  { id: "activity", label: "Permit activity", meta: "Color parcels by recent work type" }
+  { id: "age", label: "How old are the homes?", meta: "Colors show when each home was built." },
+  { id: "buildout", label: "How did the city grow?", meta: "Move through time by year built." },
+  { id: "stability", label: "Where is change happening?", meta: "Shows quiet areas versus places with more recent activity." },
+  { id: "activity", label: "What kind of work is happening?", meta: "Shows permits, additions, new construction, and teardown pressure." }
 ];
 
 export function VisualizationPanel({
@@ -18,8 +18,8 @@ export function VisualizationPanel({
 }: VisualizationPanelProps) {
   return (
     <section className="panel-section visualization-section" aria-label="Citywide map mode">
-      <h2>Citywide Map Mode</h2>
-      <p className="mode-note">Pick one. This changes the main parcel coloring on the map.</p>
+      <h2>Whole City View</h2>
+      <p className="mode-note">Choose the question you want the map to answer.</p>
       <div className="preset-grid">
         {presets.map((preset) => (
           <button

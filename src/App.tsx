@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnalysisTabs, type AnalysisScale } from "./components/AnalysisTabs";
 import { AccordionSection } from "./components/AccordionSection";
-import { FilterPanel } from "./components/FilterPanel";
 import { LayerToggle } from "./components/LayerToggle";
 import { Legend } from "./components/Legend";
 import { MapView } from "./components/MapView";
@@ -472,6 +471,7 @@ export default function App() {
                 onSelectPreset={selectVisualizationPreset}
               />
               <TimelineControl
+                activePreset={activeVisualizationPreset}
                 selectedDecades={selectedDecades}
                 maxBuiltYear={maxBuiltYear}
                 minAvailableYear={yearRange.min}
@@ -482,6 +482,9 @@ export default function App() {
                 knownYearTotal={buildoutStats.knownYearTotal}
                 percentBuilt={buildoutStats.percentBuilt}
                 showUnknown={showUnknown}
+                totalCount={parcels?.features.length ?? 0}
+                filteredCount={filteredParcels?.features.length ?? 0}
+                isSampleData={isSampleData}
                 onToggleDecade={toggleDecade}
                 onSetMaxBuiltYear={handleSetMaxBuiltYear}
                 onToggleBuildoutPlayback={toggleBuildoutPlayback}
@@ -493,11 +496,6 @@ export default function App() {
                 onSetShowUnknown={setShowUnknown}
                 onSelectAll={() => setSelectedDecades(new Set(knownDecades))}
                 onClearKnown={() => setSelectedDecades(new Set())}
-              />
-              <FilterPanel
-                parcels={parcels}
-                filteredCount={filteredParcels?.features.length ?? 0}
-                isSampleData={isSampleData}
               />
               <DecadeDistributionChart parcels={filteredParcels} />
             </>
