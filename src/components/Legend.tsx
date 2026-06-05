@@ -48,23 +48,29 @@ export function Legend({
   return (
     <section className={`legend-panel ${compact ? "legend-panel-compact" : "panel-section"}`} aria-label="Map color legend">
       <h2>Legend</h2>
-      <div className="legend-grid">
-        {decadeOrder.map((bucket) => (
-          <button
-            className={`legend-item ${visibleDecades.has(bucket) ? "" : "is-muted"}`}
-            type="button"
-            key={bucket}
-            aria-pressed={visibleDecades.has(bucket)}
-            onClick={() => onToggleDecade(bucket)}
-          >
-            <span className="legend-swatch" style={{ backgroundColor: decadeColors[bucket] }} />
-            <span>{bucket}</span>
-          </button>
-        ))}
+      <p className="legend-help">Colors explain what is on the map. Click any color to hide or show it.</p>
+      <div className="legend-section">
+        <h3>Home Age</h3>
+        <p className="legend-note">Color shows the decade the current home was built.</p>
+        <div className="legend-grid">
+          {decadeOrder.map((bucket) => (
+            <button
+              className={`legend-item ${visibleDecades.has(bucket) ? "" : "is-muted"}`}
+              type="button"
+              key={bucket}
+              aria-pressed={visibleDecades.has(bucket)}
+              onClick={() => onToggleDecade(bucket)}
+            >
+              <span className="legend-swatch" style={{ backgroundColor: decadeColors[bucket] }} />
+              <span>{bucket}</span>
+            </button>
+          ))}
+        </div>
       </div>
       {showPermitPressureLegend && (
-        <div className="change-legend" aria-label="Permit pressure color legend">
+        <div className="legend-section" aria-label="Permit pressure color legend">
           <h3>{permitPressureMapMode === "stability" ? "Stable vs Changing" : "Permit Pressure"}</h3>
+          <p className="legend-note">{permitLegendNote(permitPressureMapMode)}</p>
           <div className="legend-grid">
             {permitPressureMapMode === "stability"
               ? permitStabilityLegendOrder.map((stabilityType) => (
@@ -95,8 +101,9 @@ export function Legend({
         </div>
       )}
       {showParcelChangeLegend && (
-        <div className="change-legend" aria-label="Historical change color legend">
-          <h3>Historical Change</h3>
+        <div className="legend-section" aria-label="Historical change color legend">
+          <h3>Lot Changes</h3>
+          <p className="legend-note">Compares older parcel maps with newer ones.</p>
           <div className="legend-grid">
             {parcelChangeLegendOrder.map((changeType) => (
               <button
@@ -120,4 +127,9 @@ export function Legend({
 function changeLegendLabel(changeType: ParcelChangeType): string {
   if (changeType === "geometry_or_area_changed") return "Area changed";
   return parcelChangeLabels[changeType];
+}
+
+function permitLegendNote(mapMode: PermitPressureMapMode): string {
+  if (mapMode === "activity") return "Shows the kind of recent permit activity behind the color.";
+  return "Stable means little recent permit activity. Changing means more permits, additions, or teardown pressure.";
 }

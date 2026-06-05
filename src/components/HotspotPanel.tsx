@@ -23,8 +23,8 @@ export function HotspotPanel({
 
   return (
     <section className="panel-section hotspot-section" aria-label="Interesting places">
-      <h2>Trend Clusters</h2>
-      <nav className="cluster-subnav" aria-label="Cluster views">
+      <h2>Nearby Change</h2>
+      <nav className="cluster-subnav" aria-label="Nearby change views">
         {clusterViews.map((view) => (
           <button
             className={activeClusterView === view.id ? "is-active" : ""}
@@ -45,24 +45,24 @@ export function HotspotPanel({
               checked={enabled}
               onChange={(event) => onSetEnabled(event.target.checked)}
             />
-            <span>Show clusters on map</span>
+            <span>Show nearby change areas on map</span>
           </label>
           <div className="cluster-stat-grid">
             <article>
               <strong>{hotspots.features.length}</strong>
-              <span>Total clusters</span>
+              <span>Areas found</span>
             </article>
             <article>
               <strong>{typeCounts.teardown_cluster + typeCounts.changing_area}</strong>
-              <span>Change signals</span>
+              <span>Likely changing</span>
             </article>
             <article>
               <strong>{typeCounts.old_home_pocket}</strong>
-              <span>Older pockets</span>
+              <span>Older-home areas</span>
             </article>
             <article>
               <strong>{typeCounts.stable_area}</strong>
-              <span>Stable pockets</span>
+              <span>Quiet areas</span>
             </article>
           </div>
         </div>
@@ -71,9 +71,9 @@ export function HotspotPanel({
       {activeClusterView === "hotspots" && (
         <>
           {!enabled ? (
-            <p className="quiet-note hotspot-empty">Turn clusters on to show these on the map.</p>
+            <p className="quiet-note hotspot-empty">Turn the map layer on to see these areas.</p>
           ) : visibleHotspots.length === 0 ? (
-            <p className="quiet-note hotspot-empty">No hotspots in the current view.</p>
+            <p className="quiet-note hotspot-empty">No nearby change areas in the current view.</p>
           ) : (
             <div className="hotspot-list">
               {visibleHotspots.map((hotspot) => (
@@ -98,11 +98,11 @@ export function HotspotPanel({
       {activeClusterView === "selected" && (
         <>
           {!selectedHotspot ? (
-            <p className="quiet-note hotspot-empty">Choose a hotspot to inspect it here.</p>
+            <p className="quiet-note hotspot-empty">Choose an area to see why it stands out.</p>
           ) : (
             <dl className="detail-list cluster-detail-list">
               <div>
-                <dt>Type</dt>
+                <dt>Kind</dt>
                 <dd>{hotspotLabel(selectedHotspot.properties.hotspot_type)}</dd>
               </div>
               <div>
@@ -110,11 +110,11 @@ export function HotspotPanel({
                 <dd>{selectedHotspot.properties.parcel_count.toLocaleString()}</dd>
               </div>
               <div>
-                <dt>Score</dt>
-                <dd>{Math.round(selectedHotspot.properties.score).toLocaleString()}</dd>
+                <dt>Strength</dt>
+                <dd>{strengthLabel(selectedHotspot.properties.score)}</dd>
               </div>
               <div>
-                <dt>Why</dt>
+                <dt>Why it matters</dt>
                 <dd>{selectedHotspot.properties.description}</dd>
               </div>
             </dl>
@@ -125,12 +125,18 @@ export function HotspotPanel({
   );
 }
 
+function strengthLabel(score: number): string {
+  if (score >= 80) return "Strong signal";
+  if (score >= 45) return "Moderate signal";
+  return "Light signal";
+}
+
 type ClusterView = "overview" | "hotspots" | "selected";
 
 const clusterViews: Array<{ id: ClusterView; label: string }> = [
-  { id: "overview", label: "Overview" },
-  { id: "hotspots", label: "Hotspots" },
-  { id: "selected", label: "Selected" }
+  { id: "overview", label: "Turn On Map" },
+  { id: "hotspots", label: "Areas Found" },
+  { id: "selected", label: "Area Details" }
 ];
 
 function countHotspotTypes(hotspots: HotspotCollection): Record<HotspotType, number> {

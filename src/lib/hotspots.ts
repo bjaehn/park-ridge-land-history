@@ -43,10 +43,10 @@ export function buildHotspots(parcels: ParcelCollection | null): HotspotCollecti
 
 export function hotspotLabel(type: HotspotType): string {
   const labels: Record<HotspotType, string> = {
-    teardown_cluster: "Teardown cluster",
-    changing_area: "Changing area",
-    old_home_pocket: "Old-home pocket",
-    stable_area: "Stable area"
+    teardown_cluster: "Teardown pressure nearby",
+    changing_area: "Many recent changes",
+    old_home_pocket: "Older homes together",
+    stable_area: "Mostly quiet area"
   };
   return labels[type];
 }
@@ -135,15 +135,15 @@ function hotspotDescription(
   oldHomeCount: number
 ): string {
   if (type === "teardown_cluster") {
-    return `${teardownCount} nearby teardown-pressure parcels among ${parcelCount} parcels.`;
+    return `${teardownCount} nearby parcels show teardown-like activity out of ${parcelCount} parcels.`;
   }
   if (type === "changing_area") {
-    return `${changingCount} changing parcels and ${directPermitCount} direct permit parcels in this area.`;
+    return `${changingCount} parcels show recent change, including ${directPermitCount} with direct permit activity.`;
   }
   if (type === "old_home_pocket") {
-    return `${oldHomeCount} nearby homes date to 1945 or earlier.`;
+    return `${oldHomeCount} nearby homes were built in 1945 or earlier.`;
   }
-  return `A quiet pocket with low recent permit pressure across ${parcelCount} parcels.`;
+  return `Low recent permit activity across ${parcelCount} nearby parcels.`;
 }
 
 function emptyHotspots(): HotspotCollection {

@@ -1478,7 +1478,7 @@ input {
 }
 
 .legend-panel h2 {
-  margin: 0 0 10px;
+  margin: 0 0 5px;
   font-size: 0.92rem;
 }
 
@@ -1499,18 +1499,37 @@ input {
   gap: 8px;
 }
 
-.change-legend {
+.legend-help {
+  margin: 0 0 10px;
+  color: var(--ink-soft);
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.28;
+}
+
+.legend-section {
   display: grid;
   gap: 9px;
-  margin-top: 16px;
-  padding-top: 14px;
+}
+
+.legend-section + .legend-section {
+  margin-top: 14px;
+  padding-top: 13px;
   border-top: 1px solid var(--line);
 }
 
-.change-legend h3 {
+.legend-section h3 {
   margin: 0;
   color: #172033;
   font-size: 0.84rem;
+}
+
+.legend-note {
+  margin: -5px 0 0;
+  color: var(--ink-soft);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.25;
 }
 
 .legend-item {

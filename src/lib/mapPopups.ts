@@ -25,7 +25,7 @@ export function hotspotPopupHtml(properties: HotspotFeature["properties"]): stri
       <p>${escapeHtml(properties.description)}</p>
       <dl>
         ${popupRow("Parcels", String(properties.parcel_count))}
-        ${popupRow("Score", Math.round(properties.score).toLocaleString())}
+        ${popupRow("Strength", hotspotStrengthLabel(properties.score))}
       </dl>
     </div>
   `;
@@ -49,6 +49,12 @@ function formatChangeYears(oldYear: number | null | undefined, newYear: number |
 function formatAreaChange(areaChangePct: number | null | undefined): string {
   if (typeof areaChangePct !== "number") return "Unknown";
   return `${areaChangePct.toLocaleString(undefined, { maximumFractionDigits: 2 })}%`;
+}
+
+function hotspotStrengthLabel(score: number): string {
+  if (score >= 80) return "Strong signal";
+  if (score >= 45) return "Moderate signal";
+  return "Light signal";
 }
 
 function escapeHtml(value: string): string {
