@@ -22,9 +22,12 @@ export function HotspotPanel({
   const typeCounts = useMemo(() => countHotspotTypes(hotspots), [hotspots]);
 
   return (
-    <section className="panel-section hotspot-section" aria-label="Interesting places">
-      <h2>Nearby Change</h2>
-      <nav className="cluster-subnav" aria-label="Nearby change views">
+    <section className="panel-section hotspot-section" aria-label="Nearby areas">
+      <h2>Nearby Areas</h2>
+      <p className="nearby-tab-note">
+        See nearby places that are changing, older, or mostly quiet.
+      </p>
+      <nav className="cluster-subnav" aria-label="Nearby area steps">
         {clusterViews.map((view) => (
           <button
             className={activeClusterView === view.id ? "is-active" : ""}
@@ -45,20 +48,23 @@ export function HotspotPanel({
               checked={enabled}
               onChange={(event) => onSetEnabled(event.target.checked)}
             />
-            <span>Show nearby change areas on map</span>
+            <span>Show nearby areas on the map</span>
           </label>
+          <p className="nearby-tab-note">
+            These are groups of nearby homes with a shared pattern. Click one on the map, or pick one from the list.
+          </p>
           <div className="cluster-stat-grid">
             <article>
               <strong>{hotspots.features.length}</strong>
-              <span>Areas found</span>
+              <span>Areas to look at</span>
             </article>
             <article>
               <strong>{typeCounts.teardown_cluster + typeCounts.changing_area}</strong>
-              <span>Likely changing</span>
+              <span>Changing areas</span>
             </article>
             <article>
               <strong>{typeCounts.old_home_pocket}</strong>
-              <span>Older-home areas</span>
+              <span>Older homes</span>
             </article>
             <article>
               <strong>{typeCounts.stable_area}</strong>
@@ -70,10 +76,14 @@ export function HotspotPanel({
 
       {activeClusterView === "hotspots" && (
         <>
+          <div className="cluster-view-heading">
+            <h3>Choose an Area</h3>
+            <p>Choose a place that stands out. The map will zoom there.</p>
+          </div>
           {!enabled ? (
-            <p className="quiet-note hotspot-empty">Turn the map layer on to see these areas.</p>
+            <p className="quiet-note hotspot-empty">Turn on nearby areas first.</p>
           ) : visibleHotspots.length === 0 ? (
-            <p className="quiet-note hotspot-empty">No nearby change areas in the current view.</p>
+            <p className="quiet-note hotspot-empty">No standout nearby areas in the current view.</p>
           ) : (
             <div className="hotspot-list">
               {visibleHotspots.map((hotspot) => (
@@ -97,24 +107,28 @@ export function HotspotPanel({
 
       {activeClusterView === "selected" && (
         <>
+          <div className="cluster-view-heading">
+            <h3>Why This Area?</h3>
+            <p>See what made the selected area stand out.</p>
+          </div>
           {!selectedHotspot ? (
-            <p className="quiet-note hotspot-empty">Choose an area to see why it stands out.</p>
+            <p className="quiet-note hotspot-empty">Pick an area from the map or list first.</p>
           ) : (
             <dl className="detail-list cluster-detail-list">
               <div>
-                <dt>Kind</dt>
+                <dt>What we noticed</dt>
                 <dd>{hotspotLabel(selectedHotspot.properties.hotspot_type)}</dd>
               </div>
               <div>
-                <dt>Parcels</dt>
+                <dt>Homes nearby</dt>
                 <dd>{selectedHotspot.properties.parcel_count.toLocaleString()}</dd>
               </div>
               <div>
-                <dt>Strength</dt>
+                <dt>How strong</dt>
                 <dd>{strengthLabel(selectedHotspot.properties.score)}</dd>
               </div>
               <div>
-                <dt>Why it matters</dt>
+                <dt>Why</dt>
                 <dd>{selectedHotspot.properties.description}</dd>
               </div>
             </dl>
@@ -134,9 +148,9 @@ function strengthLabel(score: number): string {
 type ClusterView = "overview" | "hotspots" | "selected";
 
 const clusterViews: Array<{ id: ClusterView; label: string }> = [
-  { id: "overview", label: "Turn On Map" },
-  { id: "hotspots", label: "Areas Found" },
-  { id: "selected", label: "Area Details" }
+  { id: "overview", label: "Show on Map" },
+  { id: "hotspots", label: "Choose Area" },
+  { id: "selected", label: "What It Means" }
 ];
 
 function countHotspotTypes(hotspots: HotspotCollection): Record<HotspotType, number> {
