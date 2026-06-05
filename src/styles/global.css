@@ -514,6 +514,67 @@ input {
   line-height: 1.25;
 }
 
+.home-signals {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+
+.home-signals h4 {
+  margin: 0;
+  color: #172033;
+  font-size: 0.86rem;
+}
+
+.home-signal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.home-signal {
+  display: grid;
+  gap: 4px;
+  min-height: 72px;
+  padding: 9px;
+  border: 1px solid #e7e5df;
+  border-left-width: 4px;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.home-signal strong {
+  color: #172033;
+  font-size: 0.78rem;
+  line-height: 1.2;
+}
+
+.home-signal span {
+  color: var(--ink-soft);
+  font-size: 0.72rem;
+  line-height: 1.3;
+}
+
+.home-signal-heritage {
+  border-left-color: #b45309;
+}
+
+.home-signal-activity {
+  border-left-color: #246a73;
+}
+
+.home-signal-market {
+  border-left-color: #7c3aed;
+}
+
+.home-signal-watch {
+  border-left-color: #b91c1c;
+}
+
+.home-signal-scale {
+  border-left-color: #3f7d58;
+}
+
 .detail-list {
   display: grid;
   gap: 0;

@@ -2,6 +2,7 @@ import { formatCurrency, formatFlags, formatNumber, formatYear } from "../lib/fo
 import type { PermitPressureWindow } from "../lib/permitPressure";
 import type { ParcelCollection, ParcelFeature } from "../lib/parcelTypes";
 import { BlockStoryCard } from "./BlockStoryCard";
+import { HomeSignals } from "./HomeSignals";
 import { HouseEvolutionTimeline } from "./HouseEvolutionTimeline";
 import { NearbyActivitySummary } from "./NearbyActivitySummary";
 
@@ -54,6 +55,7 @@ export function ParcelDetailPanel({
       {properties && (
         <>
           <h3 className="detail-title">{properties.address || "Parcel details"}</h3>
+          <HomeSignals properties={properties} />
           <dl className="detail-list">
             {rows.map(([label, value]) => (
               <div key={label}>
@@ -86,5 +88,5 @@ function formatSaleSummary(year?: number | null, price?: number | null): string 
   if (yearLabel === "Unknown" && priceLabel === "Unknown") return "Unknown";
   if (priceLabel === "Unknown") return yearLabel;
   if (yearLabel === "Unknown") return priceLabel;
-  return `${yearLabel} · ${priceLabel}`;
+  return `${yearLabel} - ${priceLabel}`;
 }
