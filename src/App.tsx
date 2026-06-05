@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { AnalysisNarrative } from "./components/AnalysisNarrative";
 import { AnalysisTabs, type AnalysisScale } from "./components/AnalysisTabs";
 import { AccordionSection } from "./components/AccordionSection";
 import { LayerToggle } from "./components/LayerToggle";
@@ -411,6 +412,7 @@ export default function App() {
       />
       <div className="map-legend-overlay">
         <Legend
+          activePreset={activeVisualizationPreset}
           visibleDecades={visibleLegendBuckets}
           showParcelChangeLegend={activeHistoricalLayerIds.has(parcelChangeLayerId)}
           visibleChangeTypes={visibleChangeTypes}
@@ -433,6 +435,16 @@ export default function App() {
         <AnalysisTabs activeScale={activeAnalysisScale} onSetScale={setActiveAnalysisScale} />
 
         <div className="analysis-tab-panel" role="tabpanel">
+          <AnalysisNarrative
+            activeScale={activeAnalysisScale}
+            selectedParcel={selectedParcel}
+            hotspots={hotspots}
+            selectedHotspot={selectedHotspot}
+            showHotspots={showHotspots}
+            activePreset={activeVisualizationPreset}
+            filteredCount={filteredParcels?.features.length ?? 0}
+            totalCount={parcels?.features.length ?? 0}
+          />
           {activeAnalysisScale === "home" && (
             <>
               <SearchPanel
@@ -502,7 +514,7 @@ export default function App() {
           )}
         </div>
 
-        <AccordionSection title="Map Layers" summary="Boundaries and permit layer">
+        <AccordionSection title="Map Display" summary="Boundaries and permit layer">
           <LayerToggle
             showOutlines={showOutlines}
             showBoundary={showBoundary}
@@ -517,7 +529,7 @@ export default function App() {
           />
         </AccordionSection>
 
-        <AccordionSection title="Data Layers" summary="Optional evidence overlays" defaultOpen>
+        <AccordionSection title="Optional Layers">
           <HistoricalLayerPanel
             layers={historicalLayers}
             activeLayerIds={activeHistoricalLayerIds}

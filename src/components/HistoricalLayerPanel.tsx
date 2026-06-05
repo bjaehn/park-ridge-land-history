@@ -4,6 +4,7 @@ import { ParcelChangeDetailPanel } from "./ParcelChangeDetailPanel";
 import { ParcelChangeSummaryPanel } from "./ParcelChangeSummaryPanel";
 import {
   historicalLayerGroupLabels,
+  layerCanToggle,
   type HistoricalLayer,
   type HistoricalLayerGroup,
   type LoadedHistoricalLayer
@@ -67,9 +68,9 @@ export function HistoricalLayerPanel({
 
   return (
     <section className="panel-section historical-panel" aria-label="Historical evidence layers">
-      <h2>Optional Data Layers</h2>
+      <h2>Extra Map Evidence</h2>
       <p className="historical-note">
-        Turn these on when you want extra evidence above the current map mode. Start with one or two layers at a time.
+        Add one or two extra layers when you want more context behind the main map.
       </p>
       <CompareYearsPanel
         layers={layers}
@@ -92,21 +93,46 @@ export function HistoricalLayerPanel({
         changeFeature={selectedParcelChange}
         onClearSelection={onClearParcelChangeSelection}
       />
-      {layersByGroup.map(({ group, layers: groupLayers }) => (
+      {layersByGroup.map(({ group, layers: groupLayers }) => {
+        const layerSections = sectionLayers(groupLayers, activeLayerIds);
+        return (
         <div key={group} className="historical-group">
           <h3>{historicalLayerGroupLabels[group]}</h3>
-          {groupLayers.map((layer) => (
-            <HistoricalLayerToggle
-              key={layer.id}
-              layer={layer}
-              active={activeLayerIds.has(layer.id)}
-              loadedLayer={loadedLayers[layer.id]}
-              onToggle={onToggleLayer}
-              onSetOpacity={onSetOpacity}
-            />
+          {layerSections.map((section) => (
+            <div className="historical-layer-section" key={`${group}-${section.label}`}>
+              <h4>{section.label}</h4>
+              {section.layers.map((layer) => (
+                <HistoricalLayerToggle
+                  key={layer.id}
+                  layer={layer}
+                  active={activeLayerIds.has(layer.id)}
+                  loadedLayer={loadedLayers[layer.id]}
+                  onToggle={onToggleLayer}
+                  onSetOpacity={onSetOpacity}
+                />
+              ))}
+            </div>
           ))}
         </div>
-      ))}
+        );
+      })}
     </section>
   );
+}
+
+function sectionLayers(layers: HistoricalLayer[], activeLayerIds: Set<string>) {
+  return [
+    {
+      label: "Shown now",
+      layers: layers.filter((layer) => activeLayerIds.has(layer.id))
+    },
+    {
+      label: "Ready to add",
+      layers: layers.filter((layer) => !activeLayerIds.has(layer.id) && layerCanToggle(layer))
+    },
+    {
+      label: "Not ready yet",
+      layers: layers.filter((layer) => !activeLayerIds.has(layer.id) && !layerCanToggle(layer))
+    }
+  ].filter((section) => section.layers.length > 0);
 }

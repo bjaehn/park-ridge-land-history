@@ -17,8 +17,8 @@ export function VisualizationPanel({
   onSelectPreset
 }: VisualizationPanelProps) {
   return (
-    <section className="panel-section visualization-section" aria-label="Citywide map mode">
-      <h2>Whole City View</h2>
+    <section className="panel-section visualization-section" aria-label="Park Ridge map mode">
+      <h2>Park Ridge View</h2>
       <p className="mode-note">Choose the question you want the map to answer.</p>
       <div className="preset-grid">
         {presets.map((preset) => (

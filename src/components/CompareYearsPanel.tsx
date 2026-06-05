@@ -35,10 +35,10 @@ export function CompareYearsPanel({
 
   return (
     <div className="compare-panel">
-      <h3>Compare Parcel Years</h3>
+      <h3>Compare Two Parcel Maps</h3>
       <div className="compare-grid">
         <label>
-          <span>Earlier</span>
+          <span>Older map</span>
           <select value={leftLayerId ?? ""} onChange={(event) => chooseLeft(event.target.value)}>
             <option value="">None</option>
             {parcelYearLayers.map((layer) => (
@@ -49,7 +49,7 @@ export function CompareYearsPanel({
           </select>
         </label>
         <label>
-          <span>Later</span>
+          <span>Newer map</span>
           <select value={rightLayerId ?? ""} onChange={(event) => chooseRight(event.target.value)}>
             <option value="">None</option>
             {parcelYearLayers.map((layer) => (
@@ -61,7 +61,7 @@ export function CompareYearsPanel({
         </label>
       </div>
       {readyParcelYearLayers.length >= 2 ? (
-        <p className="compare-message">Ready sample years can be overlaid together. Change candidates are a separate evidence layer below.</p>
+        <p className="compare-message">Pick two years to compare parcel shapes from different points in time.</p>
       ) : (
         <p className="compare-message">At least two parcel-year layers need data before comparison is map-ready.</p>
       )}
@@ -72,10 +72,10 @@ export function CompareYearsPanel({
             checked={swipeEnabled}
             onChange={(event) => onSetSwipeEnabled(event.target.checked)}
           />
-          <span>Then / now swipe</span>
+          <span>Drag a divider between the two maps</span>
         </label>
         <label className="range-control swipe-range">
-          <span>Split {swipePosition}%</span>
+          <span>Divider position: {swipePosition}%</span>
           <input
             type="range"
             min={20}

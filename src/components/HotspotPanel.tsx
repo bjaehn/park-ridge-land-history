@@ -22,12 +22,12 @@ export function HotspotPanel({
   const typeCounts = useMemo(() => countHotspotTypes(hotspots), [hotspots]);
 
   return (
-    <section className="panel-section hotspot-section" aria-label="Nearby areas">
-      <h2>Nearby Areas</h2>
+    <section className="panel-section hotspot-section" aria-label="Areas in Park Ridge">
+      <h2>Areas in Park Ridge</h2>
       <p className="nearby-tab-note">
-        See nearby places that are changing, older, or mostly quiet.
+        See places that are changing, older, or mostly quiet.
       </p>
-      <nav className="cluster-subnav" aria-label="Nearby area steps">
+      <nav className="cluster-subnav" aria-label="Area steps">
         {clusterViews.map((view) => (
           <button
             className={activeClusterView === view.id ? "is-active" : ""}
@@ -48,10 +48,10 @@ export function HotspotPanel({
               checked={enabled}
               onChange={(event) => onSetEnabled(event.target.checked)}
             />
-            <span>Show nearby areas on the map</span>
+            <span>Show areas on the map</span>
           </label>
           <p className="nearby-tab-note">
-            These are groups of nearby homes with a shared pattern. Click one on the map, or pick one from the list.
+            These are groups of homes with a shared pattern. Click one on the map, or pick one from the list.
           </p>
           <div className="cluster-stat-grid">
             <article>

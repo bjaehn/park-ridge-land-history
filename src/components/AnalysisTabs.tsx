@@ -6,9 +6,9 @@ type AnalysisTabsProps = {
 };
 
 const tabs: Array<{ id: AnalysisScale; label: string }> = [
-  { id: "home", label: "This Home" },
-  { id: "cluster", label: "Nearby" },
-  { id: "city", label: "Whole City" }
+  { id: "home", label: "Address / Parcel" },
+  { id: "cluster", label: "Areas" },
+  { id: "city", label: "Park Ridge" }
 ];
 
 export function AnalysisTabs({ activeScale, onSetScale }: AnalysisTabsProps) {
