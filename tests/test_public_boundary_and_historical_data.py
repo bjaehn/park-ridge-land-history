@@ -72,6 +72,18 @@ def test_public_parcels_include_sale_history():
     )
 
 
+def test_public_parcels_include_assessment_appeal_and_proximity_context():
+    payload = json.loads(Path("public/data/park_ridge_parcels_enriched.geojson").read_text())
+    properties = [feature["properties"] for feature in payload["features"]]
+
+    assert sum(1 for property_ in properties if property_.get("latest_assessed_total")) > 10000
+    assert sum(1 for property_ in properties if property_.get("assessed_value_change_pct") is not None) > 10000
+    assert sum(1 for property_ in properties if property_.get("appeal_count", 0) > 0) > 5000
+    assert sum(1 for property_ in properties if property_.get("nearest_park_dist_ft") is not None) > 10000
+    assert sum(1 for property_ in properties if property_.get("nearest_metra_stop_dist_ft") is not None) > 10000
+    assert sum(1 for property_ in properties if property_.get("foreclosure_per_1000_half_mile_5yr") is not None) > 10000
+
+
 def test_historic_character_layer_has_century_home_candidates():
     payload = json.loads(Path("public/data/historical/park_ridge_historic_character.geojson").read_text())
     properties = [feature["properties"] for feature in payload["features"]]

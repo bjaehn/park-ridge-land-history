@@ -44,6 +44,27 @@ export type ParcelProperties = {
   permit_stability_type?: PermitStabilityType | null;
   recent_permit_count?: number | null;
   recent_teardown_count?: number | null;
+  assessed_year_count?: number | null;
+  first_assessed_year?: number | null;
+  first_assessed_total?: number | null;
+  latest_assessed_year?: number | null;
+  latest_assessed_total?: number | null;
+  assessed_value_change_pct?: number | null;
+  appeal_count?: number | null;
+  latest_appeal_year?: number | null;
+  open_appeal_count?: number | null;
+  total_assessment_reduction?: number | null;
+  proximity_year?: number | null;
+  nearest_park_name?: string | null;
+  nearest_park_dist_ft?: number | null;
+  nearest_metra_stop_name?: string | null;
+  nearest_metra_stop_dist_ft?: number | null;
+  nearest_bike_trail_name?: string | null;
+  nearest_bike_trail_dist_ft?: number | null;
+  foreclosure_count_half_mile_5yr?: number | null;
+  foreclosure_per_1000_half_mile_5yr?: number | null;
+  nearest_major_road_name?: string | null;
+  nearest_major_road_dist_ft?: number | null;
 };
 
 export type HouseEvolutionEventType = "original_build" | "sale" | "permit" | "nearby_teardown";

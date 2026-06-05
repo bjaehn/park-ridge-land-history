@@ -21,6 +21,9 @@ SOCRATA_ADDRESSES = "https://datacatalog.cookcountyil.gov/resource/3723-97qp.jso
 SOCRATA_IMPROVEMENTS = "https://datacatalog.cookcountyil.gov/resource/x54s-btds.json"
 SOCRATA_PERMITS = "https://datacatalog.cookcountyil.gov/resource/6yjf-dfxs.json"
 SOCRATA_SALES = "https://datacatalog.cookcountyil.gov/resource/wvhk-k5uv.json"
+SOCRATA_ASSESSED_VALUES = "https://datacatalog.cookcountyil.gov/resource/uzyt-m557.json"
+SOCRATA_APPEALS = "https://datacatalog.cookcountyil.gov/resource/y282-6ig3.json"
+SOCRATA_PROXIMITY = "https://datacatalog.cookcountyil.gov/resource/ydue-e5u3.json"
 PARCEL_FEATURE_SERVER = "https://gis.cookcountyil.gov/hosting/rest/services/Hosted/Parcel/FeatureServer/0/query"
 
 UNIVERSE_FIELDS = [
@@ -98,6 +101,54 @@ SALE_FIELDS = [
     "row_id",
 ]
 
+ASSESSED_VALUE_FIELDS = [
+    "pin",
+    "year",
+    "class",
+    "township_code",
+    "township_name",
+    "nbhd",
+    "mailed_tot",
+    "certified_tot",
+    "board_tot",
+    "row_id",
+]
+
+APPEAL_FIELDS = [
+    "pin",
+    "year",
+    "class",
+    "township_code",
+    "case_no",
+    "hearing_type",
+    "appeal_type",
+    "status",
+    "mailed_tot",
+    "certified_tot",
+    "change",
+    "reason_desc1",
+    "reason_desc2",
+    "reason_desc3",
+    "row_id",
+]
+
+PROXIMITY_FIELDS = [
+    "pin10",
+    "year",
+    "num_foreclosure_in_half_mile_past_5_years",
+    "num_foreclosure_per_1000_pin_past_5_years",
+    "nearest_bike_trail_name",
+    "nearest_bike_trail_dist_ft",
+    "nearest_metra_route_name",
+    "nearest_metra_stop_name",
+    "nearest_metra_stop_dist_ft",
+    "nearest_park_name",
+    "nearest_park_dist_ft",
+    "nearest_major_road_name",
+    "nearest_major_road_dist_ft",
+    "lake_michigan_dist_ft",
+]
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(
@@ -121,6 +172,9 @@ def main() -> None:
     improvements_path = raw_dir / "assessor_improvements.csv"
     permits_path = raw_dir / "assessor_permits.csv"
     sales_path = raw_dir / "assessor_parcel_sales.csv"
+    assessed_values_path = raw_dir / "assessor_assessed_values.csv"
+    appeals_path = raw_dir / "assessor_appeals.csv"
+    proximity_path = raw_dir / "assessor_parcel_proximity.csv"
     addresses_path = raw_dir / "assessor_parcel_addresses.csv"
     parcels_path = raw_dir / "cook_county_parcels.geojson"
 
@@ -151,6 +205,16 @@ def main() -> None:
 
     sale_rows = fetch_sales(pins, args.chunk_size)
     write_csv(sales_path, sale_rows, SALE_FIELDS, args.force)
+
+    assessed_value_rows = fetch_assessed_values(pins, args.chunk_size)
+    write_csv(assessed_values_path, assessed_value_rows, ASSESSED_VALUE_FIELDS, args.force)
+
+    appeal_rows = fetch_appeals(pins, args.chunk_size)
+    write_csv(appeals_path, appeal_rows, APPEAL_FIELDS, args.force)
+
+    pin10s = sorted({pin[:10] for pin in pins if len(pin) >= 10})
+    proximity_rows = fetch_proximity(pin10s, args.chunk_size)
+    write_csv(proximity_path, proximity_rows, PROXIMITY_FIELDS, args.force)
 
     parcel_geojson = fetch_parcel_geometries(pins, args.chunk_size)
     parcels_path.write_text(json.dumps(parcel_geojson), encoding="utf-8")
@@ -250,6 +314,60 @@ def fetch_sales(pins: list[str], chunk_size: int) -> list[dict[str, Any]]:
             )
         )
         print_progress(index, len(pins), chunk_size, "sale chunks")
+    return rows
+
+
+def fetch_assessed_values(pins: list[str], chunk_size: int) -> list[dict[str, Any]]:
+    print("Downloading assessor assessed value rows...")
+    rows: list[dict[str, Any]] = []
+    for index, chunk in enumerate(chunks(pins, chunk_size), start=1):
+        rows.extend(
+            socrata_get_all(
+                SOCRATA_ASSESSED_VALUES,
+                {
+                    "$select": ",".join(ASSESSED_VALUE_FIELDS),
+                    "$where": f"pin in ({quoted_list(chunk)})",
+                    "$order": "pin,year",
+                },
+            )
+        )
+        print_progress(index, len(pins), chunk_size, "assessed value chunks")
+    return rows
+
+
+def fetch_appeals(pins: list[str], chunk_size: int) -> list[dict[str, Any]]:
+    print("Downloading assessor appeal rows...")
+    rows: list[dict[str, Any]] = []
+    for index, chunk in enumerate(chunks(pins, chunk_size), start=1):
+        rows.extend(
+            socrata_get_all(
+                SOCRATA_APPEALS,
+                {
+                    "$select": ",".join(APPEAL_FIELDS),
+                    "$where": f"pin in ({quoted_list(chunk)})",
+                    "$order": "pin,year,case_no",
+                },
+            )
+        )
+        print_progress(index, len(pins), chunk_size, "appeal chunks")
+    return rows
+
+
+def fetch_proximity(pin10s: list[str], chunk_size: int) -> list[dict[str, Any]]:
+    print("Downloading assessor proximity rows...")
+    rows: list[dict[str, Any]] = []
+    for index, chunk in enumerate(chunks(pin10s, chunk_size), start=1):
+        rows.extend(
+            socrata_get_all(
+                SOCRATA_PROXIMITY,
+                {
+                    "$select": ",".join(PROXIMITY_FIELDS),
+                    "$where": f"pin10 in ({quoted_list(chunk)})",
+                    "$order": "pin10,year",
+                },
+            )
+        )
+        print_progress(index, len(pin10s), chunk_size, "proximity chunks")
     return rows
 
 

@@ -575,6 +575,14 @@ input {
   border-left-color: #3f7d58;
 }
 
+.home-signal-value {
+  border-left-color: #0f766e;
+}
+
+.home-signal-location {
+  border-left-color: #2563eb;
+}
+
 .detail-list {
   display: grid;
   gap: 0;

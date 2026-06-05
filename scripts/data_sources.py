@@ -63,6 +63,30 @@ DATA_SOURCES: list[DataSource] = [
         description="PIN-level assessor sale history from 1999 to present."
     ),
     DataSource(
+        name="Cook County Assessor assessed values",
+        env_url="ASSESSOR_ASSESSED_VALUES_SOURCE_URL",
+        env_path="ASSESSOR_ASSESSED_VALUES_LOCAL_PATH",
+        default_path=Path("data/raw/assessor_assessed_values.csv"),
+        required_for_build=False,
+        description="PIN-level assessed value history from 1999 to present."
+    ),
+    DataSource(
+        name="Cook County Assessor appeals",
+        env_url="ASSESSOR_APPEALS_SOURCE_URL",
+        env_path="ASSESSOR_APPEALS_LOCAL_PATH",
+        default_path=Path("data/raw/assessor_appeals.csv"),
+        required_for_build=False,
+        description="PIN-level assessment appeal history from 1999 to present."
+    ),
+    DataSource(
+        name="Cook County Assessor parcel proximity",
+        env_url="ASSESSOR_PARCEL_PROXIMITY_SOURCE_URL",
+        env_path="ASSESSOR_PARCEL_PROXIMITY_LOCAL_PATH",
+        default_path=Path("data/raw/assessor_parcel_proximity.csv"),
+        required_for_build=False,
+        description="PIN10-level proximity context such as parks, Metra, trails, roads, and nearby foreclosure rates."
+    ),
+    DataSource(
         name="Cook County parcel universe or address data",
         env_url="PARCEL_UNIVERSE_SOURCE_URL",
         env_path="PARCEL_UNIVERSE_LOCAL_PATH",

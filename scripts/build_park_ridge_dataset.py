@@ -53,6 +53,7 @@ SALE_YEAR_COLUMN_CANDIDATES = ("year", "sale_year")
 SALE_PRICE_COLUMN_CANDIDATES = ("sale_price", "price", "amount")
 SALE_DOC_COLUMN_CANDIDATES = ("doc_no", "document_number", "deed_no")
 SALE_DEED_COLUMN_CANDIDATES = ("deed_type", "mydec_deed_type")
+ASSESSED_VALUE_TOTAL_COLUMNS = ("board_tot", "certified_tot", "mailed_tot")
 NEARBY_TEARDOWN_DISTANCE_FT = 500
 NEARBY_TEARDOWN_LIMIT = 5
 
@@ -250,6 +251,105 @@ def build_sale_event(
     if price is not None:
         event["price"] = price
     return event
+
+
+def build_assessed_value_history(values: pd.DataFrame) -> pd.DataFrame:
+    pin_column = find_likely_column(values.columns, PIN_COLUMN_CANDIDATES)
+    if not pin_column or "year" not in values:
+        print("Assessed value file found, but no likely PIN/year columns were detected.")
+        return pd.DataFrame()
+
+    normalized = add_normalized_pin_columns(values.copy(), pin_column)
+    normalized["assessment_year"] = normalized["year"].map(parse_year)
+    normalized["assessed_total"] = first_numeric_value(normalized, ASSESSED_VALUE_TOTAL_COLUMNS)
+    normalized = normalized.dropna(subset=["pin_normalized", "assessment_year", "assessed_total"])
+    records: list[dict[str, Any]] = []
+
+    for pin, group in normalized.groupby("pin_normalized"):
+        ordered = group.sort_values("assessment_year")
+        first = ordered.iloc[0]
+        latest = ordered.iloc[-1]
+        first_total = numeric_or_none(first.get("assessed_total"))
+        latest_total = numeric_or_none(latest.get("assessed_total"))
+        change_pct = None
+        if first_total and latest_total and first_total > 0 and first.get("assessment_year") != latest.get("assessment_year"):
+            change_pct = ((latest_total - first_total) / first_total) * 100
+        records.append(
+            {
+                "pin_normalized": pin,
+                "assessed_year_count": int(ordered["assessment_year"].nunique()),
+                "first_assessed_year": parse_year(first.get("assessment_year")),
+                "first_assessed_total": first_total,
+                "latest_assessed_year": parse_year(latest.get("assessment_year")),
+                "latest_assessed_total": latest_total,
+                "assessed_value_change_pct": round(change_pct, 1) if change_pct is not None else None,
+            }
+        )
+
+    return pd.DataFrame(records)
+
+
+def build_appeal_history(appeals: pd.DataFrame) -> pd.DataFrame:
+    pin_column = find_likely_column(appeals.columns, PIN_COLUMN_CANDIDATES)
+    if not pin_column or "year" not in appeals:
+        print("Appeal file found, but no likely PIN/year columns were detected.")
+        return pd.DataFrame()
+
+    normalized = add_normalized_pin_columns(appeals.copy(), pin_column)
+    normalized["appeal_year"] = normalized["year"].map(parse_year)
+    normalized["mailed_total_numeric"] = normalized.get("mailed_tot", pd.Series(dtype="object")).map(numeric_or_none)
+    normalized["certified_total_numeric"] = normalized.get("certified_tot", pd.Series(dtype="object")).map(numeric_or_none)
+    normalized["assessment_reduction"] = (
+        normalized["mailed_total_numeric"] - normalized["certified_total_numeric"]
+    ).clip(lower=0)
+    normalized = normalized.dropna(subset=["pin_normalized", "appeal_year"])
+    records: list[dict[str, Any]] = []
+
+    for pin, group in normalized.groupby("pin_normalized"):
+        statuses = group.get("status", pd.Series(dtype="object")).astype(str).str.lower()
+        records.append(
+            {
+                "pin_normalized": pin,
+                "appeal_count": int(len(group)),
+                "latest_appeal_year": int(group["appeal_year"].max()),
+                "open_appeal_count": int(statuses.isin(["open", "pending"]).sum()),
+                "total_assessment_reduction": float(group["assessment_reduction"].fillna(0).sum()),
+            }
+        )
+
+    return pd.DataFrame(records)
+
+
+def build_proximity_context(proximity: pd.DataFrame) -> pd.DataFrame:
+    if "pin10" not in proximity or "year" not in proximity:
+        print("Proximity file found, but no pin10/year columns were detected.")
+        return pd.DataFrame()
+
+    normalized = proximity.copy()
+    normalized["pin10_normalized"] = normalized["pin10"].map(normalize_pin10)
+    normalized["proximity_year"] = normalized["year"].map(parse_year)
+    normalized = normalized.dropna(subset=["pin10_normalized", "proximity_year"])
+    latest = normalized.sort_values(["pin10_normalized", "proximity_year"]).drop_duplicates("pin10_normalized", keep="last")
+
+    records = []
+    for _, row in latest.iterrows():
+        records.append(
+            {
+                "pin10_normalized": row.get("pin10_normalized"),
+                "proximity_year": parse_year(row.get("proximity_year")),
+                "nearest_park_name": clean_text(row.get("nearest_park_name")),
+                "nearest_park_dist_ft": numeric_or_none(row.get("nearest_park_dist_ft")),
+                "nearest_metra_stop_name": clean_text(row.get("nearest_metra_stop_name")),
+                "nearest_metra_stop_dist_ft": numeric_or_none(row.get("nearest_metra_stop_dist_ft")),
+                "nearest_bike_trail_name": clean_text(row.get("nearest_bike_trail_name")),
+                "nearest_bike_trail_dist_ft": numeric_or_none(row.get("nearest_bike_trail_dist_ft")),
+                "foreclosure_count_half_mile_5yr": numeric_or_none(row.get("num_foreclosure_in_half_mile_past_5_years")),
+                "foreclosure_per_1000_half_mile_5yr": numeric_or_none(row.get("num_foreclosure_per_1000_pin_past_5_years")),
+                "nearest_major_road_name": clean_text(row.get("nearest_major_road_name")),
+                "nearest_major_road_dist_ft": numeric_or_none(row.get("nearest_major_road_dist_ft")),
+            }
+        )
+    return pd.DataFrame(records)
 
 
 def build_permit_event(
@@ -505,13 +605,37 @@ def build_dataset() -> None:
         sale_history = build_sale_history(sales)
         enriched = enriched.merge(sale_history, on="pin_normalized", how="left")
 
-    for column in ["address", "municipality", "property_class", "year_built", "decade_built", "building_sqft", "land_sqft", "improvement_count", "permit_count", "latest_permit_year", "nearby_teardown_count", "sale_count", "latest_sale_year", "latest_sale_price", "max_sale_price", "primary_building_selection_method"]:
+    assessed_values_path = optional_source("Cook County Assessor assessed values")
+    if assessed_values_path:
+        assessed_values = pd.DataFrame(read_table(assessed_values_path).drop(columns="geometry", errors="ignore"))
+        assessed_value_history = build_assessed_value_history(assessed_values)
+        if not assessed_value_history.empty:
+            enriched = enriched.merge(assessed_value_history, on="pin_normalized", how="left")
+
+    appeals_path = optional_source("Cook County Assessor appeals")
+    if appeals_path:
+        appeals = pd.DataFrame(read_table(appeals_path).drop(columns="geometry", errors="ignore"))
+        appeal_history = build_appeal_history(appeals)
+        if not appeal_history.empty:
+            enriched = enriched.merge(appeal_history, on="pin_normalized", how="left")
+
+    proximity_path = optional_source("Cook County Assessor parcel proximity")
+    if proximity_path:
+        proximity = pd.DataFrame(read_table(proximity_path).drop(columns="geometry", errors="ignore"))
+        proximity_context = build_proximity_context(proximity)
+        if not proximity_context.empty:
+            enriched["pin10_normalized"] = enriched["pin_normalized"].map(normalize_pin10)
+            enriched = enriched.merge(proximity_context, on="pin10_normalized", how="left")
+
+    for column in ["address", "municipality", "property_class", "year_built", "decade_built", "building_sqft", "land_sqft", "improvement_count", "permit_count", "latest_permit_year", "nearby_teardown_count", "sale_count", "latest_sale_year", "latest_sale_price", "max_sale_price", "assessed_year_count", "first_assessed_year", "first_assessed_total", "latest_assessed_year", "latest_assessed_total", "assessed_value_change_pct", "appeal_count", "latest_appeal_year", "open_appeal_count", "total_assessment_reduction", "proximity_year", "nearest_park_name", "nearest_park_dist_ft", "nearest_metra_stop_name", "nearest_metra_stop_dist_ft", "nearest_bike_trail_name", "nearest_bike_trail_dist_ft", "foreclosure_count_half_mile_5yr", "foreclosure_per_1000_half_mile_5yr", "nearest_major_road_name", "nearest_major_road_dist_ft", "primary_building_selection_method"]:
         if column not in enriched:
             enriched[column] = None
 
     enriched["decade_built"] = enriched["decade_built"].fillna("Unknown")
     enriched["permit_count"] = enriched["permit_count"].fillna(0).astype(int)
     enriched["sale_count"] = enriched["sale_count"].fillna(0).astype(int)
+    enriched["appeal_count"] = enriched["appeal_count"].fillna(0).astype(int)
+    enriched["open_appeal_count"] = enriched["open_appeal_count"].fillna(0).astype(int)
     enriched["data_quality_flags"] = enriched["data_quality_flags"].apply(normalize_flags)
     enriched["source_note"] = "Cook County parcel and assessor data. Owner names intentionally omitted."
     enriched = attach_house_evolution_timelines(enriched)
@@ -534,6 +658,27 @@ def build_dataset() -> None:
         "latest_sale_year",
         "latest_sale_price",
         "max_sale_price",
+        "assessed_year_count",
+        "first_assessed_year",
+        "first_assessed_total",
+        "latest_assessed_year",
+        "latest_assessed_total",
+        "assessed_value_change_pct",
+        "appeal_count",
+        "latest_appeal_year",
+        "open_appeal_count",
+        "total_assessment_reduction",
+        "proximity_year",
+        "nearest_park_name",
+        "nearest_park_dist_ft",
+        "nearest_metra_stop_name",
+        "nearest_metra_stop_dist_ft",
+        "nearest_bike_trail_name",
+        "nearest_bike_trail_dist_ft",
+        "foreclosure_count_half_mile_5yr",
+        "foreclosure_per_1000_half_mile_5yr",
+        "nearest_major_road_name",
+        "nearest_major_road_dist_ft",
         "house_evolution_timeline",
         "primary_building_selection_method",
         "data_quality_flags",
@@ -612,6 +757,26 @@ def sale_description(price: float | None, deed_type: str | None) -> str:
     if deed_type:
         parts.append(deed_type)
     return "; ".join(parts) if parts else "Recorded assessor sale."
+
+
+def first_numeric_value(frame: pd.DataFrame, columns: tuple[str, ...]) -> pd.Series:
+    values = pd.Series([None] * len(frame), index=frame.index, dtype="object")
+    for column in columns:
+        if column in frame:
+            values = values.combine_first(frame[column].map(numeric_or_none))
+    return values
+
+
+def normalize_pin10(value: Any) -> str | None:
+    text = clean_text(value)
+    if not text:
+        return None
+    digits = re.sub(r"\D", "", text)
+    if not digits:
+        return None
+    if len(digits) >= 10:
+        return digits[:10]
+    return digits.zfill(10)
 
 
 def normalize_flags(value: Any) -> list[str]:
