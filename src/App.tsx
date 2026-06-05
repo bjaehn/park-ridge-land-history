@@ -9,7 +9,6 @@ import { DecadeDistributionChart } from "./components/DecadeDistributionChart";
 import { HistoricalLayerPanel } from "./components/HistoricalLayerPanel";
 import { HotspotPanel } from "./components/HotspotPanel";
 import { ParcelDetailPanel } from "./components/ParcelDetailPanel";
-import { ProductGuide } from "./components/ProductGuide";
 import { SearchPanel } from "./components/SearchPanel";
 import { TimelineControl } from "./components/TimelineControl";
 import { VisualizationPanel, type VisualizationPreset } from "./components/VisualizationPanel";
@@ -23,8 +22,14 @@ import {
   type ParcelChangeFeature,
   type ParcelChangeType
 } from "./lib/parcelChangeTypes";
-import { decoratePermitPressure, type PermitPressureMapMode, type PermitPressureWindow } from "./lib/permitPressure";
-import type { ParcelCollection, ParcelFeature } from "./lib/parcelTypes";
+import {
+  decoratePermitPressure,
+  permitPressureLegendOrder,
+  permitStabilityLegendOrder,
+  type PermitPressureMapMode,
+  type PermitPressureWindow
+} from "./lib/permitPressure";
+import type { ParcelCollection, ParcelFeature, PermitPressureType, PermitStabilityType } from "./lib/parcelTypes";
 
 const knownDecades = decadeOrder.filter((bucket) => bucket !== "Unknown" && bucket !== "Suspicious");
 const animationIntervals = {
@@ -52,6 +57,12 @@ export default function App() {
   const [showHotspots, setShowHotspots] = useState(false);
   const [permitPressureWindow, setPermitPressureWindow] = useState<PermitPressureWindow>(5);
   const [permitPressureMapMode, setPermitPressureMapMode] = useState<PermitPressureMapMode>("stability");
+  const [visiblePermitPressureTypes, setVisiblePermitPressureTypes] = useState<Set<PermitPressureType>>(
+    () => new Set(permitPressureLegendOrder)
+  );
+  const [visiblePermitStabilityTypes, setVisiblePermitStabilityTypes] = useState<Set<PermitStabilityType>>(
+    () => new Set(permitStabilityLegendOrder)
+  );
   const [maxBuiltYear, setMaxBuiltYear] = useState(2026);
   const [selectedPin, setSelectedPin] = useState<string | null>(null);
   const [isBuildoutPlaying, setIsBuildoutPlaying] = useState(false);
@@ -203,10 +214,33 @@ export default function App() {
   }, [activeHistoricalLayerIds, loadedHistoricalLayers]);
 
   function toggleDecade(decade: string) {
+    if (decade === "Unknown") {
+      setShowUnknown((current) => !current);
+      return;
+    }
+
     setSelectedDecades((current) => {
       const next = new Set(current);
       if (next.has(decade)) next.delete(decade);
       else next.add(decade);
+      return next;
+    });
+  }
+
+  function togglePermitPressureType(pressureType: PermitPressureType) {
+    setVisiblePermitPressureTypes((current) => {
+      const next = new Set(current);
+      if (next.has(pressureType)) next.delete(pressureType);
+      else next.add(pressureType);
+      return next;
+    });
+  }
+
+  function togglePermitStabilityType(stabilityType: PermitStabilityType) {
+    setVisiblePermitStabilityTypes((current) => {
+      const next = new Set(current);
+      if (next.has(stabilityType)) next.delete(stabilityType);
+      else next.add(stabilityType);
       return next;
     });
   }
@@ -363,6 +397,8 @@ export default function App() {
         showBoundary={showBoundary}
         showPermitPressure={showPermitPressure}
         permitPressureMapMode={permitPressureMapMode}
+        visiblePermitPressureTypes={visiblePermitPressureTypes}
+        visiblePermitStabilityTypes={visiblePermitStabilityTypes}
         historicalOverlays={historicalOverlays}
         swipeEnabled={swipeEnabled}
         swipePosition={swipePosition}
@@ -381,6 +417,12 @@ export default function App() {
           visibleChangeTypes={visibleChangeTypes}
           showPermitPressureLegend={showPermitPressure}
           permitPressureMapMode={permitPressureMapMode}
+          visiblePermitPressureTypes={visiblePermitPressureTypes}
+          visiblePermitStabilityTypes={visiblePermitStabilityTypes}
+          onToggleDecade={toggleDecade}
+          onToggleChangeType={toggleChangeType}
+          onTogglePermitPressureType={togglePermitPressureType}
+          onTogglePermitStabilityType={togglePermitStabilityType}
           compact
         />
       </div>
@@ -389,7 +431,6 @@ export default function App() {
           <p>Work in progress</p>
           <h1>Park Ridge Land History</h1>
         </header>
-        <ProductGuide />
         <AnalysisTabs activeScale={activeAnalysisScale} onSetScale={setActiveAnalysisScale} />
 
         <div className="analysis-tab-panel" role="tabpanel">

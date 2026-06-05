@@ -146,7 +146,6 @@ input {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
   padding: 12px 18px;
-  border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
   background: #f5f4ef;
 }
@@ -155,7 +154,7 @@ input {
   display: grid;
   gap: 3px;
   min-width: 0;
-  min-height: 58px;
+  min-height: 42px;
   border: 1px solid var(--line);
   border-radius: 6px;
   background: #ffffff;
@@ -176,16 +175,10 @@ input {
 }
 
 .analysis-tabs span {
+  align-self: center;
   font-size: 0.78rem;
   font-weight: 900;
   line-height: 1.15;
-}
-
-.analysis-tabs small {
-  color: var(--ink-soft);
-  font-size: 0.66rem;
-  font-weight: 800;
-  line-height: 1.2;
 }
 
 .analysis-tab-panel > .panel-section {
@@ -275,36 +268,6 @@ input {
   color: var(--ink-soft);
   font-size: 0.8rem;
   line-height: 1.35;
-}
-
-.product-guide {
-  color: #263145;
-}
-
-.analysis-scale-list {
-  display: grid;
-  gap: 8px;
-  margin: 0;
-}
-
-.analysis-scale-list article {
-  display: grid;
-  gap: 3px;
-  padding: 10px;
-  border: 1px solid #e7e5df;
-  border-radius: 6px;
-  background: #ffffff;
-}
-
-.analysis-scale-list strong {
-  color: #172033;
-  font-size: 0.84rem;
-}
-
-.analysis-scale-list span {
-  color: var(--ink-soft);
-  font-size: 0.78rem;
-  line-height: 1.32;
 }
 
 .preset-grid {
@@ -1048,6 +1011,68 @@ input {
   line-height: 1.25;
 }
 
+.cluster-subnav {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.cluster-subnav button {
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #ffffff;
+  color: #172033;
+  cursor: pointer;
+  font-size: 0.74rem;
+  font-weight: 900;
+}
+
+.cluster-subnav button:hover,
+.cluster-subnav button.is-active {
+  border-color: var(--accent);
+  background: #e8f6f4;
+}
+
+.cluster-panel-view {
+  display: grid;
+  gap: 10px;
+}
+
+.cluster-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.cluster-stat-grid article {
+  display: grid;
+  gap: 3px;
+  min-height: 58px;
+  padding: 9px;
+  border: 1px solid #e7e5df;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.cluster-stat-grid strong {
+  color: #172033;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.cluster-stat-grid span {
+  color: var(--ink-soft);
+  font-size: 0.74rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.cluster-detail-list {
+  margin-top: 0;
+}
+
 .hotspot-empty {
   margin: 0;
 }
@@ -1492,13 +1517,28 @@ input {
   display: flex;
   align-items: center;
   gap: 8px;
+  width: 100%;
+  min-height: 30px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
   color: #263145;
+  cursor: pointer;
   font-size: 0.8rem;
   font-weight: 700;
+  padding: 4px 5px;
+  text-align: left;
+}
+
+.legend-item:hover,
+.legend-item:focus-visible {
+  border-color: var(--line);
+  background: #ffffff;
 }
 
 .legend-item.is-muted {
-  opacity: 0.4;
+  color: #7b8494;
+  opacity: 0.5;
 }
 
 .legend-swatch {

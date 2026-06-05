@@ -14,8 +14,14 @@ import type { LoadedHistoricalLayer } from "../lib/historicalLayerTypes";
 import type { HotspotCollection, HotspotFeature, HotspotType } from "../lib/hotspots";
 import { hotspotPopupHtml } from "../lib/mapPopups";
 import type { ParcelChangeFeature, ParcelChangeType } from "../lib/parcelChangeTypes";
-import { permitPressureColors, permitStabilityColors, type PermitPressureMapMode } from "../lib/permitPressure";
-import type { ParcelCollection, ParcelFeature } from "../lib/parcelTypes";
+import {
+  permitPressureColors,
+  permitPressureLegendOrder,
+  permitStabilityColors,
+  permitStabilityLegendOrder,
+  type PermitPressureMapMode
+} from "../lib/permitPressure";
+import type { ParcelCollection, ParcelFeature, PermitPressureType, PermitStabilityType } from "../lib/parcelTypes";
 import { parcelPopupHtml } from "./ParcelPopup";
 
 type MapViewProps = {
@@ -26,6 +32,8 @@ type MapViewProps = {
   showBoundary: boolean;
   showPermitPressure: boolean;
   permitPressureMapMode: PermitPressureMapMode;
+  visiblePermitPressureTypes: Set<PermitPressureType>;
+  visiblePermitStabilityTypes: Set<PermitStabilityType>;
   historicalOverlays: LoadedHistoricalLayer[];
   swipeEnabled: boolean;
   swipePosition: number;
@@ -51,6 +59,8 @@ export function MapView({
   showBoundary,
   showPermitPressure,
   permitPressureMapMode,
+  visiblePermitPressureTypes,
+  visiblePermitStabilityTypes,
   historicalOverlays,
   swipeEnabled,
   swipePosition,
@@ -175,7 +185,12 @@ export function MapView({
         source: "parcels",
         paint: {
           "fill-color": permitPressureFillColorExpression("stability"),
-          "fill-opacity": permitPressureFillOpacityExpression(true, "stability")
+          "fill-opacity": permitPressureFillOpacityExpression(
+            true,
+            "stability",
+            new Set(permitPressureLegendOrder),
+            new Set(permitStabilityLegendOrder)
+          )
         }
       });
 
@@ -510,10 +525,15 @@ export function MapView({
       mapRef.current.setPaintProperty(
         "permit-pressure-fill",
         "fill-opacity",
-        permitPressureFillOpacityExpression(showPermitPressure, permitPressureMapMode)
+        permitPressureFillOpacityExpression(
+          showPermitPressure,
+          permitPressureMapMode,
+          visiblePermitPressureTypes,
+          visiblePermitStabilityTypes
+        )
       );
     }
-  }, [permitPressureMapMode, showPermitPressure]);
+  }, [permitPressureMapMode, showPermitPressure, visiblePermitPressureTypes, visiblePermitStabilityTypes]);
 
   return (
     <>
@@ -550,12 +570,19 @@ function permitPressureFillColorExpression(mapMode: PermitPressureMapMode): Expr
 
 function permitPressureFillOpacityExpression(
   showPermitPressure: boolean,
-  mapMode: PermitPressureMapMode
+  mapMode: PermitPressureMapMode,
+  visiblePermitPressureTypes: Set<PermitPressureType>,
+  visiblePermitStabilityTypes: Set<PermitStabilityType>
 ): ExpressionSpecification | number {
   if (!showPermitPressure) return 0;
   if (mapMode === "activity") {
     return [
       "case",
+      [
+        "!",
+        ["in", ["get", "permit_pressure_type"], ["literal", Array.from(visiblePermitPressureTypes)]]
+      ],
+      0,
       ["==", ["get", "permit_pressure_type"], "none"],
       0,
       [
@@ -573,6 +600,11 @@ function permitPressureFillOpacityExpression(
   }
   return [
     "case",
+    [
+      "!",
+      ["in", ["get", "permit_stability_type"], ["literal", Array.from(visiblePermitStabilityTypes)]]
+    ],
+    0,
     ["==", ["get", "permit_stability_type"], "stable"],
     0.24,
     [

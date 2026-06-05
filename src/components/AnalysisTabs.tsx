@@ -5,10 +5,10 @@ type AnalysisTabsProps = {
   onSetScale: (scale: AnalysisScale) => void;
 };
 
-const tabs: Array<{ id: AnalysisScale; label: string; meta: string }> = [
-  { id: "home", label: "Single Home", meta: "Address, sales, permits" },
-  { id: "cluster", label: "Cluster", meta: "Nearby patterns" },
-  { id: "city", label: "Citywide", meta: "Map modes and time" }
+const tabs: Array<{ id: AnalysisScale; label: string }> = [
+  { id: "home", label: "Single Home" },
+  { id: "cluster", label: "Cluster" },
+  { id: "city", label: "Citywide" }
 ];
 
 export function AnalysisTabs({ activeScale, onSetScale }: AnalysisTabsProps) {
@@ -24,7 +24,6 @@ export function AnalysisTabs({ activeScale, onSetScale }: AnalysisTabsProps) {
           onClick={() => onSetScale(tab.id)}
         >
           <span>{tab.label}</span>
-          <small>{tab.meta}</small>
         </button>
       ))}
     </nav>

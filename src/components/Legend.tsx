@@ -14,6 +14,7 @@ import {
   permitStabilityLegendOrder,
   type PermitPressureMapMode
 } from "../lib/permitPressure";
+import type { PermitPressureType, PermitStabilityType } from "../lib/parcelTypes";
 
 type LegendProps = {
   visibleDecades: Set<string>;
@@ -21,6 +22,12 @@ type LegendProps = {
   visibleChangeTypes: Set<ParcelChangeType>;
   showPermitPressureLegend: boolean;
   permitPressureMapMode: PermitPressureMapMode;
+  visiblePermitPressureTypes: Set<PermitPressureType>;
+  visiblePermitStabilityTypes: Set<PermitStabilityType>;
+  onToggleDecade: (decade: string) => void;
+  onToggleChangeType: (changeType: ParcelChangeType) => void;
+  onTogglePermitPressureType: (pressureType: PermitPressureType) => void;
+  onTogglePermitStabilityType: (stabilityType: PermitStabilityType) => void;
   compact?: boolean;
 };
 
@@ -30,6 +37,12 @@ export function Legend({
   visibleChangeTypes,
   showPermitPressureLegend,
   permitPressureMapMode,
+  visiblePermitPressureTypes,
+  visiblePermitStabilityTypes,
+  onToggleDecade,
+  onToggleChangeType,
+  onTogglePermitPressureType,
+  onTogglePermitStabilityType,
   compact = false
 }: LegendProps) {
   return (
@@ -37,10 +50,16 @@ export function Legend({
       <h2>Legend</h2>
       <div className="legend-grid">
         {decadeOrder.map((bucket) => (
-          <div className={`legend-item ${visibleDecades.has(bucket) ? "" : "is-muted"}`} key={bucket}>
+          <button
+            className={`legend-item ${visibleDecades.has(bucket) ? "" : "is-muted"}`}
+            type="button"
+            key={bucket}
+            aria-pressed={visibleDecades.has(bucket)}
+            onClick={() => onToggleDecade(bucket)}
+          >
             <span className="legend-swatch" style={{ backgroundColor: decadeColors[bucket] }} />
             <span>{bucket}</span>
-          </div>
+          </button>
         ))}
       </div>
       {showPermitPressureLegend && (
@@ -49,16 +68,28 @@ export function Legend({
           <div className="legend-grid">
             {permitPressureMapMode === "stability"
               ? permitStabilityLegendOrder.map((stabilityType) => (
-                  <div className="legend-item" key={stabilityType}>
+                  <button
+                    className={`legend-item ${visiblePermitStabilityTypes.has(stabilityType) ? "" : "is-muted"}`}
+                    type="button"
+                    key={stabilityType}
+                    aria-pressed={visiblePermitStabilityTypes.has(stabilityType)}
+                    onClick={() => onTogglePermitStabilityType(stabilityType)}
+                  >
                     <span className="legend-swatch" style={{ backgroundColor: permitStabilityColors[stabilityType] }} />
                     <span>{permitStabilityLabel(stabilityType)}</span>
-                  </div>
+                  </button>
                 ))
               : permitPressureLegendOrder.map((pressureType) => (
-                  <div className="legend-item" key={pressureType}>
+                  <button
+                    className={`legend-item ${visiblePermitPressureTypes.has(pressureType) ? "" : "is-muted"}`}
+                    type="button"
+                    key={pressureType}
+                    aria-pressed={visiblePermitPressureTypes.has(pressureType)}
+                    onClick={() => onTogglePermitPressureType(pressureType)}
+                  >
                     <span className="legend-swatch" style={{ backgroundColor: permitPressureColors[pressureType] }} />
                     <span>{permitPressureLabel(pressureType)}</span>
-                  </div>
+                  </button>
                 ))}
           </div>
         </div>
@@ -68,13 +99,16 @@ export function Legend({
           <h3>Historical Change</h3>
           <div className="legend-grid">
             {parcelChangeLegendOrder.map((changeType) => (
-              <div
+              <button
                 className={`legend-item ${visibleChangeTypes.has(changeType) ? "" : "is-muted"}`}
+                type="button"
                 key={changeType}
+                aria-pressed={visibleChangeTypes.has(changeType)}
+                onClick={() => onToggleChangeType(changeType)}
               >
                 <span className="legend-swatch" style={{ backgroundColor: parcelChangeColors[changeType] }} />
                 <span>{changeLegendLabel(changeType)}</span>
-              </div>
+              </button>
             ))}
           </div>
         </div>
