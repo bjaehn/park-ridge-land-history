@@ -473,6 +473,18 @@ export default function App() {
               }}
               selectedHotspotId={selectedHotspot?.properties.id ?? null}
               onSelectHotspot={selectHotspot}
+              activePreset={activeVisualizationPreset}
+              visibleDecades={visibleLegendBuckets}
+              visibleChangeTypes={visibleChangeTypes}
+              showPermitPressure={showPermitPressure}
+              permitPressureMapMode={permitPressureMapMode}
+              visiblePermitPressureTypes={visiblePermitPressureTypes}
+              visiblePermitStabilityTypes={visiblePermitStabilityTypes}
+              onSelectPreset={selectVisualizationPreset}
+              onToggleDecade={toggleDecade}
+              onToggleChangeType={toggleChangeType}
+              onTogglePermitPressureType={togglePermitPressureType}
+              onTogglePermitStabilityType={togglePermitStabilityType}
             />
           )}
 

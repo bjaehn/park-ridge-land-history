@@ -1,5 +1,10 @@
 import { useMemo, useState } from "react";
+import type { ParcelChangeType } from "../lib/parcelChangeTypes";
 import { hotspotLabel, type HotspotCollection, type HotspotFeature, type HotspotType } from "../lib/hotspots";
+import type { PermitPressureMapMode } from "../lib/permitPressure";
+import type { PermitPressureType, PermitStabilityType } from "../lib/parcelTypes";
+import { Legend } from "./Legend";
+import type { VisualizationPreset } from "./VisualizationPanel";
 
 type HotspotPanelProps = {
   hotspots: HotspotCollection;
@@ -7,6 +12,18 @@ type HotspotPanelProps = {
   onSetEnabled: (enabled: boolean) => void;
   selectedHotspotId: string | null;
   onSelectHotspot: (hotspot: HotspotFeature) => void;
+  activePreset: VisualizationPreset;
+  visibleDecades: Set<string>;
+  visibleChangeTypes: Set<ParcelChangeType>;
+  showPermitPressure: boolean;
+  permitPressureMapMode: PermitPressureMapMode;
+  visiblePermitPressureTypes: Set<PermitPressureType>;
+  visiblePermitStabilityTypes: Set<PermitStabilityType>;
+  onSelectPreset: (preset: VisualizationPreset) => void;
+  onToggleDecade: (decade: string) => void;
+  onToggleChangeType: (changeType: ParcelChangeType) => void;
+  onTogglePermitPressureType: (pressureType: PermitPressureType) => void;
+  onTogglePermitStabilityType: (stabilityType: PermitStabilityType) => void;
 };
 
 export function HotspotPanel({
@@ -14,7 +31,19 @@ export function HotspotPanel({
   enabled,
   onSetEnabled,
   selectedHotspotId,
-  onSelectHotspot
+  onSelectHotspot,
+  activePreset,
+  visibleDecades,
+  visibleChangeTypes,
+  showPermitPressure,
+  permitPressureMapMode,
+  visiblePermitPressureTypes,
+  visiblePermitStabilityTypes,
+  onSelectPreset,
+  onToggleDecade,
+  onToggleChangeType,
+  onTogglePermitPressureType,
+  onTogglePermitStabilityType
 }: HotspotPanelProps) {
   const [activeClusterView, setActiveClusterView] = useState<ClusterView>("overview");
   const visibleHotspots = hotspots.features.slice(0, 6);
@@ -25,7 +54,7 @@ export function HotspotPanel({
     <section className="panel-section hotspot-section" aria-label="Areas in Park Ridge">
       <h2>Areas in Park Ridge</h2>
       <p className="nearby-tab-note">
-        See places that are changing, older, or mostly quiet.
+        Use this when you want more than one address, but not the whole town. It finds small groups of nearby homes that share a pattern.
       </p>
       <nav className="cluster-subnav" aria-label="Area steps">
         {clusterViews.map((view) => (
@@ -42,16 +71,64 @@ export function HotspotPanel({
 
       {activeClusterView === "overview" && (
         <div className="cluster-panel-view">
+          <div className="area-context-card">
+            <h3>What am I looking at?</h3>
+            <p>
+              The map can show two things at once: colored parcels tell you what kind of pattern each home has, and area circles point to places where nearby homes start to tell the same story.
+            </p>
+          </div>
+
+          <div className="cluster-view-heading">
+            <h3>Choose what the colors mean</h3>
+            <p>This changes the parcel colors on the map. The area circles stay focused on nearby patterns.</p>
+          </div>
+          <div className="area-question-grid" aria-label="Area map questions">
+            {areaMapQuestions.map((question) => (
+              <button
+                className={`preset-button area-question-button ${activePreset === question.id ? "is-active" : ""}`}
+                type="button"
+                aria-pressed={activePreset === question.id}
+                key={question.id}
+                onClick={() => onSelectPreset(question.id)}
+              >
+                <span>{question.label}</span>
+                <small>{question.meta}</small>
+              </button>
+            ))}
+          </div>
+
+          <div className="area-filter-panel">
+            <div className="cluster-view-heading">
+              <h3>Pick what stays visible</h3>
+              <p>These are the same color controls as the map legend. Click one to hide it; click again to bring it back.</p>
+            </div>
+            <Legend
+              activePreset={activePreset}
+              visibleDecades={visibleDecades}
+              showParcelChangeLegend={false}
+              visibleChangeTypes={visibleChangeTypes}
+              showPermitPressureLegend={showPermitPressure}
+              permitPressureMapMode={permitPressureMapMode}
+              visiblePermitPressureTypes={visiblePermitPressureTypes}
+              visiblePermitStabilityTypes={visiblePermitStabilityTypes}
+              onToggleDecade={onToggleDecade}
+              onToggleChangeType={onToggleChangeType}
+              onTogglePermitPressureType={onTogglePermitPressureType}
+              onTogglePermitStabilityType={onTogglePermitStabilityType}
+              compact
+            />
+          </div>
+
           <label className="check-row check-row-strong cluster-toggle-row">
             <input
               type="checkbox"
               checked={enabled}
               onChange={(event) => onSetEnabled(event.target.checked)}
             />
-            <span>Show areas on the map</span>
+            <span>Show area circles on the map</span>
           </label>
           <p className="nearby-tab-note">
-            These are groups of homes with a shared pattern. Click one on the map, or pick one from the list.
+            Turn this on when you want the app to point out small parts of Park Ridge worth inspecting. Then click a circle on the map, or choose one from the next tab.
           </p>
           <div className="cluster-stat-grid">
             <article>
@@ -78,7 +155,7 @@ export function HotspotPanel({
         <>
           <div className="cluster-view-heading">
             <h3>Choose an Area</h3>
-            <p>Choose a place that stands out. The map will zoom there.</p>
+            <p>Each button is a nearby group of homes with a shared signal. Choose one to zoom there and see why it matters.</p>
           </div>
           {!enabled ? (
             <p className="quiet-note hotspot-empty">Turn on nearby areas first.</p>
@@ -109,7 +186,7 @@ export function HotspotPanel({
         <>
           <div className="cluster-view-heading">
             <h3>Why This Area?</h3>
-            <p>See what made the selected area stand out.</p>
+            <p>This explains the pattern, not a verdict. Use it as a short list of places to inspect more closely.</p>
           </div>
           {!selectedHotspot ? (
             <p className="quiet-note hotspot-empty">Pick an area from the map or list first.</p>
@@ -148,9 +225,27 @@ function strengthLabel(score: number): string {
 type ClusterView = "overview" | "hotspots" | "selected";
 
 const clusterViews: Array<{ id: ClusterView; label: string }> = [
-  { id: "overview", label: "Show on Map" },
-  { id: "hotspots", label: "Choose Area" },
-  { id: "selected", label: "What It Means" }
+  { id: "overview", label: "Set Up Map" },
+  { id: "hotspots", label: "Pick Area" },
+  { id: "selected", label: "Read Area" }
+];
+
+const areaMapQuestions: Array<{ id: VisualizationPreset; label: string; meta: string }> = [
+  {
+    id: "stability",
+    label: "Quiet or changing?",
+    meta: "Best first view. Shows stable homes, watch areas, and stronger change pressure."
+  },
+  {
+    id: "activity",
+    label: "What kind of work?",
+    meta: "Separates remodels, additions, new construction, and teardown pressure."
+  },
+  {
+    id: "age",
+    label: "How old nearby?",
+    meta: "Shows the age mix so you can spot older pockets and newer rebuilds."
+  }
 ];
 
 function countHotspotTypes(hotspots: HotspotCollection): Record<HotspotType, number> {

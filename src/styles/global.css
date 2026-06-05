@@ -1138,7 +1138,61 @@ input {
 
 .cluster-panel-view {
   display: grid;
-  gap: 11px;
+  gap: 12px;
+}
+
+.area-context-card {
+  display: grid;
+  gap: 5px;
+  padding: 10px;
+  border: 1px solid #d8e7e4;
+  border-radius: 6px;
+  background: #f3fbf9;
+}
+
+.area-context-card h3 {
+  margin: 0;
+  color: #172033;
+  font-size: 0.88rem;
+}
+
+.area-context-card p {
+  margin: 0;
+  color: #425168;
+  font-size: 0.76rem;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+.area-question-grid {
+  display: grid;
+  gap: 7px;
+}
+
+.area-question-button {
+  min-height: 68px;
+}
+
+.area-filter-panel {
+  display: grid;
+  gap: 8px;
+}
+
+.area-filter-panel .legend-panel-compact {
+  max-height: none;
+  padding: 10px;
+  border-radius: 6px;
+  background: #ffffff;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.area-filter-panel .legend-panel h2 {
+  display: none;
+}
+
+.area-filter-panel .legend-help {
+  margin-bottom: 8px;
 }
 
 .cluster-view-heading {

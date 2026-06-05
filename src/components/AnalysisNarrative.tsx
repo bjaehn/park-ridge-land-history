@@ -82,20 +82,20 @@ function areasNarrative(
   if (selectedHotspot) {
     return [
       `${hotspotLabel(selectedHotspot.properties.hotspot_type)} is selected.`,
-      selectedHotspot.properties.description
+      `${selectedHotspot.properties.description} This is useful because nearby patterns can change how one address feels: a home may be quiet by itself but sit near remodeling, older-home concentration, or teardown pressure.`
     ];
   }
 
   if (!showHotspots) {
     return [
-      "Turn on areas to see parts of Park Ridge that stand out.",
-      "These are groups of homes with similar patterns, such as more recent work, possible teardown pressure, older homes, or low recent activity."
+      "Areas sit between one property and all of Park Ridge. Use this view to understand the blocks around a home, not just the home itself.",
+      "Start by choosing what the colors mean, hide any categories you do not care about, then turn on area circles to see places with shared patterns."
     ];
   }
 
   return [
-    `${hotspots.features.length.toLocaleString()} standout areas are available on the map.`,
-    "Choose one from the list or click one on the map to see why it was flagged."
+    `${hotspots.features.length.toLocaleString()} nearby-pattern areas are available on the map.`,
+    "Pick one to answer: what is happening around here, why does this cluster stand out, and should I look more closely?"
   ];
 }
 
