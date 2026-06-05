@@ -5,7 +5,8 @@ const eventTypeLabels: Record<HouseEvolutionEvent["event_type"], string> = {
   original_build: "Original build",
   sale: "Sale",
   permit: "Permit",
-  nearby_teardown: "Nearby teardown"
+  nearby_teardown: "Nearby teardown",
+  historic_survey: "Historic survey"
 };
 
 export function getHouseEvolutionTimeline(properties: ParcelProperties): HouseEvolutionEvent[] {
@@ -39,11 +40,12 @@ export function formatEvolutionMeta(event: HouseEvolutionEvent): string {
     event.status,
     event.permit_number ? `Permit ${event.permit_number}` : null,
     event.document_number ? `Document ${event.document_number}` : null,
+    event.reference_number ? `HARGIS ${event.reference_number}` : null,
     event.price ? formatCurrency(event.price) : null
   ]
     .filter(Boolean)
     .map(String);
-  return parts.join(" · ");
+  return parts.join(" - ");
 }
 
 function parseTimeline(value: ParcelProperties["house_evolution_timeline"]): HouseEvolutionEvent[] {

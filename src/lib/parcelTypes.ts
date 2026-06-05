@@ -65,9 +65,33 @@ export type ParcelProperties = {
   foreclosure_per_1000_half_mile_5yr?: number | null;
   nearest_major_road_name?: string | null;
   nearest_major_road_dist_ft?: number | null;
+  hargis_record_count?: number | null;
+  hargis_refnum?: string | null;
+  hargis_refnums?: string | null;
+  hargis_name?: string | null;
+  hargis_location?: string | null;
+  hargis_nr_eval?: string | null;
+  hargis_category?: string | null;
+  hargis_arch_class?: string | null;
+  hargis_current_function?: string | null;
+  hargis_historic_function?: string | null;
+  hargis_wall_materials?: string | null;
+  hargis_architect?: string | null;
+  hargis_builder?: string | null;
+  hargis_begin_year?: number | null;
+  hargis_end_year?: number | null;
+  hargis_survey_date?: string | null;
+  hargis_survey_year?: number | null;
+  hargis_opinion_significance?: string | null;
+  hargis_photo_count?: number | null;
+  hargis_pdf_count?: number | null;
+  hargis_photo_url?: string | null;
+  hargis_pdf_url?: string | null;
+  hargis_match_method?: string | null;
+  hargis_records_json?: string | null;
 };
 
-export type HouseEvolutionEventType = "original_build" | "sale" | "permit" | "nearby_teardown";
+export type HouseEvolutionEventType = "original_build" | "sale" | "permit" | "nearby_teardown" | "historic_survey";
 export type PermitPressureType =
   | "none"
   | "recent_permit"
@@ -91,6 +115,7 @@ export type HouseEvolutionEvent = {
   source?: string | null;
   pin?: string | null;
   is_nearby?: boolean;
+  reference_number?: string | null;
 };
 
 export type ParcelFeature = GeoJSON.Feature<GeoJSON.Polygon | GeoJSON.MultiPolygon, ParcelProperties>;

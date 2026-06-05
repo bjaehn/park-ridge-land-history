@@ -93,6 +93,31 @@ def test_historic_character_layer_has_century_home_candidates():
     assert max(property_["year_built"] for property_ in properties if property_["year_built"]) <= 1926
 
 
+def test_public_parcels_include_hargis_historic_survey_matches():
+    payload = json.loads(Path("public/data/park_ridge_parcels_enriched.geojson").read_text())
+    properties = [feature["properties"] for feature in payload["features"]]
+    matches = [property_ for property_ in properties if property_.get("hargis_record_count", 0) > 0]
+
+    assert len(matches) > 100
+    assert sum(property_.get("hargis_record_count", 0) for property_ in matches) >= 164
+    assert sum(property_.get("hargis_photo_count", 0) for property_ in matches) >= 190
+    assert any(property_.get("hargis_architect") == "Zook & McCaughey" for property_ in matches)
+    assert any(
+        event.get("event_type") == "historic_survey"
+        for property_ in matches
+        for event in property_.get("house_evolution_timeline", [])
+    )
+
+
+def test_hargis_historical_layer_has_survey_matches():
+    payload = json.loads(Path("public/data/historical/park_ridge_hargis_historic_survey.geojson").read_text())
+    properties = [feature["properties"] for feature in payload["features"]]
+
+    assert len(properties) > 100
+    assert all(property_["layer_kind"] == "hargis_historic_survey" for property_ in properties)
+    assert any(property_.get("hargis_arch_class") == "Tudor Revival" for property_ in properties)
+
+
 def test_building_footprints_and_lot_coverage_layers_are_populated():
     footprints = json.loads(Path("public/data/historical/cook_county_building_footprints_2017.geojson").read_text())
     coverage = json.loads(Path("public/data/historical/park_ridge_lot_coverage.geojson").read_text())

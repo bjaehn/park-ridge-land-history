@@ -74,3 +74,12 @@ export function historicCharacterFillColorExpression(): ExpressionSpecification 
     "#fbbf24"
   ] as unknown as ExpressionSpecification;
 }
+
+export function hargisHistoricSurveyFillColorExpression(): ExpressionSpecification {
+  return [
+    "case",
+    ["has", "hargis_architect"],
+    "#7c2d12",
+    "#b45309"
+  ] as unknown as ExpressionSpecification;
+}

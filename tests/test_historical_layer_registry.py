@@ -12,6 +12,7 @@ def test_registry_has_required_historical_layer_families():
     assert "cook_recorded_subdivision_plats" in layer_ids
     assert "sanborn_park_ridge_placeholder" in layer_ids
     assert "park_ridge_historic_character" in layer_ids
+    assert "park_ridge_hargis_historic_survey" in layer_ids
     assert "cook_county_building_footprints_2017" in layer_ids
     assert "park_ridge_lot_coverage" in layer_ids
 
@@ -43,8 +44,10 @@ def test_built_environment_layers_are_map_ready():
     layers = {layer["id"]: layer for layer in load_registry()}
 
     assert layers["park_ridge_historic_character"]["dataPath"] == "/data/historical/park_ridge_historic_character.geojson"
+    assert layers["park_ridge_hargis_historic_survey"]["dataPath"] == "/data/historical/park_ridge_hargis_historic_survey.geojson"
     assert layers["cook_county_building_footprints_2017"]["layerGroup"] == "built_environment"
     assert layers["park_ridge_lot_coverage"]["layerGroup"] == "built_environment"
     assert layers["park_ridge_historic_character"]["renderMode"] == "highlight"
+    assert layers["park_ridge_hargis_historic_survey"]["renderMode"] == "highlight"
     assert layers["cook_county_building_footprints_2017"]["renderMode"] == "footprint"
     assert layers["park_ridge_lot_coverage"]["renderMode"] == "parcel_heat"

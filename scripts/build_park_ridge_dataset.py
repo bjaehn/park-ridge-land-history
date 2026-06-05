@@ -56,6 +56,33 @@ SALE_DEED_COLUMN_CANDIDATES = ("deed_type", "mydec_deed_type")
 ASSESSED_VALUE_TOTAL_COLUMNS = ("board_tot", "certified_tot", "mailed_tot")
 NEARBY_TEARDOWN_DISTANCE_FT = 500
 NEARBY_TEARDOWN_LIMIT = 5
+HARGIS_MATCH_DISTANCE_FT = 120
+HARGIS_OUTPUT_COLUMNS = [
+    "hargis_record_count",
+    "hargis_refnum",
+    "hargis_refnums",
+    "hargis_name",
+    "hargis_location",
+    "hargis_nr_eval",
+    "hargis_category",
+    "hargis_arch_class",
+    "hargis_current_function",
+    "hargis_historic_function",
+    "hargis_wall_materials",
+    "hargis_architect",
+    "hargis_builder",
+    "hargis_begin_year",
+    "hargis_end_year",
+    "hargis_survey_date",
+    "hargis_survey_year",
+    "hargis_opinion_significance",
+    "hargis_photo_count",
+    "hargis_pdf_count",
+    "hargis_photo_url",
+    "hargis_pdf_url",
+    "hargis_match_method",
+    "hargis_records_json",
+]
 
 
 def read_table(path: Path) -> Any:
@@ -352,6 +379,220 @@ def build_proximity_context(proximity: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(records)
 
 
+def build_hargis_history(
+    properties: pd.DataFrame,
+    photos: pd.DataFrame | None,
+    pdfs: pd.DataFrame | None,
+    parcels: Any,
+) -> pd.DataFrame:
+    if properties.empty:
+        return pd.DataFrame()
+
+    hargis = properties.copy()
+    hargis["hargis_refnum_norm"] = hargis.get("REFNUM", pd.Series(dtype="object")).map(normalize_hargis_refnum)
+    hargis = hargis.dropna(subset=["hargis_refnum_norm"])
+    if hargis.empty:
+        return pd.DataFrame()
+
+    media = build_hargis_media_summary(photos, pdfs)
+    hargis = hargis.merge(media, on="hargis_refnum_norm", how="left") if not media.empty else hargis
+    matched = match_hargis_to_parcels(hargis, parcels)
+    matched = matched.dropna(subset=["pin_normalized"])
+    if matched.empty:
+        return pd.DataFrame()
+
+    records: list[dict[str, Any]] = []
+    for pin, group in matched.groupby("pin_normalized"):
+        ordered = sorted(group.to_dict(orient="records"), key=hargis_primary_sort_key)
+        primary = ordered[0]
+        record_summaries = [hargis_record_summary(row) for row in ordered]
+        photo_count = sum(int(numeric_or_none(row.get("hargis_photo_count")) or 0) for row in ordered)
+        pdf_count = sum(int(numeric_or_none(row.get("hargis_pdf_count")) or 0) for row in ordered)
+        records.append(
+            {
+                "pin_normalized": pin,
+                "hargis_record_count": len(ordered),
+                "hargis_refnum": clean_text(primary.get("REFNUM")),
+                "hargis_refnums": ", ".join(filter(None, [clean_text(row.get("REFNUM")) for row in ordered])),
+                "hargis_name": first_clean_value(primary, ["SignificantName", "OtherName"]),
+                "hargis_location": clean_text(primary.get("Location")),
+                "hargis_nr_eval": first_clean_value(primary, ["NREVAL", "NREval_1", "StaffEval"]),
+                "hargis_category": clean_text(primary.get("Category")),
+                "hargis_arch_class": clean_text(primary.get("ArchClass")),
+                "hargis_current_function": clean_text(primary.get("CurrentFunction")),
+                "hargis_historic_function": clean_text(primary.get("HistoricFunction")),
+                "hargis_wall_materials": clean_text(primary.get("WallMaterials")),
+                "hargis_architect": clean_text(primary.get("Architect")),
+                "hargis_builder": clean_text(primary.get("Builder")),
+                "hargis_begin_year": parse_year(primary.get("BeginYear")),
+                "hargis_end_year": parse_year(primary.get("EndYear")),
+                "hargis_survey_date": clean_text(primary.get("SurveyDate")),
+                "hargis_survey_year": hargis_survey_year(primary),
+                "hargis_opinion_significance": clean_text(primary.get("OpinionOfSignificance")),
+                "hargis_photo_count": photo_count,
+                "hargis_pdf_count": pdf_count,
+                "hargis_photo_url": first_clean_value(primary, ["hargis_photo_url"]),
+                "hargis_pdf_url": first_clean_value(primary, ["hargis_pdf_url"]),
+                "hargis_match_method": clean_text(primary.get("hargis_match_method")),
+                "hargis_records_json": json.dumps(record_summaries, separators=(",", ":")),
+            }
+        )
+    return pd.DataFrame(records)
+
+
+def build_hargis_media_summary(photos: pd.DataFrame | None, pdfs: pd.DataFrame | None) -> pd.DataFrame:
+    frames: list[pd.DataFrame] = []
+    if photos is not None and not photos.empty:
+        photo_ref_column = "RefNum" if "RefNum" in photos else "REFNUM"
+        photo_url_column = "Url" if "Url" in photos else "URL"
+        photo_rows = photos.copy()
+        photo_rows["hargis_refnum_norm"] = photo_rows[photo_ref_column].map(normalize_hargis_refnum)
+        photo_grouped = photo_rows.dropna(subset=["hargis_refnum_norm"]).groupby("hargis_refnum_norm")
+        frames.append(
+            photo_grouped.agg(
+                hargis_photo_count=(photo_ref_column, "size"),
+                hargis_photo_url=(photo_url_column, first_non_empty),
+            ).reset_index()
+        )
+    if pdfs is not None and not pdfs.empty:
+        pdf_ref_column = "REFNUM" if "REFNUM" in pdfs else "RefNum"
+        pdf_url_column = "URL" if "URL" in pdfs else "Url"
+        pdf_rows = pdfs.copy()
+        pdf_rows["hargis_refnum_norm"] = pdf_rows[pdf_ref_column].map(normalize_hargis_refnum)
+        pdf_grouped = pdf_rows.dropna(subset=["hargis_refnum_norm"]).groupby("hargis_refnum_norm")
+        frames.append(
+            pdf_grouped.agg(
+                hargis_pdf_count=(pdf_ref_column, "size"),
+                hargis_pdf_url=(pdf_url_column, first_non_empty),
+            ).reset_index()
+        )
+    if not frames:
+        return pd.DataFrame()
+    summary = frames[0]
+    for frame in frames[1:]:
+        summary = summary.merge(frame, on="hargis_refnum_norm", how="outer")
+    return summary
+
+
+def match_hargis_to_parcels(hargis: pd.DataFrame, parcels: Any) -> pd.DataFrame:
+    matched = hargis.copy()
+    matched["pin_normalized"] = None
+    matched["hargis_match_method"] = None
+    matched["hargis_match_distance_ft"] = None
+
+    if hasattr(parcels, "geometry") and {"longitude", "latitude"}.issubset(matched.columns):
+        try:
+            import geopandas as gpd
+
+            point_rows = matched.dropna(subset=["longitude", "latitude"]).copy()
+            point_rows["hargis_index"] = point_rows.index
+            points = gpd.GeoDataFrame(
+                point_rows,
+                geometry=gpd.points_from_xy(point_rows["longitude"], point_rows["latitude"]),
+                crs="EPSG:4326",
+            )
+            parcel_columns = ["pin_normalized", "address", "geometry"] if "address" in parcels else ["pin_normalized", "geometry"]
+            parcel_geometries = parcels.dropna(subset=["pin_normalized"])[parcel_columns].copy()
+            if parcel_geometries.crs is None:
+                parcel_geometries = parcel_geometries.set_crs("EPSG:4326")
+            joined = gpd.sjoin_nearest(
+                points.to_crs("EPSG:3435"),
+                parcel_geometries.to_crs("EPSG:3435"),
+                how="left",
+                max_distance=HARGIS_MATCH_DISTANCE_FT,
+                distance_col="hargis_match_distance_ft",
+            )
+            joined = (
+                joined.dropna(subset=["pin_normalized_right"] if "pin_normalized_right" in joined else ["pin_normalized"])
+                .sort_values(["hargis_index", "hargis_match_distance_ft"])
+                .drop_duplicates("hargis_index")
+            )
+            pin_column = "pin_normalized_right" if "pin_normalized_right" in joined else "pin_normalized"
+            for _, row in joined.iterrows():
+                index = row["hargis_index"]
+                distance = numeric_or_none(row.get("hargis_match_distance_ft"))
+                matched.at[index, "pin_normalized"] = row.get(pin_column)
+                matched.at[index, "hargis_match_method"] = "map point"
+                matched.at[index, "hargis_match_distance_ft"] = round(distance, 1) if distance is not None else None
+        except Exception as error:
+            print(f"HARGIS spatial match failed; falling back to addresses. {error}")
+
+    address_lookup: dict[str, str] = {}
+    if "address" in parcels:
+        for _, parcel in parcels.dropna(subset=["pin_normalized"]).iterrows():
+            key = normalized_address_key(parcel.get("address"))
+            if key and key not in address_lookup:
+                address_lookup[key] = parcel.get("pin_normalized")
+
+    for index, row in matched[matched["pin_normalized"].isna()].iterrows():
+        key = normalized_address_key(row.get("Location"))
+        pin = address_lookup.get(key) if key else None
+        if pin:
+            matched.at[index, "pin_normalized"] = pin
+            matched.at[index, "hargis_match_method"] = "address"
+
+    return matched
+
+
+def hargis_record_summary(row: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "refnum": clean_text(row.get("REFNUM")),
+        "name": first_clean_value(row, ["SignificantName", "OtherName"]),
+        "location": clean_text(row.get("Location")),
+        "style": clean_text(row.get("ArchClass")),
+        "architect": clean_text(row.get("Architect")),
+        "builder": clean_text(row.get("Builder")),
+        "begin_year": parse_year(row.get("BeginYear")),
+        "survey_date": clean_text(row.get("SurveyDate")),
+        "nr_eval": first_clean_value(row, ["NREVAL", "NREval_1", "StaffEval"]),
+        "photo_count": int(numeric_or_none(row.get("hargis_photo_count")) or 0),
+        "pdf_count": int(numeric_or_none(row.get("hargis_pdf_count")) or 0),
+        "match_method": clean_text(row.get("hargis_match_method")),
+    }
+
+
+def hargis_primary_sort_key(row: dict[str, Any]) -> tuple[int, str]:
+    score = 0
+    nr_eval = (first_clean_value(row, ["NREVAL", "NREval_1", "StaffEval"]) or "").lower()
+    if "entered" in nr_eval or "national register" in nr_eval:
+        score += 80
+    if "contributing" in nr_eval or "eligible" in nr_eval:
+        score += 50
+    if first_clean_value(row, ["SignificantName", "OtherName"]):
+        score += 20
+    if clean_text(row.get("Architect")):
+        score += 12
+    if parse_year(row.get("BeginYear")):
+        score += 8
+    return -score, str(row.get("REFNUM") or "")
+
+
+def build_hargis_event(row: Any) -> dict[str, Any] | None:
+    if not clean_text(row.get("hargis_refnum")):
+        return None
+    parts = []
+    if clean_text(row.get("hargis_arch_class")):
+        parts.append(f"Style: {clean_text(row.get('hargis_arch_class'))}")
+    if clean_text(row.get("hargis_architect")):
+        parts.append(f"Architect: {clean_text(row.get('hargis_architect'))}")
+    if clean_text(row.get("hargis_builder")):
+        parts.append(f"Builder: {clean_text(row.get('hargis_builder'))}")
+    if clean_text(row.get("hargis_nr_eval")):
+        parts.append(clean_text(row.get("hargis_nr_eval")))
+    photo_count = numeric_or_none(row.get("hargis_photo_count")) or 0
+    if photo_count:
+        parts.append(f"{int(photo_count)} linked photo records")
+    return {
+        "year": parse_year(row.get("hargis_survey_year")) or parse_year(row.get("hargis_begin_year")),
+        "date": clean_text(row.get("hargis_survey_date")),
+        "title": "Historic survey record",
+        "description": "; ".join(parts) if parts else "Illinois historic architecture survey record.",
+        "event_type": "historic_survey",
+        "source": "Illinois HARGIS",
+        "reference_number": clean_text(row.get("hargis_refnum")),
+    }
+
+
 def build_permit_event(
     row: dict[str, Any],
     date_column: str | None,
@@ -400,6 +641,9 @@ def attach_house_evolution_timelines(enriched: Any) -> Any:
         events.extend(parse_timeline_value(row.get("sale_timeline")))
         events.extend(parse_timeline_value(row.get("permit_timeline")))
         events.extend(parse_timeline_value(row.get("nearby_teardown_timeline")))
+        hargis_event = build_hargis_event(row)
+        if hargis_event:
+            events.append(hargis_event)
         timelines.append(json.dumps(sorted(events, key=timeline_sort_key), separators=(",", ":")))
 
     enriched["house_evolution_timeline"] = timelines
@@ -627,13 +871,35 @@ def build_dataset() -> None:
             enriched["pin10_normalized"] = enriched["pin_normalized"].map(normalize_pin10)
             enriched = enriched.merge(proximity_context, on="pin10_normalized", how="left")
 
-    for column in ["address", "municipality", "property_class", "year_built", "decade_built", "building_sqft", "land_sqft", "improvement_count", "permit_count", "latest_permit_year", "nearby_teardown_count", "sale_count", "latest_sale_year", "latest_sale_price", "max_sale_price", "assessed_year_count", "first_assessed_year", "first_assessed_total", "latest_assessed_year", "latest_assessed_total", "assessed_value_change_pct", "appeal_count", "latest_appeal_year", "open_appeal_count", "total_assessment_reduction", "proximity_year", "nearest_park_name", "nearest_park_dist_ft", "nearest_metra_stop_name", "nearest_metra_stop_dist_ft", "nearest_bike_trail_name", "nearest_bike_trail_dist_ft", "foreclosure_count_half_mile_5yr", "foreclosure_per_1000_half_mile_5yr", "nearest_major_road_name", "nearest_major_road_dist_ft", "primary_building_selection_method"]:
+    hargis_properties_path = optional_source("Illinois HARGIS Park Ridge properties")
+    if hargis_properties_path:
+        hargis_properties = pd.DataFrame(read_table(hargis_properties_path).drop(columns="geometry", errors="ignore"))
+        hargis_photos_path = optional_source("Illinois HARGIS Park Ridge photos")
+        hargis_pdfs_path = optional_source("Illinois HARGIS Park Ridge PDFs")
+        hargis_photos = (
+            pd.DataFrame(read_table(hargis_photos_path).drop(columns="geometry", errors="ignore"))
+            if hargis_photos_path
+            else None
+        )
+        hargis_pdfs = (
+            pd.DataFrame(read_table(hargis_pdfs_path).drop(columns="geometry", errors="ignore"))
+            if hargis_pdfs_path
+            else None
+        )
+        hargis_history = build_hargis_history(hargis_properties, hargis_photos, hargis_pdfs, enriched)
+        if not hargis_history.empty:
+            enriched = enriched.merge(hargis_history, on="pin_normalized", how="left")
+
+    for column in ["address", "municipality", "property_class", "year_built", "decade_built", "building_sqft", "land_sqft", "improvement_count", "permit_count", "latest_permit_year", "nearby_teardown_count", "sale_count", "latest_sale_year", "latest_sale_price", "max_sale_price", "assessed_year_count", "first_assessed_year", "first_assessed_total", "latest_assessed_year", "latest_assessed_total", "assessed_value_change_pct", "appeal_count", "latest_appeal_year", "open_appeal_count", "total_assessment_reduction", "proximity_year", "nearest_park_name", "nearest_park_dist_ft", "nearest_metra_stop_name", "nearest_metra_stop_dist_ft", "nearest_bike_trail_name", "nearest_bike_trail_dist_ft", "foreclosure_count_half_mile_5yr", "foreclosure_per_1000_half_mile_5yr", "nearest_major_road_name", "nearest_major_road_dist_ft", "primary_building_selection_method", *HARGIS_OUTPUT_COLUMNS]:
         if column not in enriched:
             enriched[column] = None
 
     enriched["decade_built"] = enriched["decade_built"].fillna("Unknown")
     enriched["permit_count"] = enriched["permit_count"].fillna(0).astype(int)
     enriched["sale_count"] = enriched["sale_count"].fillna(0).astype(int)
+    enriched["hargis_record_count"] = enriched["hargis_record_count"].fillna(0).astype(int)
+    enriched["hargis_photo_count"] = enriched["hargis_photo_count"].fillna(0).astype(int)
+    enriched["hargis_pdf_count"] = enriched["hargis_pdf_count"].fillna(0).astype(int)
     enriched["appeal_count"] = enriched["appeal_count"].fillna(0).astype(int)
     enriched["open_appeal_count"] = enriched["open_appeal_count"].fillna(0).astype(int)
     enriched["data_quality_flags"] = enriched["data_quality_flags"].apply(normalize_flags)
@@ -679,6 +945,7 @@ def build_dataset() -> None:
         "foreclosure_per_1000_half_mile_5yr",
         "nearest_major_road_name",
         "nearest_major_road_dist_ft",
+        *HARGIS_OUTPUT_COLUMNS,
         "house_evolution_timeline",
         "primary_building_selection_method",
         "data_quality_flags",
@@ -694,6 +961,7 @@ def build_dataset() -> None:
     public_path.parent.mkdir(parents=True, exist_ok=True)
     enriched.to_file(processed_path, driver="GeoJSON")
     enriched.to_file(public_path, driver="GeoJSON")
+    write_hargis_historical_layer(enriched)
 
     boundary_path = optional_source("Park Ridge municipal boundary")
     if boundary_path:
@@ -715,6 +983,7 @@ def write_summary(enriched: Any, filter_method: str) -> None:
     summary = {
         "total_parcels": int(len(enriched)),
         "parcels_with_year_built": int(len(valid_years)),
+        "parcels_with_hargis_records": int((enriched.get("hargis_record_count", pd.Series(dtype="int")) > 0).sum()),
         "parcels_missing_year_built": int(len(enriched) - len(valid_years)),
         "earliest_year_built": min(valid_years) if valid_years else None,
         "latest_year_built": max(valid_years) if valid_years else None,
@@ -726,6 +995,7 @@ def write_summary(enriched: Any, filter_method: str) -> None:
             "Year built is assessor structure age, not subdivision date.",
             "Permit history reflects permits submitted to and known by the Cook County Assessor.",
             "Open, pending, and current-tax-year permits may change after publication.",
+            "HARGIS is sparse historic survey evidence and is matched by map point or address because Park Ridge HARGIS PINs are not populated.",
             "Current parcel polygons do not reconstruct historical parcel splits or consolidations.",
             "Primary building selection is a transparent v1 heuristic."
         ],
@@ -735,13 +1005,126 @@ def write_summary(enriched: Any, filter_method: str) -> None:
     print(f"Wrote {output.relative_to(PROJECT_ROOT)}")
 
 
+def write_hargis_historical_layer(enriched: Any) -> None:
+    if "hargis_refnum" not in enriched:
+        return
+    layer = enriched[enriched["hargis_refnum"].map(clean_text).notna()].copy()
+    if layer.empty:
+        return
+    layer["layer_kind"] = "hargis_historic_survey"
+    layer["layer_label"] = layer.apply(hargis_layer_label, axis=1)
+    layer_columns = [
+        "pin_normalized",
+        "address",
+        "year_built",
+        "hargis_refnum",
+        "hargis_name",
+        "hargis_location",
+        "hargis_nr_eval",
+        "hargis_arch_class",
+        "hargis_architect",
+        "hargis_builder",
+        "hargis_begin_year",
+        "hargis_survey_date",
+        "hargis_photo_count",
+        "hargis_pdf_count",
+        "hargis_match_method",
+        "layer_kind",
+        "layer_label",
+        "geometry",
+    ]
+    layer = layer[[column for column in layer_columns if column in layer]]
+    processed_path = PROJECT_ROOT / "data/processed/historical/park_ridge_hargis_historic_survey.geojson"
+    public_path = PROJECT_ROOT / "public/data/historical/park_ridge_hargis_historic_survey.geojson"
+    processed_path.parent.mkdir(parents=True, exist_ok=True)
+    public_path.parent.mkdir(parents=True, exist_ok=True)
+    layer.to_file(processed_path, driver="GeoJSON")
+    layer.to_file(public_path, driver="GeoJSON")
+    print(f"Wrote {public_path.relative_to(PROJECT_ROOT)}")
+
+
+def hargis_layer_label(row: Any) -> str:
+    label = clean_text(row.get("hargis_name")) or clean_text(row.get("hargis_arch_class")) or "Historic survey record"
+    address = clean_text(row.get("address")) or clean_text(row.get("hargis_location"))
+    return f"{label} - {address}" if address else label
+
+
 def numeric_or_none(value: Any) -> float | None:
     try:
-        if value is None or value == "":
+        if value is None or value == "" or pd.isna(value):
             return None
         return float(value)
     except (TypeError, ValueError):
         return None
+
+
+def first_non_empty(values: pd.Series) -> str | None:
+    for value in values:
+        text = clean_text(value)
+        if text:
+            return text
+    return None
+
+
+def first_clean_value(row: Any, columns: list[str]) -> str | None:
+    for column in columns:
+        text = clean_text(row.get(column))
+        if text:
+            return text
+    return None
+
+
+def normalize_hargis_refnum(value: Any) -> str | None:
+    text = clean_text(value)
+    if not text:
+        return None
+    digits = re.sub(r"\D", "", text)
+    return digits or text
+
+
+def hargis_survey_year(row: Any) -> int | None:
+    survey_date = clean_text(row.get("SurveyDate"))
+    if survey_date:
+        match = re.search(r"\b(18|19|20)\d{2}\b", survey_date)
+        if match:
+            return int(match.group(0))
+    return parse_year(row.get("BeginYear"))
+
+
+def normalized_address_key(value: Any) -> str | None:
+    text = clean_text(value)
+    if not text:
+        return None
+    text = text.upper()
+    text = re.sub(r"\b(PARK RIDGE|ILLINOIS|IL|USA)\b", " ", text)
+    text = re.sub(r"\b\d{5}(?:-\d{4})?\b", " ", text)
+    text = re.sub(r"[^A-Z0-9 ]+", " ", text)
+    tokens = [normalize_address_token(token) for token in text.split()]
+    tokens = [token for token in tokens if token and token not in {"STREET", "AVENUE", "ROAD", "BOULEVARD", "PLACE", "DRIVE", "LANE", "COURT", "TERRACE", "PARKWAY"}]
+    if not tokens:
+        return None
+    return " ".join(tokens[:4])
+
+
+def normalize_address_token(token: str) -> str:
+    replacements = {
+        "NORTH": "N",
+        "SOUTH": "S",
+        "EAST": "E",
+        "WEST": "W",
+        "ST": "STREET",
+        "AVE": "AVENUE",
+        "AV": "AVENUE",
+        "RD": "ROAD",
+        "BLVD": "BOULEVARD",
+        "PL": "PLACE",
+        "DR": "DRIVE",
+        "LN": "LANE",
+        "CT": "COURT",
+        "TER": "TERRACE",
+        "PKWY": "PARKWAY",
+    }
+    return replacements.get(token, token)
 
 
 def truthy(value: Any) -> bool:

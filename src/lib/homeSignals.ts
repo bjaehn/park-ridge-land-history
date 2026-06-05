@@ -29,6 +29,17 @@ export function buildHomeSignals(properties: ParcelProperties): HomeSignal[] {
   const nearestMetraDist = properties.nearest_metra_stop_dist_ft;
   const nearestRoadDist = properties.nearest_major_road_dist_ft;
   const foreclosureRate = properties.foreclosure_per_1000_half_mile_5yr ?? 0;
+  const hargisCount = properties.hargis_record_count ?? 0;
+
+  if (hargisCount > 0) {
+    signals.push({
+      id: "historic-survey-match",
+      label: "Historic survey match",
+      detail: hargisSignalDetail(properties),
+      tone: "heritage",
+      score: 98
+    });
+  }
 
   if (age !== null && age >= 100) {
     signals.push({
@@ -214,4 +225,13 @@ function formatCurrency(value: number): string {
 function formatDistance(value: number): string {
   if (value >= 5280) return `${(value / 5280).toFixed(1)} mi`;
   return `${Math.round(value).toLocaleString()} ft`;
+}
+
+function hargisSignalDetail(properties: ParcelProperties): string {
+  const style = properties.hargis_arch_class;
+  const architect = properties.hargis_architect;
+  if (style && architect) return `${style}; architect ${architect}.`;
+  if (style) return `${style} in the Illinois historic survey.`;
+  if (architect) return `Architect ${architect} appears in the survey record.`;
+  return "Found in the Illinois historic architecture survey.";
 }

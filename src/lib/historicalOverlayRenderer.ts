@@ -7,6 +7,7 @@ import maplibregl, {
 import {
   historicalLineColor,
   historicalLineDash,
+  hargisHistoricSurveyFillColorExpression,
   historicCharacterFillColorExpression,
   lotCoverageFillColorExpression,
   parcelChangeFillColorExpression
@@ -203,7 +204,9 @@ function renderHistoricalFillLayer(
 
   if (renderMode === "highlight") {
     setOrAddFillLayer(map, fillLayerId, sourceId, {
-      fillColor: historicCharacterFillColorExpression(),
+      fillColor: overlay.layer.id.includes("hargis")
+        ? hargisHistoricSurveyFillColorExpression()
+        : historicCharacterFillColorExpression(),
       fillOpacity: Math.min(0.54, overlay.opacity)
     });
   }

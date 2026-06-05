@@ -3,6 +3,7 @@ import type { HistoricalLayer } from "./historicalLayerTypes";
 const cookPortal = "https://datacatalog.cookcountyil.gov/";
 const ilhapCook = "https://clearinghouse.isgs.illinois.edu/webdocs/ilhap/county/j_cook.html";
 const parkRidgeMaps = "https://storymaps.arcgis.com/collections/94130fe6114d4606af97b11fd0875e25";
+const hargis = "https://dnrhistoric.illinois.gov/preserve/hargis.html";
 
 export const defaultHistoricalLayers: HistoricalLayer[] = [
   {
@@ -178,6 +179,22 @@ export const defaultHistoricalLayers: HistoricalLayer[] = [
     historicalQuestion: "Which structures are recognized locally as 100-year-old homes?",
     layerGroup: "local_history",
     notes: "This is preservation/context evidence, not subdivision evidence."
+  },
+  {
+    id: "park_ridge_hargis_historic_survey",
+    name: "Historic Survey Matches",
+    description: "Illinois HARGIS properties matched to current Park Ridge parcels. These are special records, not a complete list of old homes.",
+    type: "vector",
+    status: "ready",
+    sourceName: "Illinois HARGIS",
+    sourceUrl: hargis,
+    attribution: "Illinois Department of Natural Resources HARGIS.",
+    historicalQuestion: "Which homes have a state historic architecture survey record?",
+    layerGroup: "local_history",
+    dataPath: "/data/historical/park_ridge_hargis_historic_survey.geojson",
+    opacityDefault: 0.68,
+    renderMode: "highlight",
+    notes: "Matched by HARGIS map point or cleaned address because Park Ridge HARGIS PIN values are not populated."
   },
   {
     id: "cook_county_plss_sections",

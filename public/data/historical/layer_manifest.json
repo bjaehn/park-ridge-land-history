@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-04T17:37:05+00:00",
+  "generatedAt": "2026-06-05T20:53:16+00:00",
   "layers": [
     {
       "id": "cook_parcels_2000",
@@ -271,6 +271,22 @@
       "opacityDefault": 0.68,
       "renderMode": "highlight",
       "notes": "Derived from assessor year_built as of 2026. This is not an official City of Park Ridge landmark or 100-year-home designation."
+    },
+    {
+      "id": "park_ridge_hargis_historic_survey",
+      "name": "Historic Survey Matches",
+      "description": "Illinois HARGIS properties matched to current Park Ridge parcels. These are special records, not a complete list of old homes.",
+      "type": "vector",
+      "status": "ready",
+      "sourceName": "Illinois HARGIS",
+      "sourceUrl": "https://dnrhistoric.illinois.gov/preserve/hargis.html",
+      "attribution": "Illinois Department of Natural Resources HARGIS.",
+      "historicalQuestion": "Which homes have a state historic architecture survey record?",
+      "layerGroup": "local_history",
+      "dataPath": "/data/historical/park_ridge_hargis_historic_survey.geojson",
+      "opacityDefault": 0.68,
+      "renderMode": "highlight",
+      "notes": "Matched by HARGIS map point or cleaned address because Park Ridge HARGIS PIN values are not populated."
     },
     {
       "id": "cook_county_building_footprints_2017",

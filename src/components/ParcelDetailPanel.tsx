@@ -29,6 +29,7 @@ export function ParcelDetailPanel({
         ["Building sqft", formatNumber(properties.building_sqft)],
         ["Land sqft", formatNumber(properties.land_sqft)],
         ["Property class", properties.property_class || "Unknown"],
+        ...historicSurveyRows(properties),
         ["Improvements", formatNumber(properties.improvement_count)],
         ["Permits", formatNumber(properties.permit_count)],
         ["Sales since 1999", formatNumber(properties.sale_count)],
@@ -159,4 +160,34 @@ function formatForeclosureContext(count?: number | null, rate?: number | null): 
 function formatDistance(value: number): string {
   if (value >= 5280) return `${(value / 5280).toFixed(1)} mi`;
   return `${Math.round(value).toLocaleString()} ft`;
+}
+
+function historicSurveyRows(properties: NonNullable<ParcelFeature["properties"]>): string[][] {
+  if (!properties.hargis_record_count) return [];
+  return [
+    ["Historic survey", formatHistoricSurveySummary(properties)],
+    ["Style", properties.hargis_arch_class || "Unknown"],
+    ["Architect", properties.hargis_architect || "Unknown"],
+    ["Builder", properties.hargis_builder || "Unknown"],
+    ["Survey media", formatSurveyMedia(properties.hargis_photo_count, properties.hargis_pdf_count)]
+  ];
+}
+
+function formatHistoricSurveySummary(properties: NonNullable<ParcelFeature["properties"]>): string {
+  const parts = [
+    properties.hargis_name || "Illinois HARGIS match",
+    properties.hargis_survey_date ? `surveyed ${properties.hargis_survey_date}` : null,
+    properties.hargis_refnum ? `record ${properties.hargis_refnum}` : null
+  ].filter(Boolean);
+  return parts.join(" - ");
+}
+
+function formatSurveyMedia(photoCount?: number | null, pdfCount?: number | null): string {
+  const photos = photoCount ?? 0;
+  const pdfs = pdfCount ?? 0;
+  if (!photos && !pdfs) return "No linked media";
+  const parts: string[] = [];
+  if (photos) parts.push(`${photos.toLocaleString()} photo${photos === 1 ? "" : "s"}`);
+  if (pdfs) parts.push(`${pdfs.toLocaleString()} PDF${pdfs === 1 ? "" : "s"}`);
+  return parts.join(", ");
 }

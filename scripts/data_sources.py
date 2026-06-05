@@ -109,6 +109,30 @@ DATA_SOURCES: list[DataSource] = [
         default_path=Path("data/raw/park_ridge_boundary.geojson"),
         required_for_build=False,
         description="Municipal polygon used for centroid/intersection filtering."
+    ),
+    DataSource(
+        name="Illinois HARGIS Park Ridge properties",
+        env_url="HARGIS_PROPERTIES_SOURCE_URL",
+        env_path="HARGIS_PROPERTIES_LOCAL_PATH",
+        default_path=Path("data/raw/hargis_park_ridge_properties.csv"),
+        required_for_build=False,
+        description="Illinois Historic Architectural Resources Geographic Information System property survey records for Park Ridge."
+    ),
+    DataSource(
+        name="Illinois HARGIS Park Ridge photos",
+        env_url="HARGIS_PHOTOS_SOURCE_URL",
+        env_path="HARGIS_PHOTOS_LOCAL_PATH",
+        default_path=Path("data/raw/hargis_park_ridge_photos.csv"),
+        required_for_build=False,
+        description="Linked public HARGIS photo records for matched Park Ridge survey properties."
+    ),
+    DataSource(
+        name="Illinois HARGIS Park Ridge PDFs",
+        env_url="HARGIS_PDFS_SOURCE_URL",
+        env_path="HARGIS_PDFS_LOCAL_PATH",
+        default_path=Path("data/raw/hargis_park_ridge_pdfs.csv"),
+        required_for_build=False,
+        description="Linked public HARGIS PDF records for matched Park Ridge survey properties."
     )
 ]
 
