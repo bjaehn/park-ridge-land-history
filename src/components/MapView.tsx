@@ -11,6 +11,7 @@ import {
 } from "../lib/historicalOverlayRenderer";
 import { baseMapStyle, parkRidgeCenter } from "../lib/mapStyle";
 import type { LoadedHistoricalLayer } from "../lib/historicalLayerTypes";
+import type { AreaSignal, AreaSummaryCollection, AreaSummaryFeature } from "../lib/areaGroups";
 import type { HotspotCollection, HotspotFeature, HotspotType } from "../lib/hotspots";
 import { hotspotPopupHtml } from "../lib/mapPopups";
 import type { ParcelChangeFeature, ParcelChangeType } from "../lib/parcelChangeTypes";
@@ -38,12 +39,15 @@ type MapViewProps = {
   swipeEnabled: boolean;
   swipePosition: number;
   hotspots: HotspotCollection;
+  areaSummaries: AreaSummaryCollection;
   selectedHotspot: HotspotFeature | null;
+  selectedArea: AreaSummaryFeature | null;
   selectedParcelChange: ParcelChangeFeature | null;
   visibleChangeTypes: Set<ParcelChangeType>;
   onSelectParcel: (feature: ParcelFeature) => void;
   onSelectParcelChange: (feature: ParcelChangeFeature) => void;
   onSelectHotspot: (feature: HotspotFeature) => void;
+  onSelectArea: (feature: AreaSummaryFeature) => void;
 };
 
 const emptyCollection: ParcelCollection = {
@@ -65,12 +69,15 @@ export function MapView({
   swipeEnabled,
   swipePosition,
   hotspots,
+  areaSummaries,
   selectedHotspot,
+  selectedArea,
   selectedParcelChange,
   visibleChangeTypes,
   onSelectParcel,
   onSelectParcelChange,
-  onSelectHotspot
+  onSelectHotspot,
+  onSelectArea
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -82,6 +89,7 @@ export function MapView({
   const onSelectParcelRef = useRef(onSelectParcel);
   const onSelectParcelChangeRef = useRef(onSelectParcelChange);
   const onSelectHotspotRef = useRef(onSelectHotspot);
+  const onSelectAreaRef = useRef(onSelectArea);
   const registeredChangeLayerIdsRef = useRef<Set<string>>(new Set());
   const activeChangeLayerIdsRef = useRef<Set<string>>(new Set());
   const [isMapLoaded, setIsMapLoaded] = useState(false);
@@ -93,6 +101,8 @@ export function MapView({
     features: []
   });
   const latestHotspotsRef = useRef<HotspotCollection>(hotspots);
+  const latestAreaSummariesRef = useRef<AreaSummaryCollection>(areaSummaries);
+  const latestSelectedAreaRef = useRef<GeoJSON.FeatureCollection>(emptyFeatureCollection());
   const latestHistoricalOverlaysRef = useRef<LoadedHistoricalLayer[]>([]);
   const hoveredRef = useRef<GeoJSON.FeatureCollection>({
     type: "FeatureCollection",
@@ -107,10 +117,13 @@ export function MapView({
     : emptyFeatureCollection();
   latestBoundaryRef.current = boundary ?? { type: "FeatureCollection", features: [] };
   latestHotspotsRef.current = hotspots;
+  latestAreaSummariesRef.current = areaSummaries;
+  latestSelectedAreaRef.current = selectedArea ? featureCollectionFromGenericFeature(selectedArea) : emptyFeatureCollection();
   latestHistoricalOverlaysRef.current = historicalOverlays;
   onSelectParcelRef.current = onSelectParcel;
   onSelectParcelChangeRef.current = onSelectParcelChange;
   onSelectHotspotRef.current = onSelectHotspot;
+  onSelectAreaRef.current = onSelectArea;
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -156,6 +169,16 @@ export function MapView({
       map.addSource("hotspots", {
         type: "geojson",
         data: latestHotspotsRef.current
+      });
+
+      map.addSource("area-summaries", {
+        type: "geojson",
+        data: latestAreaSummariesRef.current
+      });
+
+      map.addSource("selected-area", {
+        type: "geojson",
+        data: latestSelectedAreaRef.current
       });
 
       map.addLayer({
@@ -267,6 +290,54 @@ export function MapView({
       });
 
       map.addLayer({
+        id: "area-summary-fill",
+        type: "fill",
+        source: "area-summaries",
+        paint: {
+          "fill-color": areaSignalColorExpression(),
+          "fill-opacity": 0.16
+        }
+      });
+
+      map.addLayer({
+        id: "area-summary-line",
+        type: "line",
+        source: "area-summaries",
+        paint: {
+          "line-color": areaSignalColorExpression(),
+          "line-width": 1.8,
+          "line-opacity": 0.82
+        }
+      });
+
+      map.addLayer({
+        id: "selected-area-line",
+        type: "line",
+        source: "selected-area",
+        paint: {
+          "line-color": "#111827",
+          "line-width": 3.6,
+          "line-opacity": 0.9
+        }
+      });
+
+      map.addLayer({
+        id: "area-summary-label",
+        type: "symbol",
+        source: "area-summaries",
+        layout: {
+          "text-field": ["get", "label"],
+          "text-size": 12,
+          "text-anchor": "center"
+        },
+        paint: {
+          "text-color": "#172033",
+          "text-halo-color": "#ffffff",
+          "text-halo-width": 1.6
+        }
+      });
+
+      map.addLayer({
         id: "hotspot-circle",
         type: "circle",
         source: "hotspots",
@@ -357,6 +428,20 @@ export function MapView({
         ?.setLngLat(coordinates)
         .setHTML(hotspotPopupHtml(feature.properties))
         .addTo(map);
+    });
+
+    map.on("mousemove", "area-summary-fill", () => {
+      map.getCanvas().style.cursor = "pointer";
+    });
+
+    map.on("mouseleave", "area-summary-fill", () => {
+      map.getCanvas().style.cursor = "";
+    });
+
+    map.on("click", "area-summary-fill", (event) => {
+      const feature = event.features?.[0] as unknown as AreaSummaryFeature | undefined;
+      if (!feature) return;
+      onSelectAreaRef.current(feature);
     });
 
     mapRef.current = map;
@@ -488,6 +573,16 @@ export function MapView({
   }, [hotspots]);
 
   useEffect(() => {
+    const source = mapRef.current?.getSource("area-summaries") as GeoJSONSource | undefined;
+    source?.setData(areaSummaries);
+  }, [areaSummaries]);
+
+  useEffect(() => {
+    const source = mapRef.current?.getSource("selected-area") as GeoJSONSource | undefined;
+    source?.setData(selectedArea ? featureCollectionFromGenericFeature(selectedArea) : emptyFeatureCollection());
+  }, [selectedArea]);
+
+  useEffect(() => {
     const map = mapRef.current;
     if (!map || !selectedHotspot) return;
     const coordinates = pointCoordinates(selectedHotspot);
@@ -502,6 +597,18 @@ export function MapView({
       .setHTML(hotspotPopupHtml(selectedHotspot.properties))
       .addTo(map);
   }, [selectedHotspot]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !selectedArea || selectedArea.geometry.type === "Point") return;
+    const bounds = boundsForGenericFeature(selectedArea);
+    if (!bounds) return;
+    map.fitBounds(bounds, {
+      padding: { top: 70, right: 430, bottom: 70, left: 70 },
+      maxZoom: 14.6,
+      duration: 650
+    });
+  }, [selectedArea]);
 
   useEffect(() => {
     if (mapRef.current?.getLayer("parcel-outline")) {
@@ -632,6 +739,18 @@ function hotspotColorExpression(): ExpressionSpecification {
   return ["match", ["get", "hotspot_type"], ...matchValues, "#246a73"] as unknown as ExpressionSpecification;
 }
 
+function areaSignalColorExpression(): ExpressionSpecification {
+  const colors: Record<AreaSignal, string> = {
+    quiet: "#3f7d58",
+    watch: "#c7912f",
+    active: "#c65f2d",
+    teardown_pressure: "#b91c1c",
+    older_homes: "#5f6f2e"
+  };
+  const matchValues = Object.entries(colors).flatMap(([type, color]) => [type, color]);
+  return ["match", ["get", "signal"], ...matchValues, "#246a73"] as unknown as ExpressionSpecification;
+}
+
 function emptyFeatureCollection(): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
@@ -648,7 +767,23 @@ function featureCollectionFromFeature(
   };
 }
 
+function featureCollectionFromGenericFeature(feature: GeoJSON.Feature): GeoJSON.FeatureCollection {
+  return {
+    type: "FeatureCollection",
+    features: [feature]
+  };
+}
+
 function boundsForFeature(feature: ParcelFeature): maplibregl.LngLatBounds | null {
+  const coordinates = flattenCoordinates(feature.geometry.coordinates);
+  if (coordinates.length === 0) return null;
+  const bounds = new maplibregl.LngLatBounds(coordinates[0], coordinates[0]);
+  coordinates.forEach((coordinate) => bounds.extend(coordinate));
+  return bounds;
+}
+
+function boundsForGenericFeature(feature: GeoJSON.Feature): maplibregl.LngLatBounds | null {
+  if (feature.geometry.type !== "Polygon" && feature.geometry.type !== "MultiPolygon") return null;
   const coordinates = flattenCoordinates(feature.geometry.coordinates);
   if (coordinates.length === 0) return null;
   const bounds = new maplibregl.LngLatBounds(coordinates[0], coordinates[0]);

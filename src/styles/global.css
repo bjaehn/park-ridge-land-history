@@ -1679,6 +1679,48 @@ input {
   line-height: 1.32;
 }
 
+.area-lens-picker {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+
+.area-lens-picker button {
+  display: grid;
+  gap: 4px;
+  min-height: 64px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #ffffff;
+  color: #172033;
+  cursor: pointer;
+  padding: 10px;
+  text-align: left;
+}
+
+.area-lens-picker button:hover,
+.area-lens-picker button:focus-visible,
+.area-lens-picker button.is-active {
+  border-color: var(--accent);
+  background: #f4faf8;
+}
+
+.area-lens-picker button.is-active {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.area-lens-picker strong {
+  font-size: 0.84rem;
+  line-height: 1.15;
+}
+
+.area-lens-picker span {
+  color: var(--ink-soft);
+  font-size: 0.72rem;
+  font-weight: 750;
+  line-height: 1.28;
+}
+
 .cluster-view-heading {
   display: grid;
   gap: 3px;
@@ -1768,12 +1810,14 @@ input {
 .hotspot-button span {
   font-size: 0.82rem;
   font-weight: 900;
+  overflow-wrap: anywhere;
 }
 
 .hotspot-button small {
   color: var(--ink-soft);
   font-size: 0.74rem;
   line-height: 1.28;
+  overflow-wrap: anywhere;
 }
 
 .historical-panel {

@@ -16,6 +16,12 @@ import { VisualizationPanel, type VisualizationPreset } from "./components/Visua
 import { decadeOrder } from "./lib/colorScales";
 import { loadHistoricalLayerData, loadHistoricalLayerManifest } from "./lib/layerLoaders";
 import { layerCanToggle, type HistoricalLayer, type LoadedHistoricalLayer } from "./lib/historicalLayerTypes";
+import {
+  buildAreaSummaries,
+  type AreaGroupingId,
+  type AreaSummaryCollection,
+  type AreaSummaryFeature
+} from "./lib/areaGroups";
 import { buildHotspots, type HotspotCollection, type HotspotFeature } from "./lib/hotspots";
 import {
   parcelChangeFilterOrder,
@@ -45,6 +51,13 @@ const emptyHotspots: HotspotCollection = {
   type: "FeatureCollection",
   features: []
 };
+
+function emptyAreaSummaries(): AreaSummaryCollection {
+  return {
+    type: "FeatureCollection",
+    features: []
+  };
+}
 
 export default function App() {
   const [parcels, setParcels] = useState<ParcelCollection | null>(null);
@@ -82,6 +95,8 @@ export default function App() {
   const [swipePosition, setSwipePosition] = useState(50);
   const [selectedHotspot, setSelectedHotspot] = useState<HotspotFeature | null>(null);
   const [activeAnalysisScale, setActiveAnalysisScale] = useState<AnalysisScale>("home");
+  const [activeAreaGrouping, setActiveAreaGrouping] = useState<AreaGroupingId>("neighborhoods");
+  const [selectedAreaId, setSelectedAreaId] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadParcels() {
@@ -159,11 +174,31 @@ export default function App() {
     [pressureDecoratedFilteredParcels]
   );
 
-  const mapHotspots = activeAnalysisScale === "area" ? hotspots : emptyHotspots;
+  const areaSummaries = useMemo(
+    () => buildAreaSummaries(pressureDecoratedFilteredParcels, activeAreaGrouping, hotspots),
+    [activeAreaGrouping, hotspots, pressureDecoratedFilteredParcels]
+  );
+
+  const selectedArea = useMemo(
+    () => areaSummaries.features.find((area) => area.properties.id === selectedAreaId) ?? null,
+    [areaSummaries, selectedAreaId]
+  );
+
+  const mapHotspots = activeAnalysisScale === "area" && activeAreaGrouping === "change_zones" ? hotspots : emptyHotspots;
+  const mapAreaSummaries =
+    activeAnalysisScale === "area" && activeAreaGrouping !== "change_zones" ? areaSummaries : emptyAreaSummaries();
 
   useEffect(() => {
-    if (activeAnalysisScale !== "area") setSelectedHotspot(null);
+    if (activeAnalysisScale !== "area") {
+      setSelectedHotspot(null);
+      setSelectedAreaId(null);
+    }
   }, [activeAnalysisScale]);
+
+  useEffect(() => {
+    setSelectedHotspot(null);
+    setSelectedAreaId(null);
+  }, [activeAreaGrouping]);
 
   const visibleLegendBuckets = useMemo(() => {
     const buckets = new Set(selectedDecades);
@@ -272,6 +307,18 @@ export default function App() {
 
   function selectHotspot(hotspot: HotspotFeature) {
     setSelectedHotspot(hotspot);
+    setSelectedAreaId(`change:${hotspot.properties.id}`);
+    setActiveAnalysisScale("area");
+  }
+
+  function selectArea(area: AreaSummaryFeature) {
+    setSelectedAreaId(area.properties.id);
+    if (area.properties.hotspotId) {
+      const hotspot = hotspots.features.find((candidate) => candidate.properties.id === area.properties.hotspotId);
+      setSelectedHotspot(hotspot ?? null);
+    } else {
+      setSelectedHotspot(null);
+    }
     setActiveAnalysisScale("area");
   }
 
@@ -408,12 +455,15 @@ export default function App() {
         swipeEnabled={swipeEnabled}
         swipePosition={swipePosition}
         hotspots={mapHotspots}
+        areaSummaries={mapAreaSummaries}
         selectedHotspot={activeAnalysisScale === "area" ? selectedHotspot : null}
+        selectedArea={activeAnalysisScale === "area" ? selectedArea : null}
         selectedParcelChange={selectedParcelChange}
         visibleChangeTypes={visibleChangeTypes}
         onSelectParcel={activeAnalysisScale === "block" ? selectBlockParcel : selectParcel}
         onSelectParcelChange={setSelectedParcelChange}
         onSelectHotspot={selectHotspot}
+        onSelectArea={selectArea}
       />
       <div className="map-legend-overlay">
         <Legend
@@ -445,6 +495,8 @@ export default function App() {
             selectedParcel={selectedParcel}
             hotspots={hotspots}
             selectedHotspot={selectedHotspot}
+            areaGrouping={activeAreaGrouping}
+            selectedArea={selectedArea}
             activePreset={activeVisualizationPreset}
             filteredCount={filteredParcels?.features.length ?? 0}
             totalCount={parcels?.features.length ?? 0}
@@ -487,7 +539,12 @@ export default function App() {
           {activeAnalysisScale === "area" && (
             <HotspotPanel
               hotspots={hotspots}
+              areaSummaries={areaSummaries}
+              activeGrouping={activeAreaGrouping}
+              selectedAreaId={selectedAreaId}
               selectedHotspotId={selectedHotspot?.properties.id ?? null}
+              onSetGrouping={setActiveAreaGrouping}
+              onSelectArea={selectArea}
               onSelectHotspot={selectHotspot}
             />
           )}

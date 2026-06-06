@@ -1,4 +1,5 @@
 import { formatNumber, formatYear } from "../lib/formatters";
+import { areaGroupingDefinitions, type AreaGroupingId, type AreaSummaryFeature } from "../lib/areaGroups";
 import { hotspotLabel, type HotspotCollection, type HotspotFeature } from "../lib/hotspots";
 import type { ParcelFeature } from "../lib/parcelTypes";
 import type { VisualizationPreset } from "./VisualizationPanel";
@@ -9,6 +10,8 @@ type AnalysisNarrativeProps = {
   selectedParcel: ParcelFeature | null;
   hotspots: HotspotCollection;
   selectedHotspot: HotspotFeature | null;
+  areaGrouping: AreaGroupingId;
+  selectedArea: AreaSummaryFeature | null;
   activePreset: VisualizationPreset;
   filteredCount: number;
   totalCount: number;
@@ -19,6 +22,8 @@ export function AnalysisNarrative({
   selectedParcel,
   hotspots,
   selectedHotspot,
+  areaGrouping,
+  selectedArea,
   activePreset,
   filteredCount,
   totalCount
@@ -28,6 +33,8 @@ export function AnalysisNarrative({
     selectedParcel,
     hotspots,
     selectedHotspot,
+    areaGrouping,
+    selectedArea,
     activePreset,
     filteredCount,
     totalCount
@@ -45,7 +52,7 @@ export function AnalysisNarrative({
 function narrativeParagraphs(props: AnalysisNarrativeProps): string[] {
   if (props.activeScale === "home") return homeNarrative(props.selectedParcel);
   if (props.activeScale === "block") return blockNarrative(props.selectedParcel);
-  if (props.activeScale === "area") return areasNarrative(props.hotspots, props.selectedHotspot);
+  if (props.activeScale === "area") return areasNarrative(props.hotspots, props.selectedHotspot, props.areaGrouping, props.selectedArea);
   return cityNarrative(props.activePreset, props.filteredCount, props.totalCount);
 }
 
@@ -85,8 +92,17 @@ function blockNarrative(parcel: ParcelFeature | null): string[] {
 
 function areasNarrative(
   hotspots: HotspotCollection,
-  selectedHotspot: HotspotFeature | null
+  selectedHotspot: HotspotFeature | null,
+  areaGrouping: AreaGroupingId,
+  selectedArea: AreaSummaryFeature | null
 ): string[] {
+  const definition = areaGroupingDefinitions.find((candidate) => candidate.id === areaGrouping) ?? areaGroupingDefinitions[0];
+  if (selectedArea) {
+    return [
+      `${selectedArea.properties.label} is selected.`,
+      `${selectedArea.properties.signalLabel} is the main signal here. Use this view to compare groups of blocks before zooming into a single street or address.`
+    ];
+  }
   if (selectedHotspot) {
     return [
       `${hotspotLabel(selectedHotspot.properties.hotspot_type)} is selected.`,
@@ -95,8 +111,10 @@ function areasNarrative(
   }
 
   return [
-    `${hotspots.features.length.toLocaleString()} area patterns are available on the map.`,
-    "Pick an area from the list or click a circle on the map. This view is for comparing groups of blocks, not judging one property."
+    `${definition.shortLabel} is selected as the Park Ridge area view.`,
+    areaGrouping === "change_zones"
+      ? `${hotspots.features.length.toLocaleString()} change zones are available. Pick one to see where remodeling, older homes, or teardown pressure clusters.`
+      : "Pick an area from the list or click one on the map. This view is for comparing groups of blocks, not judging one property."
   ];
 }
 
