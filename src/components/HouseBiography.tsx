@@ -11,14 +11,40 @@ type Artifact = {
   href?: string | null;
 };
 
+type StoryInsight = {
+  label: string;
+  value: string;
+  detail: string;
+};
+
+const saleHistoryStartYear = 1999;
+
 export function HouseBiography({ properties }: HouseBiographyProps) {
   const artifacts = houseArtifacts(properties);
+  const storyParagraphs = propertyStoryParagraphs(properties);
+  const storyInsights = propertyStoryInsights(properties);
 
   return (
     <div className="house-biography" aria-label="House biography">
       <div className="house-biography-intro">
-        <span>House biography</span>
+        <span>Home ancestry</span>
         <p>{biographySummary(properties)}</p>
+      </div>
+
+      <div className="home-ancestry-story" aria-label="Property story summary">
+        {storyParagraphs.map((paragraph) => (
+          <p key={paragraph}>{paragraph}</p>
+        ))}
+      </div>
+
+      <div className="ancestry-summary-grid" aria-label="Home ancestry summary">
+        {storyInsights.map((insight) => (
+          <article key={insight.label}>
+            <span>{insight.label}</span>
+            <strong>{insight.value}</strong>
+            <p>{insight.detail}</p>
+          </article>
+        ))}
       </div>
 
       <div className="biography-chapters" aria-label="House record chapters">
@@ -33,9 +59,31 @@ export function HouseBiography({ properties }: HouseBiographyProps) {
 
       <div className="evidence-drawer">
         <div>
-          <h4>Evidence</h4>
-          <p>Photos, PDFs, and records attached to this home story.</p>
+          <h4>Photos and records</h4>
+          <p>Historic survey images, PDFs, and source records attached to this home story.</p>
         </div>
+        {properties.hargis_photo_url && (
+          <figure className="artifact-preview artifact-photo-preview">
+            <img
+              alt={`Historic survey photo for ${properties.address || "this property"}`}
+              loading="lazy"
+              src={properties.hargis_photo_url}
+            />
+            <figcaption>
+              {properties.hargis_photo_count && properties.hargis_photo_count > 1
+                ? `${properties.hargis_photo_count.toLocaleString()} historic survey photos found`
+                : "Historic survey photo"}
+            </figcaption>
+          </figure>
+        )}
+        {properties.hargis_pdf_url && (
+          <div className="artifact-preview artifact-pdf-preview">
+            <iframe loading="lazy" src={properties.hargis_pdf_url} title="Historic survey PDF preview" />
+            <a href={properties.hargis_pdf_url} rel="noreferrer" target="_blank">
+              Open full survey PDF
+            </a>
+          </div>
+        )}
         {artifacts.length === 0 ? (
           <p className="quiet-note evidence-empty">No linked artifacts yet.</p>
         ) : (
@@ -64,16 +112,42 @@ function biographySummary(properties: ParcelProperties): string {
   const pieces = [];
   const year = formatYear(properties.year_built);
   pieces.push(year === "Unknown" ? "The build year is not yet known" : `Built around ${year}`);
-  pieces.push(`${formatCount(properties.sale_count, "ownership record")} since 1999`);
-  pieces.push(`${formatCount(properties.permit_count, "permit record")} in the timeline`);
+  pieces.push(salePatternSentence(properties));
+  pieces.push(updatePatternSentence(properties));
   if (properties.hargis_record_count) {
     const style = properties.hargis_arch_class ? `, including ${properties.hargis_arch_class} style` : "";
     pieces.push(`appears in the Illinois historic survey${style}`);
   }
-  if (properties.latest_assessed_total) {
-    pieces.push(`latest assessed value ${formatCurrency(properties.latest_assessed_total)}`);
-  }
+  pieces.push(valuePatternSentence(properties));
   return `${pieces.join("; ")}.`;
+}
+
+function propertyStoryParagraphs(properties: ParcelProperties): string[] {
+  return [
+    buildStorySentence(properties),
+    `${salePatternSentence(properties)}. ${updatePatternSentence(properties)}.`,
+    `${valuePatternSentence(properties)}.`
+  ];
+}
+
+function propertyStoryInsights(properties: ParcelProperties): StoryInsight[] {
+  return [
+    {
+      label: "Sales rhythm",
+      value: saleInsightValue(properties),
+      detail: saleInsightDetail(properties)
+    },
+    {
+      label: "Update signal",
+      value: updateInsightValue(properties),
+      detail: updateInsightDetail(properties)
+    },
+    {
+      label: "Value change",
+      value: valueInsightValue(properties),
+      detail: valueInsightDetail(properties)
+    }
+  ];
 }
 
 function biographyChapters(properties: ParcelProperties) {
@@ -106,6 +180,132 @@ function biographyChapters(properties: ParcelProperties) {
   ];
 }
 
+function buildStorySentence(properties: ParcelProperties): string {
+  const year = formatYear(properties.year_built);
+  if (year === "Unknown") return "The public record does not yet show a reliable build year for this property.";
+  const historicSurvey = properties.hargis_record_count
+    ? historicSurveySentence(properties)
+    : "No historic survey artifact is attached yet.";
+  return `The home story starts around ${year}${properties.decade_built ? `, in the ${properties.decade_built} build group` : ""}. ${historicSurvey}`;
+}
+
+function historicSurveySentence(properties: ParcelProperties): string {
+  const details = [
+    properties.hargis_arch_class ? `${properties.hargis_arch_class} architecture` : null,
+    properties.hargis_architect ? `architect ${properties.hargis_architect}` : null,
+    properties.hargis_builder ? `builder ${properties.hargis_builder}` : null
+  ].filter(Boolean);
+  if (!details.length) return "It also has a match in the Illinois historic architecture survey.";
+  return `It also has a match in the Illinois historic architecture survey with ${details.join(", ")}.`;
+}
+
+function salePatternSentence(properties: ParcelProperties): string {
+  const count = properties.sale_count ?? 0;
+  if (count === 0) return "No market sale record has been found since 1999";
+  if (count === 1) {
+    const latest = formatYear(properties.latest_sale_year);
+    return latest === "Unknown" ? "It has sold once since 1999" : `It has sold once since 1999, most recently in ${latest}`;
+  }
+  const yearsPerSale = Math.max(1, Math.round((new Date().getFullYear() - saleHistoryStartYear + 1) / count));
+  const latest = formatYear(properties.latest_sale_year);
+  const latestText = latest === "Unknown" ? "" : `, most recently in ${latest}`;
+  return `It has sold ${count.toLocaleString()} times since 1999, about once every ${yearsPerSale} years${latestText}`;
+}
+
+function saleInsightValue(properties: ParcelProperties): string {
+  const count = properties.sale_count ?? 0;
+  if (count === 0) return "No sales found";
+  if (count === 1) return "Sold once";
+  return `${count.toLocaleString()} sales`;
+}
+
+function saleInsightDetail(properties: ParcelProperties): string {
+  const count = properties.sale_count ?? 0;
+  if (count === 0) return "No Cook County market sale record is attached to this parcel since 1999.";
+  const price = formatCurrency(properties.latest_sale_price);
+  const latest = formatYear(properties.latest_sale_year);
+  const priceText = price === "Unknown" ? "" : ` for ${price}`;
+  if (count === 1) {
+    return latest === "Unknown" ? "One market sale is attached to the parcel record." : `Latest sale: ${latest}${priceText}.`;
+  }
+  return latest === "Unknown" ? "Multiple market sale records are attached." : `Latest sale: ${latest}${priceText}.`;
+}
+
+function updatePatternSentence(properties: ParcelProperties): string {
+  const count = properties.permit_count ?? 0;
+  if (count === 0) return "No permit record is attached to the property timeline";
+  const latest = formatYear(properties.latest_permit_year);
+  const latestText = latest === "Unknown" ? "" : `, with the latest in ${latest}`;
+  return `${updateSentenceLead(count)}: ${formatCount(count, "permit record")}${latestText}`;
+}
+
+function updateInsightValue(properties: ParcelProperties): string {
+  const count = properties.permit_count ?? 0;
+  if (count === 0) return "Quiet record";
+  return updateLevelLabel(count);
+}
+
+function updateInsightDetail(properties: ParcelProperties): string {
+  const count = properties.permit_count ?? 0;
+  const recent = properties.recent_permit_count ?? 0;
+  if (count === 0) return "No remodeling, addition, garage, porch, deck, or teardown permit has been matched yet.";
+  const latest = formatYear(properties.latest_permit_year);
+  const latestText = latest === "Unknown" ? "" : ` Latest permit year: ${latest}.`;
+  const recentText = recent > 0 ? ` ${recent.toLocaleString()} recent permit${recent === 1 ? "" : "s"} nearby or on this parcel.` : "";
+  return `${formatCount(count, "permit record")} found.${latestText}${recentText}`;
+}
+
+function updateLevelLabel(count: number): string {
+  if (count >= 8) return "Heavily updated";
+  if (count >= 3) return "Updated";
+  if (count >= 1) return "Lightly updated";
+  return "Quiet record";
+}
+
+function updateSentenceLead(count: number): string {
+  if (count >= 8) return "The permit record shows a lot of work";
+  if (count >= 3) return "The permit record shows meaningful updates";
+  if (count >= 1) return "The permit record shows light updates";
+  return "The permit record is quiet";
+}
+
+function valuePatternSentence(properties: ParcelProperties): string {
+  const latestValue = formatCurrency(properties.latest_assessed_total);
+  if (latestValue === "Unknown") return "No assessed value trend is attached yet";
+  const latestYear = formatYear(properties.latest_assessed_year);
+  const firstValue = formatCurrency(properties.first_assessed_total);
+  const firstYear = formatYear(properties.first_assessed_year);
+  if (
+    firstValue !== "Unknown" &&
+    firstYear !== "Unknown" &&
+    latestYear !== "Unknown" &&
+    firstYear !== latestYear &&
+    typeof properties.assessed_value_change_pct === "number"
+  ) {
+    return `Assessed value changed ${formatSignedPercent(properties.assessed_value_change_pct)} from ${firstValue} in ${firstYear} to ${latestValue} in ${latestYear}`;
+  }
+  return latestYear === "Unknown" ? `Latest assessed value is ${latestValue}` : `Latest assessed value is ${latestValue} in ${latestYear}`;
+}
+
+function valueInsightValue(properties: ParcelProperties): string {
+  if (typeof properties.assessed_value_change_pct === "number") {
+    return formatSignedPercent(properties.assessed_value_change_pct);
+  }
+  return formatCurrency(properties.latest_assessed_total);
+}
+
+function valueInsightDetail(properties: ParcelProperties): string {
+  const latestValue = formatCurrency(properties.latest_assessed_total);
+  if (latestValue === "Unknown") return "No assessment trend has been matched to this parcel yet.";
+  const latestYear = formatYear(properties.latest_assessed_year);
+  const firstValue = formatCurrency(properties.first_assessed_total);
+  const firstYear = formatYear(properties.first_assessed_year);
+  if (firstValue !== "Unknown" && firstYear !== "Unknown" && latestYear !== "Unknown" && firstYear !== latestYear) {
+    return `${firstValue} in ${firstYear} to ${latestValue} in ${latestYear}.`;
+  }
+  return latestYear === "Unknown" ? `Latest value: ${latestValue}.` : `Latest value: ${latestValue} in ${latestYear}.`;
+}
+
 function houseArtifacts(properties: ParcelProperties): Artifact[] {
   const artifacts: Artifact[] = [];
   if (properties.hargis_photo_count) {
@@ -134,4 +334,10 @@ function houseArtifacts(properties: ParcelProperties): Artifact[] {
 function formatCount(value: number | null | undefined, label: string): string {
   const count = value ?? 0;
   return `${count.toLocaleString()} ${label}${count === 1 ? "" : "s"}`;
+}
+
+function formatSignedPercent(value: number): string {
+  const rounded = Math.round(value);
+  const sign = rounded > 0 ? "+" : "";
+  return `${sign}${rounded.toLocaleString()}%`;
 }
