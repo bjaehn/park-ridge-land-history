@@ -1,4 +1,4 @@
-import { formatCurrency, formatNumber, formatYear } from "../lib/formatters";
+import { formatNumber, formatYear } from "../lib/formatters";
 import { hotspotLabel, type HotspotCollection, type HotspotFeature } from "../lib/hotspots";
 import type { ParcelFeature } from "../lib/parcelTypes";
 import type { VisualizationPreset } from "./VisualizationPanel";
@@ -62,11 +62,10 @@ function homeNarrative(parcel: ParcelFeature | null): string[] {
   const year = formatYear(properties.year_built);
   const sales = formatNumber(properties.sale_count);
   const permits = formatNumber(properties.permit_count);
-  const assessment = formatCurrency(properties.latest_assessed_total);
 
   return [
     `${address} is selected. The assessor build year is ${year}, with ${sales} sales found and ${permits} permit records in the timeline.`,
-    `Use the home signals and timeline below to understand whether this looks quiet, recently active, historically interesting, or under nearby change pressure. Latest assessed value: ${assessment}.`
+    "Use the home signals and timeline below to understand whether this looks quiet, recently active, historically interesting, or changing over time."
   ];
 }
 

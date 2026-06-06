@@ -1,16 +1,22 @@
 import { formatCurrency, formatFlags, formatNumber, formatYear } from "../lib/formatters";
-import type { ParcelFeature } from "../lib/parcelTypes";
+import type { PermitPressureWindow } from "../lib/permitPressure";
+import type { ParcelCollection, ParcelFeature } from "../lib/parcelTypes";
 import { HouseBiography } from "./HouseBiography";
 import { HomeSignals } from "./HomeSignals";
 import { HouseEvolutionTimeline } from "./HouseEvolutionTimeline";
+import { NearbyActivitySummary } from "./NearbyActivitySummary";
 
 type ParcelDetailPanelProps = {
   parcel: ParcelFeature | null;
+  parcels: ParcelCollection | null;
+  permitPressureWindow: PermitPressureWindow;
   onClearSelection: () => void;
 };
 
 export function ParcelDetailPanel({
   parcel,
+  parcels,
+  permitPressureWindow,
   onClearSelection
 }: ParcelDetailPanelProps) {
   const properties = parcel?.properties;
@@ -39,19 +45,6 @@ export function ParcelDetailPanel({
           )
         ],
         ["Appeals", formatAppealSummary(properties.appeal_count, properties.latest_appeal_year)],
-        ["Nearest park", formatNamedDistance(properties.nearest_park_name, properties.nearest_park_dist_ft)],
-        ["Nearest Metra", formatNamedDistance(properties.nearest_metra_stop_name, properties.nearest_metra_stop_dist_ft)],
-        [
-          "Nearest trail",
-          formatNamedDistance(properties.nearest_bike_trail_name, properties.nearest_bike_trail_dist_ft)
-        ],
-        [
-          "Nearby distress",
-          formatForeclosureContext(
-            properties.foreclosure_count_half_mile_5yr,
-            properties.foreclosure_per_1000_half_mile_5yr
-          )
-        ],
         ["Selection", properties.primary_building_selection_method || "Unknown"],
         ["Flags", formatFlags(properties.data_quality_flags)]
       ]
@@ -76,6 +69,11 @@ export function ParcelDetailPanel({
           <HouseBiography properties={properties} />
           <HomeSignals properties={properties} />
           <HouseEvolutionTimeline properties={properties} />
+          <NearbyActivitySummary
+            parcel={parcel}
+            parcels={parcels}
+            permitPressureWindow={permitPressureWindow}
+          />
           <h4 className="facts-heading">Property facts</h4>
           <dl className="detail-list">
             {rows.map(([label, value]) => (
@@ -127,25 +125,6 @@ function formatAppealSummary(count?: number | null, latestYear?: number | null):
   const latestLabel = formatYear(latestYear);
   if (latestLabel === "Unknown") return `${appealCount.toLocaleString()} found`;
   return `${appealCount.toLocaleString()} found, latest ${latestLabel}`;
-}
-
-function formatNamedDistance(name?: string | null, distance?: number | null): string {
-  if (typeof distance !== "number" || Number.isNaN(distance)) return name || "Unknown";
-  const distanceLabel = formatDistance(distance);
-  if (!name) return distanceLabel;
-  return `${name} - ${distanceLabel}`;
-}
-
-function formatForeclosureContext(count?: number | null, rate?: number | null): string {
-  if (typeof count !== "number" && typeof rate !== "number") return "Unknown";
-  const countLabel = typeof count === "number" ? `${Math.round(count).toLocaleString()} nearby` : "Unknown count";
-  const rateLabel = typeof rate === "number" ? `${rate.toFixed(1)} per 1,000 PINs` : "Unknown rate";
-  return `${countLabel} - ${rateLabel}`;
-}
-
-function formatDistance(value: number): string {
-  if (value >= 5280) return `${(value / 5280).toFixed(1)} mi`;
-  return `${Math.round(value).toLocaleString()} ft`;
 }
 
 function historicSurveyRows(properties: NonNullable<ParcelFeature["properties"]>): string[][] {

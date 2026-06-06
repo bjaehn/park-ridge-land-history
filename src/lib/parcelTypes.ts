@@ -128,8 +128,14 @@ export type HouseEvolutionEvent = {
   event_type: HouseEvolutionEventType;
   status?: string | null;
   permit_number?: string | null;
+  local_permit_number?: string | null;
+  estimated_completion_date?: string | null;
+  assessable?: string | null;
+  job_code?: string | null;
+  municipality?: string | null;
   document_number?: string | null;
   price?: number | null;
+  amount?: number | null;
   source?: string | null;
   pin?: string | null;
   is_nearby?: boolean;

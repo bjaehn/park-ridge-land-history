@@ -1,4 +1,5 @@
 import { formatEvolutionMeta, formatEvolutionYear, getHouseEvolutionTimeline } from "../lib/houseEvolution";
+import { formatCurrency } from "../lib/formatters";
 import type { HouseEvolutionEvent, ParcelProperties } from "../lib/parcelTypes";
 
 type HouseEvolutionTimelineProps = {
@@ -6,7 +7,7 @@ type HouseEvolutionTimelineProps = {
 };
 
 export function HouseEvolutionTimeline({ properties }: HouseEvolutionTimelineProps) {
-  const events = getHouseEvolutionTimeline(properties);
+  const events = getHouseEvolutionTimeline(properties).filter((event) => event.event_type !== "nearby_teardown");
 
   return (
     <div className="house-evolution" aria-label="House evolution timeline">
@@ -23,6 +24,7 @@ export function HouseEvolutionTimeline({ properties }: HouseEvolutionTimelinePro
                 <div>
                   <strong>{eventTitle(event)}</strong>
                   {event.description && <p>{event.description}</p>}
+                  {event.event_type === "permit" && <PermitDetailsDisclosure event={event} />}
                   {artifacts.length > 0 && (
                     <div className="evolution-artifacts" aria-label="Timeline evidence">
                       {artifacts.map((artifact) => (
@@ -43,9 +45,45 @@ export function HouseEvolutionTimeline({ properties }: HouseEvolutionTimelinePro
   );
 }
 
+function PermitDetailsDisclosure({ event }: { event: HouseEvolutionEvent }) {
+  const details = [
+    ["Cook County permit", event.permit_number],
+    ["Local permit", event.local_permit_number],
+    ["Status", event.status],
+    ["Assessable", event.assessable],
+    ["Job type", event.job_code],
+    ["Estimated cost", typeof event.amount === "number" ? formatCurrency(event.amount) : null],
+    ["Issued", formatDateLabel(event.date)],
+    ["Est. completion", formatDateLabel(event.estimated_completion_date)]
+  ].filter((detail): detail is [string, string] => Boolean(detail[1]));
+
+  if (details.length === 0) return null;
+
+  return (
+    <details className="permit-details">
+      <summary>Permit details</summary>
+      <dl className="permit-detail-grid" aria-label="Permit details">
+        {details.map(([label, value]) => (
+          <div key={label}>
+            <dt>{label}</dt>
+            <dd>{value}</dd>
+          </div>
+        ))}
+      </dl>
+    </details>
+  );
+}
+
 function eventTitle(event: HouseEvolutionEvent): string {
   if (event.event_type === "sale") return "Ownership change record";
   return event.title;
+}
+
+function formatDateLabel(value?: string | null): string | null {
+  if (!value) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.valueOf())) return value;
+  return parsed.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 }
 
 function eventArtifacts(event: HouseEvolutionEvent, properties: ParcelProperties): Array<{ label: string; href: string }> {

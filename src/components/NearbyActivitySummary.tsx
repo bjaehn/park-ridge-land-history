@@ -20,29 +20,34 @@ export function NearbyActivitySummary({
   return (
     <div className={`nearby-activity nearby-${summary.signal}`} aria-label="Nearby activity summary">
       <div className="nearby-heading">
-        <h4>{summary.headline}</h4>
+        <h4>Nearby activity</h4>
         <span>
-          {summary.radiusFeet} ft · {summary.windowLabel}
+          {summary.radiusFeet} ft - {summary.windowLabel}
         </span>
       </div>
+      <p className="nearby-summary-text">{nearbySummaryText(summary.headline)}</p>
       <dl className="nearby-grid">
         <div>
-          <dt>Nearby</dt>
+          <dt>Properties</dt>
           <dd>{formatNumber(summary.nearbyParcelCount)}</dd>
         </div>
         <div>
-          <dt>Permits</dt>
+          <dt>Recent permits</dt>
           <dd>{formatNumber(summary.directPermitParcels)}</dd>
         </div>
         <div>
-          <dt>Changing</dt>
+          <dt>Changing homes</dt>
           <dd>{formatNumber(summary.changingParcels)}</dd>
         </div>
         <div>
-          <dt>Teardown</dt>
+          <dt>Teardown pressure</dt>
           <dd>{formatNumber(summary.teardownPressureParcels)}</dd>
         </div>
       </dl>
     </div>
   );
+}
+
+function nearbySummaryText(headline: string): string {
+  return `${headline}. This separates surrounding permit and teardown pressure from the selected home's own history.`;
 }

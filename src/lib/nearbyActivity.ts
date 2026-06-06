@@ -60,6 +60,7 @@ export function nearbyParcels(
   if (!selectedCenter) return [];
 
   return parcels.features.filter((feature) => {
+    if (sameParcel(feature, selectedParcel)) return false;
     const center = centerForFeature(feature);
     return center ? distanceFeet(selectedCenter, center) <= radiusFeet : false;
   });
@@ -143,4 +144,10 @@ function distanceFeet(left: [number, number], right: [number, number]): number {
 
 function toRadians(value: number): number {
   return (value * Math.PI) / 180;
+}
+
+function sameParcel(left: ParcelFeature, right: ParcelFeature): boolean {
+  const leftPin = left.properties.pin_normalized || left.properties.pin_original;
+  const rightPin = right.properties.pin_normalized || right.properties.pin_original;
+  return Boolean(leftPin && rightPin && leftPin === rightPin);
 }

@@ -1,6 +1,6 @@
-import type { ParcelProperties, PermitStabilityType } from "./parcelTypes";
+import type { ParcelProperties } from "./parcelTypes";
 
-export type HomeSignalTone = "heritage" | "activity" | "market" | "watch" | "scale" | "value" | "location";
+export type HomeSignalTone = "heritage" | "activity" | "market" | "watch" | "scale" | "value";
 
 export type HomeSignal = {
   id: string;
@@ -18,17 +18,12 @@ export function buildHomeSignals(properties: ParcelProperties): HomeSignal[] {
   const saleCount = properties.sale_count ?? 0;
   const permitCount = properties.permit_count ?? 0;
   const recentPermitCount = properties.recent_permit_count ?? 0;
-  const teardownCount = properties.nearby_teardown_count ?? properties.recent_teardown_count ?? 0;
   const landSqft = properties.land_sqft ?? 0;
   const buildingSqft = properties.building_sqft ?? 0;
   const assessmentChange = properties.assessed_value_change_pct;
   const latestAssessedTotal = properties.latest_assessed_total;
   const appealCount = properties.appeal_count ?? 0;
   const totalAssessmentReduction = properties.total_assessment_reduction ?? 0;
-  const nearestParkDist = properties.nearest_park_dist_ft;
-  const nearestMetraDist = properties.nearest_metra_stop_dist_ft;
-  const nearestRoadDist = properties.nearest_major_road_dist_ft;
-  const foreclosureRate = properties.foreclosure_per_1000_half_mile_5yr ?? 0;
   const hargisCount = properties.hargis_record_count ?? 0;
 
   if (hargisCount > 0) {
@@ -84,16 +79,6 @@ export function buildHomeSignals(properties: ParcelProperties): HomeSignal[] {
       detail: `${permitCount} permit records in the timeline.`,
       tone: "activity",
       score: 84
-    });
-  }
-
-  if (isTeardownPressure(properties.permit_stability_type) || teardownCount > 0) {
-    signals.push({
-      id: "teardown-watch",
-      label: "Teardown watch",
-      detail: teardownCount > 0 ? `${teardownCount} nearby teardown-like events.` : "Permit pattern suggests teardown pressure.",
-      tone: "watch",
-      score: 88
     });
   }
 
@@ -153,46 +138,6 @@ export function buildHomeSignals(properties: ParcelProperties): HomeSignal[] {
     });
   }
 
-  if (typeof nearestParkDist === "number" && nearestParkDist <= 660) {
-    signals.push({
-      id: "park-close",
-      label: "Park close",
-      detail: `${properties.nearest_park_name || "Nearest park"} is ${formatDistance(nearestParkDist)} away.`,
-      tone: "location",
-      score: 74
-    });
-  }
-
-  if (typeof nearestMetraDist === "number" && nearestMetraDist <= 2640) {
-    signals.push({
-      id: "metra-nearby",
-      label: "Metra nearby",
-      detail: `${properties.nearest_metra_stop_name || "Nearest stop"} is ${formatDistance(nearestMetraDist)} away.`,
-      tone: "location",
-      score: 70
-    });
-  }
-
-  if (typeof nearestRoadDist === "number" && nearestRoadDist <= 250) {
-    signals.push({
-      id: "road-edge",
-      label: "Road edge",
-      detail: `${properties.nearest_major_road_name || "Major road"} is ${formatDistance(nearestRoadDist)} away.`,
-      tone: "location",
-      score: 60
-    });
-  }
-
-  if (foreclosureRate >= 7.5) {
-    signals.push({
-      id: "foreclosure-pressure",
-      label: "Nearby distress",
-      detail: `${foreclosureRate.toFixed(1)} foreclosures per 1,000 PINs nearby.`,
-      tone: "watch",
-      score: 69
-    });
-  }
-
   if (buildingSqft >= 3500) {
     signals.push({
       id: "large-home",
@@ -206,10 +151,6 @@ export function buildHomeSignals(properties: ParcelProperties): HomeSignal[] {
   return signals.sort((left, right) => right.score - left.score).slice(0, 5);
 }
 
-function isTeardownPressure(value: PermitStabilityType | null | undefined): boolean {
-  return value === "teardown_pressure";
-}
-
 function formatPercent(value: number): string {
   return `${Math.round(value).toLocaleString()}%`;
 }
@@ -220,11 +161,6 @@ function formatCurrency(value: number): string {
     currency: "USD",
     maximumFractionDigits: 0
   }).format(value);
-}
-
-function formatDistance(value: number): string {
-  if (value >= 5280) return `${(value / 5280).toFixed(1)} mi`;
-  return `${Math.round(value).toLocaleString()} ft`;
 }
 
 function hargisSignalDetail(properties: ParcelProperties): string {

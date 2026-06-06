@@ -460,6 +460,8 @@ export default function App() {
               />
               <ParcelDetailPanel
                 parcel={selectedParcel}
+                parcels={pressureDecoratedParcels}
+                permitPressureWindow={permitPressureWindow}
                 onClearSelection={() => setSelectedPin(null)}
               />
             </>

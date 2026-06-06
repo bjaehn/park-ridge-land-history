@@ -1128,6 +1128,14 @@ input {
   line-height: 1.2;
 }
 
+.nearby-summary-text {
+  margin: 0;
+  color: #425168;
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
 .nearby-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1144,12 +1152,10 @@ input {
 }
 
 .nearby-grid dt {
-  overflow: hidden;
   color: var(--ink-soft);
   font-size: 0.68rem;
   font-weight: 800;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.15;
 }
 
 .nearby-grid dd {
@@ -1216,6 +1222,67 @@ input {
   color: #263145;
   font-size: 0.78rem;
   line-height: 1.35;
+}
+
+.permit-details {
+  margin-top: 8px;
+}
+
+.permit-details summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 4px 8px;
+  border: 1px solid #cfded9;
+  border-radius: 6px;
+  background: #f4faf8;
+  color: #0f5f63;
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.permit-details summary:hover,
+.permit-details summary:focus-visible {
+  border-color: var(--accent);
+  background: #ffffff;
+}
+
+.permit-details[open] summary {
+  border-color: var(--accent);
+  background: #ffffff;
+}
+
+.permit-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin: 8px 0 0;
+}
+
+.permit-detail-grid div {
+  min-width: 0;
+  padding: 7px;
+  border: 1px solid #e7e5df;
+  border-radius: 6px;
+  background: #fbfaf6;
+}
+
+.permit-detail-grid dt {
+  color: var(--ink-soft);
+  font-size: 0.66rem;
+  font-weight: 850;
+  line-height: 1.15;
+}
+
+.permit-detail-grid dd {
+  margin: 2px 0 0;
+  overflow-wrap: anywhere;
+  color: #172033;
+  font-size: 0.74rem;
+  font-weight: 850;
+  line-height: 1.2;
 }
 
 .evolution-event span {

@@ -47,6 +47,7 @@ PERMIT_YEAR_COLUMN_CANDIDATES = ("year", "permit_year")
 PERMIT_DESCRIPTION_COLUMN_CANDIDATES = ("work_description", "description", "permit_description")
 PERMIT_STATUS_COLUMN_CANDIDATES = ("status", "permit_status")
 PERMIT_NUMBER_COLUMN_CANDIDATES = ("permit_number", "local_permit_number")
+PERMIT_LOCAL_NUMBER_COLUMN_CANDIDATES = ("local_permit_number", "local_number")
 PERMIT_AMOUNT_COLUMN_CANDIDATES = ("amount", "permit_amount")
 SALE_DATE_COLUMN_CANDIDATES = ("sale_date", "date_of_sale")
 SALE_YEAR_COLUMN_CANDIDATES = ("year", "sale_year")
@@ -176,6 +177,7 @@ def build_permit_history(permits: pd.DataFrame) -> pd.DataFrame:
     description_column = find_likely_column(permits.columns, PERMIT_DESCRIPTION_COLUMN_CANDIDATES)
     status_column = find_likely_column(permits.columns, PERMIT_STATUS_COLUMN_CANDIDATES)
     number_column = find_likely_column(permits.columns, PERMIT_NUMBER_COLUMN_CANDIDATES)
+    local_number_column = find_likely_column(permits.columns, PERMIT_LOCAL_NUMBER_COLUMN_CANDIDATES)
     amount_column = find_likely_column(permits.columns, PERMIT_AMOUNT_COLUMN_CANDIDATES)
 
     if not pin_column:
@@ -188,7 +190,16 @@ def build_permit_history(permits: pd.DataFrame) -> pd.DataFrame:
 
     for pin, group in normalized.dropna(subset=["pin_normalized"]).groupby("pin_normalized"):
         events = [
-            build_permit_event(row, date_column, year_column, description_column, status_column, number_column, amount_column)
+            build_permit_event(
+                row,
+                date_column,
+                year_column,
+                description_column,
+                status_column,
+                number_column,
+                local_number_column,
+                amount_column,
+            )
             for row in group.to_dict(orient="records")
         ]
         events = sorted(events, key=timeline_sort_key)
@@ -665,6 +676,7 @@ def build_permit_event(
     description_column: str | None,
     status_column: str | None,
     number_column: str | None,
+    local_number_column: str | None,
     amount_column: str | None,
 ) -> dict[str, Any]:
     description = clean_text(row.get(description_column)) if description_column else None
@@ -679,6 +691,11 @@ def build_permit_event(
         "event_type": "permit",
         "status": clean_text(row.get(status_column)) if status_column else None,
         "permit_number": clean_text(row.get(number_column)) if number_column else None,
+        "local_permit_number": clean_text(row.get(local_number_column)) if local_number_column else None,
+        "estimated_completion_date": clean_text(row.get("estimated_date_of_completion")),
+        "assessable": clean_text(row.get("assessable")),
+        "job_code": clean_text(row.get("job_code_primary")),
+        "municipality": clean_text(row.get("municipality")),
         "source": "Cook County Assessor Permits",
     }
     if amount is not None:

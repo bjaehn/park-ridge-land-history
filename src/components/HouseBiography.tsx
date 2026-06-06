@@ -276,7 +276,7 @@ function updateInsightDetail(properties: ParcelProperties): string {
   if (count === 0) return "No remodeling, addition, garage, porch, deck, or teardown permit has been matched yet.";
   const latest = formatYear(properties.latest_permit_year);
   const latestText = latest === "Unknown" ? "" : ` Latest permit year: ${latest}.`;
-  const recentText = recent > 0 ? ` ${recent.toLocaleString()} recent permit${recent === 1 ? "" : "s"} nearby or on this parcel.` : "";
+  const recentText = recent > 0 ? ` ${recent.toLocaleString()} recent permit${recent === 1 ? "" : "s"} in the selected window.` : "";
   return `${formatCount(count, "permit record")} found.${latestText}${recentText}`;
 }
 
