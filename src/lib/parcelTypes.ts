@@ -91,6 +91,12 @@ export type ParcelProperties = {
   hargis_pdfs_json?: HargisMediaItem[] | string | null;
   hargis_match_method?: string | null;
   hargis_records_json?: string | null;
+  civic_record_count?: number | null;
+  civic_records_json?: HomeArtifactRecord[] | string | null;
+  directory_record_count?: number | null;
+  directory_records_json?: HomeArtifactRecord[] | string | null;
+  sanborn_snapshot_count?: number | null;
+  sanborn_snapshots_json?: HomeArtifactRecord[] | string | null;
 };
 
 export type HargisMediaItem = {
@@ -108,6 +114,9 @@ export type HouseEvolutionEventType =
   | "permit"
   | "nearby_teardown"
   | "historic_survey"
+  | "civic_record"
+  | "directory_record"
+  | "sanborn_snapshot"
   | "assessment"
   | "appeal";
 export type PermitPressureType =
@@ -140,6 +149,31 @@ export type HouseEvolutionEvent = {
   pin?: string | null;
   is_nearby?: boolean;
   reference_number?: string | null;
+  href?: string | null;
+  case_number?: string | null;
+  record_type?: string | null;
+  sheet?: string | null;
+};
+
+export type HomeArtifactRecord = {
+  kind?: "civic_record" | "directory_record" | "sanborn_snapshot" | string | null;
+  year?: number | null;
+  date?: string | null;
+  title?: string | null;
+  description?: string | null;
+  record_type?: string | null;
+  case_number?: string | null;
+  source_name?: string | null;
+  source_url?: string | null;
+  document_url?: string | null;
+  source_year?: number | null;
+  map_year?: number | null;
+  sheet?: string | null;
+  resident_display?: string | null;
+  address?: string | null;
+  access_note?: string | null;
+  rights_note?: string | null;
+  match_method?: string | null;
 };
 
 export type ParcelFeature = GeoJSON.Feature<GeoJSON.Polygon | GeoJSON.MultiPolygon, ParcelProperties>;

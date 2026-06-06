@@ -1,5 +1,5 @@
 import { formatCurrency, formatNumber, formatYear } from "../lib/formatters";
-import type { HargisMediaItem, ParcelProperties } from "../lib/parcelTypes";
+import type { HargisMediaItem, HomeArtifactRecord, ParcelProperties } from "../lib/parcelTypes";
 
 type HouseBiographyProps = {
   properties: ParcelProperties;
@@ -25,6 +25,7 @@ export function HouseBiography({ properties }: HouseBiographyProps) {
   const storyInsights = propertyStoryInsights(properties);
   const photoItems = hargisPhotoItems(properties);
   const pdfItems = hargisPdfItems(properties);
+  const homeArtifactGroups = groupedHomeArtifacts(properties);
   const featuredPdf = pdfItems[0];
 
   return (
@@ -109,6 +110,23 @@ export function HouseBiography({ properties }: HouseBiographyProps) {
             ))}
           </div>
         )}
+        {homeArtifactGroups.length > 0 && (
+          <div className="home-artifact-shelves" aria-label="Home history source clues">
+            {homeArtifactGroups.map((group) => (
+              <section className="home-artifact-shelf" key={group.label}>
+                <div>
+                  <h5>{group.label}</h5>
+                  <p>{group.detail}</p>
+                </div>
+                <div className="home-artifact-grid">
+                  {group.items.map((item, index) => (
+                    <HomeArtifactCard item={item} key={`${group.label}-${item.title || item.source_url || index}`} />
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        )}
         {artifacts.length === 0 ? (
           <p className="quiet-note evidence-empty">No linked artifacts yet.</p>
         ) : (
@@ -142,6 +160,10 @@ function biographySummary(properties: ParcelProperties): string {
   if (properties.hargis_record_count) {
     const style = properties.hargis_arch_class ? `, including ${properties.hargis_arch_class} style` : "";
     pieces.push(`appears in the Illinois historic survey${style}`);
+  }
+  const clueCount = homeArtifactCount(properties);
+  if (clueCount) {
+    pieces.push(`has ${clueCount.toLocaleString()} extra public-history clue${clueCount === 1 ? "" : "s"}`);
   }
   pieces.push(valuePatternSentence(properties));
   return `${pieces.join("; ")}.`;
@@ -199,8 +221,8 @@ function biographyChapters(properties: ParcelProperties) {
     },
     {
       label: "Artifacts",
-      value: formatNumber((properties.hargis_photo_count ?? 0) + (properties.hargis_pdf_count ?? 0)),
-      detail: "linked photos and PDFs"
+      value: formatNumber((properties.hargis_photo_count ?? 0) + (properties.hargis_pdf_count ?? 0) + homeArtifactCount(properties)),
+      detail: "linked photos, PDFs, and public-history clues"
     }
   ];
 }
@@ -357,7 +379,97 @@ function houseArtifacts(properties: ParcelProperties): Artifact[] {
       detail: `Illinois historic architecture survey record ${properties.hargis_refnum}`
     });
   }
+  for (const group of groupedHomeArtifacts(properties)) {
+    artifacts.push({
+      label: group.label,
+      detail: `${group.items.length.toLocaleString()} ${group.items.length === 1 ? "clue" : "clues"} attached`,
+      href: artifactHref(group.items[0])
+    });
+  }
   return artifacts;
+}
+
+function HomeArtifactCard({ item }: { item: HomeArtifactRecord }) {
+  const href = artifactHref(item);
+  const body = (
+    <>
+      <strong>{item.title || artifactKindLabel(item.kind)}</strong>
+      <span>{homeArtifactDetail(item)}</span>
+      {homeArtifactSource(item) && <small>{homeArtifactSource(item)}</small>}
+    </>
+  );
+  return href ? (
+    <a className="home-artifact-card" href={href} rel="noreferrer" target="_blank">
+      {body}
+    </a>
+  ) : (
+    <div className="home-artifact-card">{body}</div>
+  );
+}
+
+function groupedHomeArtifacts(properties: ParcelProperties): Array<{ label: string; detail: string; items: HomeArtifactRecord[] }> {
+  return [
+    {
+      label: "City files",
+      detail: "Public case records for exterior changes, appearance review, zoning, or similar city decisions.",
+      items: parseHomeArtifactRecords(properties.civic_records_json)
+    },
+    {
+      label: "Directory clues",
+      detail: "Address breadcrumbs from city directories, phone books, and local history indexes.",
+      items: parseHomeArtifactRecords(properties.directory_records_json)
+    },
+    {
+      label: "Sanborn maps",
+      detail: "Fire insurance map references that can reveal older footprints, materials, porches, and outbuildings.",
+      items: parseHomeArtifactRecords(properties.sanborn_snapshots_json)
+    }
+  ].filter((group) => group.items.length > 0);
+}
+
+function parseHomeArtifactRecords(value?: HomeArtifactRecord[] | string | null): HomeArtifactRecord[] {
+  if (!value) return [];
+  if (Array.isArray(value)) {
+    return value.filter((item): item is HomeArtifactRecord => Boolean(item && typeof item === "object"));
+  }
+  try {
+    const parsed = JSON.parse(value);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((item): item is HomeArtifactRecord => Boolean(item && typeof item === "object"));
+  } catch {
+    return [];
+  }
+}
+
+function homeArtifactCount(properties: ParcelProperties): number {
+  return (properties.civic_record_count ?? 0) + (properties.directory_record_count ?? 0) + (properties.sanborn_snapshot_count ?? 0);
+}
+
+function artifactHref(item?: HomeArtifactRecord | null): string | null {
+  return item?.document_url || item?.source_url || null;
+}
+
+function homeArtifactDetail(item: HomeArtifactRecord): string {
+  const year = formatYear(item.year || item.map_year || item.source_year);
+  const parts = [
+    year !== "Unknown" ? year : null,
+    item.case_number ? `case ${item.case_number}` : null,
+    item.sheet ? `sheet ${item.sheet}` : null,
+    item.resident_display,
+    item.description
+  ].filter(Boolean);
+  return parts.length ? parts.join(" - ") : "Public-history clue attached to this address.";
+}
+
+function homeArtifactSource(item: HomeArtifactRecord): string | null {
+  return item.source_name || item.access_note || item.rights_note || null;
+}
+
+function artifactKindLabel(kind?: string | null): string {
+  if (kind === "civic_record") return "City file";
+  if (kind === "directory_record") return "Directory clue";
+  if (kind === "sanborn_snapshot") return "Sanborn map";
+  return "History clue";
 }
 
 function hargisPhotoItems(properties: ParcelProperties): HargisMediaItem[] {

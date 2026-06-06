@@ -7,6 +7,9 @@ const eventTypeLabels: Record<HouseEvolutionEvent["event_type"], string> = {
   permit: "Permit",
   nearby_teardown: "Nearby teardown",
   historic_survey: "Historic survey",
+  civic_record: "City file",
+  directory_record: "Directory clue",
+  sanborn_snapshot: "Sanborn map",
   assessment: "Value record",
   appeal: "Assessment appeal"
 };
@@ -69,6 +72,8 @@ export function formatEvolutionMeta(event: HouseEvolutionEvent): string {
     event.permit_number ? `Permit ${event.permit_number}` : null,
     event.document_number ? `Document ${event.document_number}` : null,
     event.reference_number ? `HARGIS ${event.reference_number}` : null,
+    event.case_number ? `Case ${event.case_number}` : null,
+    event.sheet ? `Sheet ${event.sheet}` : null,
     event.price ? formatCurrency(event.price) : null
   ]
     .filter(Boolean)

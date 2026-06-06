@@ -86,6 +86,34 @@ HARGIS_OUTPUT_COLUMNS = [
     "hargis_match_method",
     "hargis_records_json",
 ]
+HOME_ARTIFACT_SOURCES = [
+    {
+        "source_prefix": "Park Ridge public design review cases",
+        "kind": "civic_record",
+        "count_column": "civic_record_count",
+        "json_column": "civic_records_json",
+    },
+    {
+        "source_prefix": "Park Ridge historical directory breadcrumbs",
+        "kind": "directory_record",
+        "count_column": "directory_record_count",
+        "json_column": "directory_records_json",
+    },
+    {
+        "source_prefix": "Park Ridge Sanborn map snapshots",
+        "kind": "sanborn_snapshot",
+        "count_column": "sanborn_snapshot_count",
+        "json_column": "sanborn_snapshots_json",
+    },
+]
+HOME_ARTIFACT_OUTPUT_COLUMNS = [
+    "civic_record_count",
+    "civic_records_json",
+    "directory_record_count",
+    "directory_records_json",
+    "sanborn_snapshot_count",
+    "sanborn_snapshots_json",
+]
 
 
 def read_table(path: Path) -> Any:
@@ -669,6 +697,181 @@ def build_hargis_event(row: Any) -> dict[str, Any] | None:
     }
 
 
+def build_home_artifact_history(
+    records: pd.DataFrame,
+    parcels: Any,
+    kind: str,
+    count_column: str,
+    json_column: str,
+) -> pd.DataFrame:
+    if records.empty:
+        return pd.DataFrame()
+
+    matched = match_home_artifacts_to_parcels(records, parcels)
+    matched = matched.dropna(subset=["pin_normalized"])
+    if matched.empty:
+        return pd.DataFrame()
+
+    rows: list[dict[str, Any]] = []
+    for pin, group in matched.groupby("pin_normalized"):
+        summaries = [home_artifact_summary(row, kind) for row in group.to_dict(orient="records")]
+        summaries = [summary for summary in summaries if has_home_artifact_value(summary)]
+        if not summaries:
+            continue
+        summaries = sorted(summaries, key=home_artifact_sort_key)
+        rows.append(
+            {
+                "pin_normalized": pin,
+                count_column: len(summaries),
+                json_column: json.dumps(summaries, separators=(",", ":")),
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def match_home_artifacts_to_parcels(records: pd.DataFrame, parcels: Any) -> pd.DataFrame:
+    matched = records.copy()
+    matched["pin_normalized"] = matched.apply(home_artifact_pin, axis=1)
+    matched["artifact_match_method"] = matched["pin_normalized"].map(lambda value: "pin" if clean_text(value) else None)
+
+    address_lookup = parcel_address_lookup(parcels)
+    address_column = find_likely_column(matched.columns, ADDRESS_COLUMN_CANDIDATES)
+    if not address_column or not address_lookup:
+        return matched
+
+    for index, row in matched[matched["pin_normalized"].isna()].iterrows():
+        key = normalized_address_key(row.get(address_column))
+        pin = address_lookup.get(key) if key else None
+        if pin:
+            matched.at[index, "pin_normalized"] = pin
+            matched.at[index, "artifact_match_method"] = "address"
+    return matched
+
+
+def home_artifact_pin(row: Any) -> str | None:
+    for column in ["pin_normalized", "pin", "pin14", "parcel_pin", "parcel_id", "property_index_number"]:
+        text = clean_text(row.get(column))
+        if not text:
+            continue
+        normalized = normalize_pin(text).get("pin_normalized")
+        if normalized:
+            return normalized
+    return None
+
+
+def parcel_address_lookup(parcels: Any) -> dict[str, str]:
+    if "address" not in parcels:
+        return {}
+    lookup: dict[str, str] = {}
+    for _, parcel in parcels.dropna(subset=["pin_normalized"]).iterrows():
+        key = normalized_address_key(parcel.get("address"))
+        pin = clean_text(parcel.get("pin_normalized"))
+        if key and pin and key not in lookup:
+            lookup[key] = pin
+    return lookup
+
+
+def home_artifact_summary(row: dict[str, Any], kind: str) -> dict[str, Any]:
+    source_year = parse_year(first_clean_value(row, ["source_year", "map_year", "year"]))
+    date = clean_text(row.get("date"))
+    year = permit_year(date, source_year)
+    title = first_clean_value(row, ["title", "record_type", "resident_display", "description", "detail"])
+    if not title:
+        title = home_artifact_default_title(kind)
+    return {
+        "kind": kind,
+        "year": year,
+        "date": date,
+        "title": title,
+        "description": first_clean_value(row, ["description", "detail"]),
+        "record_type": clean_text(row.get("record_type")),
+        "case_number": clean_text(row.get("case_number")),
+        "source_name": clean_text(row.get("source_name")),
+        "source_url": clean_text(row.get("source_url")),
+        "document_url": clean_text(row.get("document_url")),
+        "source_year": source_year,
+        "map_year": parse_year(row.get("map_year")),
+        "sheet": clean_text(row.get("sheet")),
+        "resident_display": clean_text(row.get("resident_display")),
+        "address": first_clean_value(row, ["address", "property_address", "site_address"]),
+        "access_note": clean_text(row.get("access_note")),
+        "rights_note": clean_text(row.get("rights_note")),
+        "match_method": clean_text(row.get("artifact_match_method")),
+    }
+
+
+def has_home_artifact_value(summary: dict[str, Any]) -> bool:
+    return any(clean_text(summary.get(column)) for column in ["title", "description", "source_url", "document_url", "case_number", "sheet", "resident_display"])
+
+
+def home_artifact_default_title(kind: str) -> str:
+    if kind == "civic_record":
+        return "City file"
+    if kind == "directory_record":
+        return "Directory clue"
+    if kind == "sanborn_snapshot":
+        return "Sanborn map"
+    return "Home history clue"
+
+
+def home_artifact_sort_key(item: dict[str, Any]) -> tuple[int, str]:
+    year = parse_year(item.get("year"))
+    return year or 9999, str(item.get("date") or item.get("title") or "")
+
+
+def build_home_artifact_events(row: Any) -> list[dict[str, Any]]:
+    events: list[dict[str, Any]] = []
+    for column in ["civic_records_json", "directory_records_json", "sanborn_snapshots_json"]:
+        for item in parse_timeline_value(row.get(column)):
+            event = home_artifact_event(item)
+            if event:
+                events.append(event)
+    return events
+
+
+def home_artifact_event(item: dict[str, Any]) -> dict[str, Any] | None:
+    kind = clean_text(item.get("kind"))
+    if kind not in {"civic_record", "directory_record", "sanborn_snapshot"}:
+        return None
+    description = clean_text(item.get("description")) or home_artifact_event_description(item, kind)
+    event = {
+        "year": parse_year(item.get("year")),
+        "date": clean_text(item.get("date")),
+        "title": clean_text(item.get("title")) or home_artifact_default_title(kind),
+        "description": description,
+        "event_type": kind,
+        "source": clean_text(item.get("source_name")) or home_artifact_source_label(kind),
+        "href": clean_text(item.get("document_url")) or clean_text(item.get("source_url")),
+        "case_number": clean_text(item.get("case_number")),
+        "record_type": clean_text(item.get("record_type")),
+        "sheet": clean_text(item.get("sheet")),
+    }
+    return {key: value for key, value in event.items() if value not in (None, "")}
+
+
+def home_artifact_event_description(item: dict[str, Any], kind: str) -> str:
+    if kind == "civic_record":
+        case_number = clean_text(item.get("case_number"))
+        record_type = clean_text(item.get("record_type"))
+        parts = [part for part in [record_type, f"case {case_number}" if case_number else None] if part]
+        return ", ".join(parts) if parts else "City case or public review file tied to this address."
+    if kind == "directory_record":
+        resident = clean_text(item.get("resident_display"))
+        return f"Directory listing: {resident}." if resident else "City directory or phone book breadcrumb for this address."
+    sheet = clean_text(item.get("sheet"))
+    return f"Sanborn fire insurance map reference{f', sheet {sheet}' if sheet else ''}."
+
+
+def home_artifact_source_label(kind: str) -> str:
+    if kind == "civic_record":
+        return "Park Ridge public record"
+    if kind == "directory_record":
+        return "Park Ridge local history directory"
+    if kind == "sanborn_snapshot":
+        return "Sanborn map reference"
+    return "Public history record"
+
+
 def build_permit_event(
     row: dict[str, Any],
     date_column: str | None,
@@ -726,6 +929,7 @@ def attach_house_evolution_timelines(enriched: Any) -> Any:
         hargis_event = build_hargis_event(row)
         if hargis_event:
             events.append(hargis_event)
+        events.extend(build_home_artifact_events(row))
         timelines.append(json.dumps(sorted(events, key=timeline_sort_key), separators=(",", ":")))
 
     enriched["house_evolution_timeline"] = timelines
@@ -972,7 +1176,22 @@ def build_dataset() -> None:
         if not hargis_history.empty:
             enriched = enriched.merge(hargis_history, on="pin_normalized", how="left")
 
-    for column in ["address", "municipality", "property_class", "year_built", "decade_built", "building_sqft", "land_sqft", "improvement_count", "permit_count", "latest_permit_year", "nearby_teardown_count", "sale_count", "latest_sale_year", "latest_sale_price", "max_sale_price", "assessed_year_count", "first_assessed_year", "first_assessed_total", "latest_assessed_year", "latest_assessed_total", "assessed_value_change_pct", "appeal_count", "latest_appeal_year", "open_appeal_count", "total_assessment_reduction", "proximity_year", "nearest_park_name", "nearest_park_dist_ft", "nearest_metra_stop_name", "nearest_metra_stop_dist_ft", "nearest_bike_trail_name", "nearest_bike_trail_dist_ft", "foreclosure_count_half_mile_5yr", "foreclosure_per_1000_half_mile_5yr", "nearest_major_road_name", "nearest_major_road_dist_ft", "primary_building_selection_method", *HARGIS_OUTPUT_COLUMNS]:
+    for artifact_source in HOME_ARTIFACT_SOURCES:
+        artifact_path = optional_source(artifact_source["source_prefix"])
+        if not artifact_path:
+            continue
+        artifact_records = pd.DataFrame(read_table(artifact_path).drop(columns="geometry", errors="ignore"))
+        artifact_history = build_home_artifact_history(
+            artifact_records,
+            enriched,
+            artifact_source["kind"],
+            artifact_source["count_column"],
+            artifact_source["json_column"],
+        )
+        if not artifact_history.empty:
+            enriched = enriched.merge(artifact_history, on="pin_normalized", how="left")
+
+    for column in ["address", "municipality", "property_class", "year_built", "decade_built", "building_sqft", "land_sqft", "improvement_count", "permit_count", "latest_permit_year", "nearby_teardown_count", "sale_count", "latest_sale_year", "latest_sale_price", "max_sale_price", "assessed_year_count", "first_assessed_year", "first_assessed_total", "latest_assessed_year", "latest_assessed_total", "assessed_value_change_pct", "appeal_count", "latest_appeal_year", "open_appeal_count", "total_assessment_reduction", "proximity_year", "nearest_park_name", "nearest_park_dist_ft", "nearest_metra_stop_name", "nearest_metra_stop_dist_ft", "nearest_bike_trail_name", "nearest_bike_trail_dist_ft", "foreclosure_count_half_mile_5yr", "foreclosure_per_1000_half_mile_5yr", "nearest_major_road_name", "nearest_major_road_dist_ft", "primary_building_selection_method", *HARGIS_OUTPUT_COLUMNS, *HOME_ARTIFACT_OUTPUT_COLUMNS]:
         if column not in enriched:
             enriched[column] = None
 
@@ -982,6 +1201,9 @@ def build_dataset() -> None:
     enriched["hargis_record_count"] = enriched["hargis_record_count"].fillna(0).astype(int)
     enriched["hargis_photo_count"] = enriched["hargis_photo_count"].fillna(0).astype(int)
     enriched["hargis_pdf_count"] = enriched["hargis_pdf_count"].fillna(0).astype(int)
+    enriched["civic_record_count"] = enriched["civic_record_count"].fillna(0).astype(int)
+    enriched["directory_record_count"] = enriched["directory_record_count"].fillna(0).astype(int)
+    enriched["sanborn_snapshot_count"] = enriched["sanborn_snapshot_count"].fillna(0).astype(int)
     enriched["appeal_count"] = enriched["appeal_count"].fillna(0).astype(int)
     enriched["open_appeal_count"] = enriched["open_appeal_count"].fillna(0).astype(int)
     enriched["data_quality_flags"] = enriched["data_quality_flags"].apply(normalize_flags)
@@ -1028,6 +1250,7 @@ def build_dataset() -> None:
         "nearest_major_road_name",
         "nearest_major_road_dist_ft",
         *HARGIS_OUTPUT_COLUMNS,
+        *HOME_ARTIFACT_OUTPUT_COLUMNS,
         "house_evolution_timeline",
         "primary_building_selection_method",
         "data_quality_flags",

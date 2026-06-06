@@ -851,6 +851,79 @@ input {
   line-height: 1.25;
 }
 
+.home-artifact-shelves {
+  display: grid;
+  gap: 10px;
+}
+
+.home-artifact-shelf {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #dedbd1;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.home-artifact-shelf h5 {
+  margin: 0;
+  color: #172033;
+  font-size: 0.78rem;
+}
+
+.home-artifact-shelf p {
+  margin-top: 3px;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.home-artifact-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.home-artifact-card {
+  display: grid;
+  gap: 4px;
+  min-height: 72px;
+  padding: 9px;
+  border: 1px solid #dedbd1;
+  border-radius: 6px;
+  background: #fbfaf6;
+  color: inherit;
+  text-decoration: none;
+}
+
+.home-artifact-card:hover,
+.home-artifact-card:focus-visible {
+  border-color: var(--accent);
+}
+
+.home-artifact-card strong,
+.home-artifact-card span,
+.home-artifact-card small {
+  overflow-wrap: anywhere;
+}
+
+.home-artifact-card strong {
+  color: #172033;
+  font-size: 0.76rem;
+}
+
+.home-artifact-card span {
+  color: var(--ink);
+  font-size: 0.7rem;
+  font-weight: 750;
+  line-height: 1.25;
+}
+
+.home-artifact-card small {
+  color: var(--ink-soft);
+  font-size: 0.66rem;
+  font-weight: 800;
+}
+
 .artifact-list {
   display: grid;
   gap: 7px;
@@ -1335,6 +1408,21 @@ input {
 .evolution-historic_survey time,
 .evolution-historic_survey strong {
   color: #b45309;
+}
+
+.evolution-civic_record time,
+.evolution-civic_record strong {
+  color: #245b63;
+}
+
+.evolution-directory_record time,
+.evolution-directory_record strong {
+  color: #6f4c1f;
+}
+
+.evolution-sanborn_snapshot time,
+.evolution-sanborn_snapshot strong {
+  color: #8a3f2d;
 }
 
 .evolution-assessment time,
@@ -2207,7 +2295,8 @@ input {
   .home-ancestry-story,
   .ancestry-summary-grid,
   .artifact-gallery,
-  .document-tray {
+  .document-tray,
+  .home-artifact-grid {
     grid-template-columns: 1fr;
   }
 }

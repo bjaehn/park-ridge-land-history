@@ -45,6 +45,21 @@ The live downloader filters Parcel Universe to `cook_municipality_name = 'CITY O
 
 The gallery includes Property Search, Community Map Viewer, Zoning Map, Historic Landmarks, and 100 Year-Old Homes. If underlying ArcGIS REST layers are publicly accessible, document exact FeatureServer or MapServer endpoints before ingesting. Do not scrape aggressively.
 
+## Park Ridge Public Case Files
+
+- Optional local file: `data/raw/park_ridge_design_review_cases.csv`
+
+Use this for address-level appearance review, zoning, preservation, teardown, variance, or design-review artifacts found in public agendas, packets, minutes, or case indexes. The importer accepts `pin_normalized` when present and falls back to address matching when a public record only names the property address.
+
+Keep this rights-aware: store source/document URLs and concise summaries, not copied packet text.
+
+## Park Ridge Local History Directories
+
+- Optional local file: `data/raw/park_ridge_directory_breadcrumbs.csv`
+- Park Ridge Public Library local history collections: `https://www.parkridgelibrary.org/research-learn/local-history/`
+
+Use this for transcribed address breadcrumbs from city directories, phone books, local indexes, and similar sources. These are meant to add historical texture to a Home Ancestry view without displaying current owner information.
+
 ## Park Ridge Municipal Boundary
 
 - U.S. Census Bureau TIGER/Line 2024 Illinois places: `https://www2.census.gov/geo/tiger/TIGER2024/PLACE/tl_2024_17_place.zip`
@@ -60,4 +75,6 @@ These images are useful future context, but v1 does not assume they are georefer
 
 ## Sanborn Maps and Historic Plats
 
-Sanborn and plat sources may require library access or have licensing limits. Treat them as future historical layers. Do not assume API access, and document rights before ingesting.
+- Optional local file: `data/raw/park_ridge_sanborn_snapshots.csv`
+
+Sanborn and plat sources may require library access or have licensing limits. Treat them as source references unless rights allow public display. The current importer supports address or PIN-level Sanborn clues with map year, sheet, interpretation note, source link, document link, and rights note.

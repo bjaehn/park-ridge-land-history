@@ -133,6 +133,30 @@ DATA_SOURCES: list[DataSource] = [
         default_path=Path("data/raw/hargis_park_ridge_pdfs.csv"),
         required_for_build=False,
         description="Linked public HARGIS PDF records for matched Park Ridge survey properties."
+    ),
+    DataSource(
+        name="Park Ridge public design review cases",
+        env_url="PARK_RIDGE_DESIGN_REVIEW_CASES_SOURCE_URL",
+        env_path="PARK_RIDGE_DESIGN_REVIEW_CASES_LOCAL_PATH",
+        default_path=Path("data/raw/park_ridge_design_review_cases.csv"),
+        required_for_build=False,
+        description="Address or PIN-level appearance, zoning, preservation, and design review case artifacts."
+    ),
+    DataSource(
+        name="Park Ridge historical directory breadcrumbs",
+        env_url="PARK_RIDGE_DIRECTORY_BREADCRUMBS_SOURCE_URL",
+        env_path="PARK_RIDGE_DIRECTORY_BREADCRUMBS_LOCAL_PATH",
+        default_path=Path("data/raw/park_ridge_directory_breadcrumbs.csv"),
+        required_for_build=False,
+        description="Address or PIN-level breadcrumbs transcribed from city directories, phone books, or local history indexes."
+    ),
+    DataSource(
+        name="Park Ridge Sanborn map snapshots",
+        env_url="PARK_RIDGE_SANBORN_SNAPSHOTS_SOURCE_URL",
+        env_path="PARK_RIDGE_SANBORN_SNAPSHOTS_LOCAL_PATH",
+        default_path=Path("data/raw/park_ridge_sanborn_snapshots.csv"),
+        required_for_build=False,
+        description="Address or PIN-level Sanborn/fire insurance map references, sheet links, and interpretation notes."
     )
 ]
 

@@ -76,6 +76,9 @@ function PermitDetailsDisclosure({ event }: { event: HouseEvolutionEvent }) {
 
 function eventTitle(event: HouseEvolutionEvent): string {
   if (event.event_type === "sale") return "Ownership change record";
+  if (event.event_type === "civic_record") return "City file";
+  if (event.event_type === "directory_record") return "Directory clue";
+  if (event.event_type === "sanborn_snapshot") return "Sanborn map";
   return event.title;
 }
 
@@ -87,8 +90,14 @@ function formatDateLabel(value?: string | null): string | null {
 }
 
 function eventArtifacts(event: HouseEvolutionEvent, properties: ParcelProperties): Array<{ label: string; href: string }> {
-  if (event.event_type !== "historic_survey") return [];
   const artifacts = [];
+  if (event.href) {
+    artifacts.push({
+      label: event.event_type === "sanborn_snapshot" ? "Open map source" : "Open source record",
+      href: event.href
+    });
+  }
+  if (event.event_type !== "historic_survey") return artifacts;
   if (properties.hargis_photo_url) {
     const photoCount = properties.hargis_photo_count ?? 0;
     artifacts.push({
