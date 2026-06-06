@@ -1,5 +1,5 @@
 import { formatCurrency, formatNumber, formatYear } from "../lib/formatters";
-import type { ParcelProperties } from "../lib/parcelTypes";
+import type { HargisMediaItem, ParcelProperties } from "../lib/parcelTypes";
 
 type HouseBiographyProps = {
   properties: ParcelProperties;
@@ -23,6 +23,9 @@ export function HouseBiography({ properties }: HouseBiographyProps) {
   const artifacts = houseArtifacts(properties);
   const storyParagraphs = propertyStoryParagraphs(properties);
   const storyInsights = propertyStoryInsights(properties);
+  const photoItems = hargisPhotoItems(properties);
+  const pdfItems = hargisPdfItems(properties);
+  const featuredPdf = pdfItems[0];
 
   return (
     <div className="house-biography" aria-label="House biography">
@@ -62,26 +65,48 @@ export function HouseBiography({ properties }: HouseBiographyProps) {
           <h4>Photos and records</h4>
           <p>Historic survey images, PDFs, and source records attached to this home story.</p>
         </div>
-        {properties.hargis_photo_url && (
-          <figure className="artifact-preview artifact-photo-preview">
-            <img
-              alt={`Historic survey photo for ${properties.address || "this property"}`}
-              loading="lazy"
-              src={properties.hargis_photo_url}
-            />
-            <figcaption>
-              {properties.hargis_photo_count && properties.hargis_photo_count > 1
-                ? `${properties.hargis_photo_count.toLocaleString()} historic survey photos found`
-                : "Historic survey photo"}
-            </figcaption>
-          </figure>
+        {photoItems.length > 0 && (
+          <div className="artifact-gallery" aria-label="Historic survey photos">
+            {photoItems.map((photo, index) => (
+              <a
+                className="artifact-photo-tile"
+                href={photo.url || "#"}
+                key={`${photo.url || photo.item_id || photo.photo_id || "photo"}-${index}`}
+                rel="noreferrer"
+                target="_blank"
+              >
+                <img
+                  alt={photo.label || `Historic survey photo ${index + 1} for ${properties.address || "this property"}`}
+                  loading="lazy"
+                  src={photo.url || ""}
+                />
+                <span>{photo.label || `Historic photo ${index + 1}`}</span>
+              </a>
+            ))}
+          </div>
         )}
-        {properties.hargis_pdf_url && (
+        {featuredPdf?.url && (
           <div className="artifact-preview artifact-pdf-preview">
-            <iframe loading="lazy" src={properties.hargis_pdf_url} title="Historic survey PDF preview" />
-            <a href={properties.hargis_pdf_url} rel="noreferrer" target="_blank">
+            <iframe loading="lazy" src={featuredPdf.url} title={featuredPdf.label || "Historic survey PDF preview"} />
+            <a href={featuredPdf.url} rel="noreferrer" target="_blank">
               Open full survey PDF
             </a>
+          </div>
+        )}
+        {pdfItems.length > 0 && (
+          <div className="document-tray" aria-label="Historic survey PDFs">
+            {pdfItems.map((pdf, index) => (
+              <a
+                className="document-pill"
+                href={pdf.url || "#"}
+                key={`${pdf.url || pdf.item_id || "pdf"}-${index}`}
+                rel="noreferrer"
+                target="_blank"
+              >
+                <strong>{pdf.label || `Survey PDF ${index + 1}`}</strong>
+                <span>{pdf.refnum ? `HARGIS ${pdf.refnum}` : "Historic survey document"}</span>
+              </a>
+            ))}
           </div>
         )}
         {artifacts.length === 0 ? (
@@ -308,18 +333,22 @@ function valueInsightDetail(properties: ParcelProperties): string {
 
 function houseArtifacts(properties: ParcelProperties): Artifact[] {
   const artifacts: Artifact[] = [];
-  if (properties.hargis_photo_count) {
+  const photos = hargisPhotoItems(properties);
+  const pdfs = hargisPdfItems(properties);
+  if (properties.hargis_photo_count || photos.length) {
+    const photoCount = properties.hargis_photo_count || photos.length;
     artifacts.push({
-      label: properties.hargis_photo_count > 1 ? "Historic survey photos" : "Historic survey photo",
-      detail: `${properties.hargis_photo_count.toLocaleString()} linked HARGIS photo${properties.hargis_photo_count === 1 ? "" : "s"}`,
-      href: properties.hargis_photo_url
+      label: photoCount > 1 ? "Historic survey photos" : "Historic survey photo",
+      detail: `${photoCount.toLocaleString()} linked HARGIS photo${photoCount === 1 ? "" : "s"}`,
+      href: photos[0]?.url || properties.hargis_photo_url
     });
   }
-  if (properties.hargis_pdf_count) {
+  if (properties.hargis_pdf_count || pdfs.length) {
+    const pdfCount = properties.hargis_pdf_count || pdfs.length;
     artifacts.push({
-      label: properties.hargis_pdf_count > 1 ? "Historic survey PDFs" : "Historic survey PDF",
-      detail: `${properties.hargis_pdf_count.toLocaleString()} linked HARGIS PDF${properties.hargis_pdf_count === 1 ? "" : "s"}`,
-      href: properties.hargis_pdf_url
+      label: pdfCount > 1 ? "Historic survey PDFs" : "Historic survey PDF",
+      detail: `${pdfCount.toLocaleString()} linked HARGIS PDF${pdfCount === 1 ? "" : "s"}`,
+      href: pdfs[0]?.url || properties.hargis_pdf_url
     });
   }
   if (properties.hargis_refnum) {
@@ -329,6 +358,50 @@ function houseArtifacts(properties: ParcelProperties): Artifact[] {
     });
   }
   return artifacts;
+}
+
+function hargisPhotoItems(properties: ParcelProperties): HargisMediaItem[] {
+  const items = parseHargisMedia(properties.hargis_photos_json).filter((item) => item.url);
+  if (items.length > 0) return items;
+  return properties.hargis_photo_url
+    ? [
+        {
+          type: "photo",
+          refnum: properties.hargis_refnum,
+          label: "Historic survey photo",
+          url: properties.hargis_photo_url
+        }
+      ]
+    : [];
+}
+
+function hargisPdfItems(properties: ParcelProperties): HargisMediaItem[] {
+  const items = parseHargisMedia(properties.hargis_pdfs_json).filter((item) => item.url);
+  if (items.length > 0) return items;
+  return properties.hargis_pdf_url
+    ? [
+        {
+          type: "pdf",
+          refnum: properties.hargis_refnum,
+          label: "Historic survey PDF",
+          url: properties.hargis_pdf_url
+        }
+      ]
+    : [];
+}
+
+function parseHargisMedia(value?: HargisMediaItem[] | string | null): HargisMediaItem[] {
+  if (!value) return [];
+  if (Array.isArray(value)) {
+    return value.filter((item): item is HargisMediaItem => Boolean(item && typeof item === "object"));
+  }
+  try {
+    const parsed = JSON.parse(value);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((item): item is HargisMediaItem => Boolean(item && typeof item === "object"));
+  } catch {
+    return [];
+  }
 }
 
 function formatCount(value: number | null | undefined, label: string): string {

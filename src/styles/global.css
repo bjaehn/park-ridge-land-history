@@ -721,6 +721,49 @@ input {
   margin-top: 0;
 }
 
+.artifact-gallery {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.artifact-photo-tile {
+  display: grid;
+  overflow: hidden;
+  min-height: 172px;
+  border: 1px solid #dedbd1;
+  border-radius: 6px;
+  background: #ffffff;
+  color: inherit;
+  text-decoration: none;
+}
+
+.artifact-photo-tile img {
+  display: block;
+  width: 100%;
+  height: 138px;
+  object-fit: cover;
+  background: #edeae0;
+}
+
+.artifact-photo-tile span {
+  overflow: hidden;
+  padding: 8px 9px;
+  color: #172033;
+  font-size: 0.72rem;
+  font-weight: 850;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.artifact-photo-tile:hover,
+.artifact-photo-tile:focus-visible,
+.document-pill:hover,
+.document-pill:focus-visible {
+  border-color: var(--accent);
+}
+
 .artifact-preview {
   margin: 0;
   overflow: hidden;
@@ -771,6 +814,41 @@ input {
 .artifact-pdf-preview a:hover,
 .artifact-pdf-preview a:focus-visible {
   color: var(--accent);
+}
+
+.document-tray {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.document-pill {
+  display: grid;
+  gap: 3px;
+  min-height: 58px;
+  padding: 9px;
+  border: 1px solid #dedbd1;
+  border-radius: 6px;
+  background: #ffffff;
+  color: inherit;
+  text-decoration: none;
+}
+
+.document-pill strong,
+.document-pill span {
+  overflow-wrap: anywhere;
+}
+
+.document-pill strong {
+  color: #172033;
+  font-size: 0.78rem;
+}
+
+.document-pill span {
+  color: var(--ink-soft);
+  font-size: 0.7rem;
+  font-weight: 750;
+  line-height: 1.25;
 }
 
 .artifact-list {
@@ -2060,7 +2138,9 @@ input {
 
 @media (max-width: 900px) {
   .home-ancestry-story,
-  .ancestry-summary-grid {
+  .ancestry-summary-grid,
+  .artifact-gallery,
+  .document-tray {
     grid-template-columns: 1fr;
   }
 }

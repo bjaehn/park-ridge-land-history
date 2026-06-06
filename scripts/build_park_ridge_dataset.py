@@ -80,6 +80,8 @@ HARGIS_OUTPUT_COLUMNS = [
     "hargis_pdf_count",
     "hargis_photo_url",
     "hargis_pdf_url",
+    "hargis_photos_json",
+    "hargis_pdfs_json",
     "hargis_match_method",
     "hargis_records_json",
 ]
@@ -408,6 +410,8 @@ def build_hargis_history(
         record_summaries = [hargis_record_summary(row) for row in ordered]
         photo_count = sum(int(numeric_or_none(row.get("hargis_photo_count")) or 0) for row in ordered)
         pdf_count = sum(int(numeric_or_none(row.get("hargis_pdf_count")) or 0) for row in ordered)
+        photos_json = combine_hargis_media(ordered, "hargis_photos_json")
+        pdfs_json = combine_hargis_media(ordered, "hargis_pdfs_json")
         records.append(
             {
                 "pin_normalized": pin,
@@ -433,6 +437,8 @@ def build_hargis_history(
                 "hargis_pdf_count": pdf_count,
                 "hargis_photo_url": first_clean_value(primary, ["hargis_photo_url"]),
                 "hargis_pdf_url": first_clean_value(primary, ["hargis_pdf_url"]),
+                "hargis_photos_json": json.dumps(photos_json, separators=(",", ":")) if photos_json else None,
+                "hargis_pdfs_json": json.dumps(pdfs_json, separators=(",", ":")) if pdfs_json else None,
                 "hargis_match_method": clean_text(primary.get("hargis_match_method")),
                 "hargis_records_json": json.dumps(record_summaries, separators=(",", ":")),
             }
@@ -452,6 +458,7 @@ def build_hargis_media_summary(photos: pd.DataFrame | None, pdfs: pd.DataFrame |
             photo_grouped.agg(
                 hargis_photo_count=(photo_ref_column, "size"),
                 hargis_photo_url=(photo_url_column, first_non_empty),
+                hargis_photos_json=(photo_url_column, lambda values: hargis_media_json(photo_rows.loc[values.index], "photo")),
             ).reset_index()
         )
     if pdfs is not None and not pdfs.empty:
@@ -464,6 +471,7 @@ def build_hargis_media_summary(photos: pd.DataFrame | None, pdfs: pd.DataFrame |
             pdf_grouped.agg(
                 hargis_pdf_count=(pdf_ref_column, "size"),
                 hargis_pdf_url=(pdf_url_column, first_non_empty),
+                hargis_pdfs_json=(pdf_url_column, lambda values: hargis_media_json(pdf_rows.loc[values.index], "pdf")),
             ).reset_index()
         )
     if not frames:
@@ -472,6 +480,63 @@ def build_hargis_media_summary(photos: pd.DataFrame | None, pdfs: pd.DataFrame |
     for frame in frames[1:]:
         summary = summary.merge(frame, on="hargis_refnum_norm", how="outer")
     return summary
+
+
+def hargis_media_json(rows: pd.DataFrame, media_type: str) -> str | None:
+    items: list[dict[str, Any]] = []
+    for _, row in rows.iterrows():
+        if media_type == "photo":
+            url = clean_text(row.get("Url")) or clean_text(row.get("URL"))
+            if not url:
+                continue
+            items.append(
+                {
+                    "type": "photo",
+                    "refnum": clean_text(row.get("RefNum")) or clean_text(row.get("REFNUM")),
+                    "label": clean_text(row.get("FileName")) or clean_text(row.get("PhotoID")) or "Historic survey photo",
+                    "url": url,
+                    "item_id": clean_text(row.get("ItemId")) or clean_text(row.get("Item_ID")),
+                    "photo_id": clean_text(row.get("PhotoID")),
+                }
+            )
+        else:
+            url = clean_text(row.get("URL")) or clean_text(row.get("Url"))
+            if not url:
+                continue
+            items.append(
+                {
+                    "type": "pdf",
+                    "refnum": clean_text(row.get("REFNUM")) or clean_text(row.get("RefNum")),
+                    "label": clean_text(row.get("Item_ID")) or "Historic survey PDF",
+                    "url": url,
+                    "item_id": clean_text(row.get("Item_ID")) or clean_text(row.get("ItemId")),
+                }
+            )
+    return json.dumps(items, separators=(",", ":")) if items else None
+
+
+def combine_hargis_media(rows: list[dict[str, Any]], column: str) -> list[dict[str, Any]]:
+    items: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for row in rows:
+        payload = clean_text(row.get(column))
+        if not payload:
+            continue
+        try:
+            parsed = json.loads(payload)
+        except (TypeError, json.JSONDecodeError):
+            continue
+        if not isinstance(parsed, list):
+            continue
+        for item in parsed:
+            if not isinstance(item, dict):
+                continue
+            key = clean_text(item.get("url")) or clean_text(item.get("item_id")) or json.dumps(item, sort_keys=True)
+            if not key or key in seen:
+                continue
+            seen.add(key)
+            items.append(item)
+    return items
 
 
 def match_hargis_to_parcels(hargis: pd.DataFrame, parcels: Any) -> pd.DataFrame:

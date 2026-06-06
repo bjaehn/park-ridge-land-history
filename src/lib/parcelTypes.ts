@@ -87,8 +87,19 @@ export type ParcelProperties = {
   hargis_pdf_count?: number | null;
   hargis_photo_url?: string | null;
   hargis_pdf_url?: string | null;
+  hargis_photos_json?: HargisMediaItem[] | string | null;
+  hargis_pdfs_json?: HargisMediaItem[] | string | null;
   hargis_match_method?: string | null;
   hargis_records_json?: string | null;
+};
+
+export type HargisMediaItem = {
+  type?: "photo" | "pdf" | string | null;
+  refnum?: string | null;
+  label?: string | null;
+  url?: string | null;
+  item_id?: string | null;
+  photo_id?: string | null;
 };
 
 export type HouseEvolutionEventType =
