@@ -13,6 +13,7 @@ type HotspotPanelProps = {
   activeGrouping: AreaGroupingId;
   selectedAreaId: string | null;
   selectedHotspotId: string | null;
+  hasWardBoundaries: boolean;
   onSetGrouping: (grouping: AreaGroupingId) => void;
   onSelectArea: (area: AreaSummaryFeature) => void;
   onSelectHotspot: (hotspot: HotspotFeature) => void;
@@ -24,6 +25,7 @@ export function HotspotPanel({
   activeGrouping,
   selectedAreaId,
   selectedHotspotId,
+  hasWardBoundaries,
   onSetGrouping,
   onSelectArea,
   onSelectHotspot
@@ -90,6 +92,8 @@ export function HotspotPanel({
       ) : (
         <AreaList
           areas={visibleAreas}
+          activeGrouping={activeGrouping}
+          hasWardBoundaries={hasWardBoundaries}
           selectedAreaId={selectedAreaId}
           onSelectArea={onSelectArea}
         />
@@ -125,13 +129,27 @@ export function HotspotPanel({
 
 function AreaList({
   areas,
+  activeGrouping,
+  hasWardBoundaries,
   selectedAreaId,
   onSelectArea
 }: {
   areas: AreaSummaryFeature[];
+  activeGrouping: AreaGroupingId;
+  hasWardBoundaries: boolean;
   selectedAreaId: string | null;
   onSelectArea: (area: AreaSummaryFeature) => void;
 }) {
+  if (areas.length === 0 && activeGrouping === "wards" && !hasWardBoundaries) {
+    return (
+      <div className="scale-definition">
+        <strong>Official ward file needed</strong>
+        <p>
+          Election wards will show here once the official Park Ridge ward boundary file is added. The app no longer uses approximate ward shapes.
+        </p>
+      </div>
+    );
+  }
   if (areas.length === 0) return <p className="quiet-note hotspot-empty">No areas found in the current view.</p>;
   return (
     <div className="hotspot-list">

@@ -23,8 +23,10 @@ export type AreaSummaryProperties = {
   hotspotId?: string | null;
 };
 
-export type AreaSummaryFeature = GeoJSON.Feature<GeoJSON.Polygon | GeoJSON.Point, AreaSummaryProperties>;
-export type AreaSummaryCollection = GeoJSON.FeatureCollection<GeoJSON.Polygon | GeoJSON.Point, AreaSummaryProperties>;
+export type AreaSummaryGeometry = GeoJSON.Polygon | GeoJSON.MultiPolygon | GeoJSON.Point;
+export type AreaSummaryFeature = GeoJSON.Feature<AreaSummaryGeometry, AreaSummaryProperties>;
+export type AreaSummaryCollection = GeoJSON.FeatureCollection<AreaSummaryGeometry, AreaSummaryProperties>;
+export type WardBoundaryCollection = GeoJSON.FeatureCollection<GeoJSON.Polygon | GeoJSON.MultiPolygon, Record<string, unknown>>;
 
 export type AreaGroupingDefinition = {
   id: AreaGroupingId;
@@ -42,9 +44,9 @@ export const areaGroupingDefinitions: AreaGroupingDefinition[] = [
   },
   {
     id: "wards",
-    label: "Civic areas",
-    shortLabel: "Wards",
-    description: "Approximate ward-style slices for comparing public activity by civic geography."
+    label: "Election wards",
+    shortLabel: "Election wards",
+    description: "Official Park Ridge ward boundaries used for city elections."
   },
   {
     id: "change_zones",
@@ -96,17 +98,18 @@ const neighborhoodRules = [
 export function buildAreaSummaries(
   parcels: ParcelCollection | null,
   grouping: AreaGroupingId,
-  hotspots: HotspotCollection
+  hotspots: HotspotCollection,
+  wardBoundaries: WardBoundaryCollection | null = null
 ): AreaSummaryCollection {
   if (grouping === "change_zones") return changeZonesFromHotspots(hotspots);
   if (!parcels) return emptyAreas();
+  if (grouping === "wards") return buildWardSummaries(parcels, wardBoundaries);
 
   const buckets = new Map<string, { label: string; description: string; sourceLabel: string; features: ParcelFeature[] }>();
-  const bounds = grouping === "wards" ? collectionBounds(parcels) : null;
   parcels.features.forEach((feature) => {
     const center = featureCenter(feature);
     if (!center) return;
-    const definition = grouping === "neighborhoods" ? neighborhoodFor(center) : wardFor(center, bounds);
+    const definition = neighborhoodFor(center);
     const bucket = buckets.get(definition.id) ?? {
       label: definition.label,
       description: definition.description,
@@ -126,6 +129,39 @@ export function buildAreaSummaries(
   };
 }
 
+function buildWardSummaries(parcels: ParcelCollection, wardBoundaries: WardBoundaryCollection | null): AreaSummaryCollection {
+  if (!wardBoundaries?.features.length) return emptyAreas();
+
+  const buckets = new Map<string, { label: string; description: string; sourceLabel: string; features: ParcelFeature[]; geometry: GeoJSON.Polygon | GeoJSON.MultiPolygon }>();
+  wardBoundaries.features.forEach((ward, index) => {
+    const label = wardLabel(ward, index);
+    buckets.set(label, {
+      label,
+      description: `${label} election ward.`,
+      sourceLabel: "Official Park Ridge ward boundary file",
+      features: [],
+      geometry: ward.geometry
+    });
+  });
+
+  parcels.features.forEach((feature) => {
+    const center = featureCenter(feature);
+    if (!center) return;
+    const ward = wardBoundaries.features.find((candidate) => pointInGeometry(center, candidate.geometry));
+    if (!ward) return;
+    const label = wardLabel(ward, wardBoundaries.features.indexOf(ward));
+    buckets.get(label)?.features.push(feature);
+  });
+
+  return {
+    type: "FeatureCollection",
+    features: Array.from(buckets.entries())
+      .map(([id, bucket]) => wardSummaryFeature(id, bucket))
+      .filter((feature): feature is AreaSummaryFeature => Boolean(feature))
+      .sort((left, right) => left.properties.label.localeCompare(right.properties.label))
+  };
+}
+
 function neighborhoodFor(center: [number, number]) {
   const [lng, lat] = center;
   const match = neighborhoodRules.find((rule) => rule.match(lng, lat));
@@ -142,21 +178,6 @@ function neighborhoodFor(center: [number, number]) {
     label: "Central Residential",
     description: "The residential middle of Park Ridge outside Uptown and the outer directional areas.",
     sourceLabel: "Common local area; approximate boundary"
-  };
-}
-
-function wardFor(center: [number, number], bounds: ReturnType<typeof collectionBounds>) {
-  const [lng, lat] = center;
-  const x = bounds ? (lng - bounds.minLng) / Math.max(bounds.maxLng - bounds.minLng, 0.0001) : 0.5;
-  const y = bounds ? (lat - bounds.minLat) / Math.max(bounds.maxLat - bounds.minLat, 0.0001) : 0.5;
-  const column = x < 0.34 ? "west" : x > 0.67 ? "east" : "central";
-  const row = y < 0.34 ? "south" : y > 0.67 ? "north" : "middle";
-  const label = `${titleCase(row)} ${titleCase(column)}`;
-  return {
-    id: `ward:${row}_${column}`,
-    label,
-    description: `${label} civic comparison area for macro-level change signals.`,
-    sourceLabel: "Approximate civic comparison area; replace with official ward boundary file when available"
   };
 }
 
@@ -181,6 +202,27 @@ function summaryFeature(
       signalLabel: areaSignalLabel(areaSignal(stats))
     },
     geometry
+  };
+}
+
+function wardSummaryFeature(
+  id: string,
+  bucket: { label: string; description: string; sourceLabel: string; features: ParcelFeature[]; geometry: GeoJSON.Polygon | GeoJSON.MultiPolygon }
+): AreaSummaryFeature | null {
+  const stats = areaStats(bucket.features);
+  return {
+    type: "Feature",
+    properties: {
+      id: `ward:${id.toLowerCase().replace(/\s+/g, "_")}`,
+      grouping: "wards",
+      label: bucket.label,
+      description: bucket.description,
+      sourceLabel: bucket.sourceLabel,
+      ...stats,
+      signal: areaSignal(stats),
+      signalLabel: areaSignalLabel(areaSignal(stats))
+    },
+    geometry: bucket.geometry
   };
 }
 
@@ -284,19 +326,6 @@ function bboxPolygon(features: ParcelFeature[]): GeoJSON.Polygon | null {
   };
 }
 
-function collectionBounds(parcels: ParcelCollection) {
-  const coordinates = parcels.features.flatMap((feature) => flattenCoordinates(feature.geometry.coordinates));
-  if (coordinates.length === 0) return null;
-  const lngs = coordinates.map((coordinate) => coordinate[0]);
-  const lats = coordinates.map((coordinate) => coordinate[1]);
-  return {
-    minLng: Math.min(...lngs),
-    maxLng: Math.max(...lngs),
-    minLat: Math.min(...lats),
-    maxLat: Math.max(...lats)
-  };
-}
-
 function flattenCoordinates(coordinates: GeoJSON.Position[][] | GeoJSON.Position[][][]): [number, number][] {
   const positions: [number, number][] = [];
   collectPositions(coordinates, positions);
@@ -312,13 +341,48 @@ function collectPositions(value: unknown, positions: [number, number][]): void {
   value.forEach((item) => collectPositions(item, positions));
 }
 
-function titleCase(value: string): string {
-  return value.charAt(0).toUpperCase() + value.slice(1);
-}
-
 function emptyAreas(): AreaSummaryCollection {
   return {
     type: "FeatureCollection",
     features: []
   };
+}
+
+function wardLabel(feature: GeoJSON.Feature<GeoJSON.Polygon | GeoJSON.MultiPolygon, Record<string, unknown>>, index: number): string {
+  const value =
+    feature.properties.ward ??
+    feature.properties.WARD ??
+    feature.properties.ward_number ??
+    feature.properties.WARD_NUM ??
+    feature.properties.name ??
+    feature.properties.NAME ??
+    feature.properties.label ??
+    feature.properties.LABEL;
+  const text = value == null ? "" : String(value).trim();
+  if (!text) return `Ward ${index + 1}`;
+  return /^ward\b/i.test(text) ? text : `Ward ${text}`;
+}
+
+function pointInGeometry(point: [number, number], geometry: GeoJSON.Polygon | GeoJSON.MultiPolygon): boolean {
+  if (geometry.type === "Polygon") return pointInPolygon(point, geometry.coordinates);
+  return geometry.coordinates.some((polygon) => pointInPolygon(point, polygon));
+}
+
+function pointInPolygon(point: [number, number], rings: GeoJSON.Position[][]): boolean {
+  if (rings.length === 0 || !pointInRing(point, rings[0])) return false;
+  return !rings.slice(1).some((ring) => pointInRing(point, ring));
+}
+
+function pointInRing(point: [number, number], ring: GeoJSON.Position[]): boolean {
+  const [x, y] = point;
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = Number(ring[i][0]);
+    const yi = Number(ring[i][1]);
+    const xj = Number(ring[j][0]);
+    const yj = Number(ring[j][1]);
+    const intersects = yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi || Number.EPSILON) + xi;
+    if (intersects) inside = !inside;
+  }
+  return inside;
 }

@@ -20,7 +20,8 @@ import {
   buildAreaSummaries,
   type AreaGroupingId,
   type AreaSummaryCollection,
-  type AreaSummaryFeature
+  type AreaSummaryFeature,
+  type WardBoundaryCollection
 } from "./lib/areaGroups";
 import { buildHotspots, type HotspotCollection, type HotspotFeature } from "./lib/hotspots";
 import {
@@ -60,6 +61,7 @@ const emptyAreas: AreaSummaryCollection = {
 export default function App() {
   const [parcels, setParcels] = useState<ParcelCollection | null>(null);
   const [boundary, setBoundary] = useState<GeoJSON.FeatureCollection | null>(null);
+  const [wardBoundaries, setWardBoundaries] = useState<WardBoundaryCollection | null>(null);
   const [isSampleData, setIsSampleData] = useState(false);
   const [selectedDecades, setSelectedDecades] = useState<Set<string>>(() => new Set(knownDecades));
   const [showUnknown, setShowUnknown] = useState(true);
@@ -112,6 +114,7 @@ export default function App() {
 
     loadParcels();
     fetchJson<GeoJSON.FeatureCollection>("/data/park_ridge_boundary.geojson").then(setBoundary);
+    fetchJson<WardBoundaryCollection>("/data/park_ridge_wards.geojson").then(setWardBoundaries);
     loadHistoricalLayerManifest().then(setHistoricalLayers);
   }, []);
 
@@ -175,9 +178,9 @@ export default function App() {
   const areaSummaries = useMemo(
     () =>
       activeAnalysisScale === "area"
-        ? buildAreaSummaries(pressureDecoratedFilteredParcels, activeAreaGrouping, hotspots)
+        ? buildAreaSummaries(pressureDecoratedFilteredParcels, activeAreaGrouping, hotspots, wardBoundaries)
         : emptyAreas,
-    [activeAnalysisScale, activeAreaGrouping, hotspots, pressureDecoratedFilteredParcels]
+    [activeAnalysisScale, activeAreaGrouping, hotspots, pressureDecoratedFilteredParcels, wardBoundaries]
   );
 
   const selectedArea = useMemo(
@@ -544,6 +547,7 @@ export default function App() {
               activeGrouping={activeAreaGrouping}
               selectedAreaId={selectedAreaId}
               selectedHotspotId={selectedHotspot?.properties.id ?? null}
+              hasWardBoundaries={Boolean(wardBoundaries?.features.length)}
               onSetGrouping={setActiveAreaGrouping}
               onSelectArea={selectArea}
               onSelectHotspot={selectHotspot}
