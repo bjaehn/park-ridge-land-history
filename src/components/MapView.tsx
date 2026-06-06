@@ -294,8 +294,8 @@ export function MapView({
         type: "fill",
         source: "area-summaries",
         paint: {
-          "fill-color": areaSignalColorExpression(),
-          "fill-opacity": 0.16
+          "fill-color": areaDisplayColorExpression(),
+          "fill-opacity": 0.2
         }
       });
 
@@ -304,7 +304,7 @@ export function MapView({
         type: "line",
         source: "area-summaries",
         paint: {
-          "line-color": areaSignalColorExpression(),
+          "line-color": areaDisplayColorExpression(),
           "line-width": 1.8,
           "line-opacity": 0.82
         }
@@ -749,6 +749,10 @@ function areaSignalColorExpression(): ExpressionSpecification {
   };
   const matchValues = Object.entries(colors).flatMap(([type, color]) => [type, color]);
   return ["match", ["get", "signal"], ...matchValues, "#246a73"] as unknown as ExpressionSpecification;
+}
+
+function areaDisplayColorExpression(): ExpressionSpecification {
+  return ["coalesce", ["get", "displayColor"], areaSignalColorExpression()] as unknown as ExpressionSpecification;
 }
 
 function emptyFeatureCollection(): GeoJSON.FeatureCollection {

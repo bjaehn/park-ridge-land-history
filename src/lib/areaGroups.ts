@@ -20,6 +20,7 @@ export type AreaSummaryProperties = {
   changingCount: number;
   signal: AreaSignal;
   signalLabel: string;
+  displayColor?: string | null;
   hotspotId?: string | null;
 };
 
@@ -61,36 +62,42 @@ const neighborhoodRules = [
     id: "uptown",
     label: "Uptown",
     description: "The walkable center around the Metra station, library, shops, and civic core.",
+    color: "#2563eb",
     match: (lng: number, lat: number) => lng > -87.855 && lng < -87.831 && lat > 42.003 && lat < 42.025
   },
   {
     id: "south_park",
     label: "South Park",
     description: "The south side of Park Ridge below the central Touhy corridor.",
+    color: "#0f766e",
     match: (_lng: number, lat: number) => lat < 42.0005
   },
   {
     id: "northwest_park",
     label: "Northwest Park",
     description: "Northwest Park Ridge near Dee Road, Dee Park, and the western edge of town.",
+    color: "#7c3aed",
     match: (lng: number, lat: number) => lng < -87.855 && lat >= 42.02
   },
   {
     id: "northeast_park",
     label: "Northeast Park",
     description: "The northeastern side near Greenwood, Busse, and the northern edge of Park Ridge.",
+    color: "#d97706",
     match: (lng: number, lat: number) => lng >= -87.845 && lat >= 42.02
   },
   {
     id: "southwest_woods",
     label: "Southwest Woods",
     description: "The southwest side near the forest preserve edge and larger residential pockets.",
+    color: "#15803d",
     match: (lng: number, lat: number) => lng < -87.845 && lat < 42.0005
   },
   {
     id: "southeast_park",
     label: "Southeast Park",
     description: "The southeast side near Cumberland, Devon, and the Chicago edge.",
+    color: "#be123c",
     match: (lng: number, lat: number) => lng >= -87.845 && lat < 42.0005
   }
 ];
@@ -105,7 +112,7 @@ export function buildAreaSummaries(
   if (!parcels) return emptyAreas();
   if (grouping === "wards") return buildWardSummaries(parcels, wardBoundaries);
 
-  const buckets = new Map<string, { label: string; description: string; sourceLabel: string; features: ParcelFeature[] }>();
+  const buckets = new Map<string, { label: string; description: string; sourceLabel: string; displayColor?: string | null; features: ParcelFeature[] }>();
   parcels.features.forEach((feature) => {
     const center = featureCenter(feature);
     if (!center) return;
@@ -114,6 +121,7 @@ export function buildAreaSummaries(
       label: definition.label,
       description: definition.description,
       sourceLabel: definition.sourceLabel,
+      displayColor: definition.displayColor,
       features: []
     };
     bucket.features.push(feature);
@@ -170,6 +178,7 @@ function neighborhoodFor(center: [number, number]) {
       id: `neighborhood:${match.id}`,
       label: match.label,
       description: match.description,
+      displayColor: match.color,
       sourceLabel: "Common Park Ridge area name; approximate boundary"
     };
   }
@@ -177,6 +186,7 @@ function neighborhoodFor(center: [number, number]) {
     id: "neighborhood:central_residential",
     label: "Central Residential",
     description: "The residential middle of Park Ridge outside Uptown and the outer directional areas.",
+    displayColor: "#0891b2",
     sourceLabel: "Common local area; approximate boundary"
   };
 }
@@ -184,7 +194,7 @@ function neighborhoodFor(center: [number, number]) {
 function summaryFeature(
   id: string,
   grouping: AreaGroupingId,
-  bucket: { label: string; description: string; sourceLabel: string; features: ParcelFeature[] }
+  bucket: { label: string; description: string; sourceLabel: string; displayColor?: string | null; features: ParcelFeature[] }
 ): AreaSummaryFeature | null {
   const geometry = bboxPolygon(bucket.features);
   if (!geometry) return null;
@@ -199,7 +209,8 @@ function summaryFeature(
       sourceLabel: bucket.sourceLabel,
       ...stats,
       signal: areaSignal(stats),
-      signalLabel: areaSignalLabel(areaSignal(stats))
+      signalLabel: areaSignalLabel(areaSignal(stats)),
+      displayColor: bucket.displayColor ?? null
     },
     geometry
   };

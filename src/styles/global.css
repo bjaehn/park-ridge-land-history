@@ -1813,6 +1813,20 @@ input {
   overflow-wrap: anywhere;
 }
 
+.hotspot-button .area-list-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.area-color-dot {
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  border: 1px solid rgba(23, 32, 51, 0.2);
+  border-radius: 50%;
+}
+
 .hotspot-button small {
   color: var(--ink-soft);
   font-size: 0.74rem;

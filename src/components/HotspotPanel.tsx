@@ -160,7 +160,12 @@ function AreaList({
           key={area.properties.id}
           onClick={() => onSelectArea(area)}
         >
-          <span>{area.properties.label}</span>
+          <span className="area-list-title">
+            {area.properties.displayColor ? (
+              <i className="area-color-dot" style={{ backgroundColor: area.properties.displayColor }} aria-hidden="true" />
+            ) : null}
+            {area.properties.label}
+          </span>
           <small>{area.properties.signalLabel} - {area.properties.description}</small>
         </button>
       ))}
