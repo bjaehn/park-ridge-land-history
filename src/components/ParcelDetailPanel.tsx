@@ -1,5 +1,6 @@
 import { formatCurrency, formatFlags, formatNumber, formatYear } from "../lib/formatters";
 import type { ParcelFeature } from "../lib/parcelTypes";
+import { HouseBiography } from "./HouseBiography";
 import { HomeSignals } from "./HomeSignals";
 import { HouseEvolutionTimeline } from "./HouseEvolutionTimeline";
 
@@ -72,7 +73,10 @@ export function ParcelDetailPanel({
       {properties && (
         <>
           <h3 className="detail-title">{properties.address || "Parcel details"}</h3>
+          <HouseBiography properties={properties} />
           <HomeSignals properties={properties} />
+          <HouseEvolutionTimeline properties={properties} />
+          <h4 className="facts-heading">Property facts</h4>
           <dl className="detail-list">
             {rows.map(([label, value]) => (
               <div key={label}>
@@ -81,7 +85,6 @@ export function ParcelDetailPanel({
               </div>
             ))}
           </dl>
-          <HouseEvolutionTimeline properties={properties} />
           <p className="quiet-note">{properties.source_note || "Cook County assessor and parcel data."}</p>
         </>
       )}

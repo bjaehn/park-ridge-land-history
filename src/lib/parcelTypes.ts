@@ -91,7 +91,14 @@ export type ParcelProperties = {
   hargis_records_json?: string | null;
 };
 
-export type HouseEvolutionEventType = "original_build" | "sale" | "permit" | "nearby_teardown" | "historic_survey";
+export type HouseEvolutionEventType =
+  | "original_build"
+  | "sale"
+  | "permit"
+  | "nearby_teardown"
+  | "historic_survey"
+  | "assessment"
+  | "appeal";
 export type PermitPressureType =
   | "none"
   | "recent_permit"

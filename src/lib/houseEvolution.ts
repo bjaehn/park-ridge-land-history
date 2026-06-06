@@ -3,16 +3,21 @@ import type { HouseEvolutionEvent, ParcelProperties } from "./parcelTypes";
 
 const eventTypeLabels: Record<HouseEvolutionEvent["event_type"], string> = {
   original_build: "Original build",
-  sale: "Sale",
+  sale: "Ownership",
   permit: "Permit",
   nearby_teardown: "Nearby teardown",
-  historic_survey: "Historic survey"
+  historic_survey: "Historic survey",
+  assessment: "Value record",
+  appeal: "Assessment appeal"
 };
 
 export function getHouseEvolutionTimeline(properties: ParcelProperties): HouseEvolutionEvent[] {
   const events = parseTimeline(properties.house_evolution_timeline);
-  if (events.length > 0) return sortTimeline(events);
+  const baseEvents = events.length > 0 ? events : fallbackBuildEvent(properties);
+  return sortTimeline([...baseEvents, ...derivedPropertyEvents(properties)]);
+}
 
+function fallbackBuildEvent(properties: ParcelProperties): HouseEvolutionEvent[] {
   if (!properties.year_built) return [];
   return [
     {
@@ -23,6 +28,29 @@ export function getHouseEvolutionTimeline(properties: ParcelProperties): HouseEv
       source: "Cook County Assessor"
     }
   ];
+}
+
+function derivedPropertyEvents(properties: ParcelProperties): HouseEvolutionEvent[] {
+  const events: HouseEvolutionEvent[] = [];
+  if (properties.latest_assessed_year && properties.latest_assessed_total) {
+    events.push({
+      year: properties.latest_assessed_year,
+      title: "Assessed value record",
+      description: assessmentDescription(properties),
+      event_type: "assessment",
+      source: "Cook County Assessor"
+    });
+  }
+  if ((properties.appeal_count ?? 0) > 0 && properties.latest_appeal_year) {
+    events.push({
+      year: properties.latest_appeal_year,
+      title: "Assessment appeal record",
+      description: appealDescription(properties),
+      event_type: "appeal",
+      source: "Cook County Assessor"
+    });
+  }
+  return events;
 }
 
 export function formatEvolutionYear(event: HouseEvolutionEvent): string {
@@ -46,6 +74,30 @@ export function formatEvolutionMeta(event: HouseEvolutionEvent): string {
     .filter(Boolean)
     .map(String);
   return parts.join(" - ");
+}
+
+function assessmentDescription(properties: ParcelProperties): string {
+  const parts = [`Latest assessed value ${formatCurrency(properties.latest_assessed_total)}.`];
+  if (
+    typeof properties.assessed_value_change_pct === "number" &&
+    properties.first_assessed_year &&
+    properties.latest_assessed_year &&
+    properties.first_assessed_year !== properties.latest_assessed_year
+  ) {
+    parts.push(
+      `Changed ${Math.round(properties.assessed_value_change_pct).toLocaleString()}% since ${properties.first_assessed_year}.`
+    );
+  }
+  return parts.join(" ");
+}
+
+function appealDescription(properties: ParcelProperties): string {
+  const count = properties.appeal_count ?? 0;
+  const parts = [`${count.toLocaleString()} assessment appeal${count === 1 ? "" : "s"} found.`];
+  if (properties.total_assessment_reduction && properties.total_assessment_reduction > 0) {
+    parts.push(`${formatCurrency(properties.total_assessment_reduction)} in recorded assessment reductions.`);
+  }
+  return parts.join(" ");
 }
 
 function parseTimeline(value: ParcelProperties["house_evolution_timeline"]): HouseEvolutionEvent[] {
