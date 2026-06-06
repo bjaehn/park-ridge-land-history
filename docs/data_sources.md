@@ -51,7 +51,7 @@ The gallery includes Property Search, Community Map Viewer, Zoning Map, Historic
 
 Use this for address-level appearance review, zoning, preservation, teardown, variance, or design-review artifacts found in public agendas, packets, minutes, or case indexes. The importer accepts `pin_normalized` when present and falls back to address matching when a public record only names the property address.
 
-Keep this rights-aware: store source/document URLs and concise summaries, not copied packet text.
+The current seed file contains verified Appearance Commission agenda rows from Park Ridge Granicus pages. Keep this rights-aware: store source/document URLs and concise summaries, not copied packet text.
 
 ## Park Ridge Local History Directories
 
@@ -59,6 +59,8 @@ Keep this rights-aware: store source/document URLs and concise summaries, not co
 - Park Ridge Public Library local history collections: `https://www.parkridgelibrary.org/research-learn/local-history/`
 
 Use this for transcribed address breadcrumbs from city directories, phone books, local indexes, and similar sources. These are meant to add historical texture to a Home Ancestry view without displaying current owner information.
+
+The source file is intentionally header-only until entries are transcribed from library-access materials or another rights-cleared address-level source.
 
 ## Park Ridge Municipal Boundary
 
@@ -78,3 +80,5 @@ These images are useful future context, but v1 does not assume they are georefer
 - Optional local file: `data/raw/park_ridge_sanborn_snapshots.csv`
 
 Sanborn and plat sources may require library access or have licensing limits. Treat them as source references unless rights allow public display. The current importer supports address or PIN-level Sanborn clues with map year, sheet, interpretation note, source link, document link, and rights note.
+
+The source file is intentionally header-only until map sheet references are transcribed from rights-cleared Sanborn access.
