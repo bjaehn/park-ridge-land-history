@@ -102,10 +102,11 @@ export function buildAreaSummaries(
   if (!parcels) return emptyAreas();
 
   const buckets = new Map<string, { label: string; description: string; sourceLabel: string; features: ParcelFeature[] }>();
+  const bounds = grouping === "wards" ? collectionBounds(parcels) : null;
   parcels.features.forEach((feature) => {
     const center = featureCenter(feature);
     if (!center) return;
-    const definition = grouping === "neighborhoods" ? neighborhoodFor(center) : wardFor(center, parcels);
+    const definition = grouping === "neighborhoods" ? neighborhoodFor(center) : wardFor(center, bounds);
     const bucket = buckets.get(definition.id) ?? {
       label: definition.label,
       description: definition.description,
@@ -144,9 +145,8 @@ function neighborhoodFor(center: [number, number]) {
   };
 }
 
-function wardFor(center: [number, number], parcels: ParcelCollection) {
+function wardFor(center: [number, number], bounds: ReturnType<typeof collectionBounds>) {
   const [lng, lat] = center;
-  const bounds = collectionBounds(parcels);
   const x = bounds ? (lng - bounds.minLng) / Math.max(bounds.maxLng - bounds.minLng, 0.0001) : 0.5;
   const y = bounds ? (lat - bounds.minLat) / Math.max(bounds.maxLat - bounds.minLat, 0.0001) : 0.5;
   const column = x < 0.34 ? "west" : x > 0.67 ? "east" : "central";

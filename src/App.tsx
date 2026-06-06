@@ -52,12 +52,10 @@ const emptyHotspots: HotspotCollection = {
   features: []
 };
 
-function emptyAreaSummaries(): AreaSummaryCollection {
-  return {
-    type: "FeatureCollection",
-    features: []
-  };
-}
+const emptyAreas: AreaSummaryCollection = {
+  type: "FeatureCollection",
+  features: []
+};
 
 export default function App() {
   const [parcels, setParcels] = useState<ParcelCollection | null>(null);
@@ -175,8 +173,11 @@ export default function App() {
   );
 
   const areaSummaries = useMemo(
-    () => buildAreaSummaries(pressureDecoratedFilteredParcels, activeAreaGrouping, hotspots),
-    [activeAreaGrouping, hotspots, pressureDecoratedFilteredParcels]
+    () =>
+      activeAnalysisScale === "area"
+        ? buildAreaSummaries(pressureDecoratedFilteredParcels, activeAreaGrouping, hotspots)
+        : emptyAreas,
+    [activeAnalysisScale, activeAreaGrouping, hotspots, pressureDecoratedFilteredParcels]
   );
 
   const selectedArea = useMemo(
@@ -186,7 +187,7 @@ export default function App() {
 
   const mapHotspots = activeAnalysisScale === "area" && activeAreaGrouping === "change_zones" ? hotspots : emptyHotspots;
   const mapAreaSummaries =
-    activeAnalysisScale === "area" && activeAreaGrouping !== "change_zones" ? areaSummaries : emptyAreaSummaries();
+    activeAnalysisScale === "area" && activeAreaGrouping !== "change_zones" ? areaSummaries : emptyAreas;
 
   useEffect(() => {
     if (activeAnalysisScale !== "area") {
