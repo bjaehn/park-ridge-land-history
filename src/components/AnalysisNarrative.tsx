@@ -9,7 +9,6 @@ type AnalysisNarrativeProps = {
   selectedParcel: ParcelFeature | null;
   hotspots: HotspotCollection;
   selectedHotspot: HotspotFeature | null;
-  showHotspots: boolean;
   activePreset: VisualizationPreset;
   filteredCount: number;
   totalCount: number;
@@ -20,7 +19,6 @@ export function AnalysisNarrative({
   selectedParcel,
   hotspots,
   selectedHotspot,
-  showHotspots,
   activePreset,
   filteredCount,
   totalCount
@@ -30,7 +28,6 @@ export function AnalysisNarrative({
     selectedParcel,
     hotspots,
     selectedHotspot,
-    showHotspots,
     activePreset,
     filteredCount,
     totalCount
@@ -47,9 +44,8 @@ export function AnalysisNarrative({
 
 function narrativeParagraphs(props: AnalysisNarrativeProps): string[] {
   if (props.activeScale === "home") return homeNarrative(props.selectedParcel);
-  if (props.activeScale === "cluster") {
-    return areasNarrative(props.hotspots, props.selectedHotspot, props.showHotspots);
-  }
+  if (props.activeScale === "block") return blockNarrative(props.selectedParcel);
+  if (props.activeScale === "area") return areasNarrative(props.hotspots, props.selectedHotspot);
   return cityNarrative(props.activePreset, props.filteredCount, props.totalCount);
 }
 
@@ -74,10 +70,23 @@ function homeNarrative(parcel: ParcelFeature | null): string[] {
   ];
 }
 
+function blockNarrative(parcel: ParcelFeature | null): string[] {
+  if (!parcel) {
+    return [
+      "Pick a property first. Block starts from one address and looks at the nearby homes around it.",
+      "This is the right view for questions like: does this street feel stable, are nearby homes being remodeled, and does the immediate context match the house?"
+    ];
+  }
+
+  return [
+    `${parcel.properties.address || "This parcel"} is the starting point for the block view.`,
+    "The block is a practical nearby group, not an official boundary. It helps explain the street context before you zoom out to larger areas."
+  ];
+}
+
 function areasNarrative(
   hotspots: HotspotCollection,
-  selectedHotspot: HotspotFeature | null,
-  showHotspots: boolean
+  selectedHotspot: HotspotFeature | null
 ): string[] {
   if (selectedHotspot) {
     return [
@@ -86,16 +95,9 @@ function areasNarrative(
     ];
   }
 
-  if (!showHotspots) {
-    return [
-      "Areas sit between one property and all of Park Ridge. Use this view to understand the blocks around a home, not just the home itself.",
-      "Start by choosing what the colors mean, hide any categories you do not care about, then turn on area circles to see places with shared patterns."
-    ];
-  }
-
   return [
-    `${hotspots.features.length.toLocaleString()} nearby-pattern areas are available on the map.`,
-    "Pick one to answer: what is happening around here, why does this cluster stand out, and should I look more closely?"
+    `${hotspots.features.length.toLocaleString()} area patterns are available on the map.`,
+    "Pick an area from the list or click a circle on the map. This view is for comparing groups of blocks, not judging one property."
   ];
 }
 

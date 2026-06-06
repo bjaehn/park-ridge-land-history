@@ -1,4 +1,4 @@
-export type AnalysisScale = "home" | "cluster" | "city";
+export type AnalysisScale = "home" | "block" | "area" | "city";
 
 type AnalysisTabsProps = {
   activeScale: AnalysisScale;
@@ -7,7 +7,8 @@ type AnalysisTabsProps = {
 
 const tabs: Array<{ id: AnalysisScale; label: string }> = [
   { id: "home", label: "Address / Parcel" },
-  { id: "cluster", label: "Areas" },
+  { id: "block", label: "Block" },
+  { id: "area", label: "Area" },
   { id: "city", label: "Park Ridge" }
 ];
 

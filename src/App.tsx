@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AnalysisNarrative } from "./components/AnalysisNarrative";
 import { AnalysisTabs, type AnalysisScale } from "./components/AnalysisTabs";
 import { AccordionSection } from "./components/AccordionSection";
+import { BlockPanel } from "./components/BlockPanel";
 import { LayerToggle } from "./components/LayerToggle";
 import { Legend } from "./components/Legend";
 import { MapView } from "./components/MapView";
@@ -54,7 +55,6 @@ export default function App() {
   const [showOutlines, setShowOutlines] = useState(true);
   const [showBoundary, setShowBoundary] = useState(true);
   const [showPermitPressure, setShowPermitPressure] = useState(true);
-  const [showHotspots, setShowHotspots] = useState(false);
   const [permitPressureWindow, setPermitPressureWindow] = useState<PermitPressureWindow>(5);
   const [permitPressureMapMode, setPermitPressureMapMode] = useState<PermitPressureMapMode>("stability");
   const [visiblePermitPressureTypes, setVisiblePermitPressureTypes] = useState<Set<PermitPressureType>>(
@@ -159,11 +159,11 @@ export default function App() {
     [pressureDecoratedFilteredParcels]
   );
 
-  const mapHotspots = showHotspots ? hotspots : emptyHotspots;
+  const mapHotspots = activeAnalysisScale === "area" ? hotspots : emptyHotspots;
 
   useEffect(() => {
-    if (!showHotspots) setSelectedHotspot(null);
-  }, [showHotspots]);
+    if (activeAnalysisScale !== "area") setSelectedHotspot(null);
+  }, [activeAnalysisScale]);
 
   const visibleLegendBuckets = useMemo(() => {
     const buckets = new Set(selectedDecades);
@@ -265,9 +265,14 @@ export default function App() {
     setActiveAnalysisScale("home");
   }
 
+  function selectBlockParcel(feature: ParcelFeature) {
+    setSelectedPin(feature.properties.pin_normalized || feature.properties.pin_original || null);
+    setActiveAnalysisScale("block");
+  }
+
   function selectHotspot(hotspot: HotspotFeature) {
     setSelectedHotspot(hotspot);
-    setActiveAnalysisScale("cluster");
+    setActiveAnalysisScale("area");
   }
 
   function toggleChangeType(changeType: ParcelChangeType) {
@@ -403,10 +408,10 @@ export default function App() {
         swipeEnabled={swipeEnabled}
         swipePosition={swipePosition}
         hotspots={mapHotspots}
-        selectedHotspot={showHotspots ? selectedHotspot : null}
+        selectedHotspot={activeAnalysisScale === "area" ? selectedHotspot : null}
         selectedParcelChange={selectedParcelChange}
         visibleChangeTypes={visibleChangeTypes}
-        onSelectParcel={selectParcel}
+        onSelectParcel={activeAnalysisScale === "block" ? selectBlockParcel : selectParcel}
         onSelectParcelChange={setSelectedParcelChange}
         onSelectHotspot={selectHotspot}
       />
@@ -440,7 +445,6 @@ export default function App() {
             selectedParcel={selectedParcel}
             hotspots={hotspots}
             selectedHotspot={selectedHotspot}
-            showHotspots={showHotspots}
             activePreset={activeVisualizationPreset}
             filteredCount={filteredParcels?.features.length ?? 0}
             totalCount={parcels?.features.length ?? 0}
@@ -456,35 +460,33 @@ export default function App() {
               />
               <ParcelDetailPanel
                 parcel={selectedParcel}
-                parcels={pressureDecoratedParcels}
-                permitPressureWindow={permitPressureWindow}
                 onClearSelection={() => setSelectedPin(null)}
               />
             </>
           )}
 
-          {activeAnalysisScale === "cluster" && (
+          {activeAnalysisScale === "block" && (
+            <>
+              <SearchPanel
+                parcels={parcels}
+                selectedPin={selectedPin}
+                visiblePins={visiblePins}
+                onSelectParcel={selectBlockParcel}
+                onClearSelection={() => setSelectedPin(null)}
+              />
+              <BlockPanel
+                parcel={selectedParcel}
+                parcels={pressureDecoratedParcels}
+                permitPressureWindow={permitPressureWindow}
+              />
+            </>
+          )}
+
+          {activeAnalysisScale === "area" && (
             <HotspotPanel
               hotspots={hotspots}
-              enabled={showHotspots}
-              onSetEnabled={(enabled) => {
-                setShowHotspots(enabled);
-                if (enabled) setActiveAnalysisScale("cluster");
-              }}
               selectedHotspotId={selectedHotspot?.properties.id ?? null}
               onSelectHotspot={selectHotspot}
-              activePreset={activeVisualizationPreset}
-              visibleDecades={visibleLegendBuckets}
-              visibleChangeTypes={visibleChangeTypes}
-              showPermitPressure={showPermitPressure}
-              permitPressureMapMode={permitPressureMapMode}
-              visiblePermitPressureTypes={visiblePermitPressureTypes}
-              visiblePermitStabilityTypes={visiblePermitStabilityTypes}
-              onSelectPreset={selectVisualizationPreset}
-              onToggleDecade={toggleDecade}
-              onToggleChangeType={toggleChangeType}
-              onTogglePermitPressureType={togglePermitPressureType}
-              onTogglePermitStabilityType={togglePermitStabilityType}
             />
           )}
 

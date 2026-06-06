@@ -1,22 +1,15 @@
 import { formatCurrency, formatFlags, formatNumber, formatYear } from "../lib/formatters";
-import type { PermitPressureWindow } from "../lib/permitPressure";
-import type { ParcelCollection, ParcelFeature } from "../lib/parcelTypes";
-import { BlockStoryCard } from "./BlockStoryCard";
+import type { ParcelFeature } from "../lib/parcelTypes";
 import { HomeSignals } from "./HomeSignals";
 import { HouseEvolutionTimeline } from "./HouseEvolutionTimeline";
-import { NearbyActivitySummary } from "./NearbyActivitySummary";
 
 type ParcelDetailPanelProps = {
   parcel: ParcelFeature | null;
-  parcels: ParcelCollection | null;
-  permitPressureWindow: PermitPressureWindow;
   onClearSelection: () => void;
 };
 
 export function ParcelDetailPanel({
   parcel,
-  parcels,
-  permitPressureWindow,
   onClearSelection
 }: ParcelDetailPanelProps) {
   const properties = parcel?.properties;
@@ -88,16 +81,6 @@ export function ParcelDetailPanel({
               </div>
             ))}
           </dl>
-          <BlockStoryCard
-            parcel={parcel}
-            parcels={parcels}
-            permitPressureWindow={permitPressureWindow}
-          />
-          <NearbyActivitySummary
-            parcel={parcel}
-            parcels={parcels}
-            permitPressureWindow={permitPressureWindow}
-          />
           <HouseEvolutionTimeline properties={properties} />
           <p className="quiet-note">{properties.source_note || "Cook County assessor and parcel data."}</p>
         </>
