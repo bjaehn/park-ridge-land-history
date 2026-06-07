@@ -55,14 +55,20 @@ export function BuildoutMilestonesTable({
 }
 
 function buildRows(parcels: ParcelCollection | null): MilestoneRow[] {
-  const knownFeatures = parcels?.features.filter((feature) => typeof feature.properties.year_built === "number") ?? [];
-  const total = knownFeatures.length;
+  const counts = new Map<string, number>();
+  let total = 0;
+  parcels?.features.forEach((feature) => {
+    if (typeof feature.properties.year_built !== "number") return;
+    const decade = String(feature.properties.decade_built || "Unknown");
+    counts.set(decade, (counts.get(decade) ?? 0) + 1);
+    total += 1;
+  });
   let cumulative = 0;
 
   return decadeOrder
     .filter((decade) => decade !== "Unknown" && decade !== "Suspicious")
     .map((decade) => {
-      const builtInDecade = knownFeatures.filter((feature) => feature.properties.decade_built === decade).length;
+      const builtInDecade = counts.get(decade) ?? 0;
       cumulative += builtInDecade;
       return {
         decade,

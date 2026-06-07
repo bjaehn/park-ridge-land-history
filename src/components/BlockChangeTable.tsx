@@ -68,18 +68,28 @@ export function BlockChangeTable({
 function buildRows(parcels: ParcelCollection | null): ChangeRow[] {
   const features = parcels?.features ?? [];
   const total = features.length;
+  const counts = new Map<PermitStabilityType, { homes: number; remodeled: number; soldRecently: number }>();
+
+  features.forEach((feature) => {
+    const type = (feature.properties.permit_stability_type ?? "stable") as PermitStabilityType;
+    const current = counts.get(type) ?? { homes: 0, remodeled: 0, soldRecently: 0 };
+    current.homes += 1;
+    if (hasReinvestmentSignal(feature)) current.remodeled += 1;
+    if (soldRecently(feature)) current.soldRecently += 1;
+    counts.set(type, current);
+  });
 
   return stabilityOrder
     .map(({ type, label }) => {
-      const matches = features.filter((feature) => (feature.properties.permit_stability_type ?? "stable") === type);
+      const count = counts.get(type) ?? { homes: 0, remodeled: 0, soldRecently: 0 };
       return {
         type,
         label,
-        homes: matches.length,
-        percent: percent(matches.length, total),
-        remodeled: matches.filter(hasReinvestmentSignal).length,
-        soldRecently: matches.filter(soldRecently).length,
-        read: stabilityRead(type, matches.length, total)
+        homes: count.homes,
+        percent: percent(count.homes, total),
+        remodeled: count.remodeled,
+        soldRecently: count.soldRecently,
+        read: stabilityRead(type, count.homes, total)
       };
     })
     .filter((row) => row.homes > 0);

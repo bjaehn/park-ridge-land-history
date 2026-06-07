@@ -113,16 +113,27 @@ export function MapView({
   });
 
   const visibleParcels = useMemo(() => parcels ?? emptyCollection, [parcels]);
-  latestParcelsRef.current = visibleParcels;
+  const mapSourceParcels = useMemo(() => slimParcelCollection(visibleParcels), [visibleParcels]);
+  const selectedBlockSourceParcels = useMemo(
+    () => slimParcelCollection(selectedBlockParcels ?? emptyCollection),
+    [selectedBlockParcels]
+  );
+  const mapSourceHotspots = useMemo(() => slimHotspotCollection(hotspots), [hotspots]);
+  const mapSourceAreaSummaries = useMemo(() => slimAreaSummaryCollection(areaSummaries), [areaSummaries]);
+  const mapSourceSelectedArea = useMemo(
+    () => (selectedArea ? featureCollectionFromGenericFeature(slimAreaSummaryFeature(selectedArea)) : emptyFeatureCollection()),
+    [selectedArea]
+  );
+  latestParcelsRef.current = mapSourceParcels;
   latestSelectedRef.current = selectedParcel ? featureCollectionFromFeature(selectedParcel) : emptyFeatureCollection();
-  latestSelectedBlockRef.current = selectedBlockParcels ?? emptyCollection;
+  latestSelectedBlockRef.current = selectedBlockSourceParcels;
   latestSelectedChangeRef.current = selectedParcelChange
     ? featureCollectionFromFeature(selectedParcelChange)
     : emptyFeatureCollection();
   latestBoundaryRef.current = boundary ?? { type: "FeatureCollection", features: [] };
-  latestHotspotsRef.current = hotspots;
-  latestAreaSummariesRef.current = areaSummaries;
-  latestSelectedAreaRef.current = selectedArea ? featureCollectionFromGenericFeature(selectedArea) : emptyFeatureCollection();
+  latestHotspotsRef.current = mapSourceHotspots;
+  latestAreaSummariesRef.current = mapSourceAreaSummaries;
+  latestSelectedAreaRef.current = mapSourceSelectedArea;
   latestHistoricalOverlaysRef.current = historicalOverlays;
   onSelectParcelRef.current = onSelectParcel;
   onSelectParcelChangeRef.current = onSelectParcelChange;
@@ -351,21 +362,23 @@ export function MapView({
         }
       });
 
-      map.addLayer({
-        id: "area-summary-label",
-        type: "symbol",
-        source: "area-summaries",
-        layout: {
-          "text-field": ["get", "label"],
-          "text-size": 12,
-          "text-anchor": "center"
-        },
-        paint: {
-          "text-color": "#172033",
-          "text-halo-color": "#ffffff",
-          "text-halo-width": 1.6
-        }
-      });
+      if (styleSupportsGlyphs(map)) {
+        map.addLayer({
+          id: "area-summary-label",
+          type: "symbol",
+          source: "area-summaries",
+          layout: {
+            "text-field": ["get", "label"],
+            "text-size": 12,
+            "text-anchor": "center"
+          },
+          paint: {
+            "text-color": "#172033",
+            "text-halo-color": "#ffffff",
+            "text-halo-width": 1.6
+          }
+        });
+      }
 
       map.addLayer({
         id: "hotspot-circle",
@@ -388,22 +401,24 @@ export function MapView({
         }
       });
 
-      map.addLayer({
-        id: "hotspot-label",
-        type: "symbol",
-        source: "hotspots",
-        layout: {
-          "text-field": ["get", "title"],
-          "text-size": 11,
-          "text-offset": [0, 1.25],
-          "text-anchor": "top"
-        },
-        paint: {
-          "text-color": "#172033",
-          "text-halo-color": "#ffffff",
-          "text-halo-width": 1.4
-        }
-      });
+      if (styleSupportsGlyphs(map)) {
+        map.addLayer({
+          id: "hotspot-label",
+          type: "symbol",
+          source: "hotspots",
+          layout: {
+            "text-field": ["get", "title"],
+            "text-size": 11,
+            "text-offset": [0, 1.25],
+            "text-anchor": "top"
+          },
+          paint: {
+            "text-color": "#172033",
+            "text-halo-color": "#ffffff",
+            "text-halo-width": 1.4
+          }
+        });
+      }
 
       setIsMapLoaded(true);
     });
@@ -552,13 +567,13 @@ export function MapView({
 
   useEffect(() => {
     const source = mapRef.current?.getSource("parcels") as GeoJSONSource | undefined;
-    source?.setData(visibleParcels);
-  }, [visibleParcels]);
+    source?.setData(mapSourceParcels);
+  }, [mapSourceParcels]);
 
   useEffect(() => {
     const map = mapRef.current;
     const source = map?.getSource("selected-block") as GeoJSONSource | undefined;
-    source?.setData(selectedBlockParcels ?? emptyCollection);
+    source?.setData(selectedBlockSourceParcels);
 
     if (!map || !selectedBlockParcels || selectedBlockParcels.features.length === 0) return;
     const bounds = boundsForFeatureCollection(selectedBlockParcels);
@@ -568,7 +583,7 @@ export function MapView({
       maxZoom: 16.2,
       duration: 700
     });
-  }, [selectedBlockParcels]);
+  }, [selectedBlockParcels, selectedBlockSourceParcels]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -614,18 +629,18 @@ export function MapView({
 
   useEffect(() => {
     const source = mapRef.current?.getSource("hotspots") as GeoJSONSource | undefined;
-    source?.setData(hotspots);
-  }, [hotspots]);
+    source?.setData(mapSourceHotspots);
+  }, [mapSourceHotspots]);
 
   useEffect(() => {
     const source = mapRef.current?.getSource("area-summaries") as GeoJSONSource | undefined;
-    source?.setData(areaSummaries);
-  }, [areaSummaries]);
+    source?.setData(mapSourceAreaSummaries);
+  }, [mapSourceAreaSummaries]);
 
   useEffect(() => {
     const source = mapRef.current?.getSource("selected-area") as GeoJSONSource | undefined;
-    source?.setData(selectedArea ? featureCollectionFromGenericFeature(selectedArea) : emptyFeatureCollection());
-  }, [selectedArea]);
+    source?.setData(mapSourceSelectedArea);
+  }, [mapSourceSelectedArea]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -798,6 +813,80 @@ function areaSignalColorExpression(): ExpressionSpecification {
 
 function areaDisplayColorExpression(): ExpressionSpecification {
   return ["coalesce", ["get", "displayColor"], areaSignalColorExpression()] as unknown as ExpressionSpecification;
+}
+
+function styleSupportsGlyphs(map: maplibregl.Map): boolean {
+  return Boolean((map.getStyle() as { glyphs?: string }).glyphs);
+}
+
+function slimParcelCollection(collection: ParcelCollection): ParcelCollection {
+  return {
+    type: "FeatureCollection",
+    features: collection.features.map(slimParcelFeature)
+  };
+}
+
+function slimParcelFeature(feature: ParcelFeature): ParcelFeature {
+  const properties = feature.properties;
+  return {
+    type: "Feature",
+    id: feature.id,
+    geometry: feature.geometry,
+    properties: {
+      pin_normalized: properties.pin_normalized,
+      pin_original: properties.pin_original,
+      address: properties.address,
+      property_class: properties.property_class,
+      year_built: properties.year_built,
+      decade_built: properties.decade_built,
+      building_sqft: properties.building_sqft,
+      land_sqft: properties.land_sqft,
+      improvement_count: properties.improvement_count,
+      permit_count: properties.permit_count,
+      permit_pressure_score: properties.permit_pressure_score,
+      permit_pressure_type: properties.permit_pressure_type,
+      permit_stability_type: properties.permit_stability_type,
+      recent_permit_count: properties.recent_permit_count,
+      recent_teardown_count: properties.recent_teardown_count,
+      latest_permit_year: properties.latest_permit_year,
+      latest_sale_year: properties.latest_sale_year,
+      data_quality_flags: properties.data_quality_flags,
+      source_note: properties.source_note,
+      street_block_id: properties.street_block_id
+    }
+  };
+}
+
+function slimHotspotCollection(collection: HotspotCollection): HotspotCollection {
+  return {
+    type: "FeatureCollection",
+    features: collection.features.map((feature) => ({
+      type: "Feature",
+      geometry: feature.geometry,
+      properties: {
+        ...feature.properties,
+        parcelPins: []
+      }
+    }))
+  };
+}
+
+function slimAreaSummaryCollection(collection: AreaSummaryCollection): AreaSummaryCollection {
+  return {
+    type: "FeatureCollection",
+    features: collection.features.map(slimAreaSummaryFeature)
+  };
+}
+
+function slimAreaSummaryFeature(feature: AreaSummaryFeature): AreaSummaryFeature {
+  return {
+    type: "Feature",
+    geometry: feature.geometry,
+    properties: {
+      ...feature.properties,
+      parcelPins: []
+    }
+  };
 }
 
 function emptyFeatureCollection(): GeoJSON.FeatureCollection {

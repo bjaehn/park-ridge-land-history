@@ -67,19 +67,28 @@ function buildRows(parcels: ParcelCollection | null): PermitWorkRow[] {
   const features = parcels?.features ?? [];
   const total = features.length;
   const order: PermitPressureType[] = [...permitPressureLegendOrder, "none"];
+  const counts = new Map<PermitPressureType, { homes: number; latestYear: number | null }>();
+
+  features.forEach((feature) => {
+    const type = (feature.properties.permit_pressure_type ?? "none") as PermitPressureType;
+    const current = counts.get(type) ?? { homes: 0, latestYear: null };
+    const latestYear = feature.properties.latest_permit_year;
+    current.homes += 1;
+    if (typeof latestYear === "number") {
+      current.latestYear = current.latestYear === null ? latestYear : Math.max(current.latestYear, latestYear);
+    }
+    counts.set(type, current);
+  });
 
   return order
     .map((type) => {
-      const matches = features.filter((feature) => (feature.properties.permit_pressure_type ?? "none") === type);
-      const latestYears = matches
-        .map((feature) => feature.properties.latest_permit_year)
-        .filter((year): year is number => typeof year === "number");
+      const count = counts.get(type) ?? { homes: 0, latestYear: null };
       return {
         type,
-        homes: matches.length,
-        percent: total ? Math.round((matches.length / total) * 100) : 0,
-        latestYear: latestYears.length ? Math.max(...latestYears) : null,
-        read: workRead(type, matches.length, total)
+        homes: count.homes,
+        percent: total ? Math.round((count.homes / total) * 100) : 0,
+        latestYear: count.latestYear,
+        read: workRead(type, count.homes, total)
       };
     })
     .filter((row) => row.homes > 0);

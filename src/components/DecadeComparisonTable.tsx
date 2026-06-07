@@ -75,38 +75,45 @@ export function DecadeComparisonTable({
 }
 
 function buildRows(parcels: ParcelCollection | null): DecadeRow[] {
-  const grouped = new Map<string, ParcelFeature[]>();
-  decadeOrder.forEach((bucket) => grouped.set(bucket, []));
+  const grouped = new Map<string, DecadeAccumulator>();
+  decadeOrder.forEach((bucket) => grouped.set(bucket, emptyAccumulator()));
 
   parcels?.features.forEach((feature) => {
     const bucket = feature.properties.decade_built || "Unknown";
-    const features = grouped.get(bucket) ?? [];
-    features.push(feature);
-    grouped.set(bucket, features);
+    const accumulator = grouped.get(bucket) ?? emptyAccumulator();
+    accumulator.count += 1;
+    if (isOlderHome(feature)) accumulator.olderHomeCount += 1;
+    if (hasRemodelSignal(feature)) accumulator.remodelCount += 1;
+    if (soldRecently(feature)) accumulator.soldLastThreeYearsCount += 1;
+    if (hasRebuildSignal(feature)) accumulator.rebuildSignalCount += 1;
+    grouped.set(bucket, accumulator);
   });
 
   return decadeOrder
-    .map((bucket) => rowForBucket(bucket, grouped.get(bucket) ?? []))
+    .map((bucket) => rowForBucket(bucket, grouped.get(bucket) ?? emptyAccumulator()))
     .filter((row) => row.count > 0);
 }
 
-function rowForBucket(bucket: string, features: ParcelFeature[]): DecadeRow {
-  const count = features.length;
-  const olderHomeCount = features.filter((feature) => {
-    const year = feature.properties.year_built;
-    return typeof year === "number" && year > 0 && year <= 1945;
-  }).length;
-  const remodelCount = features.filter((feature) =>
-    ["recent_permit", "remodel", "addition"].includes(String(feature.properties.permit_pressure_type))
-  ).length;
-  const soldLastThreeYearsCount = features.filter((feature) => {
-    const year = feature.properties.latest_sale_year;
-    return typeof year === "number" && year >= permitPressureCurrentYear - 2 && year <= permitPressureCurrentYear;
-  }).length;
-  const rebuildSignalCount = features.filter((feature) =>
-    feature.properties.permit_pressure_type === "direct_teardown" ||
-    feature.properties.permit_pressure_type === "new_construction"
-  ).length;
+type DecadeAccumulator = {
+  count: number;
+  olderHomeCount: number;
+  remodelCount: number;
+  soldLastThreeYearsCount: number;
+  rebuildSignalCount: number;
+};
+
+function emptyAccumulator(): DecadeAccumulator {
+  return {
+    count: 0,
+    olderHomeCount: 0,
+    remodelCount: 0,
+    soldLastThreeYearsCount: 0,
+    rebuildSignalCount: 0
+  };
+}
+
+function rowForBucket(bucket: string, accumulator: DecadeAccumulator): DecadeRow {
+  const { count, olderHomeCount, remodelCount, soldLastThreeYearsCount, rebuildSignalCount } = accumulator;
 
   return {
     bucket,
@@ -121,6 +128,25 @@ function rowForBucket(bucket: string, features: ParcelFeature[]): DecadeRow {
     rebuildSignalPercent: percent(rebuildSignalCount, count),
     read: decadeRead(bucket, count, remodelCount, soldLastThreeYearsCount, rebuildSignalCount)
   };
+}
+
+function isOlderHome(feature: ParcelFeature): boolean {
+  const year = feature.properties.year_built;
+  return typeof year === "number" && year > 0 && year <= 1945;
+}
+
+function hasRemodelSignal(feature: ParcelFeature): boolean {
+  return ["recent_permit", "remodel", "addition"].includes(String(feature.properties.permit_pressure_type));
+}
+
+function soldRecently(feature: ParcelFeature): boolean {
+  const year = feature.properties.latest_sale_year;
+  return typeof year === "number" && year >= permitPressureCurrentYear - 2 && year <= permitPressureCurrentYear;
+}
+
+function hasRebuildSignal(feature: ParcelFeature): boolean {
+  return feature.properties.permit_pressure_type === "direct_teardown" ||
+    feature.properties.permit_pressure_type === "new_construction";
 }
 
 function decadeRead(
