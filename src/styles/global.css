@@ -1827,6 +1827,57 @@ input {
   border-radius: 50%;
 }
 
+.neighborhood-comparison {
+  gap: 10px;
+}
+
+.comparison-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.comparison-table {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+}
+
+.comparison-table th,
+.comparison-table td {
+  padding: 9px 10px;
+  border-bottom: 1px solid #ece8de;
+  color: #172033;
+  text-align: left;
+  vertical-align: top;
+  white-space: nowrap;
+}
+
+.comparison-table thead th {
+  background: #f7f6f1;
+  color: var(--ink-soft);
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.comparison-table tbody tr:last-child th,
+.comparison-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.comparison-table tbody th {
+  font-weight: 900;
+}
+
+.comparison-area-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
 .hotspot-button small {
   color: var(--ink-soft);
   font-size: 0.74rem;

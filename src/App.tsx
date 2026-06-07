@@ -7,6 +7,7 @@ import { LayerToggle } from "./components/LayerToggle";
 import { Legend } from "./components/Legend";
 import { MapView } from "./components/MapView";
 import { DecadeDistributionChart } from "./components/DecadeDistributionChart";
+import { NeighborhoodComparisonTable } from "./components/NeighborhoodComparisonTable";
 import { HistoricalLayerPanel } from "./components/HistoricalLayerPanel";
 import { HotspotPanel } from "./components/HotspotPanel";
 import { ParcelDetailPanel } from "./components/ParcelDetailPanel";
@@ -181,6 +182,11 @@ export default function App() {
         ? buildAreaSummaries(pressureDecoratedFilteredParcels, activeAreaGrouping, hotspots, wardBoundaries)
         : emptyAreas,
     [activeAnalysisScale, activeAreaGrouping, hotspots, pressureDecoratedFilteredParcels, wardBoundaries]
+  );
+
+  const cityNeighborhoodSummaries = useMemo(
+    () => buildAreaSummaries(pressureDecoratedParcels, "neighborhoods", emptyHotspots),
+    [pressureDecoratedParcels]
   );
 
   const selectedArea = useMemo(
@@ -587,6 +593,7 @@ export default function App() {
                 onSelectAll={() => setSelectedDecades(new Set(knownDecades))}
                 onClearKnown={() => setSelectedDecades(new Set())}
               />
+              <NeighborhoodComparisonTable neighborhoods={cityNeighborhoodSummaries} />
               <DecadeDistributionChart parcels={filteredParcels} />
             </>
           )}
