@@ -1124,6 +1124,7 @@ input {
 
 .scale-definition,
 .selected-place-card,
+.block-readout,
 .area-readout {
   display: grid;
   gap: 6px;
@@ -1139,6 +1140,7 @@ input {
 
 .scale-definition strong,
 .selected-place-card strong,
+.block-readout strong,
 .area-readout h3 {
   margin: 0;
   color: #172033;
@@ -1146,6 +1148,7 @@ input {
 }
 
 .scale-definition p,
+.block-readout p,
 .area-readout p {
   margin: 0;
   color: #425168;
@@ -1159,6 +1162,15 @@ input {
   font-size: 0.72rem;
   font-weight: 900;
   text-transform: uppercase;
+}
+
+.block-readout {
+  border-color: #b9d4cf;
+  background: #f1fbf9;
+}
+
+.block-preset-grid {
+  margin-top: 2px;
 }
 
 .block-empty {

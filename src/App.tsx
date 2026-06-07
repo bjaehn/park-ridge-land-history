@@ -18,6 +18,7 @@ import { SearchPanel } from "./components/SearchPanel";
 import { TimelineControl } from "./components/TimelineControl";
 import { VisualizationPanel, type VisualizationPreset } from "./components/VisualizationPanel";
 import { decadeOrder } from "./lib/colorScales";
+import { buildPhysicalBlock, parcelCollectionFromFeatures } from "./lib/physicalBlock";
 import { loadHistoricalLayerData, loadHistoricalLayerManifest } from "./lib/layerLoaders";
 import { layerCanToggle, type HistoricalLayer, type LoadedHistoricalLayer } from "./lib/historicalLayerTypes";
 import {
@@ -246,6 +247,12 @@ export default function App() {
     );
   }, [pressureDecoratedParcels, selectedPin]);
 
+  const selectedBlockParcels = useMemo(() => {
+    if (activeAnalysisScale !== "block" || !selectedParcel) return null;
+    const physicalBlock = buildPhysicalBlock(selectedParcel, pressureDecoratedParcels);
+    return physicalBlock ? parcelCollectionFromFeatures(physicalBlock.allParcels) : null;
+  }, [activeAnalysisScale, pressureDecoratedParcels, selectedParcel]);
+
   const historicalOverlays = useMemo(() => {
     return Array.from(activeHistoricalLayerIds)
       .map((layerId) => loadedHistoricalLayers[layerId])
@@ -448,6 +455,7 @@ export default function App() {
       <MapView
         parcels={pressureDecoratedFilteredParcels}
         selectedParcel={selectedParcel}
+        selectedBlockParcels={selectedBlockParcels}
         boundary={boundary}
         showOutlines={showOutlines}
         showBoundary={showBoundary}

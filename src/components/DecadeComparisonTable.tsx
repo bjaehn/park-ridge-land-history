@@ -4,6 +4,8 @@ import type { DecadeBucket, ParcelCollection, ParcelFeature } from "../lib/parce
 
 type DecadeComparisonTableProps = {
   parcels: ParcelCollection | null;
+  title?: string;
+  note?: string;
 };
 
 type DecadeRow = {
@@ -20,15 +22,17 @@ type DecadeRow = {
   read: string;
 };
 
-export function DecadeComparisonTable({ parcels }: DecadeComparisonTableProps) {
+export function DecadeComparisonTable({
+  parcels,
+  title = "Homes by Decade Built",
+  note = "Groups current Park Ridge homes by build decade, then compares reinvestment, older-home share, recent sales, and rebuild signals."
+}: DecadeComparisonTableProps) {
   const rows = buildRows(parcels);
 
   return (
     <section className="panel-section decade-comparison" aria-label="Homes by decade built">
-      <h2>Homes by Decade Built</h2>
-      <p className="mode-note">
-        Groups current Park Ridge homes by build decade, then compares reinvestment, older-home share, recent sales, and rebuild signals.
-      </p>
+      <h2>{title}</h2>
+      <p className="mode-note">{note}</p>
       <div className="comparison-table-wrap">
         <table className="comparison-table">
           <thead>

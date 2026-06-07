@@ -8,6 +8,8 @@ import type { ParcelCollection, PermitPressureType } from "../lib/parcelTypes";
 type PermitWorkComparisonTableProps = {
   parcels: ParcelCollection | null;
   permitPressureWindow: PermitPressureWindow;
+  title?: string;
+  note?: string;
 };
 
 type PermitWorkRow = {
@@ -18,15 +20,21 @@ type PermitWorkRow = {
   read: string;
 };
 
-export function PermitWorkComparisonTable({ parcels, permitPressureWindow }: PermitWorkComparisonTableProps) {
+export function PermitWorkComparisonTable({
+  parcels,
+  permitPressureWindow,
+  title = "Work by Permit Type",
+  note
+}: PermitWorkComparisonTableProps) {
   const rows = buildRows(parcels);
+  const tableNote =
+    note ??
+    `Groups Park Ridge homes by the strongest recent permit signal for the selected ${windowLabel(permitPressureWindow)} evidence window.`;
 
   return (
     <section className="panel-section neighborhood-comparison" aria-label="Permit work comparison">
-      <h2>Work by Permit Type</h2>
-      <p className="mode-note">
-        Groups Park Ridge homes by the strongest recent permit signal for the selected {windowLabel(permitPressureWindow)} evidence window.
-      </p>
+      <h2>{title}</h2>
+      <p className="mode-note">{tableNote}</p>
       <div className="comparison-table-wrap">
         <table className="comparison-table">
           <thead>

@@ -3,6 +3,8 @@ import type { ParcelCollection } from "../lib/parcelTypes";
 
 type BuildoutMilestonesTableProps = {
   parcels: ParcelCollection | null;
+  title?: string;
+  note?: string;
 };
 
 type MilestoneRow = {
@@ -13,15 +15,17 @@ type MilestoneRow = {
   read: string;
 };
 
-export function BuildoutMilestonesTable({ parcels }: BuildoutMilestonesTableProps) {
+export function BuildoutMilestonesTable({
+  parcels,
+  title = "Build-Out Milestones",
+  note = "Shows when today's Park Ridge housing stock appeared, decade by decade, as a cumulative city growth story."
+}: BuildoutMilestonesTableProps) {
   const rows = buildRows(parcels);
 
   return (
     <section className="panel-section decade-comparison" aria-label="Park Ridge build-out milestones">
-      <h2>Build-Out Milestones</h2>
-      <p className="mode-note">
-        Shows when today's Park Ridge housing stock appeared, decade by decade, as a cumulative city growth story.
-      </p>
+      <h2>{title}</h2>
+      <p className="mode-note">{note}</p>
       <div className="comparison-table-wrap">
         <table className="comparison-table">
           <thead>

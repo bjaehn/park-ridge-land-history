@@ -84,6 +84,8 @@ export function updateSwipeHistoricalLayers(
 
 export function raiseSelectionLayers(map: maplibregl.Map): void {
   [
+    "selected-block-fill",
+    "selected-block-outline",
     "selected-parcel-fill",
     "selected-parcel-outline",
     "selected-parcel-change-fill",
