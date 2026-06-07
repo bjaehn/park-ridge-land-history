@@ -1,51 +1,87 @@
-import { useMemo } from "react";
 import {
   areaGroupingDefinitions,
   type AreaGroupingId,
   type AreaSummaryCollection,
   type AreaSummaryFeature
 } from "../lib/areaGroups";
-import { hotspotLabel, type HotspotCollection, type HotspotFeature, type HotspotType } from "../lib/hotspots";
+import type { PermitPressureWindow } from "../lib/permitPressure";
+import type { HotspotCollection } from "../lib/hotspots";
+import type { ParcelCollection } from "../lib/parcelTypes";
+import { BlockChangeTable } from "./BlockChangeTable";
+import { BuildoutMilestonesTable } from "./BuildoutMilestonesTable";
+import { ChangeStoryCard } from "./ChangeStoryCard";
+import { DecadeComparisonTable } from "./DecadeComparisonTable";
+import { DecadeDistributionChart } from "./DecadeDistributionChart";
+import { PermitWorkComparisonTable } from "./PermitWorkComparisonTable";
+import { TimelineControl } from "./TimelineControl";
+
+export type AreaView = "age" | "buildout" | "stability" | "activity";
 
 type HotspotPanelProps = {
   hotspots: HotspotCollection;
   areaSummaries: AreaSummaryCollection;
   activeGrouping: AreaGroupingId;
+  activeView: AreaView;
   selectedAreaId: string | null;
-  selectedHotspotId: string | null;
   hasWardBoundaries: boolean;
+  selectedAreaParcels: ParcelCollection | null;
+  permitPressureWindow: PermitPressureWindow;
+  maxBuiltYear: number;
+  minAvailableYear: number;
+  maxAvailableYear: number;
+  isBuildoutPlaying: boolean;
+  animationSpeed: "slow" | "normal" | "fast";
+  builtByYearCount: number;
+  knownYearTotal: number;
+  percentBuilt: number;
   onSetGrouping: (grouping: AreaGroupingId) => void;
+  onSetActiveView: (view: AreaView) => void;
   onSelectArea: (area: AreaSummaryFeature) => void;
-  onSelectHotspot: (hotspot: HotspotFeature) => void;
+  onSetMaxBuiltYear: (year: number) => void;
+  onToggleBuildoutPlayback: () => void;
+  onResetBuildout: () => void;
+  onSetAnimationSpeed: (speed: "slow" | "normal" | "fast") => void;
 };
 
+const areaViews: Array<{ id: AreaView; label: string; meta: string }> = [
+  { id: "age", label: "How old are the homes here?", meta: "Compare this area's homes by decade built." },
+  { id: "buildout", label: "How did this area grow?", meta: "Move through time for only this area." },
+  { id: "stability", label: "Where is change happening here?", meta: "Separate quiet homes from active change." },
+  { id: "activity", label: "What kind of work is happening here?", meta: "Compare permits, additions, and rebuild signals." }
+];
+
 export function HotspotPanel({
-  hotspots,
   areaSummaries,
   activeGrouping,
+  activeView,
   selectedAreaId,
-  selectedHotspotId,
   hasWardBoundaries,
+  selectedAreaParcels,
+  permitPressureWindow,
+  maxBuiltYear,
+  minAvailableYear,
+  maxAvailableYear,
+  isBuildoutPlaying,
+  animationSpeed,
+  builtByYearCount,
+  knownYearTotal,
+  percentBuilt,
   onSetGrouping,
+  onSetActiveView,
   onSelectArea,
-  onSelectHotspot
+  onSetMaxBuiltYear,
+  onToggleBuildoutPlayback,
+  onResetBuildout,
+  onSetAnimationSpeed
 }: HotspotPanelProps) {
-  const visibleAreas = areaSummaries.features.slice(0, 9);
-  const visibleHotspots = hotspots.features.slice(0, 9);
-  const selectedHotspot = hotspots.features.find((hotspot) => hotspot.properties.id === selectedHotspotId) ?? null;
   const selectedArea = areaSummaries.features.find((area) => area.properties.id === selectedAreaId) ?? null;
-  const typeCounts = useMemo(() => countHotspotTypes(hotspots), [hotspots]);
-  const areaStats = useMemo(() => summarizeAreas(areaSummaries), [areaSummaries]);
   const activeDefinition = areaGroupingDefinitions.find((definition) => definition.id === activeGrouping) ?? areaGroupingDefinitions[0];
 
   return (
     <section className="panel-section hotspot-section" aria-label="Areas in Park Ridge">
       <h2>Areas</h2>
-      <p className="nearby-tab-note">
-        Use this when one house is too small and the whole city is too big. Pick how you want to group Park Ridge, then compare what is changing.
-      </p>
 
-      <div className="area-lens-picker" aria-label="Choose area grouping">
+      <div className="area-lens-picker area-subtabs" aria-label="Choose area type">
         {areaGroupingDefinitions.map((definition) => (
           <button
             className={definition.id === activeGrouping ? "is-active" : ""}
@@ -54,28 +90,8 @@ export function HotspotPanel({
             onClick={() => onSetGrouping(definition.id)}
           >
             <strong>{definition.shortLabel}</strong>
-            <span>{definition.description}</span>
           </button>
         ))}
-      </div>
-
-      <div className="cluster-stat-grid area-stat-grid">
-        <article>
-          <strong>{areaSummaries.features.length}</strong>
-          <span>{activeGrouping === "change_zones" ? "Zones found" : "Areas shown"}</span>
-        </article>
-        <article>
-          <strong>{areaStats.active}</strong>
-          <span>Active change</span>
-        </article>
-        <article>
-          <strong>{areaStats.olderHomes || typeCounts.old_home_pocket}</strong>
-          <span>Older-home signals</span>
-        </article>
-        <article>
-          <strong>{areaStats.quiet || typeCounts.stable_area}</strong>
-          <span>Quiet</span>
-        </article>
       </div>
 
       <div className="cluster-view-heading">
@@ -83,45 +99,53 @@ export function HotspotPanel({
         <p>{activeDefinition.description}</p>
       </div>
 
-      {activeGrouping === "change_zones" ? (
-        <ChangeZoneList
-          hotspots={visibleHotspots}
-          selectedHotspotId={selectedHotspotId}
-          onSelectHotspot={onSelectHotspot}
-        />
-      ) : (
-        <AreaList
-          areas={visibleAreas}
-          activeGrouping={activeGrouping}
-          hasWardBoundaries={hasWardBoundaries}
-          selectedAreaId={selectedAreaId}
-          onSelectArea={onSelectArea}
-        />
-      )}
+      <AreaList
+        areas={areaSummaries.features}
+        activeGrouping={activeGrouping}
+        hasWardBoundaries={hasWardBoundaries}
+        selectedAreaId={selectedAreaId}
+        onSelectArea={onSelectArea}
+      />
 
       {selectedArea ? (
-        <AreaReadout area={selectedArea} />
-      ) : selectedHotspot ? (
-        <div className="area-readout">
-          <h3>{selectedHotspot.properties.title}</h3>
-          <p>{selectedHotspot.properties.description}</p>
-          <dl className="detail-list cluster-detail-list">
-            <div>
-              <dt>Pattern</dt>
-              <dd>{hotspotLabel(selectedHotspot.properties.hotspot_type)}</dd>
-            </div>
-            <div>
-              <dt>Homes nearby</dt>
-              <dd>{selectedHotspot.properties.parcel_count.toLocaleString()}</dd>
-            </div>
-            <div>
-              <dt>Signal strength</dt>
-              <dd>{strengthLabel(selectedHotspot.properties.score)}</dd>
-            </div>
-          </dl>
-        </div>
+        <>
+          <AreaReadout area={selectedArea} />
+          <div className="preset-grid area-question-grid" aria-label="Choose an area question">
+            {areaViews.map((view) => (
+              <button
+                className={`preset-button ${activeView === view.id ? "is-active" : ""}`}
+                type="button"
+                aria-pressed={activeView === view.id}
+                key={view.id}
+                onClick={() => onSetActiveView(view.id)}
+              >
+                <span>{view.label}</span>
+                <small>{view.meta}</small>
+                {activeView === view.id && <em>Showing now</em>}
+              </button>
+            ))}
+          </div>
+          <AreaViewContent
+            activeView={activeView}
+            area={selectedArea}
+            parcels={selectedAreaParcels}
+            permitPressureWindow={permitPressureWindow}
+            maxBuiltYear={maxBuiltYear}
+            minAvailableYear={minAvailableYear}
+            maxAvailableYear={maxAvailableYear}
+            isBuildoutPlaying={isBuildoutPlaying}
+            animationSpeed={animationSpeed}
+            builtByYearCount={builtByYearCount}
+            knownYearTotal={knownYearTotal}
+            percentBuilt={percentBuilt}
+            onSetMaxBuiltYear={onSetMaxBuiltYear}
+            onToggleBuildoutPlayback={onToggleBuildoutPlayback}
+            onResetBuildout={onResetBuildout}
+            onSetAnimationSpeed={onSetAnimationSpeed}
+          />
+        </>
       ) : (
-        <p className="quiet-note hotspot-empty">Pick one area to see why it matters.</p>
+        <p className="quiet-note hotspot-empty">Pick one area to focus the map and analysis.</p>
       )}
     </section>
   );
@@ -150,9 +174,9 @@ function AreaList({
       </div>
     );
   }
-  if (areas.length === 0) return <p className="quiet-note hotspot-empty">No areas found in the current view.</p>;
+  if (areas.length === 0) return <p className="quiet-note hotspot-empty">No areas found in this grouping.</p>;
   return (
-    <div className="hotspot-list">
+    <div className="hotspot-list area-pick-list" aria-label="Pick an area">
       {areas.map((area) => (
         <button
           className={`hotspot-button ${area.properties.id === selectedAreaId ? "is-active" : ""}`}
@@ -167,37 +191,8 @@ function AreaList({
             {area.properties.label}
           </span>
           <small>
-            {activeGrouping === "neighborhoods"
-              ? `${area.properties.changeStoryLabel} - ${area.properties.parcelCount.toLocaleString()} homes`
-              : `${area.properties.signalLabel} - ${area.properties.description}`}
+            {area.properties.changeStoryLabel} - {area.properties.parcelCount.toLocaleString()} homes
           </small>
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function ChangeZoneList({
-  hotspots,
-  selectedHotspotId,
-  onSelectHotspot
-}: {
-  hotspots: HotspotFeature[];
-  selectedHotspotId: string | null;
-  onSelectHotspot: (hotspot: HotspotFeature) => void;
-}) {
-  if (hotspots.length === 0) return <p className="quiet-note hotspot-empty">No change zones found in the current view.</p>;
-  return (
-    <div className="hotspot-list">
-      {hotspots.map((hotspot) => (
-        <button
-          className={`hotspot-button ${hotspot.properties.id === selectedHotspotId ? "is-active" : ""}`}
-          type="button"
-          key={hotspot.properties.id}
-          onClick={() => onSelectHotspot(hotspot)}
-        >
-          <span>{hotspot.properties.title}</span>
-          <small>{hotspot.properties.description}</small>
         </button>
       ))}
     </div>
@@ -214,10 +209,6 @@ function AreaReadout({ area }: { area: AreaSummaryFeature }) {
         <span>{area.properties.changeStoryRead}</span>
       </div>
       <dl className="detail-list cluster-detail-list">
-        <div>
-          <dt>Health read</dt>
-          <dd>{area.properties.healthLabel}</dd>
-        </div>
         <div>
           <dt>Homes</dt>
           <dd>{area.properties.parcelCount.toLocaleString()}</dd>
@@ -247,39 +238,123 @@ function AreaReadout({ area }: { area: AreaSummaryFeature }) {
   );
 }
 
+function AreaViewContent({
+  activeView,
+  area,
+  parcels,
+  permitPressureWindow,
+  maxBuiltYear,
+  minAvailableYear,
+  maxAvailableYear,
+  isBuildoutPlaying,
+  animationSpeed,
+  builtByYearCount,
+  knownYearTotal,
+  percentBuilt,
+  onSetMaxBuiltYear,
+  onToggleBuildoutPlayback,
+  onResetBuildout,
+  onSetAnimationSpeed
+}: {
+  activeView: AreaView;
+  area: AreaSummaryFeature;
+  parcels: ParcelCollection | null;
+  permitPressureWindow: PermitPressureWindow;
+  maxBuiltYear: number;
+  minAvailableYear: number;
+  maxAvailableYear: number;
+  isBuildoutPlaying: boolean;
+  animationSpeed: "slow" | "normal" | "fast";
+  builtByYearCount: number;
+  knownYearTotal: number;
+  percentBuilt: number;
+  onSetMaxBuiltYear: (year: number) => void;
+  onToggleBuildoutPlayback: () => void;
+  onResetBuildout: () => void;
+  onSetAnimationSpeed: (speed: "slow" | "normal" | "fast") => void;
+}) {
+  if (!parcels || parcels.features.length === 0) {
+    return <p className="quiet-note hotspot-empty">No homes found for this area.</p>;
+  }
+
+  if (activeView === "buildout") {
+    return (
+      <>
+        <TimelineControl
+          activePreset="buildout"
+          title="Area Snapshot"
+          homesLabel="Homes in area"
+          buildYearLabel="Build year known"
+          coverageLabel="Age coverage"
+          moveThroughTimeNote={`Move through build years to watch ${area.properties.label} fill in on the map.`}
+          maxBuiltYear={maxBuiltYear}
+          minAvailableYear={minAvailableYear}
+          maxAvailableYear={maxAvailableYear}
+          isBuildoutPlaying={isBuildoutPlaying}
+          animationSpeed={animationSpeed}
+          builtByYearCount={builtByYearCount}
+          knownYearTotal={knownYearTotal}
+          percentBuilt={percentBuilt}
+          totalCount={parcels.features.length}
+          onSetMaxBuiltYear={onSetMaxBuiltYear}
+          onToggleBuildoutPlayback={onToggleBuildoutPlayback}
+          onResetBuildout={onResetBuildout}
+          onSetAnimationSpeed={onSetAnimationSpeed}
+        />
+        <BuildoutMilestonesTable
+          parcels={parcels}
+          title="How This Area Grew"
+          note={`Shows when today's homes in ${area.properties.label} appeared, decade by decade.`}
+        />
+        <DecadeDistributionChart
+          parcels={parcels}
+          title="Area Build-Out by Decade"
+          note="Shows how many of today's homes in this area were added in each decade."
+        />
+      </>
+    );
+  }
+
+  if (activeView === "stability") {
+    return (
+      <>
+        <ChangeStoryCard scope="area" parcels={parcels} />
+        <BlockChangeTable
+          parcels={parcels}
+          title="Where Is Change Happening Here?"
+          note="Groups homes in this area by whether they look quiet, recently updated, actively changing, or tied to rebuild permits."
+        />
+      </>
+    );
+  }
+
+  if (activeView === "activity") {
+    return (
+      <PermitWorkComparisonTable
+        parcels={parcels}
+        permitPressureWindow={permitPressureWindow}
+        title="Work Happening in This Area"
+        note="Groups homes in this area by their strongest recent permit signal."
+      />
+    );
+  }
+
+  return (
+    <>
+      <DecadeComparisonTable
+        parcels={parcels}
+        title="Homes in This Area by Age"
+        note={`Groups homes in ${area.properties.label} by decade built, then compares updates, older homes, recent sales, and rebuild signals.`}
+      />
+      <DecadeDistributionChart
+        parcels={parcels}
+        title="Area Age Mix"
+        note="Shows the age mix for only the selected area."
+      />
+    </>
+  );
+}
+
 function countAndPercent(count: number, percent: number): string {
   return `${count.toLocaleString()} / ${percent}%`;
-}
-
-function strengthLabel(score: number): string {
-  if (score >= 80) return "Strong";
-  if (score >= 45) return "Moderate";
-  return "Light";
-}
-
-function countHotspotTypes(hotspots: HotspotCollection): Record<HotspotType, number> {
-  return hotspots.features.reduce<Record<HotspotType, number>>(
-    (counts, hotspot) => {
-      counts[hotspot.properties.hotspot_type] += 1;
-      return counts;
-    },
-    {
-      teardown_cluster: 0,
-      changing_area: 0,
-      old_home_pocket: 0,
-      stable_area: 0
-    }
-  );
-}
-
-function summarizeAreas(areas: AreaSummaryCollection) {
-  return areas.features.reduce(
-    (counts, area) => {
-      if (area.properties.signal === "active" || area.properties.signal === "teardown_pressure") counts.active += 1;
-      if (area.properties.signal === "older_homes") counts.olderHomes += 1;
-      if (area.properties.signal === "quiet") counts.quiet += 1;
-      return counts;
-    },
-    { active: 0, olderHomes: 0, quiet: 0 }
-  );
 }

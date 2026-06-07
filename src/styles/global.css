@@ -2057,6 +2057,31 @@ input {
   line-height: 1.28;
 }
 
+.area-subtabs {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.area-subtabs button {
+  min-height: 38px;
+  align-content: center;
+  padding: 8px;
+  text-align: center;
+}
+
+.area-subtabs strong {
+  font-size: 0.78rem;
+}
+
+.area-question-grid {
+  margin-top: 2px;
+}
+
+.area-pick-list {
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
 .cluster-view-heading {
   display: grid;
   gap: 3px;

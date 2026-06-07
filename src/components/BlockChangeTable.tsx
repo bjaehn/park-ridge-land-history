@@ -3,6 +3,8 @@ import type { ParcelCollection, ParcelFeature, PermitStabilityType } from "../li
 
 type BlockChangeTableProps = {
   parcels: ParcelCollection | null;
+  title?: string;
+  note?: string;
 };
 
 type ChangeRow = {
@@ -22,15 +24,17 @@ const stabilityOrder: Array<{ type: PermitStabilityType; label: string }> = [
   { type: "teardown_pressure", label: "Rebuild signals" }
 ];
 
-export function BlockChangeTable({ parcels }: BlockChangeTableProps) {
+export function BlockChangeTable({
+  parcels,
+  title = "Where Is Change Happening on This Block?",
+  note = "Groups the other homes on this block by whether they look quiet, recently updated, actively changing, or tied to rebuild permits."
+}: BlockChangeTableProps) {
   const rows = buildRows(parcels);
 
   return (
     <section className="panel-section neighborhood-comparison" aria-label="Block change comparison">
-      <h2>Where Is Change Happening on This Block?</h2>
-      <p className="mode-note">
-        Groups the other homes on this block by whether they look quiet, recently updated, actively changing, or tied to rebuild permits.
-      </p>
+      <h2>{title}</h2>
+      <p className="mode-note">{note}</p>
       <div className="comparison-table-wrap">
         <table className="comparison-table">
           <thead>

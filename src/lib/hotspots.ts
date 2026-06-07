@@ -9,6 +9,7 @@ export type HotspotProperties = {
   description: string;
   hotspot_type: HotspotType;
   parcel_count: number;
+  parcelPins: string[];
   score: number;
 };
 
@@ -89,6 +90,7 @@ function hotspotForCell(key: string, features: ParcelFeature[]): HotspotFeature 
       description: hotspotDescription(type, features.length, directPermitCount, changingCount, teardownCount, oldHomeCount),
       hotspot_type: type,
       parcel_count: features.length,
+      parcelPins: features.map(parcelKey).filter((pin): pin is string => Boolean(pin)),
       score
     },
     geometry: {
@@ -96,6 +98,10 @@ function hotspotForCell(key: string, features: ParcelFeature[]): HotspotFeature 
       coordinates: point
     }
   };
+}
+
+function parcelKey(feature: ParcelFeature): string | null {
+  return feature.properties.pin_normalized || feature.properties.pin_original || null;
 }
 
 function chooseHotspotType(

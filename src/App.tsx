@@ -11,7 +11,7 @@ import { DecadeComparisonTable } from "./components/DecadeComparisonTable";
 import { DecadeDistributionChart } from "./components/DecadeDistributionChart";
 import { NeighborhoodComparisonTable } from "./components/NeighborhoodComparisonTable";
 import { HistoricalLayerPanel } from "./components/HistoricalLayerPanel";
-import { HotspotPanel } from "./components/HotspotPanel";
+import { HotspotPanel, type AreaView } from "./components/HotspotPanel";
 import { ParcelDetailPanel } from "./components/ParcelDetailPanel";
 import { PermitWorkComparisonTable } from "./components/PermitWorkComparisonTable";
 import { ProductEvidencePanel } from "./components/ProductEvidencePanel";
@@ -86,6 +86,8 @@ export default function App() {
   const [isBuildoutPlaying, setIsBuildoutPlaying] = useState(false);
   const [blockMaxBuiltYear, setBlockMaxBuiltYear] = useState(2026);
   const [isBlockBuildoutPlaying, setIsBlockBuildoutPlaying] = useState(false);
+  const [areaMaxBuiltYear, setAreaMaxBuiltYear] = useState(2026);
+  const [isAreaBuildoutPlaying, setIsAreaBuildoutPlaying] = useState(false);
   const [animationSpeed, setAnimationSpeed] = useState<AnimationSpeed>("normal");
   const [historicalLayers, setHistoricalLayers] = useState<HistoricalLayer[]>([]);
   const [activeHistoricalLayerIds, setActiveHistoricalLayerIds] = useState<Set<string>>(() => new Set());
@@ -103,6 +105,7 @@ export default function App() {
   const [selectedHotspot, setSelectedHotspot] = useState<HotspotFeature | null>(null);
   const [activeAnalysisScale, setActiveAnalysisScale] = useState<AnalysisScale>("home");
   const [activeBlockView, setActiveBlockView] = useState<BlockView>("age");
+  const [activeAreaView, setActiveAreaView] = useState<AreaView>("age");
   const [activeAreaGrouping, setActiveAreaGrouping] = useState<AreaGroupingId>("neighborhoods");
   const [selectedAreaId, setSelectedAreaId] = useState<string | null>(null);
 
@@ -171,16 +174,16 @@ export default function App() {
   );
 
   const hotspots = useMemo(
-    () => buildHotspots(pressureDecoratedFilteredParcels),
-    [pressureDecoratedFilteredParcels]
+    () => buildHotspots(pressureDecoratedParcels),
+    [pressureDecoratedParcels]
   );
 
   const areaSummaries = useMemo(
     () =>
       activeAnalysisScale === "area"
-        ? buildAreaSummaries(pressureDecoratedFilteredParcels, activeAreaGrouping, hotspots, wardBoundaries)
+        ? buildAreaSummaries(pressureDecoratedParcels, activeAreaGrouping, hotspots, wardBoundaries)
         : emptyAreas,
-    [activeAnalysisScale, activeAreaGrouping, hotspots, pressureDecoratedFilteredParcels, wardBoundaries]
+    [activeAnalysisScale, activeAreaGrouping, hotspots, pressureDecoratedParcels, wardBoundaries]
   );
 
   const cityNeighborhoodSummaries = useMemo(
@@ -193,9 +196,28 @@ export default function App() {
     [areaSummaries, selectedAreaId]
   );
 
-  const mapHotspots = activeAnalysisScale === "area" && activeAreaGrouping === "change_zones" ? hotspots : emptyHotspots;
+  const selectedAreaParcels = useMemo<ParcelCollection | null>(() => {
+    if (!selectedArea || !pressureDecoratedParcels) return null;
+    const pins = new Set(selectedArea.properties.parcelPins);
+    return {
+      ...pressureDecoratedParcels,
+      features: pressureDecoratedParcels.features.filter((feature) => {
+        const pin = feature.properties.pin_normalized || feature.properties.pin_original;
+        return Boolean(pin && pins.has(pin));
+      })
+    };
+  }, [pressureDecoratedParcels, selectedArea]);
+
+  const areaYearRange = useMemo(() => {
+    return yearRangeForFeatures(selectedAreaParcels?.features ?? [], yearRange);
+  }, [selectedAreaParcels, yearRange]);
+
+  const mapHotspots =
+    activeAnalysisScale === "area" && activeAreaGrouping === "change_zones" && !selectedArea
+      ? hotspots
+      : emptyHotspots;
   const mapAreaSummaries =
-    activeAnalysisScale === "area" && activeAreaGrouping !== "change_zones" ? areaSummaries : emptyAreas;
+    activeAnalysisScale === "area" && activeAreaGrouping !== "change_zones" && !selectedArea ? areaSummaries : emptyAreas;
 
   useEffect(() => {
     if (activeAnalysisScale !== "area") {
@@ -286,6 +308,27 @@ export default function App() {
     return () => window.clearInterval(intervalId);
   }, [animationSpeed, blockYearRange.max, isBlockBuildoutPlaying]);
 
+  useEffect(() => {
+    setAreaMaxBuiltYear(areaYearRange.max);
+    setIsAreaBuildoutPlaying(false);
+  }, [areaYearRange.max, selectedAreaId]);
+
+  useEffect(() => {
+    if (!isAreaBuildoutPlaying) return;
+
+    const intervalId = window.setInterval(() => {
+      setAreaMaxBuiltYear((currentYear) => {
+        if (currentYear >= areaYearRange.max) {
+          setIsAreaBuildoutPlaying(false);
+          return areaYearRange.max;
+        }
+        return currentYear + 1;
+      });
+    }, animationIntervals[animationSpeed]);
+
+    return () => window.clearInterval(intervalId);
+  }, [animationSpeed, areaYearRange.max, isAreaBuildoutPlaying]);
+
   const selectedBlockFilteredParcels = useMemo(() => {
     if (!selectedBlockParcels) return null;
     const yearLimit = activeBlockView === "buildout" ? blockMaxBuiltYear : blockYearRange.max;
@@ -297,9 +340,23 @@ export default function App() {
     };
   }, [activeBlockView, blockMaxBuiltYear, blockYearRange.max, selectedBlockParcels, selectedDecades, showUnknown]);
 
-  const mapParcels = activeAnalysisScale === "block" && selectedBlockFilteredParcels
-    ? selectedBlockFilteredParcels
-    : pressureDecoratedFilteredParcels;
+  const selectedAreaFilteredParcels = useMemo(() => {
+    if (!selectedAreaParcels) return null;
+    const yearLimit = activeAreaView === "buildout" ? areaMaxBuiltYear : areaYearRange.max;
+    return {
+      ...selectedAreaParcels,
+      features: selectedAreaParcels.features.filter((feature) =>
+        isFeatureVisible(feature, selectedDecades, showUnknown, yearLimit)
+      )
+    };
+  }, [activeAreaView, areaMaxBuiltYear, areaYearRange.max, selectedAreaParcels, selectedDecades, showUnknown]);
+
+  const mapParcels =
+    activeAnalysisScale === "block" && selectedBlockFilteredParcels
+      ? selectedBlockFilteredParcels
+      : activeAnalysisScale === "area" && selectedAreaFilteredParcels
+        ? selectedAreaFilteredParcels
+        : pressureDecoratedFilteredParcels;
 
   const blockBuildoutStats = useMemo(() => {
     const knownYears = selectedBlockParcels?.features
@@ -314,14 +371,36 @@ export default function App() {
     };
   }, [blockMaxBuiltYear, blockYearRange.max, selectedBlockParcels]);
 
-  const activeMapPreset: VisualizationPreset = activeAnalysisScale === "block" ? activeBlockView : activeVisualizationPreset;
+  const areaBuildoutStats = useMemo(() => {
+    const knownYears = selectedAreaParcels?.features
+      .map((feature) => feature.properties.year_built)
+      .filter((year): year is number => typeof year === "number" && year >= 1800 && year <= areaYearRange.max) ?? [];
+    const builtByYear = knownYears.filter((year) => year <= areaMaxBuiltYear).length;
+    return {
+      builtByYear,
+      knownYearTotal: knownYears.length,
+      percentBuilt: knownYears.length ? Math.round((builtByYear / knownYears.length) * 100) : 0,
+      totalCount: selectedAreaParcels?.features.length ?? 0
+    };
+  }, [areaMaxBuiltYear, areaYearRange.max, selectedAreaParcels]);
+
+  const activeMapPreset: VisualizationPreset =
+    activeAnalysisScale === "block"
+      ? activeBlockView
+      : activeAnalysisScale === "area" && selectedArea
+        ? activeAreaView
+        : activeVisualizationPreset;
   const mapPermitPressureMode =
     activeAnalysisScale === "block"
       ? activeBlockView === "activity" ? "activity" : "stability"
+      : activeAnalysisScale === "area" && selectedArea
+        ? activeAreaView === "activity" ? "activity" : "stability"
       : permitPressureMapMode;
   const mapShowPermitPressure =
     activeAnalysisScale === "block"
       ? activeBlockView === "stability" || activeBlockView === "activity"
+      : activeAnalysisScale === "area" && selectedArea
+        ? activeAreaView === "stability" || activeAreaView === "activity"
       : showPermitPressure;
 
   const historicalOverlays = useMemo(() => {
@@ -403,6 +482,32 @@ export default function App() {
     });
   }
 
+  function selectAreaView(view: AreaView) {
+    setActiveAreaView(view);
+    setIsAreaBuildoutPlaying(false);
+    if (view === "buildout") {
+      setAreaMaxBuiltYear(areaYearRange.min);
+      setIsAreaBuildoutPlaying(true);
+      return;
+    }
+    setAreaMaxBuiltYear(areaYearRange.max);
+  }
+
+  function handleSetAreaMaxBuiltYear(year: number) {
+    setIsAreaBuildoutPlaying(false);
+    setAreaMaxBuiltYear(year);
+  }
+
+  function toggleAreaBuildoutPlayback() {
+    setIsAreaBuildoutPlaying((current) => {
+      if (current) return false;
+      if (areaMaxBuiltYear >= areaYearRange.max) {
+        setAreaMaxBuiltYear(areaYearRange.min);
+      }
+      return true;
+    });
+  }
+
   function selectParcel(feature: ParcelFeature) {
     setSelectedPin(feature.properties.pin_normalized || feature.properties.pin_original || null);
     setActiveAnalysisScale("home");
@@ -421,6 +526,8 @@ export default function App() {
 
   function selectArea(area: AreaSummaryFeature) {
     setSelectedAreaId(area.properties.id);
+    setAreaMaxBuiltYear(areaYearRange.max);
+    setIsAreaBuildoutPlaying(false);
     if (area.properties.hotspotId) {
       const hotspot = hotspots.features.find((candidate) => candidate.properties.id === area.properties.hotspotId);
       setSelectedHotspot(hotspot ?? null);
@@ -666,12 +773,29 @@ export default function App() {
               hotspots={hotspots}
               areaSummaries={areaSummaries}
               activeGrouping={activeAreaGrouping}
+              activeView={activeAreaView}
               selectedAreaId={selectedAreaId}
-              selectedHotspotId={selectedHotspot?.properties.id ?? null}
               hasWardBoundaries={Boolean(wardBoundaries?.features.length)}
+              selectedAreaParcels={selectedAreaParcels}
+              permitPressureWindow={permitPressureWindow}
+              maxBuiltYear={areaMaxBuiltYear}
+              minAvailableYear={areaYearRange.min}
+              maxAvailableYear={areaYearRange.max}
+              isBuildoutPlaying={isAreaBuildoutPlaying}
+              animationSpeed={animationSpeed}
+              builtByYearCount={areaBuildoutStats.builtByYear}
+              knownYearTotal={areaBuildoutStats.knownYearTotal}
+              percentBuilt={areaBuildoutStats.percentBuilt}
               onSetGrouping={setActiveAreaGrouping}
+              onSetActiveView={selectAreaView}
               onSelectArea={selectArea}
-              onSelectHotspot={selectHotspot}
+              onSetMaxBuiltYear={handleSetAreaMaxBuiltYear}
+              onToggleBuildoutPlayback={toggleAreaBuildoutPlayback}
+              onResetBuildout={() => {
+                setIsAreaBuildoutPlaying(false);
+                setAreaMaxBuiltYear(areaYearRange.min);
+              }}
+              onSetAnimationSpeed={setAnimationSpeed}
             />
           )}
 

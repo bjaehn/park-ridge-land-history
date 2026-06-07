@@ -37,6 +37,7 @@ export type AreaSummaryProperties = {
   changeStoryType: ChangeStoryType;
   changeStoryLabel: string;
   changeStoryRead: string;
+  parcelPins: string[];
   displayColor?: string | null;
   hotspotId?: string | null;
 };
@@ -246,6 +247,7 @@ function summaryFeature(
       changeStoryType: changeStory.type,
       changeStoryLabel: changeStory.label,
       changeStoryRead: changeStory.title,
+      parcelPins: parcelPins(bucket.features),
       displayColor: bucket.displayColor ?? null
     },
     geometry
@@ -271,7 +273,8 @@ function wardSummaryFeature(
       signalLabel: areaSignalLabel(areaSignal(stats)),
       changeStoryType: changeStory.type,
       changeStoryLabel: changeStory.label,
-      changeStoryRead: changeStory.title
+      changeStoryRead: changeStory.title,
+      parcelPins: parcelPins(bucket.features)
     },
     geometry: bucket.geometry
   };
@@ -415,11 +418,18 @@ function changeZoneFeature(hotspot: HotspotFeature): AreaSummaryFeature {
       changeStoryType: changeStoryTypeForSignal(signal),
       changeStoryLabel: changeStoryLabelForSignal(signal),
       changeStoryRead: changeStoryReadForSignal(signal),
+      parcelPins: hotspot.properties.parcelPins,
       evaluation: hotspot.properties.description,
       hotspotId: hotspot.properties.id
     },
     geometry: hotspot.geometry
   };
+}
+
+function parcelPins(features: ParcelFeature[]): string[] {
+  return features
+    .map((feature) => feature.properties.pin_normalized || feature.properties.pin_original)
+    .filter((pin): pin is string => Boolean(pin));
 }
 
 function hotspotSignal(hotspot: HotspotFeature): AreaSignal {
