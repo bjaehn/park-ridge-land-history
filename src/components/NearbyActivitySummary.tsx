@@ -49,5 +49,5 @@ export function NearbyActivitySummary({
 }
 
 function nearbySummaryText(headline: string): string {
-  return `${headline}. This separates surrounding permit and teardown pressure from the selected home's own history.`;
+  return `${headline}. This separates surrounding permit and rebuild pressure from the selected home's own history.`;
 }

@@ -41,7 +41,7 @@ export function TimelineControl({
   const showBuildoutControls = activePreset === "buildout";
 
   return (
-    <section className="panel-section city-map-controls" aria-label="Whole city map controls">
+    <section className="panel-section city-map-controls" aria-label="Park Ridge citywide snapshot">
       <h2>Park Ridge Snapshot</h2>
       <dl className="stat-grid city-stat-grid">
         <div>
@@ -64,7 +64,7 @@ export function TimelineControl({
             <h3>Move Through Time</h3>
             <span>{percentBuilt}% built</span>
           </div>
-          <p className="city-control-note">Use this only for the city growth view.</p>
+          <p className="city-control-note">Move through build years to watch Park Ridge fill in on the map.</p>
           <label className="range-control">
             <span>Show homes built by {maxBuiltYear}</span>
             <input

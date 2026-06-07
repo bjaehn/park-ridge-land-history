@@ -148,7 +148,7 @@ function changeLegendLabel(changeType: ParcelChangeType): string {
 
 function permitLegendNote(mapMode: PermitPressureMapMode): string {
   if (mapMode === "activity") return "Color shows the kind of recent permitted work.";
-  return "Stable means little recent permit activity. Changing means more permits, additions, or teardown pressure.";
+  return "Stable means little recent permit activity. Changing means more permits, additions, or rebuild signals.";
 }
 
 function ageLegendNote(activePreset: VisualizationPreset): string {

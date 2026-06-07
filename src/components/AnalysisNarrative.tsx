@@ -120,19 +120,19 @@ function cityNarrative(activePreset: VisualizationPreset, totalCount: number): s
   const presetText: Record<VisualizationPreset, string[]> = {
     age: [
       `This view reads home age across Park Ridge for ${countLabel}.`,
-      "Use the neighborhood comparison and age distribution to see which parts of town are older, newer, or mixed."
+      "Use the decade table to see which eras make up today's housing stock and which eras show more remodeling, sales, or rebuild signals."
     ],
     buildout: [
       `This view explains how Park Ridge filled in over time for ${countLabel}.`,
-      "The timeline turns build years into a city growth story rather than a static map."
+      "Use the build-out milestones and time controls to see when the city took shape."
     ],
     stability: [
       `This view compares where Park Ridge appears more active or quieter for ${countLabel}.`,
-      "Stable areas have little recent permit activity. Changing areas show more permits, additions, new construction, or other rebuild signals."
+      "Use the neighborhood comparison to see which areas are steady, active, older, or showing rebuild signals."
     ],
     activity: [
       `This view separates the kind of recent work found across Park Ridge for ${countLabel}.`,
-      "Use it to distinguish ordinary remodeling from additions, new construction, and full-demolition signals."
+      "Use the permit work table to distinguish ordinary remodeling from additions, new construction, and full-demolition signals."
     ]
   };
   return presetText[activePreset];

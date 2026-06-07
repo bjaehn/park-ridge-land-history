@@ -24,10 +24,10 @@ export function DecadeComparisonTable({ parcels }: DecadeComparisonTableProps) {
   const rows = buildRows(parcels);
 
   return (
-    <section className="panel-section decade-comparison" aria-label="Growth by decade built">
-      <h2>Growth by Decade Built</h2>
+    <section className="panel-section decade-comparison" aria-label="Homes by decade built">
+      <h2>Homes by Decade Built</h2>
       <p className="mode-note">
-        Groups current Park Ridge homes by the decade they were built, then compares reinvestment, older-home share, recent sales, and rebuild signals.
+        Groups current Park Ridge homes by build decade, then compares reinvestment, older-home share, recent sales, and rebuild signals.
       </p>
       <div className="comparison-table-wrap">
         <table className="comparison-table">

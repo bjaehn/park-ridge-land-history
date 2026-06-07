@@ -4,9 +4,15 @@ import type { DecadeBucket, ParcelCollection } from "../lib/parcelTypes";
 
 type DecadeDistributionChartProps = {
   parcels: ParcelCollection | null;
+  title?: string;
+  note?: string;
 };
 
-export function DecadeDistributionChart({ parcels }: DecadeDistributionChartProps) {
+export function DecadeDistributionChart({
+  parcels,
+  title = "Homes by Age",
+  note = "Shows the full Park Ridge age mix by decade built. Use the legend if you want to hide or show decades on the map."
+}: DecadeDistributionChartProps) {
   const counts = new Map<string, number>();
   for (const bucket of decadeOrder) counts.set(bucket, 0);
 
@@ -25,8 +31,8 @@ export function DecadeDistributionChart({ parcels }: DecadeDistributionChartProp
 
   return (
     <section className="panel-section" aria-label="Park Ridge homes by decade built">
-      <h2>Homes by Age</h2>
-      <p className="mode-note">Shows the full Park Ridge age mix by decade built. Use the legend if you want to hide or show decades on the map.</p>
+      <h2>{title}</h2>
+      <p className="mode-note">{note}</p>
       <div className="decade-chart">
         {rows.length === 0 && <p className="quiet-note chart-empty">No homes found</p>}
         {rows.map((row) => (

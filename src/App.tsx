@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AnalysisNarrative } from "./components/AnalysisNarrative";
 import { AnalysisTabs, type AnalysisScale } from "./components/AnalysisTabs";
 import { BlockPanel } from "./components/BlockPanel";
+import { BuildoutMilestonesTable } from "./components/BuildoutMilestonesTable";
 import { LayerToggle } from "./components/LayerToggle";
 import { Legend } from "./components/Legend";
 import { MapView } from "./components/MapView";
@@ -11,6 +12,7 @@ import { NeighborhoodComparisonTable } from "./components/NeighborhoodComparison
 import { HistoricalLayerPanel } from "./components/HistoricalLayerPanel";
 import { HotspotPanel } from "./components/HotspotPanel";
 import { ParcelDetailPanel } from "./components/ParcelDetailPanel";
+import { PermitWorkComparisonTable } from "./components/PermitWorkComparisonTable";
 import { ProductEvidencePanel } from "./components/ProductEvidencePanel";
 import { SearchPanel } from "./components/SearchPanel";
 import { TimelineControl } from "./components/TimelineControl";
@@ -576,9 +578,31 @@ export default function App() {
                 }}
                 onSetAnimationSpeed={setAnimationSpeed}
               />
-              <NeighborhoodComparisonTable neighborhoods={cityNeighborhoodSummaries} />
-              <DecadeComparisonTable parcels={pressureDecoratedParcels} />
-              <DecadeDistributionChart parcels={parcels} />
+              {activeVisualizationPreset === "age" && (
+                <>
+                  <DecadeComparisonTable parcels={pressureDecoratedParcels} />
+                  <DecadeDistributionChart parcels={parcels} />
+                </>
+              )}
+              {activeVisualizationPreset === "buildout" && (
+                <>
+                  <BuildoutMilestonesTable parcels={parcels} />
+                  <DecadeDistributionChart
+                    parcels={parcels}
+                    title="Build-Out by Decade"
+                    note="Shows how many of today's homes were added in each decade. Use the time controls above to watch the city fill in on the map."
+                  />
+                </>
+              )}
+              {activeVisualizationPreset === "stability" && (
+                <NeighborhoodComparisonTable neighborhoods={cityNeighborhoodSummaries} />
+              )}
+              {activeVisualizationPreset === "activity" && (
+                <PermitWorkComparisonTable
+                  parcels={pressureDecoratedParcels}
+                  permitPressureWindow={permitPressureWindow}
+                />
+              )}
             </>
           )}
 
