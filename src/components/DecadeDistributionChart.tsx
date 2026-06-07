@@ -24,11 +24,11 @@ export function DecadeDistributionChart({ parcels }: DecadeDistributionChartProp
   const maxCount = Math.max(1, ...rows.map((row) => row.count));
 
   return (
-    <section className="panel-section" aria-label="Visible parcels by decade">
-      <h2>Visible Homes by Age</h2>
-      <p className="mode-note">This updates when you change the home age filter above.</p>
+    <section className="panel-section" aria-label="Park Ridge homes by decade built">
+      <h2>Homes by Age</h2>
+      <p className="mode-note">Shows the full Park Ridge age mix by decade built. Use the legend if you want to hide or show decades on the map.</p>
       <div className="decade-chart">
-        {rows.length === 0 && <p className="quiet-note chart-empty">No visible parcels</p>}
+        {rows.length === 0 && <p className="quiet-note chart-empty">No homes found</p>}
         {rows.map((row) => (
           <div className="chart-row" key={row.bucket}>
             <span className="chart-label">{row.bucket}</span>

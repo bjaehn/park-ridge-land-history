@@ -13,7 +13,6 @@ type AnalysisNarrativeProps = {
   areaGrouping: AreaGroupingId;
   selectedArea: AreaSummaryFeature | null;
   activePreset: VisualizationPreset;
-  filteredCount: number;
   totalCount: number;
 };
 
@@ -25,7 +24,6 @@ export function AnalysisNarrative({
   areaGrouping,
   selectedArea,
   activePreset,
-  filteredCount,
   totalCount
 }: AnalysisNarrativeProps) {
   const paragraphs = narrativeParagraphs({
@@ -36,7 +34,6 @@ export function AnalysisNarrative({
     areaGrouping,
     selectedArea,
     activePreset,
-    filteredCount,
     totalCount
   });
 
@@ -53,7 +50,7 @@ function narrativeParagraphs(props: AnalysisNarrativeProps): string[] {
   if (props.activeScale === "home") return homeNarrative(props.selectedParcel);
   if (props.activeScale === "block") return blockNarrative(props.selectedParcel);
   if (props.activeScale === "area") return areasNarrative(props.hotspots, props.selectedHotspot, props.areaGrouping, props.selectedArea);
-  return cityNarrative(props.activePreset, props.filteredCount, props.totalCount);
+  return cityNarrative(props.activePreset, props.totalCount);
 }
 
 function homeNarrative(parcel: ParcelFeature | null): string[] {
@@ -118,8 +115,8 @@ function areasNarrative(
   ];
 }
 
-function cityNarrative(activePreset: VisualizationPreset, filteredCount: number, totalCount: number): string[] {
-  const countLabel = `${filteredCount.toLocaleString()} of ${totalCount.toLocaleString()} homes`;
+function cityNarrative(activePreset: VisualizationPreset, totalCount: number): string[] {
+  const countLabel = `${totalCount.toLocaleString()} homes`;
   const presetText: Record<VisualizationPreset, string[]> = {
     age: [
       `This view reads home age across Park Ridge for ${countLabel}.`,

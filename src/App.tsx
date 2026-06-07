@@ -5,6 +5,7 @@ import { BlockPanel } from "./components/BlockPanel";
 import { LayerToggle } from "./components/LayerToggle";
 import { Legend } from "./components/Legend";
 import { MapView } from "./components/MapView";
+import { DecadeComparisonTable } from "./components/DecadeComparisonTable";
 import { DecadeDistributionChart } from "./components/DecadeDistributionChart";
 import { NeighborhoodComparisonTable } from "./components/NeighborhoodComparisonTable";
 import { HistoricalLayerPanel } from "./components/HistoricalLayerPanel";
@@ -499,7 +500,6 @@ export default function App() {
             areaGrouping={activeAreaGrouping}
             selectedArea={selectedArea}
             activePreset={activeVisualizationPreset}
-            filteredCount={filteredParcels?.features.length ?? 0}
             totalCount={parcels?.features.length ?? 0}
           />
           {activeAnalysisScale === "home" && (
@@ -559,7 +559,6 @@ export default function App() {
               />
               <TimelineControl
                 activePreset={activeVisualizationPreset}
-                selectedDecades={selectedDecades}
                 maxBuiltYear={maxBuiltYear}
                 minAvailableYear={yearRange.min}
                 maxAvailableYear={yearRange.max}
@@ -568,10 +567,7 @@ export default function App() {
                 builtByYearCount={buildoutStats.builtByYear}
                 knownYearTotal={buildoutStats.knownYearTotal}
                 percentBuilt={buildoutStats.percentBuilt}
-                showUnknown={showUnknown}
                 totalCount={parcels?.features.length ?? 0}
-                filteredCount={filteredParcels?.features.length ?? 0}
-                onToggleDecade={toggleDecade}
                 onSetMaxBuiltYear={handleSetMaxBuiltYear}
                 onToggleBuildoutPlayback={toggleBuildoutPlayback}
                 onResetBuildout={() => {
@@ -579,12 +575,10 @@ export default function App() {
                   setMaxBuiltYear(yearRange.min);
                 }}
                 onSetAnimationSpeed={setAnimationSpeed}
-                onSetShowUnknown={setShowUnknown}
-                onSelectAll={() => setSelectedDecades(new Set(knownDecades))}
-                onClearKnown={() => setSelectedDecades(new Set())}
               />
               <NeighborhoodComparisonTable neighborhoods={cityNeighborhoodSummaries} />
-              <DecadeDistributionChart parcels={filteredParcels} />
+              <DecadeComparisonTable parcels={pressureDecoratedParcels} />
+              <DecadeDistributionChart parcels={parcels} />
             </>
           )}
 

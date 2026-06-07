@@ -1,10 +1,8 @@
-import { decadeOrder } from "../lib/colorScales";
 import { formatNumber } from "../lib/formatters";
 import type { VisualizationPreset } from "./VisualizationPanel";
 
 type TimelineControlProps = {
   activePreset: VisualizationPreset;
-  selectedDecades: Set<string>;
   maxBuiltYear: number;
   minAvailableYear: number;
   maxAvailableYear: number;
@@ -13,22 +11,15 @@ type TimelineControlProps = {
   builtByYearCount: number;
   knownYearTotal: number;
   percentBuilt: number;
-  showUnknown: boolean;
   totalCount: number;
-  filteredCount: number;
-  onToggleDecade: (decade: string) => void;
   onSetMaxBuiltYear: (year: number) => void;
   onToggleBuildoutPlayback: () => void;
   onResetBuildout: () => void;
   onSetAnimationSpeed: (speed: "slow" | "normal" | "fast") => void;
-  onSetShowUnknown: (show: boolean) => void;
-  onSelectAll: () => void;
-  onClearKnown: () => void;
 };
 
 export function TimelineControl({
   activePreset,
-  selectedDecades,
   maxBuiltYear,
   minAvailableYear,
   maxAvailableYear,
@@ -37,20 +28,13 @@ export function TimelineControl({
   builtByYearCount,
   knownYearTotal,
   percentBuilt,
-  showUnknown,
   totalCount,
-  filteredCount,
-  onToggleDecade,
   onSetMaxBuiltYear,
   onToggleBuildoutPlayback,
   onResetBuildout,
-  onSetAnimationSpeed,
-  onSetShowUnknown,
-  onSelectAll,
-  onClearKnown
+  onSetAnimationSpeed
 }: TimelineControlProps) {
-  const selectableDecades = decadeOrder.filter((bucket) => bucket !== "Unknown" && bucket !== "Suspicious");
-  const selectedDecadeCount = selectedDecades.size + (showUnknown ? 1 : 0);
+  const knownYearPercent = totalCount ? Math.round((knownYearTotal / totalCount) * 100) : 0;
   const progressStyle = {
     width: `${percentBuilt}%`
   };
@@ -58,19 +42,19 @@ export function TimelineControl({
 
   return (
     <section className="panel-section city-map-controls" aria-label="Whole city map controls">
-      <h2>What Is Showing</h2>
+      <h2>Park Ridge Snapshot</h2>
       <dl className="stat-grid city-stat-grid">
         <div>
-          <dt>On map</dt>
-          <dd>{formatNumber(filteredCount)}</dd>
-        </div>
-        <div>
-          <dt>Total homes</dt>
+          <dt>Homes analyzed</dt>
           <dd>{formatNumber(totalCount)}</dd>
         </div>
         <div>
           <dt>Build year known</dt>
           <dd>{formatNumber(knownYearTotal)}</dd>
+        </div>
+        <div>
+          <dt>Age coverage</dt>
+          <dd>{knownYearPercent}%</dd>
         </div>
       </dl>
 
@@ -121,39 +105,6 @@ export function TimelineControl({
           </div>
         </div>
       )}
-
-      <div className="city-control-block">
-        <div className="city-control-heading">
-          <h3>Filter by Home Age</h3>
-          <span>{selectedDecadeCount} selected</span>
-        </div>
-        <p className="city-control-note">Choose which build decades stay visible on the map.</p>
-        <div className="mini-actions city-age-actions">
-          <button type="button" onClick={onSelectAll}>Show all ages</button>
-          <button type="button" onClick={onClearKnown}>Clear ages</button>
-        </div>
-        <div className="decade-list">
-          {selectableDecades.map((bucket) => (
-            <label key={bucket} className="check-row">
-              <input
-                type="checkbox"
-                checked={selectedDecades.has(bucket)}
-                onChange={() => onToggleDecade(bucket)}
-              />
-              <span>{bucket}</span>
-            </label>
-          ))}
-        </div>
-
-        <label className="check-row check-row-strong">
-          <input
-            type="checkbox"
-            checked={showUnknown}
-            onChange={(event) => onSetShowUnknown(event.target.checked)}
-          />
-          <span>Include homes with unknown build year</span>
-        </label>
-      </div>
     </section>
   );
 }
