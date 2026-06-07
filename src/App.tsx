@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnalysisNarrative } from "./components/AnalysisNarrative";
 import { AnalysisTabs, type AnalysisScale } from "./components/AnalysisTabs";
-import { BlockPanel } from "./components/BlockPanel";
+import { BlockPanel, type BlockView } from "./components/BlockPanel";
 import { BuildoutMilestonesTable } from "./components/BuildoutMilestonesTable";
 import { LayerToggle } from "./components/LayerToggle";
 import { Legend } from "./components/Legend";
@@ -83,6 +83,8 @@ export default function App() {
   const [maxBuiltYear, setMaxBuiltYear] = useState(2026);
   const [selectedPin, setSelectedPin] = useState<string | null>(null);
   const [isBuildoutPlaying, setIsBuildoutPlaying] = useState(false);
+  const [blockMaxBuiltYear, setBlockMaxBuiltYear] = useState(2026);
+  const [isBlockBuildoutPlaying, setIsBlockBuildoutPlaying] = useState(false);
   const [animationSpeed, setAnimationSpeed] = useState<AnimationSpeed>("normal");
   const [historicalLayers, setHistoricalLayers] = useState<HistoricalLayer[]>([]);
   const [activeHistoricalLayerIds, setActiveHistoricalLayerIds] = useState<Set<string>>(() => new Set());
@@ -99,6 +101,7 @@ export default function App() {
   const [swipePosition, setSwipePosition] = useState(50);
   const [selectedHotspot, setSelectedHotspot] = useState<HotspotFeature | null>(null);
   const [activeAnalysisScale, setActiveAnalysisScale] = useState<AnalysisScale>("home");
+  const [activeBlockView, setActiveBlockView] = useState<BlockView>("age");
   const [activeAreaGrouping, setActiveAreaGrouping] = useState<AreaGroupingId>("neighborhoods");
   const [selectedAreaId, setSelectedAreaId] = useState<string | null>(null);
 
@@ -247,11 +250,78 @@ export default function App() {
     );
   }, [pressureDecoratedParcels, selectedPin]);
 
+  const selectedPhysicalBlock = useMemo(
+    () => (selectedParcel ? buildPhysicalBlock(selectedParcel, pressureDecoratedParcels) : null),
+    [pressureDecoratedParcels, selectedParcel]
+  );
+
   const selectedBlockParcels = useMemo(() => {
-    if (activeAnalysisScale !== "block" || !selectedParcel) return null;
-    const physicalBlock = buildPhysicalBlock(selectedParcel, pressureDecoratedParcels);
-    return physicalBlock ? parcelCollectionFromFeatures(physicalBlock.allParcels) : null;
-  }, [activeAnalysisScale, pressureDecoratedParcels, selectedParcel]);
+    if (activeAnalysisScale !== "block" || !selectedPhysicalBlock) return null;
+    return parcelCollectionFromFeatures(selectedPhysicalBlock.allParcels);
+  }, [activeAnalysisScale, selectedPhysicalBlock]);
+
+  const blockYearRange = useMemo(() => {
+    return yearRangeForFeatures(selectedBlockParcels?.features ?? [], yearRange);
+  }, [selectedBlockParcels, yearRange]);
+
+  useEffect(() => {
+    setBlockMaxBuiltYear(blockYearRange.max);
+    setIsBlockBuildoutPlaying(false);
+  }, [blockYearRange.max, selectedPin]);
+
+  useEffect(() => {
+    if (!isBlockBuildoutPlaying) return;
+
+    const intervalId = window.setInterval(() => {
+      setBlockMaxBuiltYear((currentYear) => {
+        if (currentYear >= blockYearRange.max) {
+          setIsBlockBuildoutPlaying(false);
+          return blockYearRange.max;
+        }
+        return currentYear + 1;
+      });
+    }, animationIntervals[animationSpeed]);
+
+    return () => window.clearInterval(intervalId);
+  }, [animationSpeed, blockYearRange.max, isBlockBuildoutPlaying]);
+
+  const selectedBlockFilteredParcels = useMemo(() => {
+    if (!selectedBlockParcels) return null;
+    const yearLimit = activeBlockView === "buildout" ? blockMaxBuiltYear : blockYearRange.max;
+    return {
+      ...selectedBlockParcels,
+      features: selectedBlockParcels.features.filter((feature) =>
+        isFeatureVisible(feature, selectedDecades, showUnknown, yearLimit)
+      )
+    };
+  }, [activeBlockView, blockMaxBuiltYear, blockYearRange.max, selectedBlockParcels, selectedDecades, showUnknown]);
+
+  const mapParcels = activeAnalysisScale === "block" && selectedBlockFilteredParcels
+    ? selectedBlockFilteredParcels
+    : pressureDecoratedFilteredParcels;
+
+  const blockBuildoutStats = useMemo(() => {
+    const knownYears = selectedBlockParcels?.features
+      .map((feature) => feature.properties.year_built)
+      .filter((year): year is number => typeof year === "number" && year >= 1800 && year <= blockYearRange.max) ?? [];
+    const builtByYear = knownYears.filter((year) => year <= blockMaxBuiltYear).length;
+    return {
+      builtByYear,
+      knownYearTotal: knownYears.length,
+      percentBuilt: knownYears.length ? Math.round((builtByYear / knownYears.length) * 100) : 0,
+      totalCount: selectedBlockParcels?.features.length ?? 0
+    };
+  }, [blockMaxBuiltYear, blockYearRange.max, selectedBlockParcels]);
+
+  const activeMapPreset: VisualizationPreset = activeAnalysisScale === "block" ? activeBlockView : activeVisualizationPreset;
+  const mapPermitPressureMode =
+    activeAnalysisScale === "block"
+      ? activeBlockView === "activity" ? "activity" : "stability"
+      : permitPressureMapMode;
+  const mapShowPermitPressure =
+    activeAnalysisScale === "block"
+      ? activeBlockView === "stability" || activeBlockView === "activity"
+      : showPermitPressure;
 
   const historicalOverlays = useMemo(() => {
     return Array.from(activeHistoricalLayerIds)
@@ -301,6 +371,32 @@ export default function App() {
       if (current) return false;
       if (maxBuiltYear >= yearRange.max) {
         setMaxBuiltYear(yearRange.min);
+      }
+      return true;
+    });
+  }
+
+  function selectBlockView(view: BlockView) {
+    setActiveBlockView(view);
+    setIsBlockBuildoutPlaying(false);
+    if (view === "buildout") {
+      setBlockMaxBuiltYear(blockYearRange.min);
+      setIsBlockBuildoutPlaying(true);
+      return;
+    }
+    setBlockMaxBuiltYear(blockYearRange.max);
+  }
+
+  function handleSetBlockMaxBuiltYear(year: number) {
+    setIsBlockBuildoutPlaying(false);
+    setBlockMaxBuiltYear(year);
+  }
+
+  function toggleBlockBuildoutPlayback() {
+    setIsBlockBuildoutPlaying((current) => {
+      if (current) return false;
+      if (blockMaxBuiltYear >= blockYearRange.max) {
+        setBlockMaxBuiltYear(blockYearRange.min);
       }
       return true;
     });
@@ -453,14 +549,14 @@ export default function App() {
   return (
     <main className="app-shell">
       <MapView
-        parcels={pressureDecoratedFilteredParcels}
+        parcels={mapParcels}
         selectedParcel={selectedParcel}
         selectedBlockParcels={selectedBlockParcels}
         boundary={boundary}
         showOutlines={showOutlines}
         showBoundary={showBoundary}
-        showPermitPressure={showPermitPressure}
-        permitPressureMapMode={permitPressureMapMode}
+        showPermitPressure={mapShowPermitPressure}
+        permitPressureMapMode={mapPermitPressureMode}
         visiblePermitPressureTypes={visiblePermitPressureTypes}
         visiblePermitStabilityTypes={visiblePermitStabilityTypes}
         historicalOverlays={historicalOverlays}
@@ -479,12 +575,12 @@ export default function App() {
       />
       <div className="map-legend-overlay">
         <Legend
-          activePreset={activeVisualizationPreset}
+          activePreset={activeMapPreset}
           visibleDecades={visibleLegendBuckets}
           showParcelChangeLegend={activeHistoricalLayerIds.has(parcelChangeLayerId)}
           visibleChangeTypes={visibleChangeTypes}
-          showPermitPressureLegend={showPermitPressure}
-          permitPressureMapMode={permitPressureMapMode}
+          showPermitPressureLegend={mapShowPermitPressure}
+          permitPressureMapMode={mapPermitPressureMode}
           visiblePermitPressureTypes={visiblePermitPressureTypes}
           visiblePermitStabilityTypes={visiblePermitStabilityTypes}
           onToggleDecade={toggleDecade}
@@ -543,6 +639,23 @@ export default function App() {
                 parcel={selectedParcel}
                 parcels={pressureDecoratedParcels}
                 permitPressureWindow={permitPressureWindow}
+                activeView={activeBlockView}
+                maxBuiltYear={blockMaxBuiltYear}
+                minAvailableYear={blockYearRange.min}
+                maxAvailableYear={blockYearRange.max}
+                isBuildoutPlaying={isBlockBuildoutPlaying}
+                animationSpeed={animationSpeed}
+                builtByYearCount={blockBuildoutStats.builtByYear}
+                knownYearTotal={blockBuildoutStats.knownYearTotal}
+                percentBuilt={blockBuildoutStats.percentBuilt}
+                onSetActiveView={selectBlockView}
+                onSetMaxBuiltYear={handleSetBlockMaxBuiltYear}
+                onToggleBuildoutPlayback={toggleBlockBuildoutPlayback}
+                onResetBuildout={() => {
+                  setIsBlockBuildoutPlaying(false);
+                  setBlockMaxBuiltYear(blockYearRange.min);
+                }}
+                onSetAnimationSpeed={setAnimationSpeed}
               />
             </>
           )}
@@ -668,6 +781,19 @@ function isFeatureVisible(
   if (!hasKnownYear || decade === "Unknown") return showUnknown;
   if (year > maxBuiltYear) return false;
   return selectedDecades.has(String(decade));
+}
+
+function yearRangeForFeatures(
+  features: ParcelFeature[],
+  fallback: { min: number; max: number }
+): { min: number; max: number } {
+  const years = features
+    .map((feature) => feature.properties.year_built)
+    .filter((year): year is number => typeof year === "number" && year >= 1800 && year <= 2026);
+  return {
+    min: years.length ? Math.min(...years) : fallback.min,
+    max: years.length ? Math.max(...years) : fallback.max
+  };
 }
 
 async function fetchJson<T>(path: string): Promise<T | null> {

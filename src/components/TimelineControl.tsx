@@ -3,6 +3,11 @@ import type { VisualizationPreset } from "./VisualizationPanel";
 
 type TimelineControlProps = {
   activePreset: VisualizationPreset;
+  title?: string;
+  homesLabel?: string;
+  buildYearLabel?: string;
+  coverageLabel?: string;
+  moveThroughTimeNote?: string;
   maxBuiltYear: number;
   minAvailableYear: number;
   maxAvailableYear: number;
@@ -20,6 +25,11 @@ type TimelineControlProps = {
 
 export function TimelineControl({
   activePreset,
+  title = "Park Ridge Snapshot",
+  homesLabel = "Homes analyzed",
+  buildYearLabel = "Build year known",
+  coverageLabel = "Age coverage",
+  moveThroughTimeNote = "Move through build years to watch Park Ridge fill in on the map.",
   maxBuiltYear,
   minAvailableYear,
   maxAvailableYear,
@@ -41,19 +51,19 @@ export function TimelineControl({
   const showBuildoutControls = activePreset === "buildout";
 
   return (
-    <section className="panel-section city-map-controls" aria-label="Park Ridge citywide snapshot">
-      <h2>Park Ridge Snapshot</h2>
+    <section className="panel-section city-map-controls" aria-label={title}>
+      <h2>{title}</h2>
       <dl className="stat-grid city-stat-grid">
         <div>
-          <dt>Homes analyzed</dt>
+          <dt>{homesLabel}</dt>
           <dd>{formatNumber(totalCount)}</dd>
         </div>
         <div>
-          <dt>Build year known</dt>
+          <dt>{buildYearLabel}</dt>
           <dd>{formatNumber(knownYearTotal)}</dd>
         </div>
         <div>
-          <dt>Age coverage</dt>
+          <dt>{coverageLabel}</dt>
           <dd>{knownYearPercent}%</dd>
         </div>
       </dl>
@@ -64,7 +74,7 @@ export function TimelineControl({
             <h3>Move Through Time</h3>
             <span>{percentBuilt}% built</span>
           </div>
-          <p className="city-control-note">Move through build years to watch Park Ridge fill in on the map.</p>
+          <p className="city-control-note">{moveThroughTimeNote}</p>
           <label className="range-control">
             <span>Show homes built by {maxBuiltYear}</span>
             <input

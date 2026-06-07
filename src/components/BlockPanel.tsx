@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import type { PermitPressureWindow } from "../lib/permitPressure";
 import type { ParcelCollection, ParcelFeature } from "../lib/parcelTypes";
 import { buildPhysicalBlock, parcelCollectionFromFeatures } from "../lib/physicalBlock";
@@ -6,14 +6,29 @@ import { BlockChangeTable } from "./BlockChangeTable";
 import { BuildoutMilestonesTable } from "./BuildoutMilestonesTable";
 import { DecadeComparisonTable } from "./DecadeComparisonTable";
 import { PermitWorkComparisonTable } from "./PermitWorkComparisonTable";
+import { TimelineControl } from "./TimelineControl";
 
 type BlockPanelProps = {
   parcel: ParcelFeature | null;
   parcels: ParcelCollection | null;
   permitPressureWindow: PermitPressureWindow;
+  activeView: BlockView;
+  maxBuiltYear: number;
+  minAvailableYear: number;
+  maxAvailableYear: number;
+  isBuildoutPlaying: boolean;
+  animationSpeed: "slow" | "normal" | "fast";
+  builtByYearCount: number;
+  knownYearTotal: number;
+  percentBuilt: number;
+  onSetActiveView: (view: BlockView) => void;
+  onSetMaxBuiltYear: (year: number) => void;
+  onToggleBuildoutPlayback: () => void;
+  onResetBuildout: () => void;
+  onSetAnimationSpeed: (speed: "slow" | "normal" | "fast") => void;
 };
 
-type BlockView = "age" | "buildout" | "stability" | "activity";
+export type BlockView = "age" | "buildout" | "stability" | "activity";
 
 const blockViews: Array<{ id: BlockView; label: string; meta: string }> = [
   { id: "age", label: "How old are the homes on this block?", meta: "Compare the other homes by decade built." },
@@ -25,9 +40,22 @@ const blockViews: Array<{ id: BlockView; label: string; meta: string }> = [
 export function BlockPanel({
   parcel,
   parcels,
-  permitPressureWindow
+  permitPressureWindow,
+  activeView,
+  maxBuiltYear,
+  minAvailableYear,
+  maxAvailableYear,
+  isBuildoutPlaying,
+  animationSpeed,
+  builtByYearCount,
+  knownYearTotal,
+  percentBuilt,
+  onSetActiveView,
+  onSetMaxBuiltYear,
+  onToggleBuildoutPlayback,
+  onResetBuildout,
+  onSetAnimationSpeed
 }: BlockPanelProps) {
-  const [activeView, setActiveView] = useState<BlockView>("age");
   const physicalBlock = useMemo(
     () => (parcel ? buildPhysicalBlock(parcel, parcels) : null),
     [parcel, parcels]
@@ -75,7 +103,7 @@ export function BlockPanel({
                 type="button"
                 aria-pressed={activeView === view.id}
                 key={view.id}
-                onClick={() => setActiveView(view.id)}
+                onClick={() => onSetActiveView(view.id)}
               >
                 <span>{view.label}</span>
                 <small>{view.meta}</small>
@@ -86,11 +114,36 @@ export function BlockPanel({
           {contextCollection.features.length === 0 ? (
             <p className="quiet-note block-empty">No other homes were found on this parcel-defined block.</p>
           ) : (
-            <BlockViewContent
-              activeView={activeView}
-              parcels={contextCollection}
-              permitPressureWindow={permitPressureWindow}
-            />
+            <>
+              {activeView === "buildout" && (
+                <TimelineControl
+                  activePreset="buildout"
+                  title="Block Snapshot"
+                  homesLabel="Homes on block"
+                  buildYearLabel="Build year known"
+                  coverageLabel="Age coverage"
+                  moveThroughTimeNote="Move through build years to watch just this physical block fill in on the map."
+                  maxBuiltYear={maxBuiltYear}
+                  minAvailableYear={minAvailableYear}
+                  maxAvailableYear={maxAvailableYear}
+                  isBuildoutPlaying={isBuildoutPlaying}
+                  animationSpeed={animationSpeed}
+                  builtByYearCount={builtByYearCount}
+                  knownYearTotal={knownYearTotal}
+                  percentBuilt={percentBuilt}
+                  totalCount={physicalBlock?.allParcels.length ?? contextCollection.features.length}
+                  onSetMaxBuiltYear={onSetMaxBuiltYear}
+                  onToggleBuildoutPlayback={onToggleBuildoutPlayback}
+                  onResetBuildout={onResetBuildout}
+                  onSetAnimationSpeed={onSetAnimationSpeed}
+                />
+              )}
+              <BlockViewContent
+                activeView={activeView}
+                parcels={contextCollection}
+                permitPressureWindow={permitPressureWindow}
+              />
+            </>
           )}
         </>
       )}
