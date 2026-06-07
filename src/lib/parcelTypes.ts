@@ -100,6 +100,12 @@ export type ParcelProperties = {
   directory_records_json?: HomeArtifactRecord[] | string | null;
   sanborn_snapshot_count?: number | null;
   sanborn_snapshots_json?: HomeArtifactRecord[] | string | null;
+  paper_trail_record_count?: number | null;
+  paper_trail_records_json?: HomeArtifactRecord[] | string | null;
+  recognized_history_count?: number | null;
+  recognized_history_json?: HomeArtifactRecord[] | string | null;
+  land_family_record_count?: number | null;
+  land_family_records_json?: HomeArtifactRecord[] | string | null;
 };
 
 export type HargisMediaItem = {
@@ -120,6 +126,9 @@ export type HouseEvolutionEventType =
   | "civic_record"
   | "directory_record"
   | "sanborn_snapshot"
+  | "paper_trail_record"
+  | "recognized_history"
+  | "land_family_record"
   | "assessment"
   | "appeal";
 export type PermitPressureType =
@@ -159,7 +168,15 @@ export type HouseEvolutionEvent = {
 };
 
 export type HomeArtifactRecord = {
-  kind?: "civic_record" | "directory_record" | "sanborn_snapshot" | string | null;
+  kind?:
+    | "civic_record"
+    | "directory_record"
+    | "sanborn_snapshot"
+    | "paper_trail_record"
+    | "recognized_history"
+    | "land_family_record"
+    | string
+    | null;
   year?: number | null;
   date?: string | null;
   title?: string | null;

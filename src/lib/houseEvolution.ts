@@ -10,6 +10,9 @@ const eventTypeLabels: Record<HouseEvolutionEvent["event_type"], string> = {
   civic_record: "City file",
   directory_record: "Directory clue",
   sanborn_snapshot: "Sanborn map",
+  paper_trail_record: "Paper trail",
+  recognized_history: "Recognized history",
+  land_family_record: "Land family",
   assessment: "Value record",
   appeal: "Assessment appeal"
 };

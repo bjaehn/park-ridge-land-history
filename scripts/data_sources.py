@@ -167,6 +167,30 @@ DATA_SOURCES: list[DataSource] = [
         default_path=Path("data/raw/park_ridge_sanborn_snapshots.csv"),
         required_for_build=False,
         description="Address or PIN-level Sanborn/fire insurance map references, sheet links, and interpretation notes."
+    ),
+    DataSource(
+        name="Cook County recorder paper trail",
+        env_url="COOK_RECORDER_PAPER_TRAIL_SOURCE_URL",
+        env_path="COOK_RECORDER_PAPER_TRAIL_LOCAL_PATH",
+        default_path=Path("data/raw/cook_county_recorder_paper_trail.csv"),
+        required_for_build=False,
+        description="PIN or address-level recorded land document index: deeds, mortgages, releases, quit claims, liens, and foreclosure-related filings."
+    ),
+    DataSource(
+        name="Park Ridge recognized history",
+        env_url="PARK_RIDGE_RECOGNIZED_HISTORY_SOURCE_URL",
+        env_path="PARK_RIDGE_RECOGNIZED_HISTORY_LOCAL_PATH",
+        default_path=Path("data/raw/park_ridge_recognized_history.csv"),
+        required_for_build=False,
+        description="Address-level local landmarks, 100-year-home recognition, and local historic narrative clues."
+    ),
+    DataSource(
+        name="Park Ridge land family",
+        env_url="PARK_RIDGE_LAND_FAMILY_SOURCE_URL",
+        env_path="PARK_RIDGE_LAND_FAMILY_LOCAL_PATH",
+        default_path=Path("data/raw/park_ridge_land_family.csv"),
+        required_for_build=False,
+        description="PIN or address-level subdivision, plat, lot, block, developer, and land-family clues."
     )
 ]
 

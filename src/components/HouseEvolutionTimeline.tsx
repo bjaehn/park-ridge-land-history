@@ -79,6 +79,9 @@ function eventTitle(event: HouseEvolutionEvent): string {
   if (event.event_type === "civic_record") return "City file";
   if (event.event_type === "directory_record") return "Directory clue";
   if (event.event_type === "sanborn_snapshot") return "Sanborn map";
+  if (event.event_type === "paper_trail_record") return "Recorded document";
+  if (event.event_type === "recognized_history") return "Recognized history";
+  if (event.event_type === "land_family_record") return "Land family";
   return event.title;
 }
 

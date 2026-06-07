@@ -423,6 +423,21 @@ function groupedHomeArtifacts(properties: ParcelProperties): Array<{ label: stri
       label: "Sanborn maps",
       detail: "Fire insurance map references that can reveal older footprints, materials, porches, and outbuildings.",
       items: parseHomeArtifactRecords(properties.sanborn_snapshots_json)
+    },
+    {
+      label: "Paper trail",
+      detail: "Recorded land documents such as deeds, mortgages, releases, quit claims, liens, and foreclosure-related filings.",
+      items: parseHomeArtifactRecords(properties.paper_trail_records_json)
+    },
+    {
+      label: "Recognized history",
+      detail: "Local landmark, 100-year-home, or other recognized historic status tied to this address.",
+      items: parseHomeArtifactRecords(properties.recognized_history_json)
+    },
+    {
+      label: "Land family",
+      detail: "Subdivision, plat, lot/block, developer, or street-bounded family clues for this parcel.",
+      items: parseHomeArtifactRecords(properties.land_family_records_json)
     }
   ].filter((group) => group.items.length > 0);
 }
@@ -442,7 +457,14 @@ function parseHomeArtifactRecords(value?: HomeArtifactRecord[] | string | null):
 }
 
 function homeArtifactCount(properties: ParcelProperties): number {
-  return (properties.civic_record_count ?? 0) + (properties.directory_record_count ?? 0) + (properties.sanborn_snapshot_count ?? 0);
+  return (
+    (properties.civic_record_count ?? 0) +
+    (properties.directory_record_count ?? 0) +
+    (properties.sanborn_snapshot_count ?? 0) +
+    (properties.paper_trail_record_count ?? 0) +
+    (properties.recognized_history_count ?? 0) +
+    (properties.land_family_record_count ?? 0)
+  );
 }
 
 function artifactHref(item?: HomeArtifactRecord | null): string | null {
@@ -469,6 +491,9 @@ function artifactKindLabel(kind?: string | null): string {
   if (kind === "civic_record") return "City file";
   if (kind === "directory_record") return "Directory clue";
   if (kind === "sanborn_snapshot") return "Sanborn map";
+  if (kind === "paper_trail_record") return "Recorded land document";
+  if (kind === "recognized_history") return "Recognized history";
+  if (kind === "land_family_record") return "Land family clue";
   return "History clue";
 }
 

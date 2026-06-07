@@ -20,6 +20,9 @@ data/processed/*
 !data/raw/park_ridge_design_review_cases.csv
 !data/raw/park_ridge_directory_breadcrumbs.csv
 !data/raw/park_ridge_sanborn_snapshots.csv
+!data/raw/cook_county_recorder_paper_trail.csv
+!data/raw/park_ridge_recognized_history.csv
+!data/raw/park_ridge_land_family.csv
 !data/interim/.gitkeep
 !data/processed/.gitkeep
 !data/raw/historical/

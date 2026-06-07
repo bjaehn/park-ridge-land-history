@@ -105,6 +105,24 @@ HOME_ARTIFACT_SOURCES = [
         "count_column": "sanborn_snapshot_count",
         "json_column": "sanborn_snapshots_json",
     },
+    {
+        "source_prefix": "Cook County recorder paper trail",
+        "kind": "paper_trail_record",
+        "count_column": "paper_trail_record_count",
+        "json_column": "paper_trail_records_json",
+    },
+    {
+        "source_prefix": "Park Ridge recognized history",
+        "kind": "recognized_history",
+        "count_column": "recognized_history_count",
+        "json_column": "recognized_history_json",
+    },
+    {
+        "source_prefix": "Park Ridge land family",
+        "kind": "land_family_record",
+        "count_column": "land_family_record_count",
+        "json_column": "land_family_records_json",
+    },
 ]
 HOME_ARTIFACT_OUTPUT_COLUMNS = [
     "civic_record_count",
@@ -113,6 +131,12 @@ HOME_ARTIFACT_OUTPUT_COLUMNS = [
     "directory_records_json",
     "sanborn_snapshot_count",
     "sanborn_snapshots_json",
+    "paper_trail_record_count",
+    "paper_trail_records_json",
+    "recognized_history_count",
+    "recognized_history_json",
+    "land_family_record_count",
+    "land_family_records_json",
 ]
 STREET_BLOCK_OUTPUT_COLUMNS = [
     "street_block_id",
@@ -859,6 +883,12 @@ def has_home_artifact_value(summary: dict[str, Any]) -> bool:
 
 
 def home_artifact_default_title(kind: str) -> str:
+    if kind == "paper_trail_record":
+        return "Recorded land document"
+    if kind == "recognized_history":
+        return "Recognized history"
+    if kind == "land_family_record":
+        return "Land family clue"
     if kind == "civic_record":
         return "City file"
     if kind == "directory_record":
@@ -875,7 +905,14 @@ def home_artifact_sort_key(item: dict[str, Any]) -> tuple[int, str]:
 
 def build_home_artifact_events(row: Any) -> list[dict[str, Any]]:
     events: list[dict[str, Any]] = []
-    for column in ["civic_records_json", "directory_records_json", "sanborn_snapshots_json"]:
+    for column in [
+        "civic_records_json",
+        "directory_records_json",
+        "sanborn_snapshots_json",
+        "paper_trail_records_json",
+        "recognized_history_json",
+        "land_family_records_json",
+    ]:
         for item in parse_timeline_value(row.get(column)):
             event = home_artifact_event(item)
             if event:
@@ -885,7 +922,7 @@ def build_home_artifact_events(row: Any) -> list[dict[str, Any]]:
 
 def home_artifact_event(item: dict[str, Any]) -> dict[str, Any] | None:
     kind = clean_text(item.get("kind"))
-    if kind not in {"civic_record", "directory_record", "sanborn_snapshot"}:
+    if kind not in {"civic_record", "directory_record", "sanborn_snapshot", "paper_trail_record", "recognized_history", "land_family_record"}:
         return None
     description = clean_text(item.get("description")) or home_artifact_event_description(item, kind)
     event = {
@@ -904,6 +941,15 @@ def home_artifact_event(item: dict[str, Any]) -> dict[str, Any] | None:
 
 
 def home_artifact_event_description(item: dict[str, Any], kind: str) -> str:
+    if kind == "paper_trail_record":
+        document_type = clean_text(item.get("record_type"))
+        document_number = clean_text(item.get("case_number"))
+        parts = [part for part in [document_type, f"document {document_number}" if document_number else None] if part]
+        return ", ".join(parts) if parts else "Recorded land document tied to this property."
+    if kind == "recognized_history":
+        return clean_text(item.get("description")) or "Local recognition or landmark clue tied to this address."
+    if kind == "land_family_record":
+        return clean_text(item.get("description")) or "Subdivision, plat, lot, block, or land-family clue tied to this parcel."
     if kind == "civic_record":
         case_number = clean_text(item.get("case_number"))
         record_type = clean_text(item.get("record_type"))
@@ -917,6 +963,12 @@ def home_artifact_event_description(item: dict[str, Any], kind: str) -> str:
 
 
 def home_artifact_source_label(kind: str) -> str:
+    if kind == "paper_trail_record":
+        return "Cook County Clerk Recordings Division"
+    if kind == "recognized_history":
+        return "Park Ridge recognized history"
+    if kind == "land_family_record":
+        return "Park Ridge land family record"
     if kind == "civic_record":
         return "Park Ridge public record"
     if kind == "directory_record":
@@ -924,6 +976,65 @@ def home_artifact_source_label(kind: str) -> str:
     if kind == "sanborn_snapshot":
         return "Sanborn map reference"
     return "Public history record"
+
+
+def add_derived_land_family_records(enriched: Any) -> Any:
+    if "street_block_id" not in enriched:
+        return enriched
+
+    block_stats: dict[str, dict[str, Any]] = {}
+    for block_id, group in enriched.dropna(subset=["street_block_id"]).groupby("street_block_id"):
+        block_text = clean_text(block_id)
+        if not block_text:
+            continue
+        decades = [
+            clean_text(value)
+            for value in group.get("decade_built", pd.Series(dtype="object"))
+            if clean_text(value) not in (None, "Unknown", "Suspicious")
+        ]
+        dominant_decade = Counter(decades).most_common(1)[0][0] if decades else None
+        block_stats[block_text] = {
+            "parcel_count": len(group),
+            "dominant_decade": dominant_decade,
+        }
+
+    records_json: list[Any] = []
+    counts: list[int] = []
+    for _, row in enriched.iterrows():
+        existing_items = parse_timeline_value(row.get("land_family_records_json"))
+        if existing_items:
+            records_json.append(row.get("land_family_records_json"))
+            counts.append(len(existing_items))
+            continue
+
+        block_id = clean_text(row.get("street_block_id"))
+        stats = block_stats.get(block_id or "")
+        if not block_id or not stats:
+            records_json.append(row.get("land_family_records_json"))
+            counts.append(int(numeric_or_none(row.get("land_family_record_count")) or 0))
+            continue
+
+        parcel_count = stats["parcel_count"]
+        dominant_decade = stats["dominant_decade"]
+        era_text = f" The most common build era on this block is {dominant_decade}." if dominant_decade else ""
+        item = {
+            "kind": "land_family_record",
+            "title": "Street-bounded land family",
+            "description": (
+                f"This parcel belongs to a current street-bounded block family with "
+                f"{parcel_count:,} Park Ridge parcels.{era_text}"
+            ),
+            "record_type": "Street-bounded block family",
+            "source_name": "U.S. Census TIGER/Line block geography",
+            "source_url": "https://www.census.gov/geographies/mapping-files/time-series/geo/tiger-line-file.html",
+            "case_number": block_id,
+        }
+        records_json.append(json.dumps([item], separators=(",", ":")))
+        counts.append(1)
+
+    enriched["land_family_records_json"] = records_json
+    enriched["land_family_record_count"] = counts
+    return enriched
 
 
 def build_permit_event(
@@ -1254,15 +1365,22 @@ def build_dataset() -> None:
         if column not in enriched:
             enriched[column] = None
 
+    enriched = add_derived_land_family_records(enriched)
     enriched["decade_built"] = enriched["decade_built"].fillna("Unknown")
     enriched["permit_count"] = enriched["permit_count"].fillna(0).astype(int)
     enriched["sale_count"] = enriched["sale_count"].fillna(0).astype(int)
     enriched["hargis_record_count"] = enriched["hargis_record_count"].fillna(0).astype(int)
     enriched["hargis_photo_count"] = enriched["hargis_photo_count"].fillna(0).astype(int)
     enriched["hargis_pdf_count"] = enriched["hargis_pdf_count"].fillna(0).astype(int)
-    enriched["civic_record_count"] = enriched["civic_record_count"].fillna(0).astype(int)
-    enriched["directory_record_count"] = enriched["directory_record_count"].fillna(0).astype(int)
-    enriched["sanborn_snapshot_count"] = enriched["sanborn_snapshot_count"].fillna(0).astype(int)
+    for column in [
+        "civic_record_count",
+        "directory_record_count",
+        "sanborn_snapshot_count",
+        "paper_trail_record_count",
+        "recognized_history_count",
+        "land_family_record_count",
+    ]:
+        enriched[column] = enriched[column].fillna(0).astype(int)
     enriched["appeal_count"] = enriched["appeal_count"].fillna(0).astype(int)
     enriched["open_appeal_count"] = enriched["open_appeal_count"].fillna(0).astype(int)
     enriched["data_quality_flags"] = enriched["data_quality_flags"].apply(normalize_flags)
