@@ -25,7 +25,7 @@ export function NeighborhoodComparisonTable({ neighborhoods }: NeighborhoodCompa
               <th>Older homes</th>
               <th>Sold recently</th>
               <th>Rebuild signals</th>
-              <th>Read</th>
+              <th>Change story</th>
             </tr>
           </thead>
           <tbody>
@@ -53,7 +53,7 @@ export function NeighborhoodComparisonTable({ neighborhoods }: NeighborhoodCompa
                   )}
                 </td>
                 <td>{countAndPercent(area.properties.teardownPressureCount, area.properties.teardownPressurePercent)}</td>
-                <td>{area.properties.healthLabel}</td>
+                <td>{area.properties.changeStoryLabel}</td>
               </tr>
             ))}
           </tbody>

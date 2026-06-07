@@ -5,6 +5,7 @@ import { buildPhysicalBlock, parcelCollectionFromFeatures } from "../lib/physica
 import { BlockBiographyCard } from "./BlockBiographyCard";
 import { BlockChangeTable } from "./BlockChangeTable";
 import { BuildoutMilestonesTable } from "./BuildoutMilestonesTable";
+import { ChangeStoryCard } from "./ChangeStoryCard";
 import { DecadeComparisonTable } from "./DecadeComparisonTable";
 import { PermitWorkComparisonTable } from "./PermitWorkComparisonTable";
 import { TimelineControl } from "./TimelineControl";
@@ -101,6 +102,7 @@ export function BlockPanel({
             parcels={physicalBlock?.allParcels ?? []}
             isStreetBounded={Boolean(physicalBlock?.isStreetBounded)}
           />
+          <ChangeStoryCard scope="block" parcels={parcelCollectionFromFeatures(physicalBlock?.allParcels ?? [])} />
           <div className="block-readout">
             <strong>{blockRead.title}</strong>
             <p>{blockRead.body}</p>

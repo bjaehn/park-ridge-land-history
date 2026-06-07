@@ -1,6 +1,7 @@
 import { formatCurrency, formatFlags, formatNumber, formatYear } from "../lib/formatters";
 import type { PermitPressureWindow } from "../lib/permitPressure";
 import type { ParcelCollection, ParcelFeature } from "../lib/parcelTypes";
+import { ChangeStoryCard } from "./ChangeStoryCard";
 import { HouseBiography } from "./HouseBiography";
 import { HomeSignals } from "./HomeSignals";
 import { HouseEvolutionTimeline } from "./HouseEvolutionTimeline";
@@ -69,6 +70,7 @@ export function ParcelDetailPanel({
           <h3 className="detail-title">{properties.address || "Parcel details"}</h3>
           <HouseBiography properties={properties} />
           <HomeSignals properties={properties} />
+          <ChangeStoryCard scope="property" parcel={parcel} />
           <HouseRelatives parcel={parcel} parcels={parcels} />
           <HouseEvolutionTimeline properties={properties} />
           <NearbyActivitySummary

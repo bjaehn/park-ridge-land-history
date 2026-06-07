@@ -1,5 +1,6 @@
 import { formatNumber, formatYear } from "../lib/formatters";
 import { areaGroupingDefinitions, type AreaGroupingId, type AreaSummaryFeature } from "../lib/areaGroups";
+import { classifyParcelChangeStory } from "../lib/changeStory";
 import { hotspotLabel, type HotspotCollection, type HotspotFeature } from "../lib/hotspots";
 import type { ParcelFeature } from "../lib/parcelTypes";
 import type { VisualizationPreset } from "./VisualizationPanel";
@@ -66,10 +67,11 @@ function homeNarrative(parcel: ParcelFeature | null): string[] {
   const year = formatYear(properties.year_built);
   const sales = formatNumber(properties.sale_count);
   const permits = formatNumber(properties.permit_count);
+  const changeStory = classifyParcelChangeStory(properties);
 
   return [
     `${address} is selected. The assessor build year is ${year}, with ${sales} sales found and ${permits} permit records in the timeline.`,
-    "The map anchors the parcel; the timeline and home signals explain how the house has changed over time."
+    `${changeStory.label}: ${changeStory.title} The map anchors the parcel; the timeline and home signals explain how the house has changed over time.`
   ];
 }
 
@@ -97,7 +99,7 @@ function areasNarrative(
   if (selectedArea) {
     return [
       `${selectedArea.properties.label} is selected.`,
-      `${selectedArea.properties.healthLabel} is the current read. Compare its remodeling, older-home share, recent sales, and rebuild signals before zooming into a block or property.`
+      `${selectedArea.properties.changeStoryLabel} is the current change story. Compare its remodeling, older-home share, recent sales, and rebuild signals before zooming into a block or property.`
     ];
   }
   if (selectedHotspot) {
@@ -128,7 +130,7 @@ function cityNarrative(activePreset: VisualizationPreset, totalCount: number): s
     ],
     stability: [
       `This view compares where Park Ridge appears more active or quieter for ${countLabel}.`,
-      "Use the neighborhood comparison to see which areas are steady, active, older, or showing rebuild signals."
+      "Use the neighborhood comparison to see which areas read as preservation, careful reinvestment, turnover, expansion, dormant, or rebuild pressure."
     ],
     activity: [
       `This view separates the kind of recent work found across Park Ridge for ${countLabel}.`,

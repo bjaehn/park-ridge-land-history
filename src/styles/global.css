@@ -1157,6 +1157,107 @@ input {
   line-height: 1.25;
 }
 
+.change-story-card {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 12px;
+  border: 1px solid #d9e4df;
+  border-left-width: 5px;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.change-story-heading {
+  display: grid;
+  gap: 3px;
+}
+
+.change-story-heading span {
+  color: var(--ink-soft);
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.change-story-heading h4 {
+  margin: 0;
+  color: #172033;
+  font-size: 0.95rem;
+}
+
+.change-story-card p {
+  margin: 0;
+  color: #30394b;
+  font-size: 0.78rem;
+  font-weight: 730;
+  line-height: 1.36;
+}
+
+.change-story-evidence,
+.change-story-mix {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.change-story-evidence span,
+.change-story-mix article {
+  padding: 6px 8px;
+  border: 1px solid #e5e2d7;
+  border-radius: 6px;
+  background: #fbfaf6;
+  color: #425168;
+  font-size: 0.68rem;
+  font-weight: 850;
+}
+
+.change-story-mix article {
+  display: grid;
+  gap: 2px;
+  min-width: 118px;
+}
+
+.change-story-mix strong {
+  color: #172033;
+  font-size: 0.7rem;
+}
+
+.change-story-mix span {
+  color: var(--ink-soft);
+  font-size: 0.66rem;
+}
+
+.change-story-preservation {
+  border-left-color: #5f6f2e;
+  background: #fbfcf3;
+}
+
+.change-story-careful_reinvestment {
+  border-left-color: #0f766e;
+  background: #f1fbf9;
+}
+
+.change-story-turnover {
+  border-left-color: #7c3aed;
+  background: #fbf7ff;
+}
+
+.change-story-rebuild_pressure {
+  border-left-color: #b91c1c;
+  background: #fff7f4;
+}
+
+.change-story-expansion {
+  border-left-color: #c7912f;
+  background: #fffaf0;
+}
+
+.change-story-dormant {
+  border-left-color: #64748b;
+  background: #f8fafc;
+}
+
 .detail-list {
   display: grid;
   gap: 0;
@@ -1243,6 +1344,28 @@ input {
   font-size: 0.76rem;
   font-weight: 700;
   line-height: 1.35;
+}
+
+.area-change-story {
+  display: grid;
+  gap: 3px;
+  padding: 9px;
+  border: 1px solid #e0ded5;
+  border-left-width: 5px;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.area-change-story strong {
+  color: #172033;
+  font-size: 0.8rem;
+}
+
+.area-change-story span {
+  color: var(--ink-soft);
+  font-size: 0.72rem;
+  font-weight: 750;
+  line-height: 1.3;
 }
 
 .selected-place-card span {

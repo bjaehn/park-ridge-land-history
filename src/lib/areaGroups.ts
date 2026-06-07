@@ -1,4 +1,5 @@
 import { featureCenter } from "./nearbyActivity";
+import { aggregateChangeStory, type ChangeStoryType } from "./changeStory";
 import { getHouseEvolutionTimeline } from "./houseEvolution";
 import {
   isFullDemolitionPermitEvent,
@@ -33,6 +34,9 @@ export type AreaSummaryProperties = {
   signalLabel: string;
   healthLabel: string;
   evaluation: string;
+  changeStoryType: ChangeStoryType;
+  changeStoryLabel: string;
+  changeStoryRead: string;
   displayColor?: string | null;
   hotspotId?: string | null;
 };
@@ -227,6 +231,7 @@ function summaryFeature(
   const geometry = bboxPolygon(bucket.features);
   if (!geometry) return null;
   const stats = areaStats(bucket.features);
+  const changeStory = aggregateChangeStory(bucket.features, "area");
   return {
     type: "Feature",
     properties: {
@@ -238,6 +243,9 @@ function summaryFeature(
       ...stats,
       signal: areaSignal(stats),
       signalLabel: areaSignalLabel(areaSignal(stats)),
+      changeStoryType: changeStory.type,
+      changeStoryLabel: changeStory.label,
+      changeStoryRead: changeStory.title,
       displayColor: bucket.displayColor ?? null
     },
     geometry
@@ -249,6 +257,7 @@ function wardSummaryFeature(
   bucket: { label: string; description: string; sourceLabel: string; features: ParcelFeature[]; geometry: GeoJSON.Polygon | GeoJSON.MultiPolygon }
 ): AreaSummaryFeature | null {
   const stats = areaStats(bucket.features);
+  const changeStory = aggregateChangeStory(bucket.features, "area");
   return {
     type: "Feature",
     properties: {
@@ -259,7 +268,10 @@ function wardSummaryFeature(
       sourceLabel: bucket.sourceLabel,
       ...stats,
       signal: areaSignal(stats),
-      signalLabel: areaSignalLabel(areaSignal(stats))
+      signalLabel: areaSignalLabel(areaSignal(stats)),
+      changeStoryType: changeStory.type,
+      changeStoryLabel: changeStory.label,
+      changeStoryRead: changeStory.title
     },
     geometry: bucket.geometry
   };
@@ -400,6 +412,9 @@ function changeZoneFeature(hotspot: HotspotFeature): AreaSummaryFeature {
       signal,
       signalLabel: areaSignalLabel(signal),
       healthLabel: areaSignalLabel(signal),
+      changeStoryType: changeStoryTypeForSignal(signal),
+      changeStoryLabel: changeStoryLabelForSignal(signal),
+      changeStoryRead: changeStoryReadForSignal(signal),
       evaluation: hotspot.properties.description,
       hotspotId: hotspot.properties.id
     },
@@ -412,6 +427,35 @@ function hotspotSignal(hotspot: HotspotFeature): AreaSignal {
   if (hotspot.properties.hotspot_type === "changing_area") return "active";
   if (hotspot.properties.hotspot_type === "old_home_pocket") return "older_homes";
   return "quiet";
+}
+
+function changeStoryTypeForSignal(signal: AreaSignal): ChangeStoryType {
+  if (signal === "teardown_pressure") return "rebuild_pressure";
+  if (signal === "active" || signal === "watch") return "careful_reinvestment";
+  if (signal === "older_homes") return "preservation";
+  return "dormant";
+}
+
+function changeStoryLabelForSignal(signal: AreaSignal): string {
+  const labels: Record<AreaSignal, string> = {
+    quiet: "Dormant",
+    watch: "Careful reinvestment",
+    active: "Careful reinvestment",
+    teardown_pressure: "Rebuild pressure",
+    older_homes: "Preservation"
+  };
+  return labels[signal];
+}
+
+function changeStoryReadForSignal(signal: AreaSignal): string {
+  const reads: Record<AreaSignal, string> = {
+    quiet: "This zone is mostly quiet.",
+    watch: "This zone shows careful reinvestment.",
+    active: "This zone shows active reinvestment.",
+    teardown_pressure: "This zone shows rebuild pressure.",
+    older_homes: "This zone carries older-home fabric."
+  };
+  return reads[signal];
 }
 
 function bboxPolygon(features: ParcelFeature[]): GeoJSON.Polygon | null {

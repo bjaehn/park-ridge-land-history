@@ -3,6 +3,7 @@ import { AnalysisNarrative } from "./components/AnalysisNarrative";
 import { AnalysisTabs, type AnalysisScale } from "./components/AnalysisTabs";
 import { BlockPanel, type BlockView } from "./components/BlockPanel";
 import { BuildoutMilestonesTable } from "./components/BuildoutMilestonesTable";
+import { ChangeStoryCard } from "./components/ChangeStoryCard";
 import { LayerToggle } from "./components/LayerToggle";
 import { Legend } from "./components/Legend";
 import { MapView } from "./components/MapView";
@@ -699,6 +700,7 @@ export default function App() {
                 }}
                 onSetAnimationSpeed={setAnimationSpeed}
               />
+              <ChangeStoryCard scope="city" parcels={pressureDecoratedParcels} />
               {activeVisualizationPreset === "age" && (
                 <>
                   <DecadeComparisonTable parcels={pressureDecoratedParcels} />

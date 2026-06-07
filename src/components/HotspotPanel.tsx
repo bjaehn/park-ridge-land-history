@@ -168,7 +168,7 @@ function AreaList({
           </span>
           <small>
             {activeGrouping === "neighborhoods"
-              ? `${area.properties.healthLabel} - ${area.properties.parcelCount.toLocaleString()} homes`
+              ? `${area.properties.changeStoryLabel} - ${area.properties.parcelCount.toLocaleString()} homes`
               : `${area.properties.signalLabel} - ${area.properties.description}`}
           </small>
         </button>
@@ -209,6 +209,10 @@ function AreaReadout({ area }: { area: AreaSummaryFeature }) {
     <div className="area-readout">
       <h3>{area.properties.label}</h3>
       <p>{area.properties.evaluation || area.properties.description}</p>
+      <div className={`area-change-story change-story-${area.properties.changeStoryType}`}>
+        <strong>{area.properties.changeStoryLabel}</strong>
+        <span>{area.properties.changeStoryRead}</span>
+      </div>
       <dl className="detail-list cluster-detail-list">
         <div>
           <dt>Health read</dt>
