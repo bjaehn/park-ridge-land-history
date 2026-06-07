@@ -1,4 +1,10 @@
 import { featureCenter } from "./nearbyActivity";
+import { getHouseEvolutionTimeline } from "./houseEvolution";
+import {
+  isFullDemolitionPermitEvent,
+  isFullNewConstructionPermitEvent,
+  permitPressureCurrentYear
+} from "./permitPressure";
 import type { HotspotCollection, HotspotFeature } from "./hotspots";
 import type { ParcelCollection, ParcelFeature } from "./parcelTypes";
 
@@ -14,12 +20,19 @@ export type AreaSummaryProperties = {
   sourceLabel: string;
   parcelCount: number;
   olderHomeCount: number;
+  olderHomePercent: number;
   remodelCount: number;
+  remodelPercent: number;
   newConstructionCount: number;
   teardownPressureCount: number;
+  teardownPressurePercent: number;
+  soldLastThreeYearsCount: number;
+  soldLastThreeYearsPercent: number;
   changingCount: number;
   signal: AreaSignal;
   signalLabel: string;
+  healthLabel: string;
+  evaluation: string;
   displayColor?: string | null;
   hotspotId?: string | null;
 };
@@ -34,6 +47,21 @@ export type AreaGroupingDefinition = {
   label: string;
   shortLabel: string;
   description: string;
+};
+
+type AreaStatsBase = {
+  parcelCount: number;
+  olderHomeCount: number;
+  olderHomePercent: number;
+  remodelCount: number;
+  remodelPercent: number;
+  newConstructionCount: number;
+  fullDemolitionCount: number;
+  teardownPressureCount: number;
+  teardownPressurePercent: number;
+  soldLastThreeYearsCount: number;
+  soldLastThreeYearsPercent: number;
+  changingCount: number;
 };
 
 export const areaGroupingDefinitions: AreaGroupingDefinition[] = [
@@ -243,28 +271,91 @@ function areaStats(features: ParcelFeature[]) {
     const year = feature.properties.year_built;
     return typeof year === "number" && year > 0 && year <= 1945;
   }).length;
-  const remodelCount = features.filter((feature) => (feature.properties.recent_permit_count ?? 0) > 0).length;
-  const newConstructionCount = features.filter((feature) => feature.properties.permit_pressure_type === "new_construction").length;
-  const teardownPressureCount = features.filter((feature) => feature.properties.permit_stability_type === "teardown_pressure").length;
+  const remodelCount = features.filter((feature) =>
+    ["recent_permit", "remodel", "addition"].includes(String(feature.properties.permit_pressure_type))
+  ).length;
+  const newConstructionCount = features.filter((feature) =>
+    feature.properties.permit_pressure_type === "new_construction" || hasFullNewConstructionPermit(feature)
+  ).length;
+  const fullDemolitionCount = features.filter((feature) =>
+    feature.properties.permit_pressure_type === "direct_teardown" || hasFullDemolitionPermit(feature)
+  ).length;
+  const teardownPressureCount = fullDemolitionCount + newConstructionCount;
+  const soldLastThreeYearsCount = features.filter((feature) => {
+    const year = feature.properties.latest_sale_year;
+    return typeof year === "number" && year >= permitPressureCurrentYear - 2 && year <= permitPressureCurrentYear;
+  }).length;
   const changingCount = features.filter((feature) =>
     ["watch", "changing", "teardown_pressure"].includes(String(feature.properties.permit_stability_type))
   ).length;
-  return {
+  const base = {
     parcelCount,
     olderHomeCount,
+    olderHomePercent: percent(olderHomeCount, parcelCount),
     remodelCount,
+    remodelPercent: percent(remodelCount, parcelCount),
     newConstructionCount,
+    fullDemolitionCount,
     teardownPressureCount,
+    teardownPressurePercent: percent(teardownPressureCount, parcelCount),
+    soldLastThreeYearsCount,
+    soldLastThreeYearsPercent: percent(soldLastThreeYearsCount, parcelCount),
     changingCount
+  };
+  return {
+    ...base,
+    healthLabel: areaHealthLabel(base),
+    evaluation: areaEvaluation(base)
   };
 }
 
-function areaSignal(stats: ReturnType<typeof areaStats>): AreaSignal {
+function areaSignal(stats: AreaStatsBase): AreaSignal {
   if (stats.teardownPressureCount >= Math.max(3, stats.parcelCount * 0.03)) return "teardown_pressure";
   if (stats.changingCount >= Math.max(10, stats.parcelCount * 0.2)) return "active";
   if (stats.olderHomeCount >= Math.max(12, stats.parcelCount * 0.28)) return "older_homes";
   if (stats.remodelCount >= Math.max(6, stats.parcelCount * 0.12)) return "watch";
   return "quiet";
+}
+
+function areaHealthLabel(stats: AreaStatsBase): string {
+  if (stats.teardownPressurePercent >= 4 || stats.teardownPressureCount >= 8) return "Rebuild pressure";
+  if (stats.remodelPercent >= 18 && stats.soldLastThreeYearsPercent >= 7) return "Active and in demand";
+  if (stats.remodelPercent >= 14) return "Healthy reinvestment";
+  if (stats.olderHomePercent >= 30 && stats.remodelPercent < 8) return "Historically stable";
+  if (stats.soldLastThreeYearsPercent >= 9) return "High turnover";
+  return "Steady neighborhood";
+}
+
+function areaEvaluation(stats: AreaStatsBase): string {
+  const parts = [
+    `${stats.parcelCount.toLocaleString()} homes are in this area.`,
+    `${stats.remodelCount.toLocaleString()} (${stats.remodelPercent}%) show recent remodeling or addition activity.`,
+    `${stats.olderHomeCount.toLocaleString()} (${stats.olderHomePercent}%) are older homes.`,
+    `${stats.soldLastThreeYearsCount.toLocaleString()} (${stats.soldLastThreeYearsPercent}%) sold in the last 3 years.`
+  ];
+  if (stats.teardownPressureCount > 0) {
+    parts.push(
+      `${stats.teardownPressureCount.toLocaleString()} (${stats.teardownPressurePercent}%) show a rebuild signal from full demolition or new construction permits.`
+    );
+  }
+  return parts.join(" ");
+}
+
+function percent(count: number, total: number): number {
+  if (total <= 0) return 0;
+  return Math.round((count / total) * 100);
+}
+
+function hasFullDemolitionPermit(feature: ParcelFeature): boolean {
+  return getHouseEvolutionTimeline(feature.properties).some((event) =>
+    event.event_type === "permit" && isFullDemolitionPermitEvent(event)
+  );
+}
+
+function hasFullNewConstructionPermit(feature: ParcelFeature): boolean {
+  return getHouseEvolutionTimeline(feature.properties).some((event) =>
+    event.event_type === "permit" && isFullNewConstructionPermitEvent(event)
+  );
 }
 
 export function areaSignalLabel(signal: AreaSignal): string {
@@ -297,12 +388,19 @@ function changeZoneFeature(hotspot: HotspotFeature): AreaSummaryFeature {
       sourceLabel: "Data-made change zone from nearby parcel signals",
       parcelCount: hotspot.properties.parcel_count,
       olderHomeCount: 0,
+      olderHomePercent: 0,
       remodelCount: 0,
+      remodelPercent: 0,
       newConstructionCount: 0,
       teardownPressureCount: hotspot.properties.hotspot_type === "teardown_cluster" ? 1 : 0,
+      teardownPressurePercent: 0,
+      soldLastThreeYearsCount: 0,
+      soldLastThreeYearsPercent: 0,
       changingCount: hotspot.properties.hotspot_type === "changing_area" ? hotspot.properties.parcel_count : 0,
       signal,
       signalLabel: areaSignalLabel(signal),
+      healthLabel: areaSignalLabel(signal),
+      evaluation: hotspot.properties.description,
       hotspotId: hotspot.properties.id
     },
     geometry: hotspot.geometry

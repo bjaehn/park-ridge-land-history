@@ -166,7 +166,11 @@ function AreaList({
             ) : null}
             {area.properties.label}
           </span>
-          <small>{area.properties.signalLabel} - {area.properties.description}</small>
+          <small>
+            {activeGrouping === "neighborhoods"
+              ? `${area.properties.healthLabel} - ${area.properties.parcelCount.toLocaleString()} homes`
+              : `${area.properties.signalLabel} - ${area.properties.description}`}
+          </small>
         </button>
       ))}
     </div>
@@ -204,11 +208,11 @@ function AreaReadout({ area }: { area: AreaSummaryFeature }) {
   return (
     <div className="area-readout">
       <h3>{area.properties.label}</h3>
-      <p>{area.properties.description}</p>
+      <p>{area.properties.evaluation || area.properties.description}</p>
       <dl className="detail-list cluster-detail-list">
         <div>
-          <dt>Main signal</dt>
-          <dd>{area.properties.signalLabel}</dd>
+          <dt>Health read</dt>
+          <dd>{area.properties.healthLabel}</dd>
         </div>
         <div>
           <dt>Homes</dt>
@@ -216,15 +220,19 @@ function AreaReadout({ area }: { area: AreaSummaryFeature }) {
         </div>
         <div>
           <dt>Remodeling</dt>
-          <dd>{area.properties.remodelCount.toLocaleString()}</dd>
+          <dd>{countAndPercent(area.properties.remodelCount, area.properties.remodelPercent)}</dd>
         </div>
         <div>
           <dt>Older homes</dt>
-          <dd>{area.properties.olderHomeCount.toLocaleString()}</dd>
+          <dd>{countAndPercent(area.properties.olderHomeCount, area.properties.olderHomePercent)}</dd>
         </div>
         <div>
-          <dt>Teardown pressure</dt>
-          <dd>{area.properties.teardownPressureCount.toLocaleString()}</dd>
+          <dt>Rebuild signals</dt>
+          <dd>{countAndPercent(area.properties.teardownPressureCount, area.properties.teardownPressurePercent)}</dd>
+        </div>
+        <div>
+          <dt>Sold recently</dt>
+          <dd>{countAndPercent(area.properties.soldLastThreeYearsCount, area.properties.soldLastThreeYearsPercent)}</dd>
         </div>
         <div>
           <dt>Source</dt>
@@ -233,6 +241,10 @@ function AreaReadout({ area }: { area: AreaSummaryFeature }) {
       </dl>
     </div>
   );
+}
+
+function countAndPercent(count: number, percent: number): string {
+  return `${count.toLocaleString()} / ${percent}%`;
 }
 
 function strengthLabel(score: number): string {

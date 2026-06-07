@@ -95,11 +95,11 @@ export function permitStabilityLabel(stabilityType: PermitStabilityType): string
 function decorateFeature(feature: ParcelFeature, pressureWindow: PermitPressureWindow): ParcelFeature {
   const events = getHouseEvolutionTimeline(feature.properties).filter((event) => isWithinWindow(event, pressureWindow));
   const directPermits = events.filter((event) => event.event_type === "permit");
-  const directTeardowns = directPermits.filter(isTeardownEvent);
+  const directTeardowns = directPermits.filter(isFullDemolitionPermitEvent);
   const nearbyTeardowns = events.filter((event) => event.event_type === "nearby_teardown");
   const pressureType = classifyPressureType(directPermits, directTeardowns, nearbyTeardowns);
   const recentPermitCount = directPermits.length;
-  const recentTeardownCount = directTeardowns.length + nearbyTeardowns.length;
+  const recentTeardownCount = directTeardowns.length;
 
   return {
     ...feature,
@@ -119,10 +119,10 @@ function classifyStabilityType(
   recentPermitCount: number,
   recentTeardownCount: number
 ): PermitStabilityType {
-  if (pressureType === "direct_teardown" || pressureType === "nearby_teardown" || recentTeardownCount > 0) {
+  if (pressureType === "direct_teardown" || pressureType === "new_construction" || recentTeardownCount > 0) {
     return "teardown_pressure";
   }
-  if (pressureType === "new_construction" || pressureType === "addition" || recentPermitCount >= 3) {
+  if (pressureType === "nearby_teardown" || pressureType === "addition" || recentPermitCount >= 3) {
     return "changing";
   }
   if (pressureType === "remodel" || pressureType === "recent_permit" || recentPermitCount > 0) {
@@ -137,8 +137,8 @@ function classifyPressureType(
   nearbyTeardowns: HouseEvolutionEvent[]
 ): PermitPressureType {
   if (directTeardowns.length > 0) return "direct_teardown";
+  if (directPermits.some(isFullNewConstructionPermitEvent)) return "new_construction";
   if (nearbyTeardowns.length > 0) return "nearby_teardown";
-  if (directPermits.some((event) => titleOrDescription(event).includes("new construction"))) return "new_construction";
   if (directPermits.some((event) => titleOrDescription(event).includes("addition"))) return "addition";
   if (directPermits.some((event) => /remodel|renovation|alteration|interior/.test(titleOrDescription(event)))) return "remodel";
   if (directPermits.length > 0) return "recent_permit";
@@ -171,8 +171,17 @@ function yearFromDate(date: string | null | undefined): number | null {
   return parsed.getUTCFullYear();
 }
 
-function isTeardownEvent(event: HouseEvolutionEvent): boolean {
-  return /demo|demolition|tear\s*down|teardown|wreck/.test(titleOrDescription(event));
+export function isFullDemolitionPermitEvent(event: HouseEvolutionEvent): boolean {
+  const text = titleOrDescription(event);
+  if (!/\b(demo|demolition|wreck|tear\s*down|teardown)\b/.test(text)) return false;
+  if (/\b(chimney|fence|deck|porch|patio|driveway|pool|shed|roof|garage door)\b/.test(text)) return false;
+  return /\b(single[-\s]?family|residence|home|house|dwelling|building|structure|principal|primary)\b/.test(text);
+}
+
+export function isFullNewConstructionPermitEvent(event: HouseEvolutionEvent): boolean {
+  const text = titleOrDescription(event);
+  if (/\b(addition|remodel|renovation|alteration|interior|garage|deck|porch|shed)\b/.test(text)) return false;
+  return /\b(new construction|new single[-\s]?family|new residence|new home|new house|construct single[-\s]?family|single[-\s]?family residence)\b/.test(text);
 }
 
 function titleOrDescription(event: HouseEvolutionEvent): string {
