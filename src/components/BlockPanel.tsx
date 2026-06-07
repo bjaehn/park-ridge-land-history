@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import type { PermitPressureWindow } from "../lib/permitPressure";
 import type { ParcelCollection, ParcelFeature } from "../lib/parcelTypes";
 import { buildPhysicalBlock, parcelCollectionFromFeatures } from "../lib/physicalBlock";
+import { BlockBiographyCard } from "./BlockBiographyCard";
 import { BlockChangeTable } from "./BlockChangeTable";
 import { BuildoutMilestonesTable } from "./BuildoutMilestonesTable";
 import { DecadeComparisonTable } from "./DecadeComparisonTable";
@@ -86,12 +87,20 @@ export function BlockPanel({
           <div className="scale-definition">
             <strong>What counts as this block?</strong>
             <p>
-              Homes connected through the same parcel fabric, stopping at the gaps created by streets. The selected home anchors the block; the analysis below compares the other {contextCollection.features.length.toLocaleString()} homes on that block.
+              {physicalBlock?.isStreetBounded
+                ? "Homes inside the same street-bounded Census block as the selected parcel."
+                : "Homes connected through the same parcel fabric, stopping at the gaps created by streets."}{" "}
+              The selected home anchors the block; the analysis below compares the other {contextCollection.features.length.toLocaleString()} homes on that block.
             </p>
+            {physicalBlock?.method && <p>{physicalBlock.method}</p>}
             {physicalBlock?.capped && (
               <p>This block group was capped at 120 parcels, so it may include a larger connected parcel area.</p>
             )}
           </div>
+          <BlockBiographyCard
+            parcels={physicalBlock?.allParcels ?? []}
+            isStreetBounded={Boolean(physicalBlock?.isStreetBounded)}
+          />
           <div className="block-readout">
             <strong>{blockRead.title}</strong>
             <p>{blockRead.body}</p>

@@ -18,6 +18,7 @@ export type PhysicalBlock = {
   allParcels: ParcelFeature[];
   contextParcels: ParcelFeature[];
   method: string;
+  isStreetBounded: boolean;
   capped: boolean;
 };
 
@@ -27,6 +28,21 @@ const parcelFabricGapFeet = 14;
 export function buildPhysicalBlock(anchor: ParcelFeature, parcels: ParcelCollection | null): PhysicalBlock | null {
   if (!parcels) return null;
   const anchorKey = parcelKey(anchor);
+  const anchorStreetBlockId = cleanBlockId(anchor.properties.street_block_id);
+  if (anchorStreetBlockId) {
+    const allParcels = parcels.features.filter(
+      (feature) => cleanBlockId(feature.properties.street_block_id) === anchorStreetBlockId
+    );
+    return {
+      anchor,
+      allParcels,
+      contextParcels: allParcels.filter((feature) => parcelKey(feature) !== anchorKey),
+      method: "Street-bounded block from U.S. Census TIGER/Line tabulation block geography.",
+      isStreetBounded: true,
+      capped: false
+    };
+  }
+
   const entries = parcels.features
     .map((feature) => {
       const bounds = boundsForFeature(feature);
@@ -69,6 +85,7 @@ export function buildPhysicalBlock(anchor: ParcelFeature, parcels: ParcelCollect
     allParcels,
     contextParcels,
     method: "Physical block estimated from parcel adjacency. Street gaps stop the block.",
+    isStreetBounded: false,
     capped
   };
 }
@@ -82,6 +99,12 @@ export function parcelCollectionFromFeatures(features: ParcelFeature[]): ParcelC
 
 function parcelKey(feature: ParcelFeature): string {
   return feature.properties.pin_normalized || feature.properties.pin_original || feature.properties.address || "";
+}
+
+function cleanBlockId(value?: string | null): string | null {
+  if (!value) return null;
+  const text = String(value).trim();
+  return text.length > 0 ? text : null;
 }
 
 function boundsForFeature(feature: ParcelFeature): Bounds | null {

@@ -4,6 +4,7 @@ import type { ParcelCollection, ParcelFeature } from "../lib/parcelTypes";
 import { HouseBiography } from "./HouseBiography";
 import { HomeSignals } from "./HomeSignals";
 import { HouseEvolutionTimeline } from "./HouseEvolutionTimeline";
+import { HouseRelatives } from "./HouseRelatives";
 import { NearbyActivitySummary } from "./NearbyActivitySummary";
 
 type ParcelDetailPanelProps = {
@@ -68,6 +69,7 @@ export function ParcelDetailPanel({
           <h3 className="detail-title">{properties.address || "Parcel details"}</h3>
           <HouseBiography properties={properties} />
           <HomeSignals properties={properties} />
+          <HouseRelatives parcel={parcel} parcels={parcels} />
           <HouseEvolutionTimeline properties={properties} />
           <NearbyActivitySummary
             parcel={parcel}

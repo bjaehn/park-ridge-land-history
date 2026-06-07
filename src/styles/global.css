@@ -1069,6 +1069,94 @@ input {
   border-left-color: #2563eb;
 }
 
+.house-relatives {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 12px;
+  border: 1px solid #d9e4df;
+  border-radius: 6px;
+  background: #f7fbf7;
+}
+
+.house-relatives > div:first-child {
+  display: grid;
+  gap: 4px;
+}
+
+.house-relatives > div:first-child > span {
+  color: var(--accent);
+  font-size: 0.7rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.house-relatives h4 {
+  margin: 0;
+  color: #172033;
+  font-size: 0.9rem;
+}
+
+.house-relatives p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.74rem;
+  font-weight: 700;
+  line-height: 1.32;
+}
+
+.house-relative-groups {
+  display: grid;
+  gap: 9px;
+}
+
+.house-relative-group {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #e2dfd5;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.house-relative-group strong {
+  color: #172033;
+  font-size: 0.8rem;
+}
+
+.house-relative-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.house-relative-card {
+  display: grid;
+  gap: 3px;
+  min-height: 58px;
+  padding: 8px;
+  border: 1px solid #ebe7dc;
+  border-radius: 6px;
+  background: #fbfaf6;
+}
+
+.house-relative-card strong,
+.house-relative-card span {
+  overflow-wrap: anywhere;
+}
+
+.house-relative-card strong {
+  font-size: 0.74rem;
+  line-height: 1.2;
+}
+
+.house-relative-card span {
+  color: var(--ink-soft);
+  font-size: 0.68rem;
+  font-weight: 750;
+  line-height: 1.25;
+}
+
 .detail-list {
   display: grid;
   gap: 0;
@@ -1171,6 +1259,77 @@ input {
 
 .block-preset-grid {
   margin-top: 2px;
+}
+
+.block-biography-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #b9d4cf;
+  border-radius: 6px;
+  background: #f1fbf9;
+}
+
+.block-biography-card > div:first-child {
+  display: grid;
+  gap: 4px;
+}
+
+.block-biography-card > div:first-child > span {
+  color: var(--accent);
+  font-size: 0.7rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.block-biography-card h3 {
+  margin: 0;
+  color: #123f43;
+  font-size: 0.96rem;
+}
+
+.block-biography-card p,
+.block-biography-card small {
+  margin: 0;
+  color: #425168;
+  font-size: 0.74rem;
+  font-weight: 750;
+  line-height: 1.32;
+}
+
+.block-biography-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.block-biography-grid article {
+  display: grid;
+  gap: 3px;
+  min-height: 72px;
+  padding: 9px;
+  border: 1px solid #d6e5df;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.block-biography-grid span {
+  color: var(--ink-soft);
+  font-size: 0.66rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.block-biography-grid strong {
+  overflow-wrap: anywhere;
+  color: #172033;
+  font-size: 0.86rem;
+}
+
+.block-biography-grid p {
+  overflow-wrap: anywhere;
+  font-size: 0.68rem;
+  line-height: 1.25;
 }
 
 .block-empty {

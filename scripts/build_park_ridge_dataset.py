@@ -114,11 +114,16 @@ HOME_ARTIFACT_OUTPUT_COLUMNS = [
     "sanborn_snapshot_count",
     "sanborn_snapshots_json",
 ]
+STREET_BLOCK_OUTPUT_COLUMNS = [
+    "street_block_id",
+    "street_block_tract",
+    "street_block_source",
+]
 
 
 def read_table(path: Path) -> Any:
     suffix = path.suffix.lower()
-    if suffix in {".geojson", ".json", ".gpkg", ".shp"}:
+    if suffix in {".geojson", ".json", ".gpkg", ".shp", ".zip"}:
         import geopandas as gpd
 
         return gpd.read_file(path)
@@ -418,6 +423,55 @@ def build_proximity_context(proximity: pd.DataFrame) -> pd.DataFrame:
             }
         )
     return pd.DataFrame(records)
+
+
+def add_street_bounded_block_context(parcels: Any, blocks_path: Path | None) -> Any:
+    if not blocks_path:
+        for column in STREET_BLOCK_OUTPUT_COLUMNS:
+            if column not in parcels:
+                parcels[column] = None
+        return parcels
+
+    import geopandas as gpd
+
+    blocks = read_table(blocks_path)
+    if blocks.empty:
+        return parcels
+
+    geoid_column = "GEOID20" if "GEOID20" in blocks else find_likely_column(blocks.columns, ("GEOID", "geoid"))
+    tract_column = "TRACTCE20" if "TRACTCE20" in blocks else find_likely_column(blocks.columns, ("TRACTCE", "tract"))
+    if not geoid_column:
+        print("Census block file found, but no GEOID column was detected.")
+        return parcels
+
+    block_columns = [geoid_column, "geometry"]
+    if tract_column:
+        block_columns.append(tract_column)
+
+    blocks = blocks[block_columns].copy()
+    if blocks.crs is None:
+        blocks = blocks.set_crs("EPSG:4326")
+
+    parcel_crs = parcels.crs or "EPSG:4326"
+    if parcels.crs is None:
+        parcels = parcels.set_crs(parcel_crs)
+    blocks = blocks.to_crs(parcel_crs)
+
+    parcel_points = parcels[["pin_normalized", "geometry"]].copy()
+    parcel_points["geometry"] = parcel_points.geometry.representative_point()
+    joined = gpd.sjoin(parcel_points, blocks, how="left", predicate="within")
+    joined = joined.dropna(subset=[geoid_column]).drop_duplicates("pin_normalized")
+    if joined.empty:
+        return parcels
+
+    block_context = joined[["pin_normalized", geoid_column] + ([tract_column] if tract_column else [])].copy()
+    block_context = block_context.rename(columns={geoid_column: "street_block_id"})
+    if tract_column:
+        block_context = block_context.rename(columns={tract_column: "street_block_tract"})
+    else:
+        block_context["street_block_tract"] = None
+    block_context["street_block_source"] = "U.S. Census TIGER/Line tabulation block"
+    return parcels.merge(block_context, on="pin_normalized", how="left")
 
 
 def build_hargis_history(
@@ -1157,6 +1211,11 @@ def build_dataset() -> None:
             enriched["pin10_normalized"] = enriched["pin_normalized"].map(normalize_pin10)
             enriched = enriched.merge(proximity_context, on="pin10_normalized", how="left")
 
+    enriched = add_street_bounded_block_context(
+        enriched,
+        optional_source("U.S. Census Illinois tabulation blocks"),
+    )
+
     hargis_properties_path = optional_source("Illinois HARGIS Park Ridge properties")
     if hargis_properties_path:
         hargis_properties = pd.DataFrame(read_table(hargis_properties_path).drop(columns="geometry", errors="ignore"))
@@ -1191,7 +1250,7 @@ def build_dataset() -> None:
         if not artifact_history.empty:
             enriched = enriched.merge(artifact_history, on="pin_normalized", how="left")
 
-    for column in ["address", "municipality", "property_class", "year_built", "decade_built", "building_sqft", "land_sqft", "improvement_count", "permit_count", "latest_permit_year", "nearby_teardown_count", "sale_count", "latest_sale_year", "latest_sale_price", "max_sale_price", "assessed_year_count", "first_assessed_year", "first_assessed_total", "latest_assessed_year", "latest_assessed_total", "assessed_value_change_pct", "appeal_count", "latest_appeal_year", "open_appeal_count", "total_assessment_reduction", "proximity_year", "nearest_park_name", "nearest_park_dist_ft", "nearest_metra_stop_name", "nearest_metra_stop_dist_ft", "nearest_bike_trail_name", "nearest_bike_trail_dist_ft", "foreclosure_count_half_mile_5yr", "foreclosure_per_1000_half_mile_5yr", "nearest_major_road_name", "nearest_major_road_dist_ft", "primary_building_selection_method", *HARGIS_OUTPUT_COLUMNS, *HOME_ARTIFACT_OUTPUT_COLUMNS]:
+    for column in ["address", "municipality", "property_class", "year_built", "decade_built", "building_sqft", "land_sqft", "improvement_count", "permit_count", "latest_permit_year", "nearby_teardown_count", "sale_count", "latest_sale_year", "latest_sale_price", "max_sale_price", "assessed_year_count", "first_assessed_year", "first_assessed_total", "latest_assessed_year", "latest_assessed_total", "assessed_value_change_pct", "appeal_count", "latest_appeal_year", "open_appeal_count", "total_assessment_reduction", "proximity_year", "nearest_park_name", "nearest_park_dist_ft", "nearest_metra_stop_name", "nearest_metra_stop_dist_ft", "nearest_bike_trail_name", "nearest_bike_trail_dist_ft", "foreclosure_count_half_mile_5yr", "foreclosure_per_1000_half_mile_5yr", "nearest_major_road_name", "nearest_major_road_dist_ft", "primary_building_selection_method", *STREET_BLOCK_OUTPUT_COLUMNS, *HARGIS_OUTPUT_COLUMNS, *HOME_ARTIFACT_OUTPUT_COLUMNS]:
         if column not in enriched:
             enriched[column] = None
 
@@ -1249,6 +1308,7 @@ def build_dataset() -> None:
         "foreclosure_per_1000_half_mile_5yr",
         "nearest_major_road_name",
         "nearest_major_road_dist_ft",
+        *STREET_BLOCK_OUTPUT_COLUMNS,
         *HARGIS_OUTPUT_COLUMNS,
         *HOME_ARTIFACT_OUTPUT_COLUMNS,
         "house_evolution_timeline",

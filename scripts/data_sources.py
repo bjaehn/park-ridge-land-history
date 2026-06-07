@@ -15,10 +15,11 @@ class DataSource:
     default_path: Path
     required_for_build: bool
     description: str
+    default_url: str | None = None
 
     @property
     def url(self) -> str | None:
-        return os.getenv(self.env_url) or None
+        return os.getenv(self.env_url) or self.default_url
 
     @property
     def local_path(self) -> Path:
@@ -109,6 +110,15 @@ DATA_SOURCES: list[DataSource] = [
         default_path=Path("data/raw/park_ridge_boundary.geojson"),
         required_for_build=False,
         description="Municipal polygon used for centroid/intersection filtering."
+    ),
+    DataSource(
+        name="U.S. Census Illinois tabulation blocks",
+        env_url="CENSUS_TABULATION_BLOCKS_SOURCE_URL",
+        env_path="CENSUS_TABULATION_BLOCKS_LOCAL_PATH",
+        default_path=Path("data/raw/tl_2024_17_tabblock20.zip"),
+        required_for_build=False,
+        description="Census block polygons used as the first real street-bounded block geography.",
+        default_url="https://www2.census.gov/geo/tiger/TIGER2024/TABBLOCK20/tl_2024_17_tabblock20.zip"
     ),
     DataSource(
         name="Illinois HARGIS Park Ridge properties",

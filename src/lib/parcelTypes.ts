@@ -65,6 +65,9 @@ export type ParcelProperties = {
   foreclosure_per_1000_half_mile_5yr?: number | null;
   nearest_major_road_name?: string | null;
   nearest_major_road_dist_ft?: number | null;
+  street_block_id?: string | null;
+  street_block_tract?: string | null;
+  street_block_source?: string | null;
   hargis_record_count?: number | null;
   hargis_refnum?: string | null;
   hargis_refnums?: string | null;
