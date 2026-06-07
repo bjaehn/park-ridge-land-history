@@ -59,8 +59,8 @@ function narrativeParagraphs(props: AnalysisNarrativeProps): string[] {
 function homeNarrative(parcel: ParcelFeature | null): string[] {
   if (!parcel) {
     return [
-      "Search for an address or PIN to focus the map on one property.",
-      "Once selected, this panel shows the home age, sale history, permit timeline, assessment signals, and nearby change context."
+      "Start with a property when you want the ancestry of one home.",
+      "Search an address or PIN, then read the build year, ownership history, permits, value records, historic artifacts, and nearby context in one place."
     ];
   }
 
@@ -72,21 +72,21 @@ function homeNarrative(parcel: ParcelFeature | null): string[] {
 
   return [
     `${address} is selected. The assessor build year is ${year}, with ${sales} sales found and ${permits} permit records in the timeline.`,
-    "Use the home signals and timeline below to understand whether this looks quiet, recently active, historically interesting, or changing over time."
+    "The map anchors the parcel; the timeline and home signals explain how the house has changed over time."
   ];
 }
 
 function blockNarrative(parcel: ParcelFeature | null): string[] {
   if (!parcel) {
     return [
-      "Pick a property first. Block starts from one address and looks at the nearby homes around it.",
-      "This is the right view for questions like: does this street feel stable, are nearby homes being remodeled, and does the immediate context match the house?"
+      "Block starts from one selected property and reads the homes immediately around it.",
+      "Use this view to understand the street: age mix, recent sales, remodeling, and whether the nearby context feels stable or active."
     ];
   }
 
   return [
     `${parcel.properties.address || "This parcel"} is the starting point for the block view.`,
-    "The block is a practical nearby group, not an official boundary. It helps explain the street context before you zoom out to larger areas."
+    "The block is a practical nearby group, not an official boundary. It helps explain the street before you zoom out to areas or all of Park Ridge."
   ];
 }
 
@@ -100,21 +100,21 @@ function areasNarrative(
   if (selectedArea) {
     return [
       `${selectedArea.properties.label} is selected.`,
-      `${selectedArea.properties.signalLabel} is the main signal here. Use this view to compare groups of blocks before zooming into a single street or address.`
+      `${selectedArea.properties.healthLabel} is the current read. Compare its remodeling, older-home share, recent sales, and rebuild signals before zooming into a block or property.`
     ];
   }
   if (selectedHotspot) {
     return [
       `${hotspotLabel(selectedHotspot.properties.hotspot_type)} is selected.`,
-      `${selectedHotspot.properties.description} This is useful because nearby patterns can change how one address feels: a home may be quiet by itself but sit near remodeling, older-home concentration, or teardown pressure.`
+      `${selectedHotspot.properties.description} Nearby patterns can change how one address feels: a home may be quiet by itself but sit near remodeling, older-home concentration, or rebuild activity.`
     ];
   }
 
   return [
     `${definition.shortLabel} is selected as the Park Ridge area view.`,
     areaGrouping === "change_zones"
-      ? `${hotspots.features.length.toLocaleString()} change zones are available. Pick one to see where remodeling, older homes, or teardown pressure clusters.`
-      : "Pick an area from the list or click one on the map. This view is for comparing groups of blocks, not judging one property."
+      ? `${hotspots.features.length.toLocaleString()} change zones are available. Pick one to see where remodeling, older homes, or rebuild activity clusters.`
+      : "Pick an area from the list or click one on the map. This view compares groups of blocks, not one property."
   ];
 }
 
@@ -122,20 +122,20 @@ function cityNarrative(activePreset: VisualizationPreset, filteredCount: number,
   const countLabel = `${filteredCount.toLocaleString()} of ${totalCount.toLocaleString()} homes`;
   const presetText: Record<VisualizationPreset, string[]> = {
     age: [
-      `The map is showing home age across Park Ridge for ${countLabel}.`,
-      "Colors represent the decade each current home was built. Use the age filter to keep only the decades you care about."
+      `This view reads home age across Park Ridge for ${countLabel}.`,
+      "Use the neighborhood comparison and age distribution to see which parts of town are older, newer, or mixed."
     ],
     buildout: [
-      `The map is showing how Park Ridge filled in over time for ${countLabel}.`,
-      "Move the year slider or press Play to watch homes appear by build year."
+      `This view explains how Park Ridge filled in over time for ${countLabel}.`,
+      "The timeline turns build years into a city growth story rather than a static map."
     ],
     stability: [
-      `The map is showing where change appears more active or quieter across Park Ridge for ${countLabel}.`,
-      "Stable areas have little recent permit activity. Changing areas show more permits, additions, new construction, or teardown pressure."
+      `This view compares where Park Ridge appears more active or quieter for ${countLabel}.`,
+      "Stable areas have little recent permit activity. Changing areas show more permits, additions, new construction, or other rebuild signals."
     ],
     activity: [
-      `The map is showing the kind of recent work found across Park Ridge for ${countLabel}.`,
-      "Use this view to separate remodels, additions, new construction, and teardown pressure."
+      `This view separates the kind of recent work found across Park Ridge for ${countLabel}.`,
+      "Use it to distinguish ordinary remodeling from additions, new construction, and full-demolition signals."
     ]
   };
   return presetText[activePreset];

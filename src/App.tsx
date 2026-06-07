@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnalysisNarrative } from "./components/AnalysisNarrative";
 import { AnalysisTabs, type AnalysisScale } from "./components/AnalysisTabs";
-import { AccordionSection } from "./components/AccordionSection";
 import { BlockPanel } from "./components/BlockPanel";
 import { LayerToggle } from "./components/LayerToggle";
 import { Legend } from "./components/Legend";
@@ -11,6 +10,7 @@ import { NeighborhoodComparisonTable } from "./components/NeighborhoodComparison
 import { HistoricalLayerPanel } from "./components/HistoricalLayerPanel";
 import { HotspotPanel } from "./components/HotspotPanel";
 import { ParcelDetailPanel } from "./components/ParcelDetailPanel";
+import { ProductEvidencePanel } from "./components/ProductEvidencePanel";
 import { SearchPanel } from "./components/SearchPanel";
 import { TimelineControl } from "./components/TimelineControl";
 import { VisualizationPanel, type VisualizationPreset } from "./components/VisualizationPanel";
@@ -63,7 +63,6 @@ export default function App() {
   const [parcels, setParcels] = useState<ParcelCollection | null>(null);
   const [boundary, setBoundary] = useState<GeoJSON.FeatureCollection | null>(null);
   const [wardBoundaries, setWardBoundaries] = useState<WardBoundaryCollection | null>(null);
-  const [isSampleData, setIsSampleData] = useState(false);
   const [selectedDecades, setSelectedDecades] = useState<Set<string>>(() => new Set(knownDecades));
   const [showUnknown, setShowUnknown] = useState(true);
   const [showOutlines, setShowOutlines] = useState(true);
@@ -102,15 +101,7 @@ export default function App() {
   useEffect(() => {
     async function loadParcels() {
       const enriched = await fetchJson<ParcelCollection>("/data/park_ridge_parcels_enriched.geojson");
-      if (enriched) {
-        setParcels(enriched);
-        setIsSampleData(false);
-        return;
-      }
-
-      const sample = await fetchJson<ParcelCollection>("/data/sample_parcels.geojson");
-      setParcels(sample);
-      setIsSampleData(true);
+      setParcels(enriched);
     }
 
     loadParcels();
@@ -580,7 +571,6 @@ export default function App() {
                 showUnknown={showUnknown}
                 totalCount={parcels?.features.length ?? 0}
                 filteredCount={filteredParcels?.features.length ?? 0}
-                isSampleData={isSampleData}
                 onToggleDecade={toggleDecade}
                 onSetMaxBuiltYear={handleSetMaxBuiltYear}
                 onToggleBuildoutPlayback={toggleBuildoutPlayback}
@@ -597,47 +587,43 @@ export default function App() {
               <DecadeDistributionChart parcels={filteredParcels} />
             </>
           )}
+
+          <ProductEvidencePanel activeScale={activeAnalysisScale}>
+            <LayerToggle
+              showOutlines={showOutlines}
+              showBoundary={showBoundary}
+              showPermitPressure={showPermitPressure}
+              permitPressureWindow={permitPressureWindow}
+              permitPressureMapMode={permitPressureMapMode}
+              onSetShowOutlines={setShowOutlines}
+              onSetShowBoundary={setShowBoundary}
+              onSetShowPermitPressure={setShowPermitPressure}
+              onSetPermitPressureWindow={setPermitPressureWindow}
+              onSetPermitPressureMapMode={setPermitPressureMapMode}
+            />
+            <HistoricalLayerPanel
+              layers={historicalLayers}
+              activeLayerIds={activeHistoricalLayerIds}
+              loadedLayers={loadedHistoricalLayers}
+              compareLayerIds={compareLayerIds}
+              swipeEnabled={swipeEnabled}
+              swipePosition={swipePosition}
+              selectedParcelChange={selectedParcelChange}
+              visibleChangeTypes={visibleChangeTypes}
+              onToggleLayer={toggleHistoricalLayer}
+              onSetOpacity={setHistoricalLayerOpacity}
+              onSetCompareLayerIds={handleSetCompareLayerIds}
+              onSetSwipeEnabled={setComparisonSwipeEnabled}
+              onSetSwipePosition={setSwipePosition}
+              onClearParcelChangeSelection={() => setSelectedParcelChange(null)}
+              onToggleChangeType={toggleChangeType}
+              onSelectAllChangeTypes={() => setVisibleChangeTypes(new Set(parcelChangeFilterOrder))}
+              onShowChangedOnly={() => {
+                setVisibleChangeTypes(new Set(parcelChangeFilterOrder.filter((changeType) => changeType !== "unchanged")));
+              }}
+            />
+          </ProductEvidencePanel>
         </div>
-
-        <AccordionSection title="Map Display" summary="Boundaries and permit layer">
-          <LayerToggle
-            showOutlines={showOutlines}
-            showBoundary={showBoundary}
-            showPermitPressure={showPermitPressure}
-            permitPressureWindow={permitPressureWindow}
-            permitPressureMapMode={permitPressureMapMode}
-            onSetShowOutlines={setShowOutlines}
-            onSetShowBoundary={setShowBoundary}
-            onSetShowPermitPressure={setShowPermitPressure}
-            onSetPermitPressureWindow={setPermitPressureWindow}
-            onSetPermitPressureMapMode={setPermitPressureMapMode}
-          />
-        </AccordionSection>
-
-        <AccordionSection title="Optional Layers">
-          <HistoricalLayerPanel
-            layers={historicalLayers}
-            activeLayerIds={activeHistoricalLayerIds}
-            loadedLayers={loadedHistoricalLayers}
-            compareLayerIds={compareLayerIds}
-            swipeEnabled={swipeEnabled}
-            swipePosition={swipePosition}
-            selectedParcelChange={selectedParcelChange}
-            visibleChangeTypes={visibleChangeTypes}
-            onToggleLayer={toggleHistoricalLayer}
-            onSetOpacity={setHistoricalLayerOpacity}
-            onSetCompareLayerIds={handleSetCompareLayerIds}
-            onSetSwipeEnabled={setComparisonSwipeEnabled}
-            onSetSwipePosition={setSwipePosition}
-            onClearParcelChangeSelection={() => setSelectedParcelChange(null)}
-            onToggleChangeType={toggleChangeType}
-            onSelectAllChangeTypes={() => setVisibleChangeTypes(new Set(parcelChangeFilterOrder))}
-            onShowChangedOnly={() => {
-              setVisibleChangeTypes(new Set(parcelChangeFilterOrder.filter((changeType) => changeType !== "unchanged")));
-            }}
-          />
-        </AccordionSection>
-
       </aside>
     </main>
   );

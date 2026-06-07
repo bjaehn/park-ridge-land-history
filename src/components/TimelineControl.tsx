@@ -16,7 +16,6 @@ type TimelineControlProps = {
   showUnknown: boolean;
   totalCount: number;
   filteredCount: number;
-  isSampleData: boolean;
   onToggleDecade: (decade: string) => void;
   onSetMaxBuiltYear: (year: number) => void;
   onToggleBuildoutPlayback: () => void;
@@ -41,7 +40,6 @@ export function TimelineControl({
   showUnknown,
   totalCount,
   filteredCount,
-  isSampleData,
   onToggleDecade,
   onSetMaxBuiltYear,
   onToggleBuildoutPlayback,
@@ -61,7 +59,6 @@ export function TimelineControl({
   return (
     <section className="panel-section city-map-controls" aria-label="Whole city map controls">
       <h2>What Is Showing</h2>
-      {isSampleData && <div className="sample-notice">Sample Data</div>}
       <dl className="stat-grid city-stat-grid">
         <div>
           <dt>On map</dt>

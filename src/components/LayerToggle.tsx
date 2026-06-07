@@ -31,8 +31,8 @@ export function LayerToggle({
   onSetPermitPressureMapMode
 }: LayerToggleProps) {
   return (
-    <section className="panel-section" aria-label="Layer controls">
-      <h2>Layers</h2>
+    <section className="panel-section" aria-label="Map display controls">
+      <h2>Map Display</h2>
       <div className="layer-control-group">
         <label className="check-row check-row-strong">
           <input
@@ -40,10 +40,10 @@ export function LayerToggle({
             checked={showPermitPressure}
             onChange={(event) => onSetShowPermitPressure(event.target.checked)}
           />
-          <span>Permit pressure</span>
+          <span>Show permit evidence</span>
         </label>
         <label className="select-control">
-          <span>Permit view</span>
+          <span>Permit map view</span>
           <select
             value={permitPressureMapMode}
             onChange={(event) => onSetPermitPressureMapMode(parsePermitPressureMapMode(event.target.value))}
@@ -56,7 +56,7 @@ export function LayerToggle({
           </select>
         </label>
         <label className="select-control">
-          <span>Permit window</span>
+          <span>Years included</span>
           <select
             value={String(permitPressureWindow)}
             onChange={(event) => onSetPermitPressureWindow(parsePermitPressureWindow(event.target.value))}

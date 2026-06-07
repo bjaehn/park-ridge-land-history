@@ -68,9 +68,9 @@ export function HistoricalLayerPanel({
 
   return (
     <section className="panel-section historical-panel" aria-label="Historical evidence layers">
-      <h2>Extra Map Evidence</h2>
+      <h2>Historical Map Evidence</h2>
       <p className="historical-note">
-        Add one or two extra layers when you want more context behind the main map.
+        Add one or two layers when older parcel shapes, surveys, aerials, or building context help explain the current story.
       </p>
       <CompareYearsPanel
         layers={layers}

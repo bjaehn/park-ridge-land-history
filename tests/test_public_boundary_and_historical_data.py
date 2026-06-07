@@ -55,6 +55,32 @@ def test_public_parcels_include_searchable_addresses():
     assert any("VINE" in address for address in addresses if address)
 
 
+def test_public_parcels_are_real_full_dataset_not_synthetic_sample():
+    payload = json.loads(Path("public/data/park_ridge_parcels_enriched.geojson").read_text())
+    properties = [feature["properties"] for feature in payload["features"]]
+
+    assert len(properties) > 10000
+    assert not Path("public/data/sample_parcels.geojson").exists()
+    assert all(property_.get("synthetic_sample") is not True for property_ in properties)
+    assert all(property_.get("primary_building_selection_method") != "synthetic_sample" for property_ in properties)
+
+
+def test_public_parcels_include_real_permit_history():
+    payload = json.loads(Path("public/data/park_ridge_parcels_enriched.geojson").read_text())
+    events = [
+        event
+        for feature in payload["features"]
+        for event in feature["properties"].get("house_evolution_timeline", [])
+        if event.get("event_type") == "permit"
+    ]
+
+    assert len(events) > 8000
+    assert min(event["year"] for event in events if event.get("year")) >= 2018
+    assert max(event["year"] for event in events if event.get("year")) >= 2026
+    assert all(event.get("source") == "Cook County Assessor Permits" for event in events)
+    assert not any(str(event.get("permit_number", "")).startswith("PR-") for event in events)
+
+
 def test_public_parcels_include_sale_history():
     payload = json.loads(Path("public/data/park_ridge_parcels_enriched.geojson").read_text())
     sale_parcels = [
