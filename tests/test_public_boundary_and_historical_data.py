@@ -55,6 +55,27 @@ def test_public_parcels_include_searchable_addresses():
     assert any("VINE" in address for address in addresses if address)
 
 
+def test_runtime_map_is_lightweight_and_detail_chunks_are_available():
+    enriched_path = Path("public/data/park_ridge_parcels_enriched.geojson")
+    map_path = Path("public/data/park_ridge_parcels_map.geojson")
+    detail_dir = Path("public/data/parcel_details")
+    map_payload = json.loads(map_path.read_text())
+    addresses = [feature["properties"].get("address") for feature in map_payload["features"]]
+
+    assert map_path.exists()
+    assert map_path.stat().st_size < enriched_path.stat().st_size * 0.6
+    assert len(map_payload["features"]) > 10000
+    assert sum(1 for address in addresses if address) > 10000
+    assert "hargis_photos_json" not in map_payload["features"][0]["properties"]
+    assert "permit_pressure_5_type" in map_payload["features"][0]["properties"]
+
+    chunks = list(detail_dir.glob("*.json"))
+    assert len(chunks) > 5
+    first_chunk = json.loads(chunks[0].read_text())
+    first_record = next(iter(first_chunk["records"].values()))
+    assert "house_evolution_timeline" in first_record
+
+
 def test_public_parcels_are_real_full_dataset_not_synthetic_sample():
     payload = json.loads(Path("public/data/park_ridge_parcels_enriched.geojson").read_text())
     properties = [feature["properties"] for feature in payload["features"]]

@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "npm run build && vite preview --host 127.0.0.1 --port 5173",
     "build": "tsc && vite build",
+    "data:runtime": "node scripts/export_runtime_data.mjs",
     "start": "node scripts/serve.mjs",
     "preview": "vite preview",
     "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0"

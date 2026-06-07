@@ -113,11 +113,8 @@ export function MapView({
   });
 
   const visibleParcels = useMemo(() => parcels ?? emptyCollection, [parcels]);
-  const mapSourceParcels = useMemo(() => slimParcelCollection(visibleParcels), [visibleParcels]);
-  const selectedBlockSourceParcels = useMemo(
-    () => slimParcelCollection(selectedBlockParcels ?? emptyCollection),
-    [selectedBlockParcels]
-  );
+  const mapSourceParcels = visibleParcels;
+  const selectedBlockSourceParcels = selectedBlockParcels ?? emptyCollection;
   const mapSourceHotspots = useMemo(() => slimHotspotCollection(hotspots), [hotspots]);
   const mapSourceAreaSummaries = useMemo(() => slimAreaSummaryCollection(areaSummaries), [areaSummaries]);
   const mapSourceSelectedArea = useMemo(
@@ -817,44 +814,6 @@ function areaDisplayColorExpression(): ExpressionSpecification {
 
 function styleSupportsGlyphs(map: maplibregl.Map): boolean {
   return Boolean((map.getStyle() as { glyphs?: string }).glyphs);
-}
-
-function slimParcelCollection(collection: ParcelCollection): ParcelCollection {
-  return {
-    type: "FeatureCollection",
-    features: collection.features.map(slimParcelFeature)
-  };
-}
-
-function slimParcelFeature(feature: ParcelFeature): ParcelFeature {
-  const properties = feature.properties;
-  return {
-    type: "Feature",
-    id: feature.id,
-    geometry: feature.geometry,
-    properties: {
-      pin_normalized: properties.pin_normalized,
-      pin_original: properties.pin_original,
-      address: properties.address,
-      property_class: properties.property_class,
-      year_built: properties.year_built,
-      decade_built: properties.decade_built,
-      building_sqft: properties.building_sqft,
-      land_sqft: properties.land_sqft,
-      improvement_count: properties.improvement_count,
-      permit_count: properties.permit_count,
-      permit_pressure_score: properties.permit_pressure_score,
-      permit_pressure_type: properties.permit_pressure_type,
-      permit_stability_type: properties.permit_stability_type,
-      recent_permit_count: properties.recent_permit_count,
-      recent_teardown_count: properties.recent_teardown_count,
-      latest_permit_year: properties.latest_permit_year,
-      latest_sale_year: properties.latest_sale_year,
-      data_quality_flags: properties.data_quality_flags,
-      source_note: properties.source_note,
-      street_block_id: properties.street_block_id
-    }
-  };
 }
 
 function slimHotspotCollection(collection: HotspotCollection): HotspotCollection {

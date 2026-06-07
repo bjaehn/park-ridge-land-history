@@ -18,16 +18,17 @@ import { ProductEvidencePanel } from "./components/ProductEvidencePanel";
 import { SearchPanel } from "./components/SearchPanel";
 import { TimelineControl } from "./components/TimelineControl";
 import { VisualizationPanel, type VisualizationPreset } from "./components/VisualizationPanel";
+import { useParcelDetail } from "./hooks/useParcelDetail";
+import { useParkRidgeData } from "./hooks/useParkRidgeData";
 import { decadeOrder } from "./lib/colorScales";
 import { buildPhysicalBlock, parcelCollectionFromFeatures } from "./lib/physicalBlock";
-import { loadHistoricalLayerData, loadHistoricalLayerManifest } from "./lib/layerLoaders";
+import { loadHistoricalLayerData } from "./lib/layerLoaders";
 import { layerCanToggle, type HistoricalLayer, type LoadedHistoricalLayer } from "./lib/historicalLayerTypes";
 import {
   buildAreaSummaries,
   type AreaGroupingId,
   type AreaSummaryCollection,
-  type AreaSummaryFeature,
-  type WardBoundaryCollection
+  type AreaSummaryFeature
 } from "./lib/areaGroups";
 import { buildHotspots, type HotspotCollection, type HotspotFeature } from "./lib/hotspots";
 import {
@@ -65,9 +66,7 @@ const emptyAreas: AreaSummaryCollection = {
 };
 
 export default function App() {
-  const [parcels, setParcels] = useState<ParcelCollection | null>(null);
-  const [boundary, setBoundary] = useState<GeoJSON.FeatureCollection | null>(null);
-  const [wardBoundaries, setWardBoundaries] = useState<WardBoundaryCollection | null>(null);
+  const { parcels, boundary, wardBoundaries, historicalLayers } = useParkRidgeData();
   const [selectedDecades, setSelectedDecades] = useState<Set<string>>(() => new Set(knownDecades));
   const [showUnknown, setShowUnknown] = useState(true);
   const [showOutlines, setShowOutlines] = useState(true);
@@ -89,7 +88,6 @@ export default function App() {
   const [areaMaxBuiltYear, setAreaMaxBuiltYear] = useState(2026);
   const [isAreaBuildoutPlaying, setIsAreaBuildoutPlaying] = useState(false);
   const [animationSpeed, setAnimationSpeed] = useState<AnimationSpeed>("normal");
-  const [historicalLayers, setHistoricalLayers] = useState<HistoricalLayer[]>([]);
   const [activeHistoricalLayerIds, setActiveHistoricalLayerIds] = useState<Set<string>>(() => new Set());
   const [loadedHistoricalLayers, setLoadedHistoricalLayers] = useState<Record<string, LoadedHistoricalLayer>>({});
   const [selectedParcelChange, setSelectedParcelChange] = useState<ParcelChangeFeature | null>(null);
@@ -108,18 +106,6 @@ export default function App() {
   const [activeAreaView, setActiveAreaView] = useState<AreaView>("age");
   const [activeAreaGrouping, setActiveAreaGrouping] = useState<AreaGroupingId>("neighborhoods");
   const [selectedAreaId, setSelectedAreaId] = useState<string | null>(null);
-
-  useEffect(() => {
-    async function loadParcels() {
-      const enriched = await fetchJson<ParcelCollection>("/data/park_ridge_parcels_enriched.geojson");
-      setParcels(enriched);
-    }
-
-    loadParcels();
-    fetchJson<GeoJSON.FeatureCollection>("/data/park_ridge_boundary.geojson").then(setBoundary);
-    fetchJson<WardBoundaryCollection>("/data/park_ridge_wards.geojson").then(setWardBoundaries);
-    loadHistoricalLayerManifest().then(setHistoricalLayers);
-  }, []);
 
   const yearRange = useMemo(() => {
     const years = parcels?.features
@@ -263,15 +249,7 @@ export default function App() {
     return permitPressureMapMode === "activity" ? "activity" : "stability";
   }, [isBuildoutPlaying, maxBuiltYear, permitPressureMapMode, showPermitPressure, yearRange.max]);
 
-  const selectedParcel = useMemo(() => {
-    if (!pressureDecoratedParcels || !selectedPin) return null;
-    return (
-      pressureDecoratedParcels.features.find((feature) => {
-        const pin = feature.properties.pin_normalized || feature.properties.pin_original;
-        return pin === selectedPin;
-      }) ?? null
-    );
-  }, [pressureDecoratedParcels, selectedPin]);
+  const { selectedParcel, isLoadingDetail } = useParcelDetail(pressureDecoratedParcels, selectedPin);
 
   const selectedPhysicalBlock = useMemo(
     () => (selectedParcel ? buildPhysicalBlock(selectedParcel, pressureDecoratedParcels) : null),
@@ -729,6 +707,7 @@ export default function App() {
                 parcel={selectedParcel}
                 parcels={pressureDecoratedParcels}
                 permitPressureWindow={permitPressureWindow}
+                isLoadingDetail={isLoadingDetail}
                 onClearSelection={() => setSelectedPin(null)}
               />
             </>
@@ -920,14 +899,4 @@ function yearRangeForFeatures(
     min: years.length ? Math.min(...years) : fallback.min,
     max: years.length ? Math.max(...years) : fallback.max
   };
-}
-
-async function fetchJson<T>(path: string): Promise<T | null> {
-  try {
-    const response = await fetch(path);
-    if (!response.ok) return null;
-    return (await response.json()) as T;
-  } catch {
-    return null;
-  }
 }

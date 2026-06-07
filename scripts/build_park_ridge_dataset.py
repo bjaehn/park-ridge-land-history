@@ -143,6 +143,57 @@ STREET_BLOCK_OUTPUT_COLUMNS = [
     "street_block_tract",
     "street_block_source",
 ]
+MAP_OUTPUT_COLUMNS = [
+    "pin_normalized",
+    "pin_original",
+    "address",
+    "municipality",
+    "property_class",
+    "year_built",
+    "decade_built",
+    "building_sqft",
+    "land_sqft",
+    "improvement_count",
+    "permit_count",
+    "latest_permit_year",
+    "nearby_teardown_count",
+    "sale_count",
+    "latest_sale_year",
+    "latest_sale_price",
+    "max_sale_price",
+    "assessed_year_count",
+    "first_assessed_year",
+    "first_assessed_total",
+    "latest_assessed_year",
+    "latest_assessed_total",
+    "assessed_value_change_pct",
+    "appeal_count",
+    "latest_appeal_year",
+    "open_appeal_count",
+    "total_assessment_reduction",
+    "foreclosure_count_half_mile_5yr",
+    "foreclosure_per_1000_half_mile_5yr",
+    "street_block_id",
+    "street_block_tract",
+    "street_block_source",
+    "hargis_record_count",
+    "hargis_arch_class",
+    "hargis_architect",
+    "hargis_builder",
+    "hargis_photo_count",
+    "hargis_pdf_count",
+    "civic_record_count",
+    "directory_record_count",
+    "sanborn_snapshot_count",
+    "paper_trail_record_count",
+    "recognized_history_count",
+    "land_family_record_count",
+    "primary_building_selection_method",
+    "data_quality_flags",
+    "source_note",
+    "house_evolution_timeline",
+    "geometry",
+]
 
 
 def read_table(path: Path) -> Any:
@@ -1101,6 +1152,96 @@ def attach_house_evolution_timelines(enriched: Any) -> Any:
     return enriched.drop(columns=["permit_timeline", "sale_timeline", "nearby_teardown_timeline"], errors="ignore")
 
 
+def compact_pressure_timeline(value: Any) -> str:
+    compact_events: list[dict[str, Any]] = []
+    for event in parse_timeline_value(value):
+        if event.get("event_type") not in {"permit", "nearby_teardown"}:
+            continue
+        compact = {
+            "year": parse_year(event.get("year")),
+            "date": clean_text(event.get("date")),
+            "title": clean_text(event.get("title")),
+            "description": clean_text(event.get("description")),
+            "event_type": clean_text(event.get("event_type")),
+            "status": clean_text(event.get("status")),
+            "permit_number": clean_text(event.get("permit_number")),
+            "local_permit_number": clean_text(event.get("local_permit_number")),
+        }
+        compact_events.append({key: item for key, item in compact.items() if item not in (None, "")})
+    return json.dumps(compact_events, separators=(",", ":"))
+
+
+def write_runtime_data(enriched: Any, public_path: Path, processed_path: Path) -> None:
+    enriched.to_file(processed_path, driver="GeoJSON")
+    enriched.to_file(public_path, driver="GeoJSON")
+
+    map_public_path = PROJECT_ROOT / "public/data/park_ridge_parcels_map.geojson"
+    map_processed_path = PROJECT_ROOT / "data/processed/park_ridge_parcels_map.geojson"
+    map_columns = [column for column in MAP_OUTPUT_COLUMNS if column in enriched.columns]
+    map_data = enriched[map_columns].copy()
+    map_data["house_evolution_timeline"] = map_data["house_evolution_timeline"].map(compact_pressure_timeline)
+    map_data.to_file(map_processed_path, driver="GeoJSON")
+    map_data.to_file(map_public_path, driver="GeoJSON")
+
+    detail_dir = PROJECT_ROOT / "public/data/parcel_details"
+    detail_dir.mkdir(parents=True, exist_ok=True)
+    for old_chunk in detail_dir.glob("*.json"):
+        old_chunk.unlink()
+    write_parcel_detail_chunks(enriched, detail_dir)
+
+    print(f"Wrote {map_processed_path.relative_to(PROJECT_ROOT)}")
+    print(f"Wrote {map_public_path.relative_to(PROJECT_ROOT)}")
+    print(f"Wrote {detail_dir.relative_to(PROJECT_ROOT)} parcel detail chunks")
+
+
+def write_parcel_detail_chunks(enriched: Any, detail_dir: Path) -> None:
+    chunked: dict[str, dict[str, Any]] = {}
+    property_columns = [column for column in enriched.columns if column != "geometry"]
+
+    for _, row in pd.DataFrame(enriched[property_columns]).iterrows():
+        pin = clean_text(row.get("pin_normalized")) or clean_text(row.get("pin_original"))
+        if not pin:
+            continue
+        prefix = parcel_detail_prefix(pin)
+        chunk = chunked.setdefault(prefix, {})
+        chunk[pin] = json_ready({column: row.get(column) for column in property_columns})
+
+    for prefix, records in chunked.items():
+        output = detail_dir / f"{prefix}.json"
+        payload = {
+            "prefix": prefix,
+            "record_count": len(records),
+            "records": records,
+        }
+        output.write_text(json.dumps(payload, separators=(",", ":")), encoding="utf-8")
+
+
+def parcel_detail_prefix(pin: str) -> str:
+    normalized = re.sub(r"\D", "", pin)
+    return normalized[:4] if len(normalized) >= 4 else "unknown"
+
+
+def json_ready(value: Any) -> Any:
+    if value is None:
+        return None
+    if isinstance(value, float) and pd.isna(value):
+        return None
+    if value is pd.NA:
+        return None
+    if isinstance(value, dict):
+        return {key: json_ready(item) for key, item in value.items() if json_ready(item) is not None}
+    if isinstance(value, list):
+        return [json_ready(item) for item in value]
+    if isinstance(value, pd.Timestamp):
+        return value.isoformat()
+    if hasattr(value, "item"):
+        try:
+            return json_ready(value.item())
+        except (ValueError, TypeError):
+            pass
+    return value
+
+
 def append_nearby_teardown_events(enriched: Any) -> Any:
     if "permit_timeline" not in enriched or not hasattr(enriched, "geometry"):
         enriched["nearby_teardown_count"] = 0
@@ -1442,8 +1583,7 @@ def build_dataset() -> None:
     public_path = PROJECT_ROOT / "public/data/park_ridge_parcels_enriched.geojson"
     processed_path.parent.mkdir(parents=True, exist_ok=True)
     public_path.parent.mkdir(parents=True, exist_ok=True)
-    enriched.to_file(processed_path, driver="GeoJSON")
-    enriched.to_file(public_path, driver="GeoJSON")
+    write_runtime_data(enriched, public_path, processed_path)
     write_hargis_historical_layer(enriched)
 
     boundary_path = optional_source("Park Ridge municipal boundary")

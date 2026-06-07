@@ -126,6 +126,7 @@ function hasRebuildSignal(properties: ParcelProperties): boolean {
 }
 
 function hasExpansionSignal(properties: ParcelProperties): boolean {
+  if (properties.permit_pressure_type === "addition") return true;
   return getHouseEvolutionTimeline(properties).some((event) => {
     if (event.event_type !== "permit") return false;
     const text = `${event.title || ""} ${event.description || ""}`.toLowerCase();

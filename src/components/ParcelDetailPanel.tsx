@@ -12,6 +12,7 @@ type ParcelDetailPanelProps = {
   parcel: ParcelFeature | null;
   parcels: ParcelCollection | null;
   permitPressureWindow: PermitPressureWindow;
+  isLoadingDetail?: boolean;
   onClearSelection: () => void;
 };
 
@@ -19,6 +20,7 @@ export function ParcelDetailPanel({
   parcel,
   parcels,
   permitPressureWindow,
+  isLoadingDetail = false,
   onClearSelection
 }: ParcelDetailPanelProps) {
   const properties = parcel?.properties;
@@ -68,6 +70,7 @@ export function ParcelDetailPanel({
       {properties && (
         <>
           <h3 className="detail-title">{properties.address || "Parcel details"}</h3>
+          {isLoadingDetail && <p className="quiet-note">Loading full home ancestry records...</p>}
           <HouseBiography properties={properties} />
           <HomeSignals properties={properties} />
           <ChangeStoryCard scope="property" parcel={parcel} />

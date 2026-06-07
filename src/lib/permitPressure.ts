@@ -93,6 +93,21 @@ export function permitStabilityLabel(stabilityType: PermitStabilityType): string
 }
 
 function decorateFeature(feature: ParcelFeature, pressureWindow: PermitPressureWindow): ParcelFeature {
+  const precomputed = precomputedPressureSummary(feature.properties, pressureWindow);
+  if (precomputed) {
+    return {
+      ...feature,
+      properties: {
+        ...feature.properties,
+        permit_pressure_type: precomputed.pressureType,
+        permit_stability_type: precomputed.stabilityType,
+        permit_pressure_score: precomputed.score,
+        recent_permit_count: precomputed.permitCount,
+        recent_teardown_count: precomputed.teardownCount
+      }
+    };
+  }
+
   const events = getHouseEvolutionTimeline(feature.properties).filter((event) => isWithinWindow(event, pressureWindow));
   const directPermits = events.filter((event) => event.event_type === "permit");
   const directTeardowns = directPermits.filter(isFullDemolitionPermitEvent);
@@ -111,6 +126,33 @@ function decorateFeature(feature: ParcelFeature, pressureWindow: PermitPressureW
       recent_permit_count: recentPermitCount,
       recent_teardown_count: recentTeardownCount
     }
+  };
+}
+
+function precomputedPressureSummary(
+  properties: ParcelFeature["properties"],
+  pressureWindow: PermitPressureWindow
+): {
+  pressureType: PermitPressureType;
+  stabilityType: PermitStabilityType;
+  score: number;
+  permitCount: number;
+  teardownCount: number;
+} | null {
+  const suffix = String(pressureWindow);
+  const pressureType = properties[`permit_pressure_${suffix}_type` as keyof typeof properties] as PermitPressureType | null | undefined;
+  const stabilityType = properties[`permit_stability_${suffix}_type` as keyof typeof properties] as PermitStabilityType | null | undefined;
+  const score = properties[`permit_pressure_${suffix}_score` as keyof typeof properties];
+  const permitCount = properties[`recent_permit_${suffix}_count` as keyof typeof properties];
+  const teardownCount = properties[`recent_teardown_${suffix}_count` as keyof typeof properties];
+
+  if (!pressureType || !stabilityType) return null;
+  return {
+    pressureType,
+    stabilityType,
+    score: typeof score === "number" ? score : 0,
+    permitCount: typeof permitCount === "number" ? permitCount : 0,
+    teardownCount: typeof teardownCount === "number" ? teardownCount : 0
   };
 }
 
