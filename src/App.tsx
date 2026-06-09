@@ -6,6 +6,7 @@ import { BuildoutMilestonesTable } from "./components/BuildoutMilestonesTable";
 import { ChangeStoryCard } from "./components/ChangeStoryCard";
 import { LayerToggle } from "./components/LayerToggle";
 import { Legend } from "./components/Legend";
+import { MapCompanion } from "./components/MapCompanion";
 import { MapView } from "./components/MapView";
 import { DecadeComparisonTable } from "./components/DecadeComparisonTable";
 import { DecadeDistributionChart } from "./components/DecadeDistributionChart";
@@ -380,6 +381,19 @@ export default function App() {
       : activeAnalysisScale === "area" && selectedArea
         ? activeAreaView === "stability" || activeAreaView === "activity"
       : showPermitPressure;
+  const mapVisibleCount = mapParcels?.features.length ?? 0;
+  const mapBuildoutPlaying =
+    activeAnalysisScale === "block"
+      ? isBlockBuildoutPlaying
+      : activeAnalysisScale === "area"
+        ? isAreaBuildoutPlaying
+        : isBuildoutPlaying;
+  const mapMaxBuiltYear =
+    activeAnalysisScale === "block"
+      ? blockMaxBuiltYear
+      : activeAnalysisScale === "area"
+        ? areaMaxBuiltYear
+        : maxBuiltYear;
 
   const historicalOverlays = useMemo(() => {
     return Array.from(activeHistoricalLayerIds)
@@ -634,48 +648,65 @@ export default function App() {
 
   return (
     <main className="app-shell">
-      <MapView
-        parcels={mapParcels}
-        selectedParcel={selectedParcel}
-        selectedBlockParcels={selectedBlockParcels}
-        boundary={boundary}
-        showOutlines={showOutlines}
-        showBoundary={showBoundary}
-        showPermitPressure={mapShowPermitPressure}
-        permitPressureMapMode={mapPermitPressureMode}
-        visiblePermitPressureTypes={visiblePermitPressureTypes}
-        visiblePermitStabilityTypes={visiblePermitStabilityTypes}
-        historicalOverlays={historicalOverlays}
-        swipeEnabled={swipeEnabled}
-        swipePosition={swipePosition}
-        hotspots={mapHotspots}
-        areaSummaries={mapAreaSummaries}
-        selectedHotspot={activeAnalysisScale === "area" ? selectedHotspot : null}
-        selectedArea={activeAnalysisScale === "area" ? selectedArea : null}
-        selectedParcelChange={selectedParcelChange}
-        visibleChangeTypes={visibleChangeTypes}
-        onSelectParcel={activeAnalysisScale === "block" ? selectBlockParcel : selectParcel}
-        onSelectParcelChange={setSelectedParcelChange}
-        onSelectHotspot={selectHotspot}
-        onSelectArea={selectArea}
-      />
-      <div className="map-legend-overlay">
-        <Legend
-          activePreset={activeMapPreset}
-          visibleDecades={visibleLegendBuckets}
-          showParcelChangeLegend={activeHistoricalLayerIds.has(parcelChangeLayerId)}
-          visibleChangeTypes={visibleChangeTypes}
-          showPermitPressureLegend={mapShowPermitPressure}
+      <section className="map-workspace" aria-label="Map workspace">
+        <MapView
+          parcels={mapParcels}
+          selectedParcel={selectedParcel}
+          selectedBlockParcels={selectedBlockParcels}
+          boundary={boundary}
+          showOutlines={showOutlines}
+          showBoundary={showBoundary}
+          showPermitPressure={mapShowPermitPressure}
           permitPressureMapMode={mapPermitPressureMode}
           visiblePermitPressureTypes={visiblePermitPressureTypes}
           visiblePermitStabilityTypes={visiblePermitStabilityTypes}
-          onToggleDecade={toggleDecade}
-          onToggleChangeType={toggleChangeType}
-          onTogglePermitPressureType={togglePermitPressureType}
-          onTogglePermitStabilityType={togglePermitStabilityType}
-          compact
+          historicalOverlays={historicalOverlays}
+          swipeEnabled={swipeEnabled}
+          swipePosition={swipePosition}
+          hotspots={mapHotspots}
+          areaSummaries={mapAreaSummaries}
+          selectedHotspot={activeAnalysisScale === "area" ? selectedHotspot : null}
+          selectedArea={activeAnalysisScale === "area" ? selectedArea : null}
+          selectedParcelChange={selectedParcelChange}
+          visibleChangeTypes={visibleChangeTypes}
+          onSelectParcel={activeAnalysisScale === "block" ? selectBlockParcel : selectParcel}
+          onSelectParcelChange={setSelectedParcelChange}
+          onSelectHotspot={selectHotspot}
+          onSelectArea={selectArea}
         />
-      </div>
+        <div className="map-companion-overlay">
+          <MapCompanion
+            activeScale={activeAnalysisScale}
+            activePreset={activeMapPreset}
+            visibleCount={mapVisibleCount}
+            totalCount={parcels?.features.length ?? 0}
+            selectedAddress={selectedParcel?.properties.address}
+            selectedAreaLabel={selectedArea?.properties.label}
+            selectedHotspotTitle={selectedHotspot?.properties.title}
+            isBuildoutPlaying={mapBuildoutPlaying}
+            maxBuiltYear={mapMaxBuiltYear}
+            showPermitPressure={mapShowPermitPressure}
+            permitPressureMapMode={mapPermitPressureMode}
+          />
+        </div>
+        <div className="map-legend-overlay">
+          <Legend
+            activePreset={activeMapPreset}
+            visibleDecades={visibleLegendBuckets}
+            showParcelChangeLegend={activeHistoricalLayerIds.has(parcelChangeLayerId)}
+            visibleChangeTypes={visibleChangeTypes}
+            showPermitPressureLegend={mapShowPermitPressure}
+            permitPressureMapMode={mapPermitPressureMode}
+            visiblePermitPressureTypes={visiblePermitPressureTypes}
+            visiblePermitStabilityTypes={visiblePermitStabilityTypes}
+            onToggleDecade={toggleDecade}
+            onToggleChangeType={toggleChangeType}
+            onTogglePermitPressureType={togglePermitPressureType}
+            onTogglePermitStabilityType={togglePermitStabilityType}
+            compact
+          />
+        </div>
+      </section>
       <aside className="control-panel">
         <header className="app-header">
           <p>Work in progress</p>
