@@ -15,7 +15,7 @@ const tabs: Array<{ id: AnalysisScale; label: string; detail: string }> = [
 export function AnalysisTabs({ activeScale, onSetScale }: AnalysisTabsProps) {
   return (
     <nav className="analysis-tabs" aria-label="Analysis scale">
-      {tabs.map((tab) => (
+      {tabs.map((tab, index) => (
         <button
           className={activeScale === tab.id ? "is-active" : ""}
           type="button"
@@ -24,8 +24,11 @@ export function AnalysisTabs({ activeScale, onSetScale }: AnalysisTabsProps) {
           key={tab.id}
           onClick={() => onSetScale(tab.id)}
         >
-          <strong>{tab.label}</strong>
-          <span>{tab.detail}</span>
+          <span className="tab-index">{String(index + 1).padStart(2, "0")}</span>
+          <span className="tab-copy">
+            <strong>{tab.label}</strong>
+            <span>{tab.detail}</span>
+          </span>
         </button>
       ))}
     </nav>

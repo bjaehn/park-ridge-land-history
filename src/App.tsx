@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { startTransition, useEffect, useMemo, useState } from "react";
 import { AnalysisNarrative } from "./components/AnalysisNarrative";
 import { AnalysisTabs, type AnalysisScale } from "./components/AnalysisTabs";
 import { BlockPanel, type BlockView } from "./components/BlockPanel";
@@ -160,9 +160,10 @@ export default function App() {
     [parcels, permitPressureWindow]
   );
 
+  const shouldBuildHotspots = activeAnalysisScale === "area" && activeAreaGrouping === "change_zones";
   const hotspots = useMemo(
-    () => buildHotspots(pressureDecoratedParcels),
-    [pressureDecoratedParcels]
+    () => shouldBuildHotspots ? buildHotspots(pressureDecoratedParcels) : emptyHotspots,
+    [pressureDecoratedParcels, shouldBuildHotspots]
   );
 
   const areaSummaries = useMemo(
@@ -171,11 +172,6 @@ export default function App() {
         ? buildAreaSummaries(pressureDecoratedParcels, activeAreaGrouping, hotspots, wardBoundaries)
         : emptyAreas,
     [activeAnalysisScale, activeAreaGrouping, hotspots, pressureDecoratedParcels, wardBoundaries]
-  );
-
-  const cityNeighborhoodSummaries = useMemo(
-    () => buildAreaSummaries(pressureDecoratedParcels, "neighborhoods", emptyHotspots),
-    [pressureDecoratedParcels]
   );
 
   const selectedArea = useMemo(
@@ -249,6 +245,16 @@ export default function App() {
     if (!showPermitPressure) return "age";
     return permitPressureMapMode === "activity" ? "activity" : "stability";
   }, [isBuildoutPlaying, maxBuiltYear, permitPressureMapMode, showPermitPressure, yearRange.max]);
+
+  const shouldBuildCityNeighborhoodSummaries =
+    activeAnalysisScale === "city" && activeVisualizationPreset === "stability";
+  const cityNeighborhoodSummaries = useMemo(
+    () =>
+      shouldBuildCityNeighborhoodSummaries
+        ? buildAreaSummaries(pressureDecoratedParcels, "neighborhoods", emptyHotspots)
+        : emptyAreas,
+    [pressureDecoratedParcels, shouldBuildCityNeighborhoodSummaries]
+  );
 
   const { selectedParcel, isLoadingDetail } = useParcelDetail(pressureDecoratedParcels, selectedPin);
 
@@ -646,6 +652,12 @@ export default function App() {
     setShowPermitPressure(false);
   }
 
+  function setAnalysisScale(scale: AnalysisScale) {
+    startTransition(() => {
+      setActiveAnalysisScale(scale);
+    });
+  }
+
   return (
     <main className="app-shell">
       <section className="map-workspace" aria-label="Map workspace">
@@ -712,9 +724,10 @@ export default function App() {
           <p>Work in progress</p>
           <h1>Park Ridge Land History</h1>
         </header>
-        <AnalysisTabs activeScale={activeAnalysisScale} onSetScale={setActiveAnalysisScale} />
+        <div className="analysis-workspace-card">
+          <AnalysisTabs activeScale={activeAnalysisScale} onSetScale={setAnalysisScale} />
 
-        <div className="analysis-tab-panel" role="tabpanel">
+          <div className="analysis-tab-panel" role="tabpanel">
           <AnalysisNarrative
             activeScale={activeAnalysisScale}
             selectedParcel={selectedParcel}
@@ -898,6 +911,7 @@ export default function App() {
               }}
             />
           </ProductEvidencePanel>
+          </div>
         </div>
       </aside>
     </main>
