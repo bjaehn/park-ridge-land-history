@@ -3,6 +3,7 @@ import type { PermitPressureWindow } from "../lib/permitPressure";
 import type { ParcelCollection, ParcelFeature } from "../lib/parcelTypes";
 import { ChangeStoryCard } from "./ChangeStoryCard";
 import { HouseBiography } from "./HouseBiography";
+import { HistoricMentions } from "./HistoricMentions";
 import { HomeSignals } from "./HomeSignals";
 import { HouseEvolutionTimeline } from "./HouseEvolutionTimeline";
 import { HouseRelatives } from "./HouseRelatives";
@@ -72,6 +73,7 @@ export function ParcelDetailPanel({
           <h3 className="detail-title">{properties.address || "Parcel details"}</h3>
           {isLoadingDetail && <p className="quiet-note">Loading full home ancestry records...</p>}
           <HouseBiography properties={properties} />
+          <HistoricMentions properties={properties} />
           <HomeSignals properties={properties} />
           <ChangeStoryCard scope="property" parcel={parcel} />
           <HouseRelatives parcel={parcel} parcels={parcels} />

@@ -165,6 +165,28 @@ def test_hargis_historical_layer_has_survey_matches():
     assert any(property_.get("hargis_arch_class") == "Tudor Revival" for property_ in properties)
 
 
+def test_public_parcels_include_historic_mentions_and_research_leads():
+    payload = json.loads(Path("public/data/park_ridge_parcels_enriched.geojson").read_text())
+    properties = {feature["properties"].get("address"): feature["properties"] for feature in payload["features"]}
+
+    unseth = properties["808 PARK PLAINE AVE"]
+    assert unseth["recognized_history_count"] == 1
+    assert unseth["sanborn_snapshot_count"] == 1
+    assert unseth["paper_trail_record_count"] == 1
+    assert any(
+        event.get("event_type") == "paper_trail_record" and "triangle" in event.get("title", "").lower()
+        for event in unseth["house_evolution_timeline"]
+    )
+
+    eicher = properties["312 CEDAR ST"]
+    assert eicher["directory_record_count"] == 1
+    assert eicher["sanborn_snapshot_count"] == 1
+    assert any(
+        event.get("event_type") == "directory_record" and "Kalo" in event.get("description", "")
+        for event in eicher["house_evolution_timeline"]
+    )
+
+
 def test_building_footprints_and_lot_coverage_layers_are_populated():
     footprints = json.loads(Path("public/data/historical/cook_county_building_footprints_2017.geojson").read_text())
     coverage = json.loads(Path("public/data/historical/park_ridge_lot_coverage.geojson").read_text())

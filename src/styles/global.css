@@ -1146,6 +1146,119 @@ input {
   line-height: 1.3;
 }
 
+.historic-mentions {
+  display: grid;
+  gap: 14px;
+  margin: 18px 0;
+  padding: 16px;
+  border: 1px solid rgb(16 24 40 / 12%);
+  border-radius: 8px;
+  background: linear-gradient(135deg, #fffdf7 0%, #f8fafc 52%, #eef9f5 100%);
+  box-shadow: 0 18px 42px rgb(15 23 42 / 8%);
+}
+
+.historic-mentions-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 0.42fr);
+  gap: 14px;
+  align-items: end;
+}
+
+.historic-mentions-heading span {
+  color: #9f4f23;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.historic-mentions-heading h4 {
+  margin: 3px 0 0;
+  color: #172033;
+  font-size: 1.02rem;
+}
+
+.historic-mentions-heading p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: right;
+}
+
+.historic-mention-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.historic-mention-card {
+  display: grid;
+  gap: 7px;
+  min-height: 132px;
+  padding: 13px;
+  border: 1px solid rgb(15 23 42 / 12%);
+  border-left: 4px solid #0f766e;
+  border-radius: 8px;
+  background: rgb(255 255 255 / 78%);
+  color: inherit;
+  text-decoration: none;
+  transition: transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.historic-mention-card:hover,
+.historic-mention-card:focus-visible {
+  border-color: rgb(15 23 42 / 28%);
+  box-shadow: 0 14px 28px rgb(15 23 42 / 12%);
+  transform: translateY(-1px);
+}
+
+.historic-mention-card span {
+  color: #0f766e;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.historic-mention-card strong {
+  color: #172033;
+  font-size: 0.94rem;
+  line-height: 1.2;
+}
+
+.historic-mention-card p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.historic-mention-card small {
+  align-self: end;
+  color: var(--ink-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.historic-mention-media {
+  border-left-color: #2563eb;
+}
+
+.historic-mention-media span {
+  color: #1d4ed8;
+}
+
+.historic-mention-lead {
+  border-left-color: #c47b22;
+}
+
+.historic-mention-lead span {
+  color: #9f4f23;
+}
+
 .home-signals {
   display: grid;
   gap: 8px;
@@ -2904,8 +3017,17 @@ input {
   .ancestry-summary-grid,
   .artifact-gallery,
   .document-tray,
+  .historic-mention-grid,
   .home-artifact-grid {
     grid-template-columns: 1fr;
+  }
+
+  .historic-mentions-heading {
+    grid-template-columns: 1fr;
+  }
+
+  .historic-mentions-heading p {
+    text-align: left;
   }
 }
 
