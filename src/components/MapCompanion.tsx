@@ -31,6 +31,7 @@ export function MapCompanion({
 }: MapCompanionProps) {
   const copy = mapCompanionCopy(activeScale, selectedAddress, selectedAreaLabel, selectedHotspotTitle);
   const mode = mapModeLabel(activePreset, showPermitPressure, permitPressureMapMode, isBuildoutPlaying);
+  const countLabel = activeScale === "city" ? "homes shown" : "homes in focus";
 
   return (
     <section className="map-companion" aria-label="Map context">
@@ -41,7 +42,7 @@ export function MapCompanion({
       </div>
       <div className="map-companion-facts" aria-label="Map facts">
         <span>{mode}</span>
-        <span>{visibleCount.toLocaleString()} of {totalCount.toLocaleString()} homes shown</span>
+        <span>{visibleCount.toLocaleString()} of {totalCount.toLocaleString()} {countLabel}</span>
         {(activePreset === "buildout" || isBuildoutPlaying) && <span>Built by {maxBuiltYear}</span>}
       </div>
     </section>

@@ -2834,17 +2834,10 @@ input {
   border-radius: 6px;
   background: transparent;
   color: #263145;
-  cursor: pointer;
   font-size: 0.8rem;
   font-weight: 700;
   padding: 4px 5px;
   text-align: left;
-}
-
-.legend-item:hover,
-.legend-item:focus-visible {
-  border-color: var(--line);
-  background: #ffffff;
 }
 
 .legend-item.is-muted {

@@ -14,22 +14,14 @@ import {
   permitStabilityLegendOrder,
   type PermitPressureMapMode
 } from "../lib/permitPressure";
-import type { PermitPressureType, PermitStabilityType } from "../lib/parcelTypes";
 import type { VisualizationPreset } from "./VisualizationPanel";
 
 type LegendProps = {
   activePreset: VisualizationPreset;
   visibleDecades: Set<string>;
   showParcelChangeLegend: boolean;
-  visibleChangeTypes: Set<ParcelChangeType>;
   showPermitPressureLegend: boolean;
   permitPressureMapMode: PermitPressureMapMode;
-  visiblePermitPressureTypes: Set<PermitPressureType>;
-  visiblePermitStabilityTypes: Set<PermitStabilityType>;
-  onToggleDecade: (decade: string) => void;
-  onToggleChangeType: (changeType: ParcelChangeType) => void;
-  onTogglePermitPressureType: (pressureType: PermitPressureType) => void;
-  onTogglePermitStabilityType: (stabilityType: PermitStabilityType) => void;
   compact?: boolean;
 };
 
@@ -37,15 +29,8 @@ export function Legend({
   activePreset,
   visibleDecades,
   showParcelChangeLegend,
-  visibleChangeTypes,
   showPermitPressureLegend,
   permitPressureMapMode,
-  visiblePermitPressureTypes,
-  visiblePermitStabilityTypes,
-  onToggleDecade,
-  onToggleChangeType,
-  onTogglePermitPressureType,
-  onTogglePermitStabilityType,
   compact = false
 }: LegendProps) {
   const showPermitLegendFirst = activePreset === "stability" || activePreset === "activity";
@@ -54,7 +39,7 @@ export function Legend({
   return (
     <section className={`legend-panel ${compact ? "legend-panel-compact" : "panel-section"}`} aria-label="Map color legend">
       <h2>Legend</h2>
-      <p className="legend-help">Colors explain what is on the map. Click any color to hide or show it.</p>
+      <p className="legend-help">Colors explain the current map. Use the tabs and data layers panel to change the view.</p>
       {showPermitLegendFirst && showPermitPressureLegend && renderPermitLegend()}
       {renderAgeLegend()}
       {!showOnlyAgeLegend && !showPermitLegendFirst && showPermitPressureLegend && renderPermitLegend()}
@@ -64,16 +49,13 @@ export function Legend({
           <p className="legend-note">Compares older parcel maps with newer ones.</p>
           <div className="legend-grid">
             {parcelChangeLegendOrder.map((changeType) => (
-              <button
-                className={`legend-item ${visibleChangeTypes.has(changeType) ? "" : "is-muted"}`}
-                type="button"
+              <div
+                className="legend-item"
                 key={changeType}
-                aria-pressed={visibleChangeTypes.has(changeType)}
-                onClick={() => onToggleChangeType(changeType)}
               >
                 <span className="legend-swatch" style={{ backgroundColor: parcelChangeColors[changeType] }} />
                 <span>{changeLegendLabel(changeType)}</span>
-              </button>
+              </div>
             ))}
           </div>
         </div>
@@ -88,16 +70,13 @@ export function Legend({
         <p className="legend-note">{ageLegendNote(activePreset)}</p>
         <div className="legend-grid">
           {decadeOrder.map((bucket) => (
-            <button
+            <div
               className={`legend-item ${visibleDecades.has(bucket) ? "" : "is-muted"}`}
-              type="button"
               key={bucket}
-              aria-pressed={visibleDecades.has(bucket)}
-              onClick={() => onToggleDecade(bucket)}
             >
               <span className="legend-swatch" style={{ backgroundColor: decadeColors[bucket] }} />
               <span>{bucket}</span>
-            </button>
+            </div>
           ))}
         </div>
       </div>
@@ -112,28 +91,22 @@ export function Legend({
         <div className="legend-grid">
           {permitPressureMapMode === "stability"
             ? permitStabilityLegendOrder.map((stabilityType) => (
-                <button
-                  className={`legend-item ${visiblePermitStabilityTypes.has(stabilityType) ? "" : "is-muted"}`}
-                  type="button"
+                <div
+                  className="legend-item"
                   key={stabilityType}
-                  aria-pressed={visiblePermitStabilityTypes.has(stabilityType)}
-                  onClick={() => onTogglePermitStabilityType(stabilityType)}
                 >
                   <span className="legend-swatch" style={{ backgroundColor: permitStabilityColors[stabilityType] }} />
                   <span>{permitStabilityLabel(stabilityType)}</span>
-                </button>
+                </div>
               ))
             : permitPressureLegendOrder.map((pressureType) => (
-                <button
-                  className={`legend-item ${visiblePermitPressureTypes.has(pressureType) ? "" : "is-muted"}`}
-                  type="button"
+                <div
+                  className="legend-item"
                   key={pressureType}
-                  aria-pressed={visiblePermitPressureTypes.has(pressureType)}
-                  onClick={() => onTogglePermitPressureType(pressureType)}
                 >
                   <span className="legend-swatch" style={{ backgroundColor: permitPressureColors[pressureType] }} />
                   <span>{permitPressureLabel(pressureType)}</span>
-                </button>
+                </div>
               ))}
         </div>
       </div>

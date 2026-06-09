@@ -45,9 +45,11 @@ import {
   type PermitPressureMapMode,
   type PermitPressureWindow
 } from "./lib/permitPressure";
-import type { ParcelCollection, ParcelFeature, PermitPressureType, PermitStabilityType } from "./lib/parcelTypes";
+import type { ParcelCollection, ParcelFeature } from "./lib/parcelTypes";
 
-const knownDecades = decadeOrder.filter((bucket) => bucket !== "Unknown" && bucket !== "Suspicious");
+const visibleLegendBuckets = new Set(decadeOrder);
+const visiblePermitPressureTypes = new Set(permitPressureLegendOrder);
+const visiblePermitStabilityTypes = new Set(permitStabilityLegendOrder);
 const animationIntervals = {
   slow: 420,
   normal: 220,
@@ -68,19 +70,11 @@ const emptyAreas: AreaSummaryCollection = {
 
 export default function App() {
   const { parcels, boundary, wardBoundaries, historicalLayers } = useParkRidgeData();
-  const [selectedDecades, setSelectedDecades] = useState<Set<string>>(() => new Set(knownDecades));
-  const [showUnknown, setShowUnknown] = useState(true);
   const [showOutlines, setShowOutlines] = useState(true);
   const [showBoundary, setShowBoundary] = useState(true);
   const [showPermitPressure, setShowPermitPressure] = useState(true);
   const [permitPressureWindow, setPermitPressureWindow] = useState<PermitPressureWindow>(5);
   const [permitPressureMapMode, setPermitPressureMapMode] = useState<PermitPressureMapMode>("stability");
-  const [visiblePermitPressureTypes, setVisiblePermitPressureTypes] = useState<Set<PermitPressureType>>(
-    () => new Set(permitPressureLegendOrder)
-  );
-  const [visiblePermitStabilityTypes, setVisiblePermitStabilityTypes] = useState<Set<PermitStabilityType>>(
-    () => new Set(permitStabilityLegendOrder)
-  );
   const [maxBuiltYear, setMaxBuiltYear] = useState(2026);
   const [selectedPin, setSelectedPin] = useState<string | null>(null);
   const [isBuildoutPlaying, setIsBuildoutPlaying] = useState(false);
@@ -144,11 +138,9 @@ export default function App() {
 
     return {
       ...parcels,
-      features: parcels.features.filter((feature) =>
-        isFeatureVisible(feature, selectedDecades, showUnknown, maxBuiltYear)
-      )
+      features: parcels.features.filter((feature) => isBuiltByYear(feature, maxBuiltYear))
     };
-  }, [maxBuiltYear, parcels, selectedDecades, showUnknown]);
+  }, [maxBuiltYear, parcels]);
 
   const pressureDecoratedFilteredParcels = useMemo(
     () => decoratePermitPressure(filteredParcels, permitPressureWindow),
@@ -214,19 +206,13 @@ export default function App() {
     setSelectedAreaId(null);
   }, [activeAreaGrouping]);
 
-  const visibleLegendBuckets = useMemo(() => {
-    const buckets = new Set(selectedDecades);
-    if (showUnknown) buckets.add("Unknown");
-    return buckets;
-  }, [selectedDecades, showUnknown]);
-
   const visiblePins = useMemo(() => {
     return new Set(
-      filteredParcels?.features
+      parcels?.features
         .map((feature) => feature.properties.pin_normalized || feature.properties.pin_original)
         .filter((pin): pin is string => Boolean(pin)) ?? []
     );
-  }, [filteredParcels]);
+  }, [parcels]);
 
   const buildoutStats = useMemo(() => {
     const knownYears = parcels?.features
@@ -319,29 +305,20 @@ export default function App() {
     const yearLimit = activeBlockView === "buildout" ? blockMaxBuiltYear : blockYearRange.max;
     return {
       ...selectedBlockParcels,
-      features: selectedBlockParcels.features.filter((feature) =>
-        isFeatureVisible(feature, selectedDecades, showUnknown, yearLimit)
-      )
+      features: selectedBlockParcels.features.filter((feature) => isBuiltByYear(feature, yearLimit))
     };
-  }, [activeBlockView, blockMaxBuiltYear, blockYearRange.max, selectedBlockParcels, selectedDecades, showUnknown]);
+  }, [activeBlockView, blockMaxBuiltYear, blockYearRange.max, selectedBlockParcels]);
 
   const selectedAreaFilteredParcels = useMemo(() => {
     if (!selectedAreaParcels) return null;
     const yearLimit = activeAreaView === "buildout" ? areaMaxBuiltYear : areaYearRange.max;
     return {
       ...selectedAreaParcels,
-      features: selectedAreaParcels.features.filter((feature) =>
-        isFeatureVisible(feature, selectedDecades, showUnknown, yearLimit)
-      )
+      features: selectedAreaParcels.features.filter((feature) => isBuiltByYear(feature, yearLimit))
     };
-  }, [activeAreaView, areaMaxBuiltYear, areaYearRange.max, selectedAreaParcels, selectedDecades, showUnknown]);
+  }, [activeAreaView, areaMaxBuiltYear, areaYearRange.max, selectedAreaParcels]);
 
-  const mapParcels =
-    activeAnalysisScale === "block" && selectedBlockFilteredParcels
-      ? selectedBlockFilteredParcels
-      : activeAnalysisScale === "area" && selectedAreaFilteredParcels
-        ? selectedAreaFilteredParcels
-        : pressureDecoratedFilteredParcels;
+  const mapParcels = pressureDecoratedFilteredParcels;
 
   const blockBuildoutStats = useMemo(() => {
     const knownYears = selectedBlockParcels?.features
@@ -387,7 +364,12 @@ export default function App() {
       : activeAnalysisScale === "area" && selectedArea
         ? activeAreaView === "stability" || activeAreaView === "activity"
       : showPermitPressure;
-  const mapVisibleCount = mapParcels?.features.length ?? 0;
+  const focusedVisibleCount =
+    activeAnalysisScale === "block" && selectedBlockFilteredParcels
+      ? selectedBlockFilteredParcels.features.length
+      : activeAnalysisScale === "area" && selectedAreaFilteredParcels
+        ? selectedAreaFilteredParcels.features.length
+        : mapParcels?.features.length ?? 0;
   const mapBuildoutPlaying =
     activeAnalysisScale === "block"
       ? isBlockBuildoutPlaying
@@ -406,38 +388,6 @@ export default function App() {
       .map((layerId) => loadedHistoricalLayers[layerId])
       .filter((loadedLayer): loadedLayer is LoadedHistoricalLayer => Boolean(loadedLayer));
   }, [activeHistoricalLayerIds, loadedHistoricalLayers]);
-
-  function toggleDecade(decade: string) {
-    if (decade === "Unknown") {
-      setShowUnknown((current) => !current);
-      return;
-    }
-
-    setSelectedDecades((current) => {
-      const next = new Set(current);
-      if (next.has(decade)) next.delete(decade);
-      else next.add(decade);
-      return next;
-    });
-  }
-
-  function togglePermitPressureType(pressureType: PermitPressureType) {
-    setVisiblePermitPressureTypes((current) => {
-      const next = new Set(current);
-      if (next.has(pressureType)) next.delete(pressureType);
-      else next.add(pressureType);
-      return next;
-    });
-  }
-
-  function togglePermitStabilityType(stabilityType: PermitStabilityType) {
-    setVisiblePermitStabilityTypes((current) => {
-      const next = new Set(current);
-      if (next.has(stabilityType)) next.delete(stabilityType);
-      else next.add(stabilityType);
-      return next;
-    });
-  }
 
   function handleSetMaxBuiltYear(year: number) {
     setIsBuildoutPlaying(false);
@@ -664,7 +614,7 @@ export default function App() {
         <MapView
           parcels={mapParcels}
           selectedParcel={selectedParcel}
-          selectedBlockParcels={selectedBlockParcels}
+          selectedBlockParcels={activeAnalysisScale === "block" ? selectedBlockFilteredParcels : selectedBlockParcels}
           boundary={boundary}
           showOutlines={showOutlines}
           showBoundary={showBoundary}
@@ -690,7 +640,7 @@ export default function App() {
           <MapCompanion
             activeScale={activeAnalysisScale}
             activePreset={activeMapPreset}
-            visibleCount={mapVisibleCount}
+            visibleCount={focusedVisibleCount}
             totalCount={parcels?.features.length ?? 0}
             selectedAddress={selectedParcel?.properties.address}
             selectedAreaLabel={selectedArea?.properties.label}
@@ -706,15 +656,8 @@ export default function App() {
             activePreset={activeMapPreset}
             visibleDecades={visibleLegendBuckets}
             showParcelChangeLegend={activeHistoricalLayerIds.has(parcelChangeLayerId)}
-            visibleChangeTypes={visibleChangeTypes}
             showPermitPressureLegend={mapShowPermitPressure}
             permitPressureMapMode={mapPermitPressureMode}
-            visiblePermitPressureTypes={visiblePermitPressureTypes}
-            visiblePermitStabilityTypes={visiblePermitStabilityTypes}
-            onToggleDecade={toggleDecade}
-            onToggleChangeType={toggleChangeType}
-            onTogglePermitPressureType={togglePermitPressureType}
-            onTogglePermitStabilityType={togglePermitStabilityType}
             compact
           />
         </div>
@@ -918,19 +861,11 @@ export default function App() {
   );
 }
 
-function isFeatureVisible(
-  feature: ParcelFeature,
-  selectedDecades: Set<string>,
-  showUnknown: boolean,
-  maxBuiltYear: number
-): boolean {
+function isBuiltByYear(feature: ParcelFeature, maxBuiltYear: number): boolean {
   const year = feature.properties.year_built;
-  const decade = feature.properties.decade_built || "Unknown";
   const hasKnownYear = typeof year === "number";
-
-  if (!hasKnownYear || decade === "Unknown") return showUnknown;
-  if (year > maxBuiltYear) return false;
-  return selectedDecades.has(String(decade));
+  if (!hasKnownYear) return true;
+  return year <= maxBuiltYear;
 }
 
 function yearRangeForFeatures(

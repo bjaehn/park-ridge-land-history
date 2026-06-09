@@ -69,7 +69,7 @@ export function classifyParcelChangeStory(properties: ParcelProperties): ChangeS
 export function aggregateChangeStory(features: ParcelFeature[], scale: "block" | "area" | "city"): AggregateChangeStory {
   const total = features.length;
   const counts = storyOrder.map((type) => {
-    const count = features.filter((feature) => parcelChangeStoryType(feature.properties) === type).length;
+    const count = features.filter((feature) => parcelChangeStoryType(feature.properties, false) === type).length;
     return {
       type,
       label: storyLabels[type],
@@ -92,7 +92,7 @@ export function changeStoryLabel(type: ChangeStoryType): string {
   return storyLabels[type];
 }
 
-function parcelChangeStoryType(properties: ParcelProperties): ChangeStoryType {
+function parcelChangeStoryType(properties: ParcelProperties, useTimelineFallback = true): ChangeStoryType {
   const yearBuilt = properties.year_built;
   const age = typeof yearBuilt === "number" ? permitPressureCurrentYear - yearBuilt : null;
   const oldHome = typeof yearBuilt === "number" && yearBuilt <= 1945;
@@ -103,8 +103,8 @@ function parcelChangeStoryType(properties: ParcelProperties): ChangeStoryType {
   const quietAssessment =
     typeof assessmentChange !== "number" || Number.isNaN(assessmentChange) || Math.abs(assessmentChange) <= 5;
 
-  if (hasRebuildSignal(properties)) return "rebuild_pressure";
-  if (hasExpansionSignal(properties)) return "expansion";
+  if (hasRebuildSignal(properties, useTimelineFallback)) return "rebuild_pressure";
+  if (hasExpansionSignal(properties, useTimelineFallback)) return "expansion";
   if (saleCount >= 5 && permitCount <= 2) return "turnover";
   if (oldOrMidCentury && hasReinvestmentSignal(properties)) return "careful_reinvestment";
   if ((oldHome && permitCount <= 1 && saleCount <= 2) || (oldHome && (properties.hargis_record_count ?? 0) > 0)) {
@@ -116,17 +116,19 @@ function parcelChangeStoryType(properties: ParcelProperties): ChangeStoryType {
   return "dormant";
 }
 
-function hasRebuildSignal(properties: ParcelProperties): boolean {
+function hasRebuildSignal(properties: ParcelProperties, useTimelineFallback = true): boolean {
   if (properties.permit_pressure_type === "direct_teardown" || properties.permit_pressure_type === "new_construction") {
     return true;
   }
+  if (!useTimelineFallback) return false;
   return getHouseEvolutionTimeline(properties).some((event) =>
     event.event_type === "permit" && (isFullDemolitionPermitEvent(event) || isFullNewConstructionPermitEvent(event))
   );
 }
 
-function hasExpansionSignal(properties: ParcelProperties): boolean {
+function hasExpansionSignal(properties: ParcelProperties, useTimelineFallback = true): boolean {
   if (properties.permit_pressure_type === "addition") return true;
+  if (!useTimelineFallback) return false;
   return getHouseEvolutionTimeline(properties).some((event) => {
     if (event.event_type !== "permit") return false;
     const text = `${event.title || ""} ${event.description || ""}`.toLowerCase();

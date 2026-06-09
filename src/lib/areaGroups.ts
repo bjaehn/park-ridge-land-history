@@ -1,11 +1,6 @@
 import { featureCenter } from "./nearbyActivity";
 import { aggregateChangeStory, type ChangeStoryType } from "./changeStory";
-import { getHouseEvolutionTimeline } from "./houseEvolution";
-import {
-  isFullDemolitionPermitEvent,
-  isFullNewConstructionPermitEvent,
-  permitPressureCurrentYear
-} from "./permitPressure";
+import { permitPressureCurrentYear } from "./permitPressure";
 import type { HotspotCollection, HotspotFeature } from "./hotspots";
 import type { ParcelCollection, ParcelFeature } from "./parcelTypes";
 
@@ -290,10 +285,10 @@ function areaStats(features: ParcelFeature[]) {
     ["recent_permit", "remodel", "addition"].includes(String(feature.properties.permit_pressure_type))
   ).length;
   const newConstructionCount = features.filter((feature) =>
-    feature.properties.permit_pressure_type === "new_construction" || hasFullNewConstructionPermit(feature)
+    feature.properties.permit_pressure_type === "new_construction"
   ).length;
   const fullDemolitionCount = features.filter((feature) =>
-    feature.properties.permit_pressure_type === "direct_teardown" || hasFullDemolitionPermit(feature)
+    feature.properties.permit_pressure_type === "direct_teardown"
   ).length;
   const teardownPressureCount = fullDemolitionCount + newConstructionCount;
   const soldLastThreeYearsCount = features.filter((feature) => {
@@ -359,18 +354,6 @@ function areaEvaluation(stats: AreaStatsBase): string {
 function percent(count: number, total: number): number {
   if (total <= 0) return 0;
   return Math.round((count / total) * 100);
-}
-
-function hasFullDemolitionPermit(feature: ParcelFeature): boolean {
-  return getHouseEvolutionTimeline(feature.properties).some((event) =>
-    event.event_type === "permit" && isFullDemolitionPermitEvent(event)
-  );
-}
-
-function hasFullNewConstructionPermit(feature: ParcelFeature): boolean {
-  return getHouseEvolutionTimeline(feature.properties).some((event) =>
-    event.event_type === "permit" && isFullNewConstructionPermitEvent(event)
-  );
 }
 
 export function areaSignalLabel(signal: AreaSignal): string {
