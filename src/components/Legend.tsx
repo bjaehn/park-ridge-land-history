@@ -33,20 +33,19 @@ export function Legend({
   permitPressureMapMode,
   compact = false
 }: LegendProps) {
-  const showPermitLegendFirst = activePreset === "stability" || activePreset === "activity";
-  const showOnlyAgeLegend = activePreset === "age" || activePreset === "buildout";
+  const showPermitLegend = showPermitPressureLegend && (activePreset === "stability" || activePreset === "activity");
+  const showAgeLegend = activePreset === "age" || activePreset === "buildout" || (!compact && !showPermitLegend);
 
   return (
     <section className={`legend-panel ${compact ? "legend-panel-compact" : "panel-section"}`} aria-label="Map color legend">
-      <h2>Legend</h2>
-      <p className="legend-help">Colors explain the current map. Use the tabs and data layers panel to change the view.</p>
-      {showPermitLegendFirst && showPermitPressureLegend && renderPermitLegend()}
-      {renderAgeLegend()}
-      {!showOnlyAgeLegend && !showPermitLegendFirst && showPermitPressureLegend && renderPermitLegend()}
+      <h2>Map key</h2>
+      {!compact && <p className="legend-help">Colors explain the current map view.</p>}
+      {showPermitLegend && renderPermitLegend()}
+      {showAgeLegend && renderAgeLegend()}
       {showParcelChangeLegend && (
         <div className="legend-section" aria-label="Historical change color legend">
           <h3>Lot Changes</h3>
-          <p className="legend-note">Compares older parcel maps with newer ones.</p>
+          {!compact && <p className="legend-note">Compares older parcel maps with newer ones.</p>}
           <div className="legend-grid">
             {parcelChangeLegendOrder.map((changeType) => (
               <div
@@ -67,7 +66,7 @@ export function Legend({
     return (
       <div className="legend-section">
         <h3>Home Age</h3>
-        <p className="legend-note">{ageLegendNote(activePreset)}</p>
+        {!compact && <p className="legend-note">{ageLegendNote(activePreset)}</p>}
         <div className="legend-grid">
           {decadeOrder.map((bucket) => (
             <div
@@ -87,7 +86,7 @@ export function Legend({
     return (
       <div className="legend-section" aria-label="Permit pressure color legend">
         <h3>{permitPressureMapMode === "stability" ? "Stable vs Changing" : "Permit Work"}</h3>
-        <p className="legend-note">{permitLegendNote(permitPressureMapMode)}</p>
+        {!compact && <p className="legend-note">{permitLegendNote(permitPressureMapMode)}</p>}
         <div className="legend-grid">
           {permitPressureMapMode === "stability"
             ? permitStabilityLegendOrder.map((stabilityType) => (

@@ -929,26 +929,32 @@ function ScaleBreadcrumbs({
   selectedAreaLabel?: string | null;
   onNavigate: (scale: AnalysisScale) => void;
 }) {
-  const items: Array<{ scale: AnalysisScale; label: string; detail: string }> = [
-    { scale: "home", label: selectedAddress || "Property", detail: "one house" },
-    { scale: "block", label: "Block", detail: selectedAddress ? "same street-bounded family" : "pick a home first" },
-    { scale: "area", label: selectedAreaLabel || "Area", detail: "neighborhood context" },
-    { scale: "city", label: "Park Ridge", detail: "whole city" }
+  const items: Array<{ scale: AnalysisScale; label: string; fallback: string }> = [
+    { scale: "home", label: selectedAddress || "Property", fallback: "Property" },
+    { scale: "block", label: selectedAddress ? "Block" : "Pick a home", fallback: "Block" },
+    { scale: "area", label: selectedAreaLabel || "Area", fallback: "Area" },
+    { scale: "city", label: "Park Ridge", fallback: "Park Ridge" }
   ];
 
   return (
     <nav className="scale-breadcrumbs" aria-label="Place hierarchy">
-      {items.map((item) => (
-        <button
-          className={activeScale === item.scale ? "is-active" : ""}
-          type="button"
-          key={item.scale}
-          onClick={() => onNavigate(item.scale)}
-        >
-          <strong>{item.label}</strong>
-          <span>{item.detail}</span>
-        </button>
-      ))}
+      <span className="breadcrumb-kicker">Place path</span>
+      <ol>
+        {items.map((item, index) => (
+          <li key={item.scale}>
+            {index > 0 && <span className="breadcrumb-separator" aria-hidden="true">/</span>}
+            <button
+              className={activeScale === item.scale ? "is-active" : ""}
+              type="button"
+              onClick={() => onNavigate(item.scale)}
+              aria-current={activeScale === item.scale ? "page" : undefined}
+              title={item.label}
+            >
+              {item.label || item.fallback}
+            </button>
+          </li>
+        ))}
+      </ol>
     </nav>
   );
 }
