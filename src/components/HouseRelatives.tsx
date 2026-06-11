@@ -4,6 +4,7 @@ import type { ParcelCollection, ParcelFeature } from "../lib/parcelTypes";
 type HouseRelativesProps = {
   parcel: ParcelFeature;
   parcels: ParcelCollection | null;
+  onSelectRelative?: (feature: ParcelFeature) => void;
 };
 
 type RelativeGroup = {
@@ -12,7 +13,7 @@ type RelativeGroup = {
   relatives: ParcelFeature[];
 };
 
-export function HouseRelatives({ parcel, parcels }: HouseRelativesProps) {
+export function HouseRelatives({ parcel, parcels, onSelectRelative }: HouseRelativesProps) {
   const groups = relativeGroups(parcel, parcels).filter((group) => group.relatives.length > 0);
   if (groups.length === 0) return null;
 
@@ -32,16 +33,40 @@ export function HouseRelatives({ parcel, parcels }: HouseRelativesProps) {
             </div>
             <div className="house-relative-list">
               {group.relatives.slice(0, 4).map((relative) => (
-                <div className="house-relative-card" key={relativeKey(relative)}>
-                  <strong>{relative.properties.address || "Nearby home"}</strong>
-                  <span>{relativeSummary(relative)}</span>
-                </div>
+                <RelativeCard
+                  feature={relative}
+                  key={relativeKey(relative)}
+                  onSelectRelative={onSelectRelative}
+                />
               ))}
             </div>
           </article>
         ))}
       </div>
     </section>
+  );
+}
+
+function RelativeCard({
+  feature,
+  onSelectRelative
+}: {
+  feature: ParcelFeature;
+  onSelectRelative?: (feature: ParcelFeature) => void;
+}) {
+  const body = (
+    <>
+      <strong>{feature.properties.address || "Nearby home"}</strong>
+      <span>{relativeSummary(feature)}</span>
+    </>
+  );
+
+  if (!onSelectRelative) return <div className="house-relative-card">{body}</div>;
+
+  return (
+    <button className="house-relative-card" type="button" onClick={() => onSelectRelative(feature)}>
+      {body}
+    </button>
   );
 }
 

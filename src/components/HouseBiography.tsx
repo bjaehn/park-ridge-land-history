@@ -3,6 +3,7 @@ import type { HargisMediaItem, HomeArtifactRecord, ParcelProperties } from "../l
 
 type HouseBiographyProps = {
   properties: ParcelProperties;
+  focus?: "full" | "artifacts";
 };
 
 type Artifact = {
@@ -19,7 +20,7 @@ type StoryInsight = {
 
 const saleHistoryStartYear = 1999;
 
-export function HouseBiography({ properties }: HouseBiographyProps) {
+export function HouseBiography({ properties, focus = "full" }: HouseBiographyProps) {
   const artifacts = houseArtifacts(properties);
   const storyParagraphs = propertyStoryParagraphs(properties);
   const storyInsights = propertyStoryInsights(properties);
@@ -30,36 +31,40 @@ export function HouseBiography({ properties }: HouseBiographyProps) {
 
   return (
     <div className="house-biography" aria-label="House biography">
-      <div className="house-biography-intro">
-        <span>Home ancestry</span>
-        <p>{biographySummary(properties)}</p>
-      </div>
+      {focus === "full" && (
+        <>
+          <div className="house-biography-intro">
+            <span>Home ancestry</span>
+            <p>{biographySummary(properties)}</p>
+          </div>
 
-      <div className="home-ancestry-story" aria-label="Property story summary">
-        {storyParagraphs.map((paragraph) => (
-          <p key={paragraph}>{paragraph}</p>
-        ))}
-      </div>
+          <div className="home-ancestry-story" aria-label="Property story summary">
+            {storyParagraphs.map((paragraph) => (
+              <p key={paragraph}>{paragraph}</p>
+            ))}
+          </div>
 
-      <div className="ancestry-summary-grid" aria-label="Home ancestry summary">
-        {storyInsights.map((insight) => (
-          <article key={insight.label}>
-            <span>{insight.label}</span>
-            <strong>{insight.value}</strong>
-            <p>{insight.detail}</p>
-          </article>
-        ))}
-      </div>
+          <div className="ancestry-summary-grid" aria-label="Home ancestry summary">
+            {storyInsights.map((insight) => (
+              <article key={insight.label}>
+                <span>{insight.label}</span>
+                <strong>{insight.value}</strong>
+                <p>{insight.detail}</p>
+              </article>
+            ))}
+          </div>
 
-      <div className="biography-chapters" aria-label="House record chapters">
-        {biographyChapters(properties).map((chapter) => (
-          <article key={chapter.label}>
-            <span>{chapter.label}</span>
-            <strong>{chapter.value}</strong>
-            <small>{chapter.detail}</small>
-          </article>
-        ))}
-      </div>
+          <div className="biography-chapters" aria-label="House record chapters">
+            {biographyChapters(properties).map((chapter) => (
+              <article key={chapter.label}>
+                <span>{chapter.label}</span>
+                <strong>{chapter.value}</strong>
+                <small>{chapter.detail}</small>
+              </article>
+            ))}
+          </div>
+        </>
+      )}
 
       <div className="evidence-drawer">
         <div>

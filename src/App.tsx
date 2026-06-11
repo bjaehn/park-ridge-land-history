@@ -13,7 +13,7 @@ import { DecadeDistributionChart } from "./components/DecadeDistributionChart";
 import { NeighborhoodComparisonTable } from "./components/NeighborhoodComparisonTable";
 import { HistoricalLayerPanel } from "./components/HistoricalLayerPanel";
 import { HotspotPanel, type AreaView } from "./components/HotspotPanel";
-import { ParcelDetailPanel } from "./components/ParcelDetailPanel";
+import { ParcelDetailPanel, type PropertyView } from "./components/ParcelDetailPanel";
 import { PermitWorkComparisonTable } from "./components/PermitWorkComparisonTable";
 import { ProductEvidencePanel } from "./components/ProductEvidencePanel";
 import { SearchPanel } from "./components/SearchPanel";
@@ -97,6 +97,7 @@ export default function App() {
   const [swipePosition, setSwipePosition] = useState(50);
   const [selectedHotspot, setSelectedHotspot] = useState<HotspotFeature | null>(null);
   const [activeAnalysisScale, setActiveAnalysisScale] = useState<AnalysisScale>("home");
+  const [activePropertyView, setActivePropertyView] = useState<PropertyView>("story");
   const [activeBlockView, setActiveBlockView] = useState<BlockView>("age");
   const [activeAreaView, setActiveAreaView] = useState<AreaView>("age");
   const [activeAreaGrouping, setActiveAreaGrouping] = useState<AreaGroupingId>("neighborhoods");
@@ -200,6 +201,12 @@ export default function App() {
       setSelectedAreaId(null);
     }
   }, [activeAnalysisScale]);
+
+  useEffect(() => {
+    if (activeAnalysisScale !== "area" || selectedAreaId || !selectedPin) return;
+    const area = areaSummaries.features.find((candidate) => candidate.properties.parcelPins.includes(selectedPin));
+    if (area) setSelectedAreaId(area.properties.id);
+  }, [activeAnalysisScale, areaSummaries, selectedAreaId, selectedPin]);
 
   useEffect(() => {
     setSelectedHotspot(null);
@@ -608,13 +615,21 @@ export default function App() {
     });
   }
 
-  return (
-    <main className="app-shell">
-      <section className="map-workspace" aria-label="Map workspace">
+  function navigateToScale(scale: AnalysisScale) {
+    if (scale === "area") {
+      setActiveAreaGrouping("neighborhoods");
+      setSelectedAreaId(null);
+    }
+    setAnalysisScale(scale);
+  }
+
+  const mapPanel = (
+    <section className="scale-map-column" aria-label={`${scaleLabel(activeAnalysisScale)} map`}>
+      <div className="tab-map-workspace">
         <MapView
           parcels={mapParcels}
           selectedParcel={selectedParcel}
-          selectedBlockParcels={activeAnalysisScale === "block" ? selectedBlockFilteredParcels : selectedBlockParcels}
+          selectedBlockParcels={activeAnalysisScale === "block" ? selectedBlockFilteredParcels : null}
           boundary={boundary}
           showOutlines={showOutlines}
           showBoundary={showBoundary}
@@ -661,8 +676,12 @@ export default function App() {
             compact
           />
         </div>
-      </section>
-      <aside className="control-panel">
+      </div>
+    </section>
+  );
+
+  return (
+    <main className="app-shell product-app-shell">
         <header className="app-header">
           <p>Work in progress</p>
           <h1>Park Ridge Land History</h1>
@@ -670,7 +689,14 @@ export default function App() {
         <div className="analysis-workspace-card">
           <AnalysisTabs activeScale={activeAnalysisScale} onSetScale={setAnalysisScale} />
 
-          <div className="analysis-tab-panel" role="tabpanel">
+          <div className="analysis-tab-panel scale-workspace" role="tabpanel">
+          <section className="scale-analysis-column" aria-label={`${scaleLabel(activeAnalysisScale)} analysis`}>
+          <ScaleBreadcrumbs
+            activeScale={activeAnalysisScale}
+            selectedAddress={selectedParcel?.properties.address}
+            selectedAreaLabel={selectedArea?.properties.label}
+            onNavigate={navigateToScale}
+          />
           <AnalysisNarrative
             activeScale={activeAnalysisScale}
             selectedParcel={selectedParcel}
@@ -695,6 +721,9 @@ export default function App() {
                 parcels={pressureDecoratedParcels}
                 permitPressureWindow={permitPressureWindow}
                 isLoadingDetail={isLoadingDetail}
+                activeView={activePropertyView}
+                onSetActiveView={setActivePropertyView}
+                onSelectRelatedParcel={selectParcel}
                 onClearSelection={() => setSelectedPin(null)}
               />
             </>
@@ -854,9 +883,10 @@ export default function App() {
               }}
             />
           </ProductEvidencePanel>
+          </section>
+          {mapPanel}
           </div>
         </div>
-      </aside>
     </main>
   );
 }
@@ -879,4 +909,46 @@ function yearRangeForFeatures(
     min: years.length ? Math.min(...years) : fallback.min,
     max: years.length ? Math.max(...years) : fallback.max
   };
+}
+
+function scaleLabel(scale: AnalysisScale): string {
+  if (scale === "home") return "Property";
+  if (scale === "block") return "Block";
+  if (scale === "area") return "Area";
+  return "Park Ridge";
+}
+
+function ScaleBreadcrumbs({
+  activeScale,
+  selectedAddress,
+  selectedAreaLabel,
+  onNavigate
+}: {
+  activeScale: AnalysisScale;
+  selectedAddress?: string | null;
+  selectedAreaLabel?: string | null;
+  onNavigate: (scale: AnalysisScale) => void;
+}) {
+  const items: Array<{ scale: AnalysisScale; label: string; detail: string }> = [
+    { scale: "home", label: selectedAddress || "Property", detail: "one house" },
+    { scale: "block", label: "Block", detail: selectedAddress ? "same street-bounded family" : "pick a home first" },
+    { scale: "area", label: selectedAreaLabel || "Area", detail: "neighborhood context" },
+    { scale: "city", label: "Park Ridge", detail: "whole city" }
+  ];
+
+  return (
+    <nav className="scale-breadcrumbs" aria-label="Place hierarchy">
+      {items.map((item) => (
+        <button
+          className={activeScale === item.scale ? "is-active" : ""}
+          type="button"
+          key={item.scale}
+          onClick={() => onNavigate(item.scale)}
+        >
+          <strong>{item.label}</strong>
+          <span>{item.detail}</span>
+        </button>
+      ))}
+    </nav>
+  );
 }

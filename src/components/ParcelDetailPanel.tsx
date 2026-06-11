@@ -14,14 +14,29 @@ type ParcelDetailPanelProps = {
   parcels: ParcelCollection | null;
   permitPressureWindow: PermitPressureWindow;
   isLoadingDetail?: boolean;
+  activeView: PropertyView;
+  onSetActiveView: (view: PropertyView) => void;
+  onSelectRelatedParcel: (feature: ParcelFeature) => void;
   onClearSelection: () => void;
 };
+
+export type PropertyView = "story" | "timeline" | "artifacts" | "relatives";
+
+const propertyViews: Array<{ id: PropertyView; label: string; meta: string }> = [
+  { id: "story", label: "Story", meta: "Summary, signals, and basic facts." },
+  { id: "timeline", label: "Timeline", meta: "Build, sales, permits, value, and artifacts." },
+  { id: "artifacts", label: "Artifacts", meta: "Historic mentions, photos, PDFs, and source clues." },
+  { id: "relatives", label: "Related homes", meta: "Same block, same era, and historic matches." }
+];
 
 export function ParcelDetailPanel({
   parcel,
   parcels,
   permitPressureWindow,
   isLoadingDetail = false,
+  activeView,
+  onSetActiveView,
+  onSelectRelatedParcel,
   onClearSelection
 }: ParcelDetailPanelProps) {
   const properties = parcel?.properties;
@@ -72,17 +87,43 @@ export function ParcelDetailPanel({
         <>
           <h3 className="detail-title">{properties.address || "Parcel details"}</h3>
           {isLoadingDetail && <p className="quiet-note">Loading full home ancestry records...</p>}
-          <HouseBiography properties={properties} />
-          <HistoricMentions properties={properties} />
-          <HomeSignals properties={properties} />
-          <ChangeStoryCard scope="property" parcel={parcel} />
-          <HouseRelatives parcel={parcel} parcels={parcels} />
-          <HouseEvolutionTimeline properties={properties} />
-          <NearbyActivitySummary
-            parcel={parcel}
-            parcels={parcels}
-            permitPressureWindow={permitPressureWindow}
-          />
+          <div className="preset-grid property-preset-grid" aria-label="Choose a property view">
+            {propertyViews.map((view) => (
+              <button
+                className={`preset-button ${activeView === view.id ? "is-active" : ""}`}
+                type="button"
+                aria-pressed={activeView === view.id}
+                key={view.id}
+                onClick={() => onSetActiveView(view.id)}
+              >
+                <span>{view.label}</span>
+                <small>{view.meta}</small>
+                {activeView === view.id && <em>Showing now</em>}
+              </button>
+            ))}
+          </div>
+          {activeView === "story" && (
+            <>
+              <HouseBiography properties={properties} />
+              <HomeSignals properties={properties} />
+              <ChangeStoryCard scope="property" parcel={parcel} />
+              <NearbyActivitySummary
+                parcel={parcel}
+                parcels={parcels}
+                permitPressureWindow={permitPressureWindow}
+              />
+            </>
+          )}
+          {activeView === "timeline" && <HouseEvolutionTimeline properties={properties} />}
+          {activeView === "artifacts" && (
+            <>
+              <HistoricMentions properties={properties} />
+              <HouseBiography properties={properties} focus="artifacts" />
+            </>
+          )}
+          {activeView === "relatives" && (
+            <HouseRelatives parcel={parcel} parcels={parcels} onSelectRelative={onSelectRelatedParcel} />
+          )}
           <h4 className="facts-heading">Property facts</h4>
           <dl className="detail-list">
             {rows.map(([label, value]) => (
