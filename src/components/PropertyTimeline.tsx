@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { formatCurrency, formatNumber, formatYear } from "../lib/formatters";
 import { formatEvolutionMeta, formatEvolutionYear, getHouseEvolutionTimeline } from "../lib/houseEvolution";
 import type { HargisMediaItem, HouseEvolutionEvent, HouseEvolutionEventType, ParcelProperties } from "../lib/parcelTypes";
@@ -82,10 +83,6 @@ export function PropertyTimeline({ properties }: PropertyTimelineProps) {
   const changeStory = classifyParcelChangeStory(properties);
   const signals = buildHomeSignals(properties);
   const photos = getPhotos(properties);
-  const hasFinancialHistory =
-    properties.first_assessed_year && properties.latest_assessed_year &&
-    properties.first_assessed_year !== properties.latest_assessed_year &&
-    properties.first_assessed_total && properties.latest_assessed_total;
 
   return (
     <div className="pt-root">
@@ -160,18 +157,25 @@ export function PropertyTimeline({ properties }: PropertyTimelineProps) {
         )}
       </div>
 
-      {/* Value history chart — assessed value vs sale price over time */}
-      {(hasFinancialHistory || events.some(e => e.event_type === "sale" && e.price)) && (
-        <div className="pt-value-section">
-          <div className="pt-section-subheading">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-            </svg>
-            Value over time
-          </div>
-          <ValueVsSaleChart properties={properties} events={events} />
+      {/* Value charts — two separate panels */}
+      <div className="pt-value-section">
+        <div className="pt-section-subheading">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+          </svg>
+          Value history
         </div>
-      )}
+        <div className="pt-value-charts">
+          <div className="pt-chart-block">
+            <div className="pt-chart-title">Sale prices</div>
+            <SalePriceChart events={events} />
+          </div>
+          <div className="pt-chart-block">
+            <div className="pt-chart-title">Assessed value</div>
+            <AssessedValueChart properties={properties} />
+          </div>
+        </div>
+      </div>
 
       {/* Home signals */}
       {signals.length > 0 && (
@@ -344,7 +348,142 @@ function ValueTrend({ properties }: { properties: ParcelProperties }) {
   );
 }
 
-// ─── Value vs Sale chart ───────────────────────────────────────────────────────
+// ─── Shared chart constants ────────────────────────────────────────────────────
+
+const CW = 300, CH = 108;
+const CPAD = { t: 18, r: 10, b: 26, l: 52 };
+const CFONT = `ui-monospace,'Cascadia Code',monospace`;
+const CFS = 8;
+
+function chartAxes(pts: Array<{ year: number; value: number }>) {
+  const allYears = pts.map(p => p.year);
+  const allValues = pts.map(p => p.value);
+  const minYear = Math.min(...allYears) - 1;
+  const maxYear = Math.max(...allYears) + 2;
+  const rawMin = Math.min(...allValues);
+  const rawMax = Math.max(...allValues);
+  const vRange = rawMax - rawMin || rawMax * 0.4;
+  const minVal = Math.max(0, rawMin - vRange * 0.18);
+  const maxVal = rawMax + vRange * 0.18;
+  const iW = CW - CPAD.l - CPAD.r;
+  const iH = CH - CPAD.t - CPAD.b;
+  const xp = (y: number) => CPAD.l + ((y - minYear) / Math.max(maxYear - minYear, 1)) * iW;
+  const yp = (v: number) => CPAD.t + (1 - (v - minVal) / Math.max(maxVal - minVal, 1)) * iH;
+  const fmt = (v: number) => v >= 1_000_000 ? `$${(v / 1_000_000).toFixed(1)}M` : `$${Math.round(v / 1_000)}k`;
+  const yTicks = [rawMin, (rawMin + rawMax) / 2, rawMax];
+  const xSpan = maxYear - minYear;
+  const xStep = xSpan <= 8 ? 2 : xSpan <= 16 ? 4 : xSpan <= 25 ? 5 : 10;
+  const xStart = Math.ceil(minYear / xStep) * xStep;
+  const xTicks: number[] = [];
+  for (let y = xStart; y <= maxYear; y += xStep) xTicks.push(y);
+  return { xp, yp, fmt, yTicks, xTicks };
+}
+
+function ChartScaffold({ children, label }: { children: ReactNode; label: string }) {
+  return (
+    <svg viewBox={`0 0 ${CW} ${CH}`} className="pt-value-chart" aria-label={label} role="img">
+      {children}
+    </svg>
+  );
+}
+
+// ─── Sale price chart ──────────────────────────────────────────────────────────
+
+function SalePriceChart({ events }: { events: HouseEvolutionEvent[] }) {
+  const pts = events
+    .filter((e): e is HouseEvolutionEvent & { year: number; price: number } =>
+      e.event_type === "sale" && e.year != null && typeof e.price === "number" && e.price > 0
+    )
+    .sort((a, b) => a.year - b.year)
+    .map(e => ({ year: e.year, value: e.price }));
+
+  if (pts.length === 0) return <p className="pt-chart-empty">No recorded sale prices</p>;
+
+  const { xp, yp, fmt, yTicks, xTicks } = chartAxes(pts);
+  const linePath = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${xp(p.year).toFixed(1)} ${yp(p.value).toFixed(1)}`).join(" ");
+  const fillPath = pts.length >= 2
+    ? `${linePath} L ${xp(pts[pts.length - 1].year).toFixed(1)} ${(CH - CPAD.b).toFixed(1)} L ${xp(pts[0].year).toFixed(1)} ${(CH - CPAD.b).toFixed(1)} Z`
+    : null;
+
+  return (
+    <ChartScaffold label="Sale price history">
+      <defs>
+        <linearGradient id="saleGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.12" />
+          <stop offset="100%" stopColor="#22d3ee" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      {yTicks.map((v, i) => (
+        <line key={i} x1={CPAD.l} y1={yp(v)} x2={CW - CPAD.r} y2={yp(v)} stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
+      ))}
+      {yTicks.map((v, i) => (
+        <text key={i} x={CPAD.l - 5} y={yp(v) + 3.5} textAnchor="end" fill="rgba(255,255,255,0.30)" fontSize={CFS} fontFamily={CFONT}>{fmt(v)}</text>
+      ))}
+      <line x1={CPAD.l} y1={CH - CPAD.b} x2={CW - CPAD.r} y2={CH - CPAD.b} stroke="rgba(255,255,255,0.10)" strokeWidth="1" />
+      {xTicks.map((y, i) => (
+        <text key={i} x={xp(y)} y={CH - CPAD.b + 12} textAnchor="middle" fill="rgba(255,255,255,0.28)" fontSize={CFS} fontFamily={CFONT}>{y}</text>
+      ))}
+      {fillPath && <path d={fillPath} fill="url(#saleGrad)" />}
+      {pts.length >= 2 && <path d={linePath} stroke="#22d3ee" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" opacity="0.75" />}
+      {pts.map((pt, i) => (
+        <g key={i}>
+          <circle cx={xp(pt.year)} cy={yp(pt.value)} r="3.5" fill="#22d3ee" opacity="0.90" />
+          <text x={xp(pt.year)} y={yp(pt.value) - 6} textAnchor="middle" fill="#67e8f9" fontSize={CFS} fontFamily={CFONT}>{fmt(pt.value)}</text>
+        </g>
+      ))}
+    </ChartScaffold>
+  );
+}
+
+// ─── Assessed value chart ──────────────────────────────────────────────────────
+
+function AssessedValueChart({ properties }: { properties: ParcelProperties }) {
+  const pts: Array<{ year: number; value: number }> = [];
+  if (properties.first_assessed_year && properties.first_assessed_total)
+    pts.push({ year: properties.first_assessed_year, value: properties.first_assessed_total });
+  if (properties.latest_assessed_year && properties.latest_assessed_total &&
+      properties.latest_assessed_year !== (pts[0]?.year ?? -1))
+    pts.push({ year: properties.latest_assessed_year, value: properties.latest_assessed_total });
+
+  if (pts.length === 0) return <p className="pt-chart-empty">No assessment records</p>;
+
+  const { xp, yp, fmt, yTicks, xTicks } = chartAxes(pts);
+  const linePath = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${xp(p.year).toFixed(1)} ${yp(p.value).toFixed(1)}`).join(" ");
+  const fillPath = pts.length >= 2
+    ? `${linePath} L ${xp(pts[pts.length - 1].year).toFixed(1)} ${(CH - CPAD.b).toFixed(1)} L ${xp(pts[0].year).toFixed(1)} ${(CH - CPAD.b).toFixed(1)} Z`
+    : null;
+
+  return (
+    <ChartScaffold label="Assessed value history">
+      <defs>
+        <linearGradient id="assessGrad2" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#a78bfa" stopOpacity="0.14" />
+          <stop offset="100%" stopColor="#a78bfa" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      {yTicks.map((v, i) => (
+        <line key={i} x1={CPAD.l} y1={yp(v)} x2={CW - CPAD.r} y2={yp(v)} stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
+      ))}
+      {yTicks.map((v, i) => (
+        <text key={i} x={CPAD.l - 5} y={yp(v) + 3.5} textAnchor="end" fill="rgba(255,255,255,0.30)" fontSize={CFS} fontFamily={CFONT}>{fmt(v)}</text>
+      ))}
+      <line x1={CPAD.l} y1={CH - CPAD.b} x2={CW - CPAD.r} y2={CH - CPAD.b} stroke="rgba(255,255,255,0.10)" strokeWidth="1" />
+      {xTicks.map((y, i) => (
+        <text key={i} x={xp(y)} y={CH - CPAD.b + 12} textAnchor="middle" fill="rgba(255,255,255,0.28)" fontSize={CFS} fontFamily={CFONT}>{y}</text>
+      ))}
+      {fillPath && <path d={fillPath} fill="url(#assessGrad2)" />}
+      {pts.length >= 2 && <path d={linePath} stroke="#a78bfa" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" opacity="0.75" />}
+      {pts.map((pt, i) => (
+        <g key={i}>
+          <circle cx={xp(pt.year)} cy={yp(pt.value)} r="3.5" fill="#a78bfa" opacity="0.92" />
+          <text x={xp(pt.year)} y={yp(pt.value) - 6} textAnchor="middle" fill="#c4b5fd" fontSize={CFS} fontFamily={CFONT}>{fmt(pt.value)}</text>
+        </g>
+      ))}
+    </ChartScaffold>
+  );
+}
+
+// ─── OLD (unused) value vs sale chart ─────────────────────────────────────────
 
 function ValueVsSaleChart({ properties, events }: { properties: ParcelProperties; events: HouseEvolutionEvent[] }) {
   const salePoints = events

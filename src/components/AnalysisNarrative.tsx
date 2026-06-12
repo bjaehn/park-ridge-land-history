@@ -30,6 +30,10 @@ export function AnalysisNarrative({
   if (activeScale === "home" && !selectedParcel) {
     return <HomeWelcomeCard />;
   }
+  // PropertyTimeline owns all narrative when a parcel is selected
+  if (activeScale === "home" && selectedParcel) {
+    return null;
+  }
 
   const paragraphs = narrativeParagraphs({
     activeScale,

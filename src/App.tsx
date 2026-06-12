@@ -972,7 +972,7 @@ function ScaleBreadcrumbs({
   onNavigate: (scale: AnalysisScale) => void;
 }) {
   const items: Array<{ scale: AnalysisScale; label: string }> = [
-    { scale: "home",  label: selectedAddress || "Property" },
+    { scale: "home",  label: "Property" },
     { scale: "block", label: "Block" },
     { scale: "area",  label: neighborhoodLabel || "Neighborhood" },
     { scale: "city",  label: "Park Ridge" }

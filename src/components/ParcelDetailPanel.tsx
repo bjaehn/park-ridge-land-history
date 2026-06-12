@@ -92,8 +92,6 @@ export function ParcelDetailPanel({
         <div className="parcel-header-main">
           <div className="parcel-header-address">{properties.address || "Selected parcel"}</div>
           <div className="parcel-header-meta">
-            {properties.year_built && <span className="parcel-chip">Built {properties.year_built}</span>}
-            {properties.decade_built && <span className="parcel-chip">{properties.decade_built}</span>}
             {properties.hargis_record_count ? <span className="parcel-chip parcel-chip-green">Historic survey</span> : null}
           </div>
         </div>
