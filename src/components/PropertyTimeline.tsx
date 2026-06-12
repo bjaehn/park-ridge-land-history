@@ -160,17 +160,16 @@ export function PropertyTimeline({ properties }: PropertyTimelineProps) {
         )}
       </div>
 
-      {/* Value history — shown after timeline if we have a trend */}
-      {hasFinancialHistory && (
+      {/* Value history chart — assessed value vs sale price over time */}
+      {(hasFinancialHistory || events.some(e => e.event_type === "sale" && e.price)) && (
         <div className="pt-value-section">
           <div className="pt-section-subheading">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" />
-              <line x1="6" y1="20" x2="6" y2="14" /><line x1="2" y1="20" x2="22" y2="20" />
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
             </svg>
-            Assessment trend
+            Value over time
           </div>
-          <ValueTrend properties={properties} />
+          <ValueVsSaleChart properties={properties} events={events} />
         </div>
       )}
 
@@ -341,6 +340,153 @@ function ValueTrend({ properties }: { properties: ParcelProperties }) {
           {isUp ? "▲" : "▼"} {Math.abs(Math.round(changePct))}% change over {(properties.latest_assessed_year! - properties.first_assessed_year!)} years
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Value vs Sale chart ───────────────────────────────────────────────────────
+
+function ValueVsSaleChart({ properties, events }: { properties: ParcelProperties; events: HouseEvolutionEvent[] }) {
+  const salePoints = events
+    .filter((e): e is HouseEvolutionEvent & { year: number; price: number } =>
+      e.event_type === "sale" && e.year != null && typeof e.price === "number" && e.price > 0
+    )
+    .map(e => ({ year: e.year, value: e.price }));
+
+  const assessPoints: Array<{ year: number; value: number }> = [];
+  if (properties.first_assessed_year && properties.first_assessed_total) {
+    assessPoints.push({ year: properties.first_assessed_year, value: properties.first_assessed_total });
+  }
+  if (
+    properties.latest_assessed_year && properties.latest_assessed_total &&
+    properties.latest_assessed_year !== (assessPoints[0]?.year ?? -1)
+  ) {
+    assessPoints.push({ year: properties.latest_assessed_year, value: properties.latest_assessed_total });
+  }
+
+  const allPoints = [...salePoints, ...assessPoints];
+  if (allPoints.length < 2) return null;
+
+  const allYears = allPoints.map(p => p.year);
+  const allValues = allPoints.map(p => p.value);
+  const minYear = Math.min(...allYears);
+  const maxYear = Math.max(...allYears) + 2;
+  const rawMin = Math.min(...allValues);
+  const rawMax = Math.max(...allValues);
+  const vRange = rawMax - rawMin || rawMax * 0.5;
+  const minVal = Math.max(0, rawMin - vRange * 0.15);
+  const maxVal = rawMax + vRange * 0.15;
+
+  const W = 300, H = 140;
+  const pad = { t: 16, r: 14, b: 28, l: 56 };
+  const cW = W - pad.l - pad.r;
+  const cH = H - pad.t - pad.b;
+
+  const xp = (y: number) => pad.l + ((y - minYear) / Math.max(maxYear - minYear, 1)) * cW;
+  const yp = (v: number) => pad.t + (1 - (v - minVal) / Math.max(maxVal - minVal, 1)) * cH;
+  const fmtK = (v: number) =>
+    v >= 1_000_000 ? `$${(v / 1_000_000).toFixed(1)}M` : `$${Math.round(v / 1_000)}k`;
+
+  const assessPathD = assessPoints.length >= 2
+    ? assessPoints.map((p, i) => `${i === 0 ? "M" : "L"} ${xp(p.year).toFixed(1)} ${yp(p.value).toFixed(1)}`).join(" ")
+    : null;
+  const assessFillD = assessPathD && assessPoints.length >= 2
+    ? `${assessPathD} L ${xp(assessPoints[assessPoints.length - 1].year).toFixed(1)} ${(H - pad.b).toFixed(1)} L ${xp(assessPoints[0].year).toFixed(1)} ${(H - pad.b).toFixed(1)} Z`
+    : null;
+
+  const yTicks = [rawMin, (rawMin + rawMax) / 2, rawMax];
+  const xSpan = maxYear - minYear;
+  const xStep = xSpan <= 8 ? 2 : xSpan <= 16 ? 4 : xSpan <= 25 ? 5 : 10;
+  const xStart = Math.ceil(minYear / xStep) * xStep;
+  const xTicks: number[] = [];
+  for (let y = xStart; y <= maxYear; y += xStep) xTicks.push(y);
+
+  const hasSales = salePoints.length > 0;
+  const hasAssess = assessPoints.length >= 1;
+
+  return (
+    <div className="pt-value-chart-wrap">
+      <svg viewBox={`0 0 ${W} ${H}`} className="pt-value-chart" aria-label="Property value history">
+        <defs>
+          <linearGradient id="assessGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#a78bfa" stopOpacity="0.22" />
+            <stop offset="100%" stopColor="#a78bfa" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+
+        {/* Grid lines */}
+        {yTicks.map((v, i) => (
+          <line key={i} x1={pad.l} y1={yp(v)} x2={W - pad.r} y2={yp(v)}
+            stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
+        ))}
+
+        {/* Y labels */}
+        {yTicks.map((v, i) => (
+          <text key={i} x={pad.l - 6} y={yp(v) + 3.5} textAnchor="end"
+            fill="rgba(255,255,255,0.32)" fontSize="8" fontFamily="ui-monospace,monospace">
+            {fmtK(v)}
+          </text>
+        ))}
+
+        {/* X baseline */}
+        <line x1={pad.l} y1={H - pad.b} x2={W - pad.r} y2={H - pad.b}
+          stroke="rgba(255,255,255,0.10)" strokeWidth="1" />
+
+        {/* X labels */}
+        {xTicks.map((y, i) => (
+          <text key={i} x={xp(y)} y={H - pad.b + 12} textAnchor="middle"
+            fill="rgba(255,255,255,0.27)" fontSize="8" fontFamily="ui-monospace,monospace">
+            {y}
+          </text>
+        ))}
+
+        {/* Assessment fill */}
+        {assessFillD && <path d={assessFillD} fill="url(#assessGrad)" />}
+
+        {/* Assessment trend line */}
+        {assessPathD && (
+          <path d={assessPathD} stroke="#a78bfa" strokeWidth="1.5"
+            strokeDasharray="5 3" fill="none" strokeLinecap="round" opacity="0.80" />
+        )}
+
+        {/* Assessment endpoints */}
+        {assessPoints.map((pt, i) => (
+          <g key={i}>
+            <circle cx={xp(pt.year)} cy={yp(pt.value)} r="3.5" fill="#a78bfa" opacity="0.9" />
+            <text x={xp(pt.year)} y={yp(pt.value) - 6} textAnchor="middle"
+              fill="#c4b5fd" fontSize="7.5" fontFamily="ui-monospace,monospace">
+              {fmtK(pt.value)}
+            </text>
+          </g>
+        ))}
+
+        {/* Sale price dots */}
+        {salePoints.map((pt, i) => (
+          <g key={i}>
+            <circle cx={xp(pt.year)} cy={yp(pt.value)} r="7" fill="#22c55e" opacity="0.10" />
+            <circle cx={xp(pt.year)} cy={yp(pt.value)} r="4" fill="#22c55e" opacity="0.90" />
+            <text x={xp(pt.year)} y={yp(pt.value) - 8} textAnchor="middle"
+              fill="#4ade80" fontSize="7.5" fontFamily="ui-monospace,monospace">
+              {fmtK(pt.value)}
+            </text>
+          </g>
+        ))}
+      </svg>
+
+      <div className="pt-chart-legend">
+        {hasAssess && (
+          <span className="pt-legend-item">
+            <span className="pt-legend-swatch pt-legend-swatch-assess" />
+            Assessed
+          </span>
+        )}
+        {hasSales && (
+          <span className="pt-legend-item">
+            <span className="pt-legend-swatch pt-legend-swatch-sale" />
+            Sale price
+          </span>
+        )}
+      </div>
     </div>
   );
 }

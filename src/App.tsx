@@ -172,6 +172,20 @@ export default function App() {
     [areaSummaries, selectedAreaId]
   );
 
+  // Neighborhood lookup for breadcrumbs — always shows correct neighborhood regardless of active tab
+  const neighborhoodSummaries = useMemo(
+    () => pressureDecoratedParcels
+      ? buildAreaSummaries(pressureDecoratedParcels, "neighborhoods", emptyHotspots)
+      : emptyAreas,
+    [pressureDecoratedParcels]
+  );
+
+  const parcelNeighborhoodLabel = useMemo(() => {
+    if (!selectedPin) return null;
+    const area = neighborhoodSummaries.features.find((a) => a.properties.parcelPins.includes(selectedPin));
+    return area?.properties.label ?? null;
+  }, [selectedPin, neighborhoodSummaries]);
+
   const selectedAreaParcels = useMemo<ParcelCollection | null>(() => {
     if (!selectedArea || !pressureDecoratedParcels) return null;
     const pins = new Set(selectedArea.properties.parcelPins);
@@ -694,7 +708,7 @@ export default function App() {
           <ScaleBreadcrumbs
             activeScale={activeAnalysisScale}
             selectedAddress={selectedParcel?.properties.address}
-            selectedAreaLabel={selectedArea?.properties.label}
+            neighborhoodLabel={parcelNeighborhoodLabel || selectedArea?.properties.label}
             onNavigate={navigateToScale}
           />
           <AnalysisNarrative
@@ -949,18 +963,18 @@ const breadcrumbIcons: Record<AnalysisScale, JSX.Element> = {
 function ScaleBreadcrumbs({
   activeScale,
   selectedAddress,
-  selectedAreaLabel,
+  neighborhoodLabel,
   onNavigate
 }: {
   activeScale: AnalysisScale;
   selectedAddress?: string | null;
-  selectedAreaLabel?: string | null;
+  neighborhoodLabel?: string | null;
   onNavigate: (scale: AnalysisScale) => void;
 }) {
   const items: Array<{ scale: AnalysisScale; label: string }> = [
     { scale: "home",  label: selectedAddress || "Property" },
-    { scale: "block", label: selectedAddress ? "Block" : "Pick a home" },
-    { scale: "area",  label: selectedAreaLabel || "Area" },
+    { scale: "block", label: "Block" },
+    { scale: "area",  label: neighborhoodLabel || "Neighborhood" },
     { scale: "city",  label: "Park Ridge" }
   ];
 
