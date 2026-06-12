@@ -16,6 +16,7 @@ import { HotspotPanel, type AreaView } from "./components/HotspotPanel";
 import { ParcelDetailPanel, type PropertyView } from "./components/ParcelDetailPanel";
 import { PermitWorkComparisonTable } from "./components/PermitWorkComparisonTable";
 import { ProductEvidencePanel } from "./components/ProductEvidencePanel";
+import { RoadParcelTimelinePanel } from "./components/RoadParcelTimelinePanel";
 import { SearchPanel } from "./components/SearchPanel";
 import { TimelineControl } from "./components/TimelineControl";
 import { VisualizationPanel, type VisualizationPreset } from "./components/VisualizationPanel";
@@ -46,6 +47,11 @@ import {
   type PermitPressureWindow
 } from "./lib/permitPressure";
 import type { ParcelCollection, ParcelFeature } from "./lib/parcelTypes";
+import {
+  filterRoadHistoryByPeriod,
+  type HistoryPeriodId,
+  type RoadSegmentHistoryFeature
+} from "./lib/roadParcelHistory";
 
 const visibleLegendBuckets = new Set(decadeOrder);
 const visiblePermitPressureTypes = new Set(permitPressureLegendOrder);
@@ -69,7 +75,7 @@ const emptyAreas: AreaSummaryCollection = {
 };
 
 export default function App() {
-  const { parcels, boundary, wardBoundaries, historicalLayers } = useParkRidgeData();
+  const { parcels, boundary, wardBoundaries, historicalLayers, roadParcelHistory } = useParkRidgeData();
   const [showOutlines, setShowOutlines] = useState(true);
   const [showBoundary, setShowBoundary] = useState(true);
   const [showPermitPressure, setShowPermitPressure] = useState(true);
@@ -102,6 +108,9 @@ export default function App() {
   const [activeAreaView, setActiveAreaView] = useState<AreaView>("age");
   const [activeAreaGrouping, setActiveAreaGrouping] = useState<AreaGroupingId>("neighborhoods");
   const [selectedAreaId, setSelectedAreaId] = useState<string | null>(null);
+  const [selectedHistoryPeriod, setSelectedHistoryPeriod] = useState<HistoryPeriodId>("pre_1939");
+  const [showRoadHistory, setShowRoadHistory] = useState(false);
+  const [selectedRoadHistory, setSelectedRoadHistory] = useState<RoadSegmentHistoryFeature | null>(null);
 
   const yearRange = useMemo(() => {
     const years = parcels?.features
@@ -208,12 +217,21 @@ export default function App() {
       : emptyHotspots;
   const mapAreaSummaries =
     activeAnalysisScale === "area" && activeAreaGrouping !== "change_zones" && !selectedArea ? areaSummaries : emptyAreas;
+  const mapRoadHistory = useMemo(
+    () => filterRoadHistoryByPeriod(roadParcelHistory?.road_segments ?? null, selectedHistoryPeriod),
+    [roadParcelHistory, selectedHistoryPeriod]
+  );
+  const mapShowRoadHistory = activeAnalysisScale === "city" && showRoadHistory;
 
   useEffect(() => {
     if (activeAnalysisScale !== "area") {
       setSelectedHotspot(null);
       setSelectedAreaId(null);
     }
+  }, [activeAnalysisScale]);
+
+  useEffect(() => {
+    if (activeAnalysisScale !== "city") setSelectedRoadHistory(null);
   }, [activeAnalysisScale]);
 
   useEffect(() => {
@@ -659,11 +677,15 @@ export default function App() {
           selectedHotspot={activeAnalysisScale === "area" ? selectedHotspot : null}
           selectedArea={activeAnalysisScale === "area" ? selectedArea : null}
           selectedParcelChange={selectedParcelChange}
+          roadHistory={mapRoadHistory}
+          showRoadHistory={mapShowRoadHistory}
+          selectedHistoryPeriod={selectedHistoryPeriod}
           visibleChangeTypes={visibleChangeTypes}
           onSelectParcel={activeAnalysisScale === "block" ? selectBlockParcel : selectParcel}
           onSelectParcelChange={setSelectedParcelChange}
           onSelectHotspot={selectHotspot}
           onSelectArea={selectArea}
+          onSelectRoadHistory={setSelectedRoadHistory}
         />
         <div className="map-companion-overlay">
           <MapCompanion

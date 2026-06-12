@@ -1,5 +1,6 @@
 import type { HotspotFeature } from "./hotspots";
 import { parcelChangeLabels, type ParcelChangeFeature, type ParcelChangeType } from "./parcelChangeTypes";
+import { periodLabel, type RoadSegmentHistoryFeature } from "./roadParcelHistory";
 
 export function parcelChangePopupHtml(properties: ParcelChangeFeature["properties"]): string {
   const changeType = properties.change_type as ParcelChangeType | undefined;
@@ -26,6 +27,23 @@ export function hotspotPopupHtml(properties: HotspotFeature["properties"]): stri
       <dl>
         ${popupRow("Parcels", String(properties.parcel_count))}
         ${popupRow("Strength", hotspotStrengthLabel(properties.score))}
+      </dl>
+    </div>
+  `;
+}
+
+export function roadHistoryPopupHtml(properties: RoadSegmentHistoryFeature["properties"]): string {
+  const firstEvidence = properties.evidence[0];
+  return `
+    <div class="parcel-popup">
+      <h3>${escapeHtml(properties.street_name)}</h3>
+      <p>This is the first observed/documented period, not necessarily the construction date.</p>
+      <dl>
+        ${popupRow("First observed", periodLabel(properties.first_observed_period))}
+        ${popupRow("Year", properties.first_observed_year ? String(properties.first_observed_year) : "Not exact")}
+        ${popupRow("Confidence", formatConfidence(properties.confidence))}
+        ${popupRow("Review", formatConfidence(properties.review_status.replace(/_/g, " ")))}
+        ${popupRow("Evidence", firstEvidence ? firstEvidence.source_name : "No evidence attached")}
       </dl>
     </div>
   `;

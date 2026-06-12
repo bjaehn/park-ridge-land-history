@@ -438,12 +438,21 @@ function SalePriceChart({ events }: { events: HouseEvolutionEvent[] }) {
 // ─── Assessed value chart ──────────────────────────────────────────────────────
 
 function AssessedValueChart({ properties }: { properties: ParcelProperties }) {
-  const pts: Array<{ year: number; value: number }> = [];
-  if (properties.first_assessed_year && properties.first_assessed_total)
-    pts.push({ year: properties.first_assessed_year, value: properties.first_assessed_total });
-  if (properties.latest_assessed_year && properties.latest_assessed_total &&
-      properties.latest_assessed_year !== (pts[0]?.year ?? -1))
-    pts.push({ year: properties.latest_assessed_year, value: properties.latest_assessed_total });
+  const raw = properties.assessed_value_timeline;
+  let pts: Array<{ year: number; value: number }> = [];
+
+  if (raw) {
+    const parsed = Array.isArray(raw) ? raw : tryParseJson<Array<{ year: number; value: number }>>(raw as string);
+    if (parsed) pts = parsed.filter(p => p.year && p.value > 0).sort((a, b) => a.year - b.year);
+  }
+
+  if (pts.length === 0) {
+    if (properties.first_assessed_year && properties.first_assessed_total)
+      pts.push({ year: properties.first_assessed_year, value: properties.first_assessed_total });
+    if (properties.latest_assessed_year && properties.latest_assessed_total &&
+        properties.latest_assessed_year !== (pts[0]?.year ?? -1))
+      pts.push({ year: properties.latest_assessed_year, value: properties.latest_assessed_total });
+  }
 
   if (pts.length === 0) return <p className="pt-chart-empty">No assessment records</p>;
 
@@ -452,6 +461,17 @@ function AssessedValueChart({ properties }: { properties: ParcelProperties }) {
   const fillPath = pts.length >= 2
     ? `${linePath} L ${xp(pts[pts.length - 1].year).toFixed(1)} ${(CH - CPAD.b).toFixed(1)} L ${xp(pts[0].year).toFixed(1)} ${(CH - CPAD.b).toFixed(1)} Z`
     : null;
+
+  const dense = pts.length > 5;
+  const dotR = dense ? 1.6 : 3.5;
+  const labelYears = new Set<number>();
+  if (pts.length > 0) labelYears.add(pts[0].year);
+  if (pts.length > 1) labelYears.add(pts[pts.length - 1].year);
+  if (dense) {
+    const maxVal = Math.max(...pts.map(p => p.value));
+    const peak = pts.find(p => p.value === maxVal);
+    if (peak) labelYears.add(peak.year);
+  }
 
   return (
     <ChartScaffold label="Assessed value history">
@@ -475,8 +495,10 @@ function AssessedValueChart({ properties }: { properties: ParcelProperties }) {
       {pts.length >= 2 && <path d={linePath} stroke="#a78bfa" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" opacity="0.75" />}
       {pts.map((pt, i) => (
         <g key={i}>
-          <circle cx={xp(pt.year)} cy={yp(pt.value)} r="3.5" fill="#a78bfa" opacity="0.92" />
-          <text x={xp(pt.year)} y={yp(pt.value) - 6} textAnchor="middle" fill="#c4b5fd" fontSize={CFS} fontFamily={CFONT}>{fmt(pt.value)}</text>
+          <circle cx={xp(pt.year)} cy={yp(pt.value)} r={dotR} fill="#a78bfa" opacity="0.90" />
+          {labelYears.has(pt.year) && (
+            <text x={xp(pt.year)} y={yp(pt.value) - 6} textAnchor="middle" fill="#c4b5fd" fontSize={CFS} fontFamily={CFONT}>{fmt(pt.value)}</text>
+          )}
         </g>
       ))}
     </ChartScaffold>

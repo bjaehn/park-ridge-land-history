@@ -1,0 +1,405 @@
+{
+  "generated_at": "2026-06-12",
+  "sample_data": true,
+  "road_segments": {
+    "type": "FeatureCollection",
+    "features": [
+      {
+        "type": "Feature",
+        "properties": {
+          "id": "demo-road-001",
+          "street_name": "Prospect Avenue sample segment",
+          "current_source": "Manual demo geometry based on modern map context",
+          "first_observed_year": null,
+          "first_observed_period": "pre_1939",
+          "last_checked_year": 2026,
+          "date_type": "observed_not_constructed",
+          "confidence": "unknown",
+          "review_status": "unreviewed",
+          "sample_data": true,
+          "notes": "Demo scaffold only. Replace with a manually reviewed segment after comparing Sanborn, aerial, or topo evidence.",
+          "evidence": [
+            {
+              "source_name": "Demo review queue",
+              "evidence_type": "placeholder",
+              "url_or_reference": "docs/road-parcel-history-timeline.md",
+              "notes": "This record exists to test the timeline UI and is not an official historical date."
+            }
+          ]
+        },
+        "geometry": { "type": "LineString", "coordinates": [[-87.8306, 42.0105], [-87.8304, 42.0165]] }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "id": "demo-road-002",
+          "street_name": "Touhy Avenue sample segment",
+          "current_source": "Manual demo geometry based on modern map context",
+          "first_observed_year": null,
+          "first_observed_period": "pre_1939",
+          "last_checked_year": 2026,
+          "date_type": "observed_not_constructed",
+          "confidence": "unknown",
+          "review_status": "unreviewed",
+          "sample_data": true,
+          "notes": "Demo scaffold only. Use historic maps or aerial imagery before treating this as evidence.",
+          "evidence": [
+            {
+              "source_name": "Demo review queue",
+              "evidence_type": "placeholder",
+              "url_or_reference": "docs/road-parcel-history-timeline.md",
+              "notes": "This record exists to test the timeline UI and is not an official historical date."
+            }
+          ]
+        },
+        "geometry": { "type": "LineString", "coordinates": [[-87.855, 42.0118], [-87.821, 42.0117]] }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "id": "demo-road-003",
+          "street_name": "Northwest Highway sample segment",
+          "current_source": "Manual demo geometry based on modern map context",
+          "first_observed_year": null,
+          "first_observed_period": "pre_1939",
+          "last_checked_year": 2026,
+          "date_type": "observed_not_constructed",
+          "confidence": "unknown",
+          "review_status": "unreviewed",
+          "sample_data": true,
+          "notes": "Demo scaffold only. Needs review against rail-adjacent maps and aerials.",
+          "evidence": [
+            {
+              "source_name": "Demo review queue",
+              "evidence_type": "placeholder",
+              "url_or_reference": "docs/road-parcel-history-timeline.md",
+              "notes": "This record exists to test the timeline UI and is not an official historical date."
+            }
+          ]
+        },
+        "geometry": { "type": "LineString", "coordinates": [[-87.8465, 42.0048], [-87.8245, 42.0169]] }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "id": "demo-road-004",
+          "street_name": "Oakton Street sample segment",
+          "current_source": "Manual demo geometry based on modern map context",
+          "first_observed_year": null,
+          "first_observed_period": "1939_to_1963",
+          "last_checked_year": 2026,
+          "date_type": "observed_not_constructed",
+          "confidence": "unknown",
+          "review_status": "unreviewed",
+          "sample_data": true,
+          "notes": "Demo scaffold only. Period bucket is for UI validation pending source review.",
+          "evidence": [
+            {
+              "source_name": "Demo review queue",
+              "evidence_type": "placeholder",
+              "url_or_reference": "docs/road-parcel-history-timeline.md",
+              "notes": "This record exists to test the timeline UI and is not an official historical date."
+            }
+          ]
+        },
+        "geometry": { "type": "LineString", "coordinates": [[-87.855, 42.0261], [-87.8215, 42.0261]] }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "id": "demo-road-005",
+          "street_name": "Devon Avenue sample segment",
+          "current_source": "Manual demo geometry based on modern map context",
+          "first_observed_year": null,
+          "first_observed_period": "1939_to_1963",
+          "last_checked_year": 2026,
+          "date_type": "observed_not_constructed",
+          "confidence": "unknown",
+          "review_status": "unreviewed",
+          "sample_data": true,
+          "notes": "Demo scaffold only. Period bucket is for UI validation pending source review.",
+          "evidence": [
+            {
+              "source_name": "Demo review queue",
+              "evidence_type": "placeholder",
+              "url_or_reference": "docs/road-parcel-history-timeline.md",
+              "notes": "This record exists to test the timeline UI and is not an official historical date."
+            }
+          ]
+        },
+        "geometry": { "type": "LineString", "coordinates": [[-87.8525, 41.9974], [-87.8232, 41.9974]] }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "id": "demo-road-006",
+          "street_name": "Cumberland Avenue sample segment",
+          "current_source": "Manual demo geometry based on modern map context",
+          "first_observed_year": null,
+          "first_observed_period": "1963_to_1980",
+          "last_checked_year": 2026,
+          "date_type": "observed_not_constructed",
+          "confidence": "unknown",
+          "review_status": "unreviewed",
+          "sample_data": true,
+          "notes": "Demo scaffold only. Replace after review of postwar aerial/topo evidence.",
+          "evidence": [
+            {
+              "source_name": "Demo review queue",
+              "evidence_type": "placeholder",
+              "url_or_reference": "docs/road-parcel-history-timeline.md",
+              "notes": "This record exists to test the timeline UI and is not an official historical date."
+            }
+          ]
+        },
+        "geometry": { "type": "LineString", "coordinates": [[-87.8354, 41.996], [-87.8352, 42.043]] }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "id": "demo-road-007",
+          "street_name": "Talcott Road sample segment",
+          "current_source": "Manual demo geometry based on modern map context",
+          "first_observed_year": null,
+          "first_observed_period": "1963_to_1980",
+          "last_checked_year": 2026,
+          "date_type": "observed_not_constructed",
+          "confidence": "unknown",
+          "review_status": "unreviewed",
+          "sample_data": true,
+          "notes": "Demo scaffold only. Replace with reviewed historical evidence.",
+          "evidence": [
+            {
+              "source_name": "Demo review queue",
+              "evidence_type": "placeholder",
+              "url_or_reference": "docs/road-parcel-history-timeline.md",
+              "notes": "This record exists to test the timeline UI and is not an official historical date."
+            }
+          ]
+        },
+        "geometry": { "type": "LineString", "coordinates": [[-87.849, 42.0005], [-87.821, 42.0138]] }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "id": "demo-road-008",
+          "street_name": "Woodview Lane sample segment",
+          "current_source": "Manual demo geometry based on modern map context",
+          "first_observed_year": null,
+          "first_observed_period": "1980_to_2000",
+          "last_checked_year": 2026,
+          "date_type": "observed_not_constructed",
+          "confidence": "unknown",
+          "review_status": "unreviewed",
+          "sample_data": true,
+          "notes": "Demo scaffold only. Period bucket is for UI validation pending source review.",
+          "evidence": [
+            {
+              "source_name": "Demo review queue",
+              "evidence_type": "placeholder",
+              "url_or_reference": "docs/road-parcel-history-timeline.md",
+              "notes": "This record exists to test the timeline UI and is not an official historical date."
+            }
+          ]
+        },
+        "geometry": { "type": "LineString", "coordinates": [[-87.8494, 42.046], [-87.8469, 42.0468]] }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "id": "demo-road-009",
+          "street_name": "Church Street sample segment",
+          "current_source": "Manual demo geometry based on modern map context",
+          "first_observed_year": null,
+          "first_observed_period": "1980_to_2000",
+          "last_checked_year": 2026,
+          "date_type": "observed_not_constructed",
+          "confidence": "unknown",
+          "review_status": "unreviewed",
+          "sample_data": true,
+          "notes": "Demo scaffold only. Period bucket is for UI validation pending source review.",
+          "evidence": [
+            {
+              "source_name": "Demo review queue",
+              "evidence_type": "placeholder",
+              "url_or_reference": "docs/road-parcel-history-timeline.md",
+              "notes": "This record exists to test the timeline UI and is not an official historical date."
+            }
+          ]
+        },
+        "geometry": { "type": "LineString", "coordinates": [[-87.851, 42.0466], [-87.8468, 42.0466]] }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "id": "demo-road-010",
+          "street_name": "Recent infill access sample",
+          "current_source": "Manual demo geometry based on modern map context",
+          "first_observed_year": null,
+          "first_observed_period": "2000_to_present",
+          "last_checked_year": 2026,
+          "date_type": "observed_not_constructed",
+          "confidence": "unknown",
+          "review_status": "unreviewed",
+          "sample_data": true,
+          "notes": "Demo scaffold only. This is a test of the recent-change styling bucket.",
+          "evidence": [
+            {
+              "source_name": "Demo review queue",
+              "evidence_type": "placeholder",
+              "url_or_reference": "docs/road-parcel-history-timeline.md",
+              "notes": "This record exists to test the timeline UI and is not an official historical date."
+            }
+          ]
+        },
+        "geometry": { "type": "LineString", "coordinates": [[-87.8504, 42.0454], [-87.8474, 42.0447]] }
+      }
+    ]
+  },
+  "parcel_history": [
+    {
+      "pin": "09154000490000",
+      "current_address": "1925 CHURCH ST",
+      "current_source": "Existing Park Ridge parcel/property runtime data",
+      "geometry_source": "public/data/park_ridge_parcels_map.geojson",
+      "first_observed_period": "unknown",
+      "subdivision_confidence": "unknown",
+      "building_year": 2000,
+      "building_year_source": "Cook County assessor-derived runtime data",
+      "sample_data": true,
+      "notes": "Parcel geometry is current. Subdivision timing has not been reviewed.",
+      "evidence": [{ "source_name": "Cook County property data", "evidence_type": "assessor_data", "notes": "Building year is from existing parcel attributes; parcel-origin period is unknown." }]
+    },
+    {
+      "pin": "09154000500000",
+      "current_address": "1901 CHURCH ST",
+      "current_source": "Existing Park Ridge parcel/property runtime data",
+      "geometry_source": "public/data/park_ridge_parcels_map.geojson",
+      "first_observed_period": "unknown",
+      "subdivision_confidence": "unknown",
+      "building_year": 1997,
+      "building_year_source": "Cook County assessor-derived runtime data",
+      "sample_data": true,
+      "notes": "Parcel geometry is current. Subdivision timing has not been reviewed.",
+      "evidence": [{ "source_name": "Cook County property data", "evidence_type": "assessor_data", "notes": "Building year is from existing parcel attributes; parcel-origin period is unknown." }]
+    },
+    {
+      "pin": "09154000510000",
+      "current_address": "1951 CHURCH ST",
+      "current_source": "Existing Park Ridge parcel/property runtime data",
+      "geometry_source": "public/data/park_ridge_parcels_map.geojson",
+      "first_observed_period": "unknown",
+      "subdivision_confidence": "unknown",
+      "building_year": 1998,
+      "building_year_source": "Cook County assessor-derived runtime data",
+      "sample_data": true,
+      "notes": "Parcel geometry is current. Subdivision timing has not been reviewed.",
+      "evidence": [{ "source_name": "Cook County property data", "evidence_type": "assessor_data", "notes": "Building year is from existing parcel attributes; parcel-origin period is unknown." }]
+    },
+    {
+      "pin": "09154000520000",
+      "current_address": "1975 CHURCH ST",
+      "current_source": "Existing Park Ridge parcel/property runtime data",
+      "geometry_source": "public/data/park_ridge_parcels_map.geojson",
+      "first_observed_period": "unknown",
+      "subdivision_confidence": "unknown",
+      "building_year": 1997,
+      "building_year_source": "Cook County assessor-derived runtime data",
+      "sample_data": true,
+      "notes": "Parcel geometry is current. Subdivision timing has not been reviewed.",
+      "evidence": [{ "source_name": "Cook County property data", "evidence_type": "assessor_data", "notes": "Building year is from existing parcel attributes; parcel-origin period is unknown." }]
+    },
+    {
+      "pin": "09154010130000",
+      "current_address": "1885 CHURCH ST",
+      "current_source": "Existing Park Ridge parcel/property runtime data",
+      "geometry_source": "public/data/park_ridge_parcels_map.geojson",
+      "first_observed_period": "unknown",
+      "subdivision_confidence": "unknown",
+      "building_year": 1968,
+      "building_year_source": "Cook County assessor-derived runtime data",
+      "sample_data": true,
+      "notes": "Parcel geometry is current. Subdivision timing has not been reviewed.",
+      "evidence": [{ "source_name": "Cook County property data", "evidence_type": "assessor_data", "notes": "Building year is from existing parcel attributes; parcel-origin period is unknown." }]
+    },
+    {
+      "pin": "09154010140000",
+      "current_address": "2268 WOODVIEW LN",
+      "current_source": "Existing Park Ridge parcel/property runtime data",
+      "geometry_source": "public/data/park_ridge_parcels_map.geojson",
+      "first_observed_period": "unknown",
+      "subdivision_confidence": "unknown",
+      "building_year": 1963,
+      "building_year_source": "Cook County assessor-derived runtime data",
+      "sample_data": true,
+      "notes": "Parcel geometry is current. Subdivision timing has not been reviewed.",
+      "evidence": [{ "source_name": "Cook County property data", "evidence_type": "assessor_data", "notes": "Building year is from existing parcel attributes; parcel-origin period is unknown." }]
+    },
+    {
+      "pin": "09154010150000",
+      "current_address": "2260 WOODVIEW LN",
+      "current_source": "Existing Park Ridge parcel/property runtime data",
+      "geometry_source": "public/data/park_ridge_parcels_map.geojson",
+      "first_observed_period": "unknown",
+      "subdivision_confidence": "unknown",
+      "building_year": 1966,
+      "building_year_source": "Cook County assessor-derived runtime data",
+      "sample_data": true,
+      "notes": "Parcel geometry is current. Subdivision timing has not been reviewed.",
+      "evidence": [{ "source_name": "Cook County property data", "evidence_type": "assessor_data", "notes": "Building year is from existing parcel attributes; parcel-origin period is unknown." }]
+    },
+    {
+      "pin": "09154010160000",
+      "current_address": "2250 WOODVIEW LN",
+      "current_source": "Existing Park Ridge parcel/property runtime data",
+      "geometry_source": "public/data/park_ridge_parcels_map.geojson",
+      "first_observed_period": "unknown",
+      "subdivision_confidence": "unknown",
+      "building_year": 1966,
+      "building_year_source": "Cook County assessor-derived runtime data",
+      "sample_data": true,
+      "notes": "Parcel geometry is current. Subdivision timing has not been reviewed.",
+      "evidence": [{ "source_name": "Cook County property data", "evidence_type": "assessor_data", "notes": "Building year is from existing parcel attributes; parcel-origin period is unknown." }]
+    },
+    {
+      "pin": "09154010170000",
+      "current_address": "2240 WOODVIEW LN",
+      "current_source": "Existing Park Ridge parcel/property runtime data",
+      "geometry_source": "public/data/park_ridge_parcels_map.geojson",
+      "first_observed_period": "unknown",
+      "subdivision_confidence": "unknown",
+      "building_year": 1967,
+      "building_year_source": "Cook County assessor-derived runtime data",
+      "sample_data": true,
+      "notes": "Parcel geometry is current. Subdivision timing has not been reviewed.",
+      "evidence": [{ "source_name": "Cook County property data", "evidence_type": "assessor_data", "notes": "Building year is from existing parcel attributes; parcel-origin period is unknown." }]
+    },
+    {
+      "pin": "09154010180000",
+      "current_address": "2230 WOODVIEW LN",
+      "current_source": "Existing Park Ridge parcel/property runtime data",
+      "geometry_source": "public/data/park_ridge_parcels_map.geojson",
+      "first_observed_period": "unknown",
+      "subdivision_confidence": "unknown",
+      "building_year": 1965,
+      "building_year_source": "Cook County assessor-derived runtime data",
+      "sample_data": true,
+      "notes": "Parcel geometry is current. Subdivision timing has not been reviewed.",
+      "evidence": [{ "source_name": "Cook County property data", "evidence_type": "assessor_data", "notes": "Building year is from existing parcel attributes; parcel-origin period is unknown." }]
+    }
+  ],
+  "historical_overlays": [
+    {
+      "id": "ilhap_cook_1938_reference",
+      "name": "1938 Cook County Aerial Reference",
+      "year": 1938,
+      "period": "pre_1939",
+      "source_type": "aerial",
+      "source_name": "Illinois Historical Aerial Photography",
+      "coverage_area": "Cook County; Park Ridge sheets require download/georeferencing before map display",
+      "georeferenced": false,
+      "confidence_notes": "Excellent source candidate once the correct sheets are downloaded and georeferenced. Not yet rendered as tiles in this MVP.",
+      "license_notes": "Confirm use and redistribution terms before publishing derived tiles."
+    }
+  ]
+}

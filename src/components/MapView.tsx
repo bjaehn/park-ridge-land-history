@@ -13,7 +13,7 @@ import { baseMapStyle, parkRidgeCenter } from "../lib/mapStyle";
 import type { LoadedHistoricalLayer } from "../lib/historicalLayerTypes";
 import type { AreaSignal, AreaSummaryCollection, AreaSummaryFeature } from "../lib/areaGroups";
 import type { HotspotCollection, HotspotFeature, HotspotType } from "../lib/hotspots";
-import { hotspotPopupHtml } from "../lib/mapPopups";
+import { hotspotPopupHtml, roadHistoryPopupHtml } from "../lib/mapPopups";
 import type { ParcelChangeFeature, ParcelChangeType } from "../lib/parcelChangeTypes";
 import {
   permitPressureColors,
@@ -23,6 +23,13 @@ import {
   type PermitPressureMapMode
 } from "../lib/permitPressure";
 import type { ParcelCollection, ParcelFeature, PermitPressureType, PermitStabilityType } from "../lib/parcelTypes";
+import {
+  historyPeriods,
+  roadHistoryColor,
+  type HistoryPeriodId,
+  type RoadSegmentHistoryCollection,
+  type RoadSegmentHistoryFeature
+} from "../lib/roadParcelHistory";
 import { parcelPopupHtml } from "./ParcelPopup";
 
 type MapViewProps = {
@@ -44,11 +51,15 @@ type MapViewProps = {
   selectedHotspot: HotspotFeature | null;
   selectedArea: AreaSummaryFeature | null;
   selectedParcelChange: ParcelChangeFeature | null;
+  roadHistory: RoadSegmentHistoryCollection | null;
+  showRoadHistory: boolean;
+  selectedHistoryPeriod: HistoryPeriodId;
   visibleChangeTypes: Set<ParcelChangeType>;
   onSelectParcel: (feature: ParcelFeature) => void;
   onSelectParcelChange: (feature: ParcelChangeFeature) => void;
   onSelectHotspot: (feature: HotspotFeature) => void;
   onSelectArea: (feature: AreaSummaryFeature) => void;
+  onSelectRoadHistory: (feature: RoadSegmentHistoryFeature) => void;
 };
 
 const emptyCollection: ParcelCollection = {
@@ -75,11 +86,15 @@ export function MapView({
   selectedHotspot,
   selectedArea,
   selectedParcelChange,
+  roadHistory,
+  showRoadHistory,
+  selectedHistoryPeriod,
   visibleChangeTypes,
   onSelectParcel,
   onSelectParcelChange,
   onSelectHotspot,
-  onSelectArea
+  onSelectArea,
+  onSelectRoadHistory
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -92,6 +107,7 @@ export function MapView({
   const onSelectParcelChangeRef = useRef(onSelectParcelChange);
   const onSelectHotspotRef = useRef(onSelectHotspot);
   const onSelectAreaRef = useRef(onSelectArea);
+  const onSelectRoadHistoryRef = useRef(onSelectRoadHistory);
   const registeredChangeLayerIdsRef = useRef<Set<string>>(new Set());
   const activeChangeLayerIdsRef = useRef<Set<string>>(new Set());
   const [isMapLoaded, setIsMapLoaded] = useState(false);
@@ -106,6 +122,7 @@ export function MapView({
   const latestHotspotsRef = useRef<HotspotCollection>(hotspots);
   const latestAreaSummariesRef = useRef<AreaSummaryCollection>(areaSummaries);
   const latestSelectedAreaRef = useRef<GeoJSON.FeatureCollection>(emptyFeatureCollection());
+  const latestRoadHistoryRef = useRef<RoadSegmentHistoryCollection>(emptyRoadHistoryCollection());
   const latestHistoricalOverlaysRef = useRef<LoadedHistoricalLayer[]>([]);
   const hoveredRef = useRef<GeoJSON.FeatureCollection>({
     type: "FeatureCollection",
@@ -117,6 +134,7 @@ export function MapView({
   const selectedBlockSourceParcels = selectedBlockParcels ?? emptyCollection;
   const mapSourceHotspots = useMemo(() => slimHotspotCollection(hotspots), [hotspots]);
   const mapSourceAreaSummaries = useMemo(() => slimAreaSummaryCollection(areaSummaries), [areaSummaries]);
+  const mapSourceRoadHistory = useMemo(() => roadHistory ?? emptyRoadHistoryCollection(), [roadHistory]);
   const mapSourceSelectedArea = useMemo(
     () => (selectedArea ? featureCollectionFromGenericFeature(slimAreaSummaryFeature(selectedArea)) : emptyFeatureCollection()),
     [selectedArea]
@@ -131,11 +149,13 @@ export function MapView({
   latestHotspotsRef.current = mapSourceHotspots;
   latestAreaSummariesRef.current = mapSourceAreaSummaries;
   latestSelectedAreaRef.current = mapSourceSelectedArea;
+  latestRoadHistoryRef.current = mapSourceRoadHistory;
   latestHistoricalOverlaysRef.current = historicalOverlays;
   onSelectParcelRef.current = onSelectParcel;
   onSelectParcelChangeRef.current = onSelectParcelChange;
   onSelectHotspotRef.current = onSelectHotspot;
   onSelectAreaRef.current = onSelectArea;
+  onSelectRoadHistoryRef.current = onSelectRoadHistory;
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -191,6 +211,12 @@ export function MapView({
       map.addSource("area-summaries", {
         type: "geojson",
         data: latestAreaSummariesRef.current
+      });
+
+      map.addSource("road-history", {
+        type: "geojson",
+        data: latestRoadHistoryRef.current,
+        generateId: true
       });
 
       map.addSource("selected-area", {
@@ -378,6 +404,29 @@ export function MapView({
       }
 
       map.addLayer({
+        id: "road-history-line",
+        type: "line",
+        source: "road-history",
+        paint: {
+          "line-color": roadHistoryColorExpression(),
+          "line-width": 3,
+          "line-opacity": showRoadHistory ? 0.58 : 0
+        }
+      });
+
+      map.addLayer({
+        id: "road-history-current-period",
+        type: "line",
+        source: "road-history",
+        filter: ["==", ["get", "first_observed_period"], selectedHistoryPeriod],
+        paint: {
+          "line-color": roadHistoryColorExpression(),
+          "line-width": 5.5,
+          "line-opacity": showRoadHistory ? 0.95 : 0
+        }
+      });
+
+      map.addLayer({
         id: "hotspot-circle",
         type: "circle",
         source: "hotspots",
@@ -484,6 +533,24 @@ export function MapView({
       const feature = event.features?.[0] as unknown as AreaSummaryFeature | undefined;
       if (!feature) return;
       onSelectAreaRef.current(feature);
+    });
+
+    map.on("mousemove", "road-history-line", () => {
+      map.getCanvas().style.cursor = "pointer";
+    });
+
+    map.on("mouseleave", "road-history-line", () => {
+      map.getCanvas().style.cursor = "";
+    });
+
+    map.on("click", "road-history-line", (event) => {
+      const feature = event.features?.[0] as unknown as RoadSegmentHistoryFeature | undefined;
+      if (!feature) return;
+      onSelectRoadHistoryRef.current(feature);
+      popupRef.current
+        ?.setLngLat(event.lngLat)
+        .setHTML(roadHistoryPopupHtml(feature.properties))
+        .addTo(map);
     });
 
     mapRef.current = map;
@@ -647,6 +714,11 @@ export function MapView({
   }, [mapSourceAreaSummaries]);
 
   useEffect(() => {
+    const source = mapRef.current?.getSource("road-history") as GeoJSONSource | undefined;
+    source?.setData(mapSourceRoadHistory);
+  }, [mapSourceRoadHistory]);
+
+  useEffect(() => {
     const source = mapRef.current?.getSource("selected-area") as GeoJSONSource | undefined;
     source?.setData(mapSourceSelectedArea);
   }, [mapSourceSelectedArea]);
@@ -710,6 +782,18 @@ export function MapView({
       );
     }
   }, [permitPressureMapMode, showPermitPressure, visiblePermitPressureTypes, visiblePermitStabilityTypes]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (map.getLayer("road-history-line")) {
+      map.setPaintProperty("road-history-line", "line-opacity", showRoadHistory ? 0.58 : 0);
+    }
+    if (map.getLayer("road-history-current-period")) {
+      map.setPaintProperty("road-history-current-period", "line-opacity", showRoadHistory ? 0.95 : 0);
+      map.setFilter("road-history-current-period", ["==", ["get", "first_observed_period"], selectedHistoryPeriod]);
+    }
+  }, [selectedHistoryPeriod, showRoadHistory]);
 
   return (
     <>
@@ -808,6 +892,11 @@ function hotspotColorExpression(): ExpressionSpecification {
   return ["match", ["get", "hotspot_type"], ...matchValues, "#246a73"] as unknown as ExpressionSpecification;
 }
 
+function roadHistoryColorExpression(): ExpressionSpecification {
+  const matchValues = historyPeriods.flatMap((period) => [period.id, roadHistoryColor(period.id)]);
+  return ["match", ["get", "first_observed_period"], ...matchValues, "#64748b"] as unknown as ExpressionSpecification;
+}
+
 function areaSignalColorExpression(): ExpressionSpecification {
   const colors: Record<AreaSignal, string> = {
     quiet: "#3f7d58",
@@ -861,6 +950,13 @@ function slimAreaSummaryFeature(feature: AreaSummaryFeature): AreaSummaryFeature
 }
 
 function emptyFeatureCollection(): GeoJSON.FeatureCollection {
+  return {
+    type: "FeatureCollection",
+    features: []
+  };
+}
+
+function emptyRoadHistoryCollection(): RoadSegmentHistoryCollection {
   return {
     type: "FeatureCollection",
     features: []

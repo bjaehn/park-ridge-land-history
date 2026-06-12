@@ -422,6 +422,11 @@ def build_assessed_value_history(values: pd.DataFrame) -> pd.DataFrame:
         change_pct = None
         if first_total and latest_total and first_total > 0 and first.get("assessment_year") != latest.get("assessment_year"):
             change_pct = ((latest_total - first_total) / first_total) * 100
+        timeline = [
+            {"year": int(row["assessment_year"]), "value": int(row["assessed_total"])}
+            for _, row in ordered.iterrows()
+            if row.get("assessed_total") is not None
+        ]
         records.append(
             {
                 "pin_normalized": pin,
@@ -431,6 +436,7 @@ def build_assessed_value_history(values: pd.DataFrame) -> pd.DataFrame:
                 "latest_assessed_year": parse_year(latest.get("assessment_year")),
                 "latest_assessed_total": latest_total,
                 "assessed_value_change_pct": round(change_pct, 1) if change_pct is not None else None,
+                "assessed_value_timeline": json.dumps(timeline, separators=(",", ":")) if timeline else None,
             }
         )
 
@@ -1502,7 +1508,7 @@ def build_dataset() -> None:
         if not artifact_history.empty:
             enriched = enriched.merge(artifact_history, on="pin_normalized", how="left")
 
-    for column in ["address", "municipality", "property_class", "year_built", "decade_built", "building_sqft", "land_sqft", "improvement_count", "permit_count", "latest_permit_year", "nearby_teardown_count", "sale_count", "latest_sale_year", "latest_sale_price", "max_sale_price", "assessed_year_count", "first_assessed_year", "first_assessed_total", "latest_assessed_year", "latest_assessed_total", "assessed_value_change_pct", "appeal_count", "latest_appeal_year", "open_appeal_count", "total_assessment_reduction", "proximity_year", "nearest_park_name", "nearest_park_dist_ft", "nearest_metra_stop_name", "nearest_metra_stop_dist_ft", "nearest_bike_trail_name", "nearest_bike_trail_dist_ft", "foreclosure_count_half_mile_5yr", "foreclosure_per_1000_half_mile_5yr", "nearest_major_road_name", "nearest_major_road_dist_ft", "primary_building_selection_method", *STREET_BLOCK_OUTPUT_COLUMNS, *HARGIS_OUTPUT_COLUMNS, *HOME_ARTIFACT_OUTPUT_COLUMNS]:
+    for column in ["address", "municipality", "property_class", "year_built", "decade_built", "building_sqft", "land_sqft", "improvement_count", "permit_count", "latest_permit_year", "nearby_teardown_count", "sale_count", "latest_sale_year", "latest_sale_price", "max_sale_price", "assessed_year_count", "first_assessed_year", "first_assessed_total", "latest_assessed_year", "latest_assessed_total", "assessed_value_change_pct", "assessed_value_timeline", "appeal_count", "latest_appeal_year", "open_appeal_count", "total_assessment_reduction", "proximity_year", "nearest_park_name", "nearest_park_dist_ft", "nearest_metra_stop_name", "nearest_metra_stop_dist_ft", "nearest_bike_trail_name", "nearest_bike_trail_dist_ft", "foreclosure_count_half_mile_5yr", "foreclosure_per_1000_half_mile_5yr", "nearest_major_road_name", "nearest_major_road_dist_ft", "primary_building_selection_method", *STREET_BLOCK_OUTPUT_COLUMNS, *HARGIS_OUTPUT_COLUMNS, *HOME_ARTIFACT_OUTPUT_COLUMNS]:
         if column not in enriched:
             enriched[column] = None
 
@@ -1552,6 +1558,7 @@ def build_dataset() -> None:
         "latest_assessed_year",
         "latest_assessed_total",
         "assessed_value_change_pct",
+        "assessed_value_timeline",
         "appeal_count",
         "latest_appeal_year",
         "open_appeal_count",

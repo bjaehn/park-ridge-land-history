@@ -70,6 +70,7 @@ export type ParcelProperties = {
   latest_assessed_year?: number | null;
   latest_assessed_total?: number | null;
   assessed_value_change_pct?: number | null;
+  assessed_value_timeline?: Array<{ year: number; value: number }> | string | null;
   appeal_count?: number | null;
   latest_appeal_year?: number | null;
   open_appeal_count?: number | null;

@@ -4,12 +4,14 @@ import { fetchJson } from "../lib/jsonData";
 import type { HistoricalLayer } from "../lib/historicalLayerTypes";
 import type { WardBoundaryCollection } from "../lib/areaGroups";
 import type { ParcelCollection } from "../lib/parcelTypes";
+import type { RoadParcelHistoryData } from "../lib/roadParcelHistory";
 
 export type ParkRidgeDataState = {
   parcels: ParcelCollection | null;
   boundary: GeoJSON.FeatureCollection | null;
   wardBoundaries: WardBoundaryCollection | null;
   historicalLayers: HistoricalLayer[];
+  roadParcelHistory: RoadParcelHistoryData | null;
 };
 
 export function useParkRidgeData(): ParkRidgeDataState {
@@ -17,6 +19,7 @@ export function useParkRidgeData(): ParkRidgeDataState {
   const [boundary, setBoundary] = useState<GeoJSON.FeatureCollection | null>(null);
   const [wardBoundaries, setWardBoundaries] = useState<WardBoundaryCollection | null>(null);
   const [historicalLayers, setHistoricalLayers] = useState<HistoricalLayer[]>([]);
+  const [roadParcelHistory, setRoadParcelHistory] = useState<RoadParcelHistoryData | null>(null);
 
   useEffect(() => {
     let isActive = true;
@@ -33,6 +36,9 @@ export function useParkRidgeData(): ParkRidgeDataState {
     loadHistoricalLayerManifest().then((layers) => {
       if (isActive) setHistoricalLayers(layers);
     });
+    fetchJson<RoadParcelHistoryData>("/data/historical/road_parcel_history_sample.json").then((data) => {
+      if (isActive) setRoadParcelHistory(data);
+    });
 
     return () => {
       isActive = false;
@@ -43,6 +49,7 @@ export function useParkRidgeData(): ParkRidgeDataState {
     parcels,
     boundary,
     wardBoundaries,
-    historicalLayers
+    historicalLayers,
+    roadParcelHistory
   };
 }
