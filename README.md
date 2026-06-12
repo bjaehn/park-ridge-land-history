@@ -13,6 +13,7 @@ The first version is intentionally simple: a static React map reads generated Ge
 - Includes layer toggles for parcel outlines, boundary display, and a disabled placeholder for future 1938/1939 aerial overlays.
 - Registers historical evidence layers for parcel boundary years, aerial imagery, subdivision plats, local preservation context, PLSS, and Sanborn/map sheets.
 - Includes real Cook County 2000 and 2021 historical parcel overlays plus sample parcel-change candidates so the historical layer workflow can be tested while formal change detection is expanded.
+- Adds an MVP Road & Parcel History Timeline in the Park Ridge tab. It can show sample road segments by first-observed period, filter by historical period, and expose confidence/evidence notes on click.
 
 ## Data Sources
 
@@ -26,6 +27,8 @@ Primary sources to configure or manually download:
 - Illinois Historical Aerial Photography, Cook County 1938/1939: `https://clearinghouse.isgs.illinois.edu/webdocs/ilhap/county/j_cook.html`
 
 See `docs/data_sources.md` for notes and caveats.
+
+The Road & Parcel History Timeline uses `public/data/historical/road_parcel_history_sample.json` as a replaceable MVP dataset. The included road periods are clearly marked as sample/unreviewed scaffolding, not official construction dates. See `docs/road-parcel-history-timeline.md` and `docs/data-sources.md`.
 
 ## Local Setup
 
@@ -107,6 +110,21 @@ python -m scripts.historical_layers.compare_parcel_years OLD.geojson NEW.geojson
 ```
 
 See `docs/historical_layers.md`, `docs/parcel_change_detection.md`, `docs/georeferencing_historical_imagery.md`, and `docs/subdivision_plat_research.md`.
+
+## Road & Parcel History Timeline
+
+The timeline models road and parcel history as observed evidence:
+
+- Road fields use `first_observed_period`, `first_observed_year`, `date_type: observed_not_constructed`, `confidence`, `review_status`, and `evidence`.
+- Parcel history can reference current parcel geometry while separating assessor building year from parcel-subdivision timing.
+- Historical overlay metadata records whether a source is georeferenced, tiled, or only a research reference.
+
+To add reviewed road history:
+
+1. Add or replace records in `public/data/historical/road_parcel_history_sample.json`.
+2. Attach at least one evidence record to every historical claim.
+3. Keep `date_type: observed_not_constructed` unless a direct source proves a construction/opening date.
+4. Change `sample_data` to `false` only after records are reviewed enough that they cannot be mistaken for placeholders.
 
 ## PIN Normalization
 
