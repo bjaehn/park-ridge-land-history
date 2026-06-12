@@ -109,7 +109,7 @@ export default function App() {
   const [activeAreaGrouping, setActiveAreaGrouping] = useState<AreaGroupingId>("neighborhoods");
   const [selectedAreaId, setSelectedAreaId] = useState<string | null>(null);
   const [selectedHistoryPeriod, setSelectedHistoryPeriod] = useState<HistoryPeriodId>("pre_1939");
-  const [showRoadHistory, setShowRoadHistory] = useState(false);
+  const [showRoadHistory, setShowRoadHistory] = useState(true);
   const [selectedRoadHistory, setSelectedRoadHistory] = useState<RoadSegmentHistoryFeature | null>(null);
 
   const yearRange = useMemo(() => {
@@ -854,6 +854,15 @@ export default function App() {
                   setMaxBuiltYear(yearRange.min);
                 }}
                 onSetAnimationSpeed={setAnimationSpeed}
+              />
+              <RoadParcelTimelinePanel
+                data={roadParcelHistory}
+                selectedPeriod={selectedHistoryPeriod}
+                showRoadHistory={showRoadHistory}
+                selectedRoad={selectedRoadHistory}
+                onSelectPeriod={setSelectedHistoryPeriod}
+                onSetShowRoadHistory={setShowRoadHistory}
+                onClearSelectedRoad={() => setSelectedRoadHistory(null)}
               />
               <ChangeStoryCard scope="city" parcels={pressureDecoratedParcels} />
               {activeVisualizationPreset === "age" && (

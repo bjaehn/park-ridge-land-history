@@ -60,8 +60,8 @@ export function useParcelDetail(
     return {
       ...selectedIndexParcel,
       properties: {
-        ...detailProperties,
-        ...selectedIndexParcel.properties
+        ...selectedIndexParcel.properties,
+        ...detailProperties
       }
     };
   }, [detailProperties, selectedIndexParcel]);

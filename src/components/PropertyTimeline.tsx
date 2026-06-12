@@ -350,10 +350,10 @@ function ValueTrend({ properties }: { properties: ParcelProperties }) {
 
 // ─── Shared chart constants ────────────────────────────────────────────────────
 
-const CW = 300, CH = 108;
-const CPAD = { t: 18, r: 10, b: 26, l: 52 };
-const CFONT = `ui-monospace,'Cascadia Code',monospace`;
-const CFS = 8;
+const CW = 300, CH = 104;
+const CPAD = { t: 16, r: 10, b: 24, l: 48 };
+const CFONT = `system-ui,-apple-system,'Segoe UI',sans-serif`;
+const CFS = 7;
 
 function chartAxes(pts: Array<{ year: number; value: number }>) {
   const allYears = pts.map(p => p.year);
@@ -370,7 +370,7 @@ function chartAxes(pts: Array<{ year: number; value: number }>) {
   const xp = (y: number) => CPAD.l + ((y - minYear) / Math.max(maxYear - minYear, 1)) * iW;
   const yp = (v: number) => CPAD.t + (1 - (v - minVal) / Math.max(maxVal - minVal, 1)) * iH;
   const fmt = (v: number) => v >= 1_000_000 ? `$${(v / 1_000_000).toFixed(1)}M` : `$${Math.round(v / 1_000)}k`;
-  const yTicks = [rawMin, (rawMin + rawMax) / 2, rawMax];
+  const yTicks = [rawMin, rawMax];
   const xSpan = maxYear - minYear;
   const xStep = xSpan <= 8 ? 2 : xSpan <= 16 ? 4 : xSpan <= 25 ? 5 : 10;
   const xStart = Math.ceil(minYear / xStep) * xStep;
@@ -425,12 +425,20 @@ function SalePriceChart({ events }: { events: HouseEvolutionEvent[] }) {
       ))}
       {fillPath && <path d={fillPath} fill="url(#saleGrad)" />}
       {pts.length >= 2 && <path d={linePath} stroke="#22d3ee" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" opacity="0.75" />}
-      {pts.map((pt, i) => (
-        <g key={i}>
-          <circle cx={xp(pt.year)} cy={yp(pt.value)} r="3.5" fill="#22d3ee" opacity="0.90" />
-          <text x={xp(pt.year)} y={yp(pt.value) - 6} textAnchor="middle" fill="#67e8f9" fontSize={CFS} fontFamily={CFONT}>{fmt(pt.value)}</text>
-        </g>
-      ))}
+      {pts.map((pt, i) => {
+        const isFirst = i === 0;
+        const isLast = i === pts.length - 1;
+        const showLabel = pts.length === 1 || isFirst || isLast;
+        const anchorFirst = isFirst && pts.length > 1 ? "start" : isLast && pts.length > 1 ? "end" : "middle";
+        return (
+          <g key={i}>
+            <circle cx={xp(pt.year)} cy={yp(pt.value)} r={pts.length > 3 ? 2.5 : 3} fill="#22d3ee" opacity="0.90" />
+            {showLabel && (
+              <text x={xp(pt.year)} y={yp(pt.value) - 5} textAnchor={anchorFirst} fill="#67e8f9" fontSize={CFS} fontFamily={CFONT}>{fmt(pt.value)}</text>
+            )}
+          </g>
+        );
+      })}
     </ChartScaffold>
   );
 }
@@ -463,14 +471,16 @@ function AssessedValueChart({ properties }: { properties: ParcelProperties }) {
     : null;
 
   const dense = pts.length > 5;
-  const dotR = dense ? 1.6 : 3.5;
+  const dotR = dense ? 1.5 : 3;
   const labelYears = new Set<number>();
   if (pts.length > 0) labelYears.add(pts[0].year);
-  if (pts.length > 1) labelYears.add(pts[pts.length - 1].year);
-  if (dense) {
-    const maxVal = Math.max(...pts.map(p => p.value));
-    const peak = pts.find(p => p.value === maxVal);
-    if (peak) labelYears.add(peak.year);
+  if (pts.length > 1) {
+    const last = pts[pts.length - 1];
+    const first = pts[0];
+    const { xp: _xp } = chartAxes(pts);
+    if (!dense || Math.abs(_xp(last.year) - _xp(first.year)) > 36) {
+      labelYears.add(last.year);
+    }
   }
 
   return (
