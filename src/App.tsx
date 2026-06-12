@@ -938,7 +938,6 @@ function ScaleBreadcrumbs({
 
   return (
     <nav className="scale-breadcrumbs" aria-label="Place hierarchy">
-      <span className="breadcrumb-kicker">Place path</span>
       <ol>
         {items.map((item, index) => (
           <li key={item.scale}>
