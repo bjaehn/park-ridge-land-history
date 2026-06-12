@@ -352,7 +352,6 @@ function ValueTrend({ properties }: { properties: ParcelProperties }) {
 
 const CW = 300, CH = 104;
 const CPAD = { t: 16, r: 10, b: 24, l: 48 };
-const CFONT = `system-ui,-apple-system,'Segoe UI',sans-serif`;
 const CFS = 7;
 
 function chartAxes(pts: Array<{ year: number; value: number }>) {
@@ -417,11 +416,11 @@ function SalePriceChart({ events }: { events: HouseEvolutionEvent[] }) {
         <line key={i} x1={CPAD.l} y1={yp(v)} x2={CW - CPAD.r} y2={yp(v)} stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
       ))}
       {yTicks.map((v, i) => (
-        <text key={i} x={CPAD.l - 5} y={yp(v) + 3.5} textAnchor="end" fill="rgba(255,255,255,0.30)" fontSize={CFS} fontFamily={CFONT}>{fmt(v)}</text>
+        <text key={i} x={CPAD.l - 5} y={yp(v) + 3.5} textAnchor="end" fill="rgba(255,255,255,0.30)" fontSize={CFS}>{fmt(v)}</text>
       ))}
       <line x1={CPAD.l} y1={CH - CPAD.b} x2={CW - CPAD.r} y2={CH - CPAD.b} stroke="rgba(255,255,255,0.10)" strokeWidth="1" />
       {xTicks.map((y, i) => (
-        <text key={i} x={xp(y)} y={CH - CPAD.b + 12} textAnchor="middle" fill="rgba(255,255,255,0.28)" fontSize={CFS} fontFamily={CFONT}>{y}</text>
+        <text key={i} x={xp(y)} y={CH - CPAD.b + 12} textAnchor="middle" fill="rgba(255,255,255,0.28)" fontSize={CFS}>{y}</text>
       ))}
       {fillPath && <path d={fillPath} fill="url(#saleGrad)" />}
       {pts.length >= 2 && <path d={linePath} stroke="#22d3ee" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" opacity="0.75" />}
@@ -434,7 +433,7 @@ function SalePriceChart({ events }: { events: HouseEvolutionEvent[] }) {
           <g key={i}>
             <circle cx={xp(pt.year)} cy={yp(pt.value)} r={pts.length > 3 ? 2.5 : 3} fill="#22d3ee" opacity="0.90" />
             {showLabel && (
-              <text x={xp(pt.year)} y={yp(pt.value) - 5} textAnchor={anchorFirst} fill="#67e8f9" fontSize={CFS} fontFamily={CFONT}>{fmt(pt.value)}</text>
+              <text x={xp(pt.year)} y={yp(pt.value) - 5} textAnchor={anchorFirst} fill="#67e8f9" fontSize={CFS}>{fmt(pt.value)}</text>
             )}
           </g>
         );
@@ -495,11 +494,11 @@ function AssessedValueChart({ properties }: { properties: ParcelProperties }) {
         <line key={i} x1={CPAD.l} y1={yp(v)} x2={CW - CPAD.r} y2={yp(v)} stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
       ))}
       {yTicks.map((v, i) => (
-        <text key={i} x={CPAD.l - 5} y={yp(v) + 3.5} textAnchor="end" fill="rgba(255,255,255,0.30)" fontSize={CFS} fontFamily={CFONT}>{fmt(v)}</text>
+        <text key={i} x={CPAD.l - 5} y={yp(v) + 3.5} textAnchor="end" fill="rgba(255,255,255,0.30)" fontSize={CFS}>{fmt(v)}</text>
       ))}
       <line x1={CPAD.l} y1={CH - CPAD.b} x2={CW - CPAD.r} y2={CH - CPAD.b} stroke="rgba(255,255,255,0.10)" strokeWidth="1" />
       {xTicks.map((y, i) => (
-        <text key={i} x={xp(y)} y={CH - CPAD.b + 12} textAnchor="middle" fill="rgba(255,255,255,0.28)" fontSize={CFS} fontFamily={CFONT}>{y}</text>
+        <text key={i} x={xp(y)} y={CH - CPAD.b + 12} textAnchor="middle" fill="rgba(255,255,255,0.28)" fontSize={CFS}>{y}</text>
       ))}
       {fillPath && <path d={fillPath} fill="url(#assessGrad2)" />}
       {pts.length >= 2 && <path d={linePath} stroke="#a78bfa" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" opacity="0.75" />}
@@ -507,7 +506,7 @@ function AssessedValueChart({ properties }: { properties: ParcelProperties }) {
         <g key={i}>
           <circle cx={xp(pt.year)} cy={yp(pt.value)} r={dotR} fill="#a78bfa" opacity="0.90" />
           {labelYears.has(pt.year) && (
-            <text x={xp(pt.year)} y={yp(pt.value) - 6} textAnchor="middle" fill="#c4b5fd" fontSize={CFS} fontFamily={CFONT}>{fmt(pt.value)}</text>
+            <text x={xp(pt.year)} y={yp(pt.value) - 6} textAnchor="middle" fill="#c4b5fd" fontSize={CFS}>{fmt(pt.value)}</text>
           )}
         </g>
       ))}
