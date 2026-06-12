@@ -97,7 +97,7 @@ export default function App() {
   const [swipePosition, setSwipePosition] = useState(50);
   const [selectedHotspot, setSelectedHotspot] = useState<HotspotFeature | null>(null);
   const [activeAnalysisScale, setActiveAnalysisScale] = useState<AnalysisScale>("home");
-  const [activePropertyView, setActivePropertyView] = useState<PropertyView>("story");
+  const [activePropertyView, setActivePropertyView] = useState<PropertyView>("timeline");
   const [activeBlockView, setActiveBlockView] = useState<BlockView>("age");
   const [activeAreaView, setActiveAreaView] = useState<AreaView>("age");
   const [activeAreaGrouping, setActiveAreaGrouping] = useState<AreaGroupingId>("neighborhoods");
@@ -918,6 +918,34 @@ function scaleLabel(scale: AnalysisScale): string {
   return "Park Ridge";
 }
 
+const breadcrumbIcons: Record<AnalysisScale, JSX.Element> = {
+  home: (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V10.5z" />
+      <polyline points="9 21 9 12 15 12 15 21" />
+    </svg>
+  ),
+  block: (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
+    </svg>
+  ),
+  area: (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 2a7 7 0 017 7c0 4.97-6.22 12.18-6.7 12.76a.4.4 0 01-.6 0C11.22 21.18 5 13.97 5 9a7 7 0 017-7z" />
+      <circle cx="12" cy="9" r="2.5" />
+    </svg>
+  ),
+  city: (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <line x1="1" y1="22" x2="23" y2="22" />
+      <path d="M2 22V15l5-2v9" /><path d="M7 22V10l5-5v17" />
+      <path d="M12 22V13l5-3v12" /><path d="M17 22V17l4-2v7" />
+    </svg>
+  )
+};
+
 function ScaleBreadcrumbs({
   activeScale,
   selectedAddress,
@@ -929,11 +957,11 @@ function ScaleBreadcrumbs({
   selectedAreaLabel?: string | null;
   onNavigate: (scale: AnalysisScale) => void;
 }) {
-  const items: Array<{ scale: AnalysisScale; label: string; fallback: string }> = [
-    { scale: "home", label: selectedAddress || "Property", fallback: "Property" },
-    { scale: "block", label: selectedAddress ? "Block" : "Pick a home", fallback: "Block" },
-    { scale: "area", label: selectedAreaLabel || "Area", fallback: "Area" },
-    { scale: "city", label: "Park Ridge", fallback: "Park Ridge" }
+  const items: Array<{ scale: AnalysisScale; label: string }> = [
+    { scale: "home",  label: selectedAddress || "Property" },
+    { scale: "block", label: selectedAddress ? "Block" : "Pick a home" },
+    { scale: "area",  label: selectedAreaLabel || "Area" },
+    { scale: "city",  label: "Park Ridge" }
   ];
 
   return (
@@ -941,7 +969,7 @@ function ScaleBreadcrumbs({
       <ol>
         {items.map((item, index) => (
           <li key={item.scale}>
-            {index > 0 && <span className="breadcrumb-separator" aria-hidden="true">/</span>}
+            {index > 0 && <span className="breadcrumb-separator" aria-hidden="true">›</span>}
             <button
               className={activeScale === item.scale ? "is-active" : ""}
               type="button"
@@ -949,7 +977,8 @@ function ScaleBreadcrumbs({
               aria-current={activeScale === item.scale ? "page" : undefined}
               title={item.label}
             >
-              {item.label || item.fallback}
+              <span className="breadcrumb-icon">{breadcrumbIcons[item.scale]}</span>
+              <span className="breadcrumb-label">{item.label}</span>
             </button>
           </li>
         ))}

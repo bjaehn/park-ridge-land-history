@@ -27,6 +27,10 @@ export function AnalysisNarrative({
   activePreset,
   totalCount
 }: AnalysisNarrativeProps) {
+  if (activeScale === "home" && !selectedParcel) {
+    return <HomeWelcomeCard />;
+  }
+
   const paragraphs = narrativeParagraphs({
     activeScale,
     selectedParcel,
@@ -44,6 +48,30 @@ export function AnalysisNarrative({
         <p key={paragraph}>{paragraph}</p>
       ))}
     </section>
+  );
+}
+
+function HomeWelcomeCard() {
+  return (
+    <div className="home-welcome-card" aria-label="Property search welcome">
+      <div className="home-welcome-glyph" aria-hidden="true">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V10.5z" />
+          <polyline points="9 21 9 12 15 12 15 21" />
+        </svg>
+      </div>
+      <div className="home-welcome-text">
+        <h2 className="home-welcome-headline">Find any Park Ridge home</h2>
+        <p className="home-welcome-sub">Search an address or PIN to see the full ancestry — build year, ownership history, permits, assessed value, historic artifacts, and nearby context.</p>
+      </div>
+      <div className="home-welcome-facts" aria-hidden="true">
+        <span>🏗 Build year</span>
+        <span>💰 Sales history</span>
+        <span>🔨 Permits</span>
+        <span>📋 Assessments</span>
+        <span>📸 Artifacts</span>
+      </div>
+    </div>
   );
 }
 
