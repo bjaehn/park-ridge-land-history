@@ -1,6 +1,7 @@
 node_modules/
 .venv/
 .env
+.env.local
 .pytest_cache/
 .pytest-tmp/
 .pytest-artifacts/

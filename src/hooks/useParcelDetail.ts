@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { supabase } from "../lib/supabase/client";
 import { fetchJson } from "../lib/jsonData";
 import type { ParcelFeature, ParcelProperties } from "../lib/parcelTypes";
 
@@ -43,15 +44,18 @@ export function useParcelDetail(
     }
 
     setIsLoadingDetail(true);
-    loadDetailProperties(selectedPin).then((properties) => {
+
+    const load = supabase
+      ? loadDetailFromSupabase(selectedPin).catch(() => loadDetailFromChunk(selectedPin))
+      : loadDetailFromChunk(selectedPin);
+
+    load.then((properties) => {
       if (!isActive) return;
       setDetailProperties(properties);
       setIsLoadingDetail(false);
     });
 
-    return () => {
-      isActive = false;
-    };
+    return () => { isActive = false; };
   }, [selectedPin]);
 
   const selectedParcel = useMemo(() => {
@@ -61,19 +65,30 @@ export function useParcelDetail(
       ...selectedIndexParcel,
       properties: {
         ...selectedIndexParcel.properties,
-        ...detailProperties
-      }
+        ...detailProperties,
+      },
     };
   }, [detailProperties, selectedIndexParcel]);
 
-  return {
-    selectedParcel,
-    selectedIndexParcel,
-    isLoadingDetail
-  };
+  return { selectedParcel, selectedIndexParcel, isLoadingDetail };
 }
 
-async function loadDetailProperties(pin: string): Promise<ParcelProperties | null> {
+async function loadDetailFromSupabase(pin: string): Promise<ParcelProperties | null> {
+  const { data, error } = await supabase!
+    .from("parcels")
+    .select("*")
+    .eq("pin_normalized", pin)
+    .single();
+
+  if (error || !data) return null;
+
+  // Strip database-only columns that are not part of ParcelProperties
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { geometry, imported_at, ...properties } = data as Record<string, unknown>;
+  return properties as ParcelProperties;
+}
+
+async function loadDetailFromChunk(pin: string): Promise<ParcelProperties | null> {
   const prefix = detailPrefix(pin);
   const chunk = await loadDetailChunk(prefix);
   return chunk?.records[pin] ?? null;
