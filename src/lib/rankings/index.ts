@@ -143,3 +143,45 @@ export function topHighestAssessment(features: ParcelFeature[], limit = 10): Ran
       return entry ? [entry] : [];
     });
 }
+
+function redevelopmentScore(f: ParcelFeature): number {
+  const pp = f.properties.permit_pressure_type;
+  let score = 0;
+  if (pp === "direct_teardown") score += 20;
+  else if (pp === "new_construction") score += 15;
+  else if (pp === "addition") score += 8;
+  else if (pp === "remodel") score += 5;
+  else if (pp === "recent_permit") score += 3;
+  score += Math.min(f.properties.permit_count ?? 0, 10);
+  score += Math.min(f.properties.sale_count ?? 0, 5) * 0.5;
+  if ((f.properties.nearby_teardown_count ?? 0) > 0) score += 5;
+  return score;
+}
+
+const PRESSURE_LABELS: Record<string, string> = {
+  direct_teardown: "Teardown signal",
+  new_construction: "New construction",
+  addition: "Expansion signal",
+  remodel: "Remodel signal",
+  recent_permit: "Recent permit",
+  nearby_teardown: "Nearby teardown",
+  none: "Low signal",
+};
+
+export function topMostRedevelopment(features: ParcelFeature[], limit = 10): RankedProperty[] {
+  return features
+    .filter((f) => redevelopmentScore(f) > 0)
+    .sort((a, b) => redevelopmentScore(b) - redevelopmentScore(a))
+    .slice(0, limit)
+    .flatMap((f) => {
+      const pp = f.properties.permit_pressure_type ?? "none";
+      const label = PRESSURE_LABELS[pp] ?? pp.replace(/_/g, " ");
+      const entry = makeEntry(
+        f,
+        redevelopmentScore(f),
+        label,
+        `${f.properties.permit_count ?? 0} permits · ${f.properties.sale_count ?? 0} sales`
+      );
+      return entry ? [entry] : [];
+    });
+}

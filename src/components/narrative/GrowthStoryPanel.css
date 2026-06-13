@@ -1,0 +1,162 @@
+.growth-story-panel {
+  padding: 20px 22px;
+}
+
+.growth-story-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.growth-story-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  background: rgba(34,211,238,0.10);
+  border: 1px solid rgba(34,211,238,0.22);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #22d3ee;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.growth-story-title-group {
+  flex: 1;
+  min-width: 0;
+}
+
+.growth-story-badge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 20px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.growth-story-body {
+  color: rgba(255,255,255,0.52);
+  font-size: 0.82rem;
+  line-height: 1.65;
+  margin: 0 0 20px;
+}
+
+.growth-story-chart-section {
+  margin-bottom: 20px;
+}
+
+.growth-story-chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 12px;
+}
+
+.growth-story-chart-label {
+  color: rgba(255,255,255,0.60);
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.growth-story-chart-range {
+  color: rgba(255,255,255,0.28);
+  font-size: 0.68rem;
+}
+
+.growth-story-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 700px) {
+  .growth-story-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.growth-stat {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.growth-stat-value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  display: block;
+}
+
+.growth-stat-label {
+  color: rgba(255,255,255,0.42);
+  font-size: 0.68rem;
+  display: block;
+}
+
+.growth-stat-sub {
+  color: rgba(255,255,255,0.25);
+  font-size: 0.62rem;
+  display: block;
+}
+
+.growth-story-signals {
+  padding-top: 16px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.growth-story-signals-label {
+  color: rgba(255,255,255,0.38);
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.growth-story-signal-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.growth-signal-row {}
+
+.growth-signal-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 3px;
+}
+
+.growth-signal-name {
+  color: rgba(255,255,255,0.48);
+  font-size: 0.72rem;
+}
+
+.growth-signal-value {
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.growth-signal-track {
+  height: 3px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.growth-signal-fill {
+  height: 100%;
+  border-radius: 2px;
+  opacity: 0.55;
+  transition: width 400ms ease;
+}

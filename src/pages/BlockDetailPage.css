@@ -87,6 +87,10 @@
   color: rgba(52, 211, 153, 0.65);
 }
 
+.block-property-meta .meta-assessment {
+  color: rgba(167, 139, 250, 0.65);
+}
+
 .block-data-note {
   margin: 4px 0 0 0;
   color: rgba(255, 255, 255, 0.22);
