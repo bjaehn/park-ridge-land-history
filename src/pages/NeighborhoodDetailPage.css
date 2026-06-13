@@ -1,0 +1,76 @@
+.neighborhood-detail-page {}
+
+.neighborhood-detail-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.neighborhood-detail-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: rgba(52,211,153,0.10);
+  border: 1px solid rgba(52,211,153,0.22);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #34d399;
+  flex-shrink: 0;
+}
+
+.neighborhood-detail-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+@media (max-width: 900px) {
+  .neighborhood-detail-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.neighborhood-detail-story {}
+.neighborhood-detail-map {}
+
+.neighborhood-character-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  padding: 18px;
+}
+
+@media (max-width: 768px) {
+  .neighborhood-character-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.neighborhood-character-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.neighborhood-character-value {
+  font-size: 1.35rem;
+  font-weight: 700;
+  display: block;
+}
+
+.neighborhood-character-label {
+  color: rgba(255,255,255,0.50);
+  font-size: 0.74rem;
+  display: block;
+}
+
+.neighborhood-character-sub {
+  color: rgba(255,255,255,0.28);
+  font-size: 0.65rem;
+  display: block;
+}

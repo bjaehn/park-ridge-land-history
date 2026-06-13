@@ -41,9 +41,67 @@
 
 .citywide-coverage-grid {
   display: grid;
-  gap: 16px;
+  gap: 14px;
 }
 
 .citywide-coverage-item {
   display: grid;
+}
+
+.citywide-neighborhood-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.citywide-neighborhood-card {
+  display: flex;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.07);
+  background: rgba(255,255,255,0.03);
+  text-decoration: none;
+  overflow: hidden;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.citywide-neighborhood-card:hover {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.14);
+}
+
+.citywide-neighborhood-stripe {
+  width: 3px;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.citywide-neighborhood-body {
+  flex: 1;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.citywide-neighborhood-name {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.citywide-neighborhood-meta {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  color: rgba(255,255,255,0.35);
+  font-size: 0.68rem;
+}
+
+.citywide-neighborhood-signal {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  opacity: 0.75;
 }
