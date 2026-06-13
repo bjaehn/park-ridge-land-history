@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { formatYear } from "../lib/formatters";
 import type { ParcelCollection, ParcelFeature } from "../lib/parcelTypes";
 
 type SearchPanelProps = {
@@ -10,7 +9,13 @@ type SearchPanelProps = {
   onClearSelection: () => void;
 };
 
-const examples = ["115 Vine", "1623 Western", "120 Prospect"];
+const examples = [
+  "115 Vine",
+  "Prospect",
+  "Touhy",
+  "Uptown",
+  "09-21"
+];
 
 export function SearchPanel({
   parcels,
@@ -51,8 +56,9 @@ export function SearchPanel({
           className="search-input"
           type="search"
           value={query}
-          placeholder="Search address or PIN…"
+          placeholder="Search address, street, or PIN…"
           autoComplete="off"
+          aria-label="Search Park Ridge properties by address, street name, or PIN"
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setTimeout(() => setIsFocused(false), 180)}
@@ -61,7 +67,7 @@ export function SearchPanel({
           <button
             className="search-clear"
             type="button"
-            aria-label="Clear search"
+            aria-label="Clear search and selection"
             onClick={clearSelection}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -73,13 +79,15 @@ export function SearchPanel({
 
       {showExamples && (
         <div className="search-examples" aria-label="Example searches">
-          <span className="search-examples-label">Try an address</span>
-          <div className="search-example-pills">
+          <span className="search-examples-label">Try an address, street, or area</span>
+          <div className="search-example-pills" role="list">
             {examples.map((example) => (
               <button
                 key={example}
                 className="search-example-pill"
                 type="button"
+                role="listitem"
+                aria-label={`Search for ${example}`}
                 onMouseDown={(e) => {
                   e.preventDefault();
                   setQuery(example);
@@ -93,13 +101,16 @@ export function SearchPanel({
       )}
 
       {showResults && (
-        <div className="search-results" role="list">
+        <div className="search-results" role="list" aria-label="Search results">
           {results.length === 0 && (
-            <div className="search-empty-state">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+            <div className="search-empty-state" role="listitem">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
-              <span>No matching properties found</span>
+              <div className="search-empty-text">
+                <span>No matching properties found.</span>
+                <span className="search-empty-hint">Try a street name (Prospect, Touhy), an address number, or the first digits of a PIN (09-21).</span>
+              </div>
             </div>
           )}
           {results.map((feature) => {
@@ -107,11 +118,17 @@ export function SearchPanel({
             const isSelected = pin === selectedPin;
             const isVisible = pin ? visiblePins.has(pin) : false;
             const year = feature.properties.year_built;
+            const permits = feature.properties.permit_count ?? 0;
+            const sales = feature.properties.sale_count ?? 0;
+            const hasHistoric = (feature.properties.hargis_record_count ?? 0) > 0;
             return (
               <button
                 className={`search-result${isSelected ? " is-selected" : ""}`}
                 type="button"
+                role="listitem"
                 key={`${pin}-${feature.properties.address ?? "parcel"}`}
+                aria-label={`${feature.properties.address || pin}${year ? `, built ${year}` : ""}`}
+                aria-pressed={isSelected}
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => {
                   onSelectParcel(feature);
@@ -129,12 +146,17 @@ export function SearchPanel({
                   <span className="search-result-address">{feature.properties.address || "Unknown address"}</span>
                   <span className="search-result-sub">
                     {pin || "Unknown PIN"}
-                    {year ? <span className="search-result-year">{year}</span> : null}
                     {!isVisible && <span className="search-result-hidden">Hidden by filter</span>}
+                  </span>
+                  <span className="search-result-meta" aria-hidden="true">
+                    {year ? <span className="srm-tag">Built {year}</span> : null}
+                    {permits > 0 ? <span className="srm-tag">{permits} permit{permits === 1 ? "" : "s"}</span> : null}
+                    {sales > 0 ? <span className="srm-tag">{sales} sale{sales === 1 ? "" : "s"}</span> : null}
+                    {hasHistoric ? <span className="srm-tag srm-historic">Historic survey</span> : null}
                   </span>
                 </span>
                 {isSelected && (
-                  <span className="search-result-check" aria-label="Selected">
+                  <span className="search-result-check" aria-label="Currently selected">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="20 6 9 17 4 12" />
                     </svg>

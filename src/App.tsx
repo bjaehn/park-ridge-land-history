@@ -20,6 +20,9 @@ import { RoadParcelTimelinePanel } from "./components/RoadParcelTimelinePanel";
 import { SearchPanel } from "./components/SearchPanel";
 import { TimelineControl } from "./components/TimelineControl";
 import { VisualizationPanel, type VisualizationPreset } from "./components/VisualizationPanel";
+import { DataCoverageNotice } from "./components/cards/DataCoverageNotice";
+import { StartHereSection } from "./components/layout/StartHereSection";
+import { computeDataCoverage } from "./lib/dataCoverage";
 import { useParcelDetail } from "./hooks/useParcelDetail";
 import { useParkRidgeData } from "./hooks/useParkRidgeData";
 import { decadeOrder } from "./lib/colorScales";
@@ -194,6 +197,21 @@ export default function App() {
     const area = neighborhoodSummaries.features.find((a) => a.properties.parcelPins.includes(selectedPin));
     return area?.properties.label ?? null;
   }, [selectedPin, neighborhoodSummaries]);
+
+  // Neighborhood parcels for property comparison
+  const selectedNeighborhoodParcels = useMemo(() => {
+    if (!selectedPin || !pressureDecoratedParcels) return [];
+    const neighborhood = neighborhoodSummaries.features.find((a) => a.properties.parcelPins.includes(selectedPin));
+    if (!neighborhood) return pressureDecoratedParcels.features;
+    const pins = new Set(neighborhood.properties.parcelPins);
+    return pressureDecoratedParcels.features.filter((f) => {
+      const pin = f.properties.pin_normalized || f.properties.pin_original;
+      return Boolean(pin && pins.has(pin));
+    });
+  }, [selectedPin, pressureDecoratedParcels, neighborhoodSummaries]);
+
+  // Data coverage stats for city scale
+  const cityDataCoverage = useMemo(() => computeDataCoverage(parcels), [parcels]);
 
   const selectedAreaParcels = useMemo<ParcelCollection | null>(() => {
     if (!selectedArea || !pressureDecoratedParcels) return null;
@@ -719,8 +737,14 @@ export default function App() {
   return (
     <main className="app-shell product-app-shell">
         <header className="app-header">
-          <p>Work in progress</p>
-          <h1>Park Ridge Land History</h1>
+          <div className="app-header-brand">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V10.5z" />
+              <polyline points="9 21 9 12 15 12 15 21" />
+            </svg>
+            <span className="app-header-title">Park Ridge Land History</span>
+          </div>
+          <span className="app-header-tagline">Property records, source-backed</span>
         </header>
         <div className="analysis-workspace-card">
           <AnalysisTabs activeScale={activeAnalysisScale} onSetScale={setAnalysisScale} />
@@ -729,7 +753,6 @@ export default function App() {
           <section className="scale-analysis-column" aria-label={`${scaleLabel(activeAnalysisScale)} analysis`}>
           <ScaleBreadcrumbs
             activeScale={activeAnalysisScale}
-            selectedAddress={selectedParcel?.properties.address}
             neighborhoodLabel={parcelNeighborhoodLabel || selectedArea?.properties.label}
             onNavigate={navigateToScale}
           />
@@ -752,12 +775,17 @@ export default function App() {
                 onSelectParcel={selectParcel}
                 onClearSelection={() => setSelectedPin(null)}
               />
+              {!selectedPin && (
+                <StartHereSection onNavigate={navigateToScale} />
+              )}
               <ParcelDetailPanel
                 parcel={selectedParcel}
                 parcels={pressureDecoratedParcels}
                 permitPressureWindow={permitPressureWindow}
                 isLoadingDetail={isLoadingDetail}
                 activeView={activePropertyView}
+                blockParcels={selectedPhysicalBlock?.contextParcels ?? []}
+                neighborhoodParcels={selectedNeighborhoodParcels}
                 onSetActiveView={setActivePropertyView}
                 onSelectRelatedParcel={selectParcel}
                 onClearSelection={() => setSelectedPin(null)}
@@ -869,6 +897,7 @@ export default function App() {
                 <>
                   <DecadeComparisonTable parcels={pressureDecoratedParcels} />
                   <DecadeDistributionChart parcels={parcels} />
+                  <DataCoverageNotice stats={cityDataCoverage} />
                 </>
               )}
               {activeVisualizationPreset === "buildout" && (
@@ -993,12 +1022,10 @@ const breadcrumbIcons: Record<AnalysisScale, JSX.Element> = {
 
 function ScaleBreadcrumbs({
   activeScale,
-  selectedAddress,
   neighborhoodLabel,
   onNavigate
 }: {
   activeScale: AnalysisScale;
-  selectedAddress?: string | null;
   neighborhoodLabel?: string | null;
   onNavigate: (scale: AnalysisScale) => void;
 }) {

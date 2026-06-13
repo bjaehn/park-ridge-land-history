@@ -7,6 +7,7 @@ import {
 import type { PermitPressureWindow } from "../lib/permitPressure";
 import type { HotspotCollection } from "../lib/hotspots";
 import type { ParcelCollection } from "../lib/parcelTypes";
+import { DataCaveat } from "./cards/DataCaveat";
 import { BlockChangeTable } from "./BlockChangeTable";
 import { BuildoutMilestonesTable } from "./BuildoutMilestonesTable";
 import { ChangeStoryCard } from "./ChangeStoryCard";
@@ -97,6 +98,12 @@ export function HotspotPanel({
       <div className="cluster-view-heading">
         <h3>{activeDefinition.shortLabel}</h3>
         <p>{activeDefinition.description}</p>
+        {activeGrouping === "neighborhoods" && (
+          <DataCaveat caveatKey="neighborhood_boundary" />
+        )}
+        {activeGrouping === "change_zones" && (
+          <DataCaveat caveatKey="census_block_proxy" />
+        )}
       </div>
 
       <AreaList

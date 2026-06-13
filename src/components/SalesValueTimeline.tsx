@@ -1,4 +1,4 @@
-import { formatCurrency, formatYear } from "../lib/formatters";
+import { formatCurrency } from "../lib/formatters";
 import { getHouseEvolutionTimeline } from "../lib/houseEvolution";
 import type { HouseEvolutionEvent, ParcelProperties } from "../lib/parcelTypes";
 
@@ -35,8 +35,6 @@ export function SalesValueTimeline({ properties }: SalesValueTimelineProps) {
     );
   }
 
-  const firstYear = properties.first_assessed_year || properties.year_built;
-  const latestYear = properties.latest_assessed_year || new Date().getFullYear();
   const valueChangePct = properties.assessed_value_change_pct;
   const hasValueTrend = typeof valueChangePct === "number" && !Number.isNaN(valueChangePct)
     && properties.first_assessed_year && properties.latest_assessed_year

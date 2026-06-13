@@ -14,6 +14,8 @@ type ParcelDetailPanelProps = {
   permitPressureWindow: PermitPressureWindow;
   isLoadingDetail?: boolean;
   activeView: PropertyView;
+  blockParcels?: ParcelFeature[];
+  neighborhoodParcels?: ParcelFeature[];
   onSetActiveView: (view: PropertyView) => void;
   onSelectRelatedParcel: (feature: ParcelFeature) => void;
   onClearSelection: () => void;
@@ -54,6 +56,8 @@ export function ParcelDetailPanel({
   permitPressureWindow,
   isLoadingDetail = false,
   activeView,
+  blockParcels = [],
+  neighborhoodParcels = [],
   onSetActiveView,
   onSelectRelatedParcel,
   onClearSelection
@@ -129,7 +133,13 @@ export function ParcelDetailPanel({
       {/* Story — the full unified scroll */}
       {activeView === "timeline" && (
         <div className="property-view-content">
-          <PropertyTimeline properties={properties} />
+          <PropertyTimeline
+            properties={properties}
+            parcel={parcel}
+            blockParcels={blockParcels}
+            neighborhoodParcels={neighborhoodParcels}
+            allParcels={parcels?.features ?? []}
+          />
           <NearbyActivitySummary parcel={parcel} parcels={parcels} permitPressureWindow={permitPressureWindow} />
         </div>
       )}

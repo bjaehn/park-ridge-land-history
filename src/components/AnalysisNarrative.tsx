@@ -58,23 +58,26 @@ export function AnalysisNarrative({
 function HomeWelcomeCard() {
   return (
     <div className="home-welcome-card" aria-label="Property search welcome">
-      <div className="home-welcome-glyph" aria-hidden="true">
-        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V10.5z" />
-          <polyline points="9 21 9 12 15 12 15 21" />
-        </svg>
+      <div className="home-welcome-hero">
+        <div className="home-welcome-glyph" aria-hidden="true">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V10.5z" />
+            <polyline points="9 21 9 12 15 12 15 21" />
+          </svg>
+        </div>
+        <div className="home-welcome-text">
+          <h2 className="home-welcome-headline">Discover the story of any Park Ridge home</h2>
+          <p className="home-welcome-sub">Search by address to see year built, permits, sales, assessments, historic records, neighborhood context, and source-backed development history.</p>
+        </div>
       </div>
-      <div className="home-welcome-text">
-        <h2 className="home-welcome-headline">Find any Park Ridge home</h2>
-        <p className="home-welcome-sub">Search an address or PIN to see the full ancestry — build year, ownership history, permits, assessed value, historic artifacts, and nearby context.</p>
-      </div>
-      <div className="home-welcome-facts" aria-hidden="true">
-        <span>🏗 Build year</span>
-        <span>💰 Sales history</span>
-        <span>🔨 Permits</span>
-        <span>📋 Assessments</span>
-        <span>📸 Artifacts</span>
-      </div>
+      <ul className="home-welcome-facts" aria-label="Available record types">
+        <li>Year built</li>
+        <li>Sales history</li>
+        <li>Permits</li>
+        <li>Assessments</li>
+        <li>Historic survey</li>
+        <li>Block context</li>
+      </ul>
     </div>
   );
 }

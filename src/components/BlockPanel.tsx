@@ -9,6 +9,7 @@ import { ChangeStoryCard } from "./ChangeStoryCard";
 import { DecadeComparisonTable } from "./DecadeComparisonTable";
 import { PermitWorkComparisonTable } from "./PermitWorkComparisonTable";
 import { TimelineControl } from "./TimelineControl";
+import { DataCaveat } from "./cards/DataCaveat";
 
 type BlockPanelProps = {
   parcel: ParcelFeature | null;
@@ -97,6 +98,7 @@ export function BlockPanel({
             {physicalBlock?.capped && (
               <p>This block group was capped at 120 parcels, so it may include a larger connected parcel area.</p>
             )}
+            <DataCaveat caveatKey="census_block_proxy" />
           </div>
           <BlockBiographyCard
             parcels={physicalBlock?.allParcels ?? []}

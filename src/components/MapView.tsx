@@ -410,7 +410,7 @@ export function MapView({
         paint: {
           "line-color": roadHistoryColorExpression(),
           "line-width": 3,
-          "line-opacity": showRoadHistory ? 0.58 : 0
+          "line-opacity": 0
         }
       });
 
@@ -418,11 +418,11 @@ export function MapView({
         id: "road-history-current-period",
         type: "line",
         source: "road-history",
-        filter: ["==", ["get", "first_observed_period"], selectedHistoryPeriod],
+        filter: ["==", ["get", "first_observed_period"], "pre_1939"],
         paint: {
           "line-color": roadHistoryColorExpression(),
           "line-width": 5.5,
-          "line-opacity": showRoadHistory ? 0.95 : 0
+          "line-opacity": 0
         }
       });
 
