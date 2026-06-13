@@ -17,8 +17,18 @@ import {
   topLargestAssessmentChange,
   topLargestSalePriceChange,
 } from "../lib/rankings";
-import { formatNumber } from "../lib/formatters";
+import { formatNumber, formatAddress } from "../lib/formatters";
+import { useRecentlyViewed } from "../lib/hooks/useRecentlyViewed";
 import "./DiscoverPage.css";
+
+const NEIGHBORHOODS = [
+  { id: "uptown", label: "Uptown", desc: "Metra station, library, civic core", color: "#22d3ee" },
+  { id: "south_park", label: "South Park", desc: "South of Touhy corridor", color: "#34d399" },
+  { id: "northwest_park", label: "Northwest Park", desc: "Dee Road, Dee Park, western edge", color: "#60a5fa" },
+  { id: "northeast_park", label: "Northeast Park", desc: "Greenwood, Busse, northern edge", color: "#a78bfa" },
+  { id: "southwest_woods", label: "Southwest Woods", desc: "Forest preserve edge, larger lots", color: "#fbbf24" },
+  { id: "southeast_park", label: "Southeast Park", desc: "Cumberland, Devon, Chicago edge", color: "#f87171" },
+];
 
 const navCards = [
   {
@@ -66,7 +76,8 @@ const navCards = [
 ];
 
 export function DiscoverPage() {
-  const { parcels, isLoading, parcelCount } = useParkRidgeContext();
+  const { parcels, isLoading, parcelCount, parcelsByPin } = useParkRidgeContext();
+  const recentPins = useRecentlyViewed();
 
   const features = useMemo(() => parcels?.features ?? [], [parcels]);
 
@@ -163,6 +174,55 @@ export function DiscoverPage() {
               icon={DollarSign}
               accent="green"
             />
+          </div>
+        </section>
+
+        {/* ─── Recently Viewed ─── */}
+        {recentPins.length > 0 && (
+          <section className="page-section">
+            <div className="section-header">
+              <div>
+                <span className="section-eyebrow">Your history</span>
+                <h2 className="section-title">Recently viewed</h2>
+              </div>
+            </div>
+            <div className="discover-recent-grid">
+              {recentPins.map((pin) => {
+                const parcel = parcelsByPin.get(pin);
+                const addr = parcel ? formatAddress(parcel.properties.address) : pin;
+                return (
+                  <Link key={pin} to={ROUTES.property(pin)} className="discover-recent-card">
+                    <Home size={13} strokeWidth={2} style={{ color: "#22d3ee", flexShrink: 0 }} aria-hidden="true" />
+                    <span className="discover-recent-addr">{addr}</span>
+                    {parcel?.properties.year_built && (
+                      <span className="discover-recent-year">{parcel.properties.year_built}</span>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* ─── Neighborhood Quick-Links ─── */}
+        <section className="page-section">
+          <div className="section-header">
+            <div>
+              <span className="section-eyebrow">6 neighborhoods</span>
+              <h2 className="section-title">Explore by neighborhood</h2>
+            </div>
+            <Link to={ROUTES.neighborhoods} className="link-pill">All neighborhoods</Link>
+          </div>
+          <div className="discover-neighborhood-grid">
+            {NEIGHBORHOODS.map((n) => (
+              <Link key={n.id} to={ROUTES.neighborhood(n.id)} className="discover-neighborhood-card">
+                <div className="discover-neighborhood-stripe" style={{ background: n.color }} />
+                <div className="discover-neighborhood-body">
+                  <strong className="discover-neighborhood-label">{n.label}</strong>
+                  <p className="discover-neighborhood-desc">{n.desc}</p>
+                </div>
+              </Link>
+            ))}
           </div>
         </section>
 

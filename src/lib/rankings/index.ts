@@ -6,6 +6,7 @@ export type RankedProperty = {
   value: number | string;
   valueLabel: string;
   secondaryLabel?: string;
+  linkTo?: string;
 };
 
 function getPin(f: ParcelFeature): string | null {

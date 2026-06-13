@@ -5,6 +5,7 @@ import { DiscoverPage } from "./pages/DiscoverPage";
 import { SearchPage } from "./pages/SearchPage";
 import { PropertyPage } from "./pages/PropertyPage";
 import { BlocksPage } from "./pages/BlocksPage";
+import { BlockDetailPage } from "./pages/BlockDetailPage";
 import { NeighborhoodsPage } from "./pages/NeighborhoodsPage";
 import { NeighborhoodDetailPage } from "./pages/NeighborhoodDetailPage";
 import { CitywidePage } from "./pages/CitywidePage";
@@ -22,7 +23,7 @@ export default function App() {
             <Route path={ROUTES.search} element={<SearchPage />} />
             <Route path={ROUTES.propertyPattern} element={<PropertyPage />} />
             <Route path={ROUTES.blocks} element={<BlocksPage />} />
-            <Route path={ROUTES.blockPattern} element={<BlocksPage />} />
+            <Route path={ROUTES.blockPattern} element={<BlockDetailPage />} />
             <Route path={ROUTES.neighborhoods} element={<NeighborhoodsPage />} />
             <Route path={ROUTES.neighborhoodPattern} element={<NeighborhoodDetailPage />} />
             <Route path={ROUTES.parkRidge} element={<CitywidePage />} />
