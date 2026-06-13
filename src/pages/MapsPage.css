@@ -108,3 +108,11 @@
   font-size: 0.72rem;
   line-height: 1.5;
 }
+
+
+.maps-pin-note {
+  margin: 8px 0 0;
+  color: rgba(34, 211, 238, 0.55);
+  font-size: 0.70rem;
+  font-style: italic;
+}

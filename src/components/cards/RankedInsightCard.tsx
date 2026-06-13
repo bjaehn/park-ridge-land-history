@@ -41,7 +41,7 @@ export function RankedInsightCard({ title, icon: Icon, accentColor = "#22d3ee", 
                 {i + 1}
               </span>
               <div className="ranked-item-body">
-                <Link to={ROUTES.property(item.pin)} className="ranked-address">
+                <Link to={item.linkTo ?? ROUTES.property(item.pin)} className="ranked-address">
                   {formatAddress(item.address)}
                 </Link>
                 {item.secondaryLabel && (

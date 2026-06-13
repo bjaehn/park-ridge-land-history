@@ -19,6 +19,7 @@ import {
   formatNumber, formatSqft, ageFromYear
 } from "../lib/formatters";
 import { buildAreaSummaries } from "../lib/areaGroups";
+import { addRecentlyViewed } from "../lib/hooks/useRecentlyViewed";
 import "./PropertyPage.css";
 
 type DetailChunk = {
@@ -61,6 +62,7 @@ export function PropertyPage() {
 
   useEffect(() => {
     if (!pin) return;
+    addRecentlyViewed(pin);
     setDetailProps(null);
     setLoadingDetail(true);
     const prefix = pin.replace(/\D/g, "").slice(0, 4) || "unknown";
@@ -96,6 +98,18 @@ export function PropertyPage() {
     const summaries = buildAreaSummaries(parcels, "neighborhoods", { type: "FeatureCollection", features: [] });
     return summaries.features.find((a) => a.properties.parcelPins.includes(pin))?.properties.label ?? null;
   }, [parcels, pin]);
+
+  const blockId = indexParcel?.properties.street_block_id ?? null;
+
+  const nearbyProperties = useMemo(() => {
+    if (!parcels || !blockId || !pin) return [];
+    return parcels.features
+      .filter((f) =>
+        f.properties.street_block_id === blockId &&
+        (f.properties.pin_normalized || f.properties.pin_original) !== pin
+      )
+      .slice(0, 8);
+  }, [parcels, blockId, pin]);
 
   const isLoading = dataLoading || loadingDetail;
 
@@ -166,7 +180,7 @@ export function PropertyPage() {
         </div>
 
         <div className="property-header-actions">
-          <Link to={ROUTES.blocks} className="property-context-link">
+          <Link to={blockId ? ROUTES.block(blockId) : ROUTES.blocks} className="property-context-link">
             <Grid3x3 size={13} strokeWidth={2} aria-hidden="true" />
             Block
           </Link>
@@ -178,6 +192,12 @@ export function PropertyPage() {
             <MapIcon size={13} strokeWidth={2} aria-hidden="true" />
             Park Ridge
           </Link>
+          {pin && (
+            <Link to={ROUTES.mapsWithPin(pin)} className="property-context-link">
+              <MapIcon size={13} strokeWidth={2} aria-hidden="true" />
+              View on map
+            </Link>
+          )}
         </div>
       </header>
 
@@ -382,6 +402,7 @@ export function PropertyPage() {
                   </div>
                   <div className="glass-card-sm">
                     <PermitActivityChart events={timeline} />
+                    <div className="chart-footnote">Cook County permit records begin 2019. Pre-2019 activity is not reflected.</div>
                   </div>
                 </section>
               )}
@@ -399,6 +420,50 @@ export function PropertyPage() {
                 </section>
               )}
 
+              {/* AI Summary placeholder */}
+              <section className="page-section">
+                <div className="glass-card-sm property-ai-placeholder">
+                  <div className="ai-placeholder-header">
+                    <span className="badge badge-amber">Coming soon</span>
+                    <span style={{ color: "rgba(255,255,255,0.35)", fontSize: "0.72rem" }}>AI summary</span>
+                  </div>
+                  <p className="ai-placeholder-body">
+                    AI-generated property narrative — grounded in verified records, with citations.
+                    Activates when data pipeline is connected.
+                  </p>
+                </div>
+              </section>
+
+              {/* Nearby Properties */}
+              {nearbyProperties.length > 0 && (
+                <section className="page-section">
+                  <div className="section-header">
+                    <div>
+                      <span className="section-eyebrow">Same Census block</span>
+                      <h2 className="section-title">Nearby Properties</h2>
+                    </div>
+                    {blockId && (
+                      <Link to={ROUTES.block(blockId)} className="link-pill">
+                        View block
+                      </Link>
+                    )}
+                  </div>
+                  <div className="nearby-property-list glass-card-sm">
+                    {nearbyProperties.map((f) => {
+                      const nPin = f.properties.pin_normalized || f.properties.pin_original || "";
+                      return (
+                        <Link key={nPin} to={ROUTES.property(nPin)} className="nearby-property-item">
+                          <span className="nearby-address">{formatAddress(f.properties.address)}</span>
+                          <span className="nearby-meta">
+                            {f.properties.year_built ? `${f.properties.year_built}` : "—"}
+                          </span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </section>
+              )}
+
               {/* Data Coverage */}
               <section className="page-section">
                 <div className="section-header">
@@ -412,6 +477,7 @@ export function PropertyPage() {
                       lastYear={props?.latest_permit_year}
                       icon={Wrench}
                       accent="#fbbf24"
+                      note="From 2019+"
                     />
                     <CoverageItem
                       label="Sale records"
@@ -478,12 +544,14 @@ function CoverageItem({
   lastYear,
   icon: Icon,
   accent,
+  note,
 }: {
   label: string;
   count: number;
   lastYear?: number | null;
   icon: typeof Wrench;
   accent: string;
+  note?: string;
 }) {
   return (
     <div className="coverage-item">
@@ -498,6 +566,7 @@ function CoverageItem({
         {lastYear && count > 0 && (
           <span className="coverage-last">Last: {lastYear}</span>
         )}
+        {note && <span className="coverage-note">{note}</span>}
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ import { SearchBox } from "../components/search/SearchBox";
 import { StatCard } from "../components/cards/StatCard";
 import { RankedInsightCard } from "../components/cards/RankedInsightCard";
 import { formatNumber } from "../lib/formatters";
+import { ROUTES } from "../lib/routes";
 import type { ParcelFeature } from "../lib/parcelTypes";
 import "./BlocksPage.css";
 
@@ -60,12 +61,13 @@ export function BlocksPage() {
     [...blockSummaries]
       .sort((a, b) => b.avgPermits - a.avgPermits)
       .slice(0, 10)
-      .map((b, i) => ({
+      .map((b) => ({
         pin: b.blockId,
         address: b.label,
         value: b.avgPermits,
         valueLabel: `${b.avgPermits.toFixed(1)} avg permits`,
         secondaryLabel: `${b.parcelCount} properties`,
+        linkTo: ROUTES.block(b.blockId),
       })),
     [blockSummaries]
   );
@@ -80,6 +82,7 @@ export function BlocksPage() {
         value: b.avgSales,
         valueLabel: `${b.avgSales.toFixed(1)} avg sales`,
         secondaryLabel: `${b.parcelCount} properties`,
+        linkTo: ROUTES.block(b.blockId),
       })),
     [blockSummaries]
   );
@@ -95,6 +98,7 @@ export function BlocksPage() {
         value: b.oldestYear ?? 0,
         valueLabel: `Oldest: ${b.oldestYear}`,
         secondaryLabel: `${b.parcelCount} properties`,
+        linkTo: ROUTES.block(b.blockId),
       })),
     [blockSummaries]
   );

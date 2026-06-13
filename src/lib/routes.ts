@@ -11,5 +11,6 @@ export const ROUTES = {
   neighborhoodPattern: "/neighborhoods/:neighborhoodId",
   parkRidge: "/park-ridge",
   maps: "/maps",
+  mapsWithPin: (pin: string) => `/maps?pin=${encodeURIComponent(pin)}`,
   dataSources: "/data-sources",
 } as const;

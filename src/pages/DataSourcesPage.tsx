@@ -34,7 +34,7 @@ const SOURCES = [
     coverage: "Permit records for Cook County properties",
     updateFrequency: "Varies",
     fields: ["permit_number", "permit_type", "date_issued", "description", "status", "estimated_completion"],
-    limitations: "Not all municipalities submit permit data to the county. Coverage may be incomplete for older permits. Park Ridge coverage completeness is not independently verified.",
+    limitations: "Records in this dataset begin 2019. Pre-2019 permit data is not published in the Cook County Assessor's Socrata API. Not all municipalities submit permit data to the county.",
     status: "active",
   },
   {
@@ -158,8 +158,8 @@ export function DataSourcesPage() {
           <div className="datasource-stat-card">
             <Clock size={16} style={{ color: "#fbbf24" }} aria-hidden="true" />
             <div>
-              <strong>2024–2026</strong>
-              <span>Last data import window</span>
+              <strong>{__BUILD_DATE__}</strong>
+              <span>Last app build date</span>
             </div>
           </div>
         </div>
@@ -229,6 +229,9 @@ export function DataSourcesPage() {
               <p style={{ margin: 0, color: "rgba(255,255,255,0.52)", fontSize: "0.78rem", lineHeight: 1.55 }}>{item.desc}</p>
             </div>
           ))}
+          <p style={{ margin: "8px 0 0", color: "rgba(255,255,255,0.22)", fontSize: "0.66rem" }}>
+            App built {__BUILD_DATE__}. Data freshness depends on last pipeline run; see Cook County data catalog for upstream update schedules.
+          </p>
         </div>
       </section>
     </div>

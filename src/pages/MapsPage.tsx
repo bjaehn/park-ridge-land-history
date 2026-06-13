@@ -1,11 +1,20 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Map, AlertTriangle, Info, Eye, EyeOff } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import { useParkRidgeContext } from "../contexts/ParkRidgeDataContext";
+import { ParcelMiniMap } from "../components/map/ParcelMiniMap";
 import "./MapsPage.css";
 
 export function MapsPage() {
-  const { historicalLayers } = useParkRidgeContext();
+  const { historicalLayers, parcels, boundary } = useParkRidgeContext();
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+
+  const highlightPin = searchParams.get("pin");
+  const highlightPins = useMemo(
+    () => (highlightPin ? new Set([highlightPin]) : undefined),
+    [highlightPin]
+  );
 
   const readyLayers = historicalLayers.filter((l) => l.status === "ready");
   const pendingLayers = historicalLayers.filter((l) => l.status !== "ready");
@@ -25,7 +34,23 @@ export function MapsPage() {
         </p>
       </div>
 
-      <div className="glass-card maps-notice" style={{ marginBottom: 32 }}>
+      <section className="page-section" style={{ marginBottom: 0 }}>
+        <div className="section-header">
+          <div>
+            <span className="section-eyebrow">Spatial context</span>
+            <h2 className="section-title">Park Ridge parcel map</h2>
+          </div>
+          <span className="section-note">{parcels ? `${parcels.features.length.toLocaleString()} parcels` : "Loading…"}</span>
+        </div>
+        <div className="glass-card" style={{ padding: 0, overflow: "hidden" }}>
+          <ParcelMiniMap allParcels={parcels} boundary={boundary} highlightPins={highlightPins} height={360} />
+        </div>
+        {highlightPin && (
+          <p className="maps-pin-note">Highlighting PIN {highlightPin}</p>
+        )}
+      </section>
+
+      <div className="glass-card maps-notice" style={{ marginBottom: 32, marginTop: 24 }}>
         <AlertTriangle size={16} strokeWidth={2} style={{ color: "#fbbf24", flexShrink: 0 }} aria-hidden="true" />
         <div>
           <strong>About map evidence</strong>
@@ -65,10 +90,12 @@ export function MapsPage() {
                     {layer.description && (
                       <p className="maps-layer-desc">{layer.description}</p>
                     )}
+                    <div style={{ borderRadius: 8, overflow: "hidden", margin: "8px 0" }}>
+                      <ParcelMiniMap allParcels={parcels} boundary={boundary} height={240} />
+                    </div>
                     <p className="maps-layer-note">
                       <Info size={11} strokeWidth={2.2} aria-hidden="true" />
-                      This layer is available in the map view. Navigate to a property
-                      to see it in context, or use the city-level map for spatial overview.
+                      Showing city parcel context. Historical overlay for this layer requires georeferencing completion.
                     </p>
                   </div>
                 )}
