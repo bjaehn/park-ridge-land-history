@@ -396,6 +396,7 @@ export function PropertyPage() {
                   </div>
                   <div className="glass-card-sm">
                     <PermitActivityChart events={timeline} />
+                    <div className="chart-footnote">Cook County permit records begin 2019. Pre-2019 activity is not reflected.</div>
                   </div>
                 </section>
               )}
@@ -470,6 +471,7 @@ export function PropertyPage() {
                       lastYear={props?.latest_permit_year}
                       icon={Wrench}
                       accent="#fbbf24"
+                      note="From 2019+"
                     />
                     <CoverageItem
                       label="Sale records"
@@ -536,12 +538,14 @@ function CoverageItem({
   lastYear,
   icon: Icon,
   accent,
+  note,
 }: {
   label: string;
   count: number;
   lastYear?: number | null;
   icon: typeof Wrench;
   accent: string;
+  note?: string;
 }) {
   return (
     <div className="coverage-item">
@@ -556,6 +560,7 @@ function CoverageItem({
         {lastYear && count > 0 && (
           <span className="coverage-last">Last: {lastYear}</span>
         )}
+        {note && <span className="coverage-note">{note}</span>}
       </div>
     </div>
   );

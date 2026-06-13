@@ -229,7 +229,10 @@ export function BlockDetailPage() {
                 <h2 className="section-title">Ranked Properties</h2>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                <RankedInsightCard title="Most Permit Activity" icon={Wrench} accentColor="#fbbf24" items={mostPermits} />
+                <div>
+                  <RankedInsightCard title="Most Permit Activity" icon={Wrench} accentColor="#fbbf24" items={mostPermits} />
+                  <p className="block-data-note">Cook County permit records begin 2019.</p>
+                </div>
                 <RankedInsightCard title="Most Sales" icon={DollarSign} accentColor="#34d399" items={mostSales} />
                 <RankedInsightCard title="Oldest Homes" icon={Clock} accentColor="#c4a97a" items={oldest} />
               </div>
