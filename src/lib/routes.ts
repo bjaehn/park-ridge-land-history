@@ -1,0 +1,15 @@
+export const ROUTES = {
+  discover: "/",
+  search: "/search",
+  property: (pin: string) => `/property/${encodeURIComponent(pin)}`,
+  propertyPattern: "/property/:pin",
+  blocks: "/blocks",
+  block: (blockId: string) => `/blocks/${encodeURIComponent(blockId)}`,
+  blockPattern: "/blocks/:blockId",
+  neighborhoods: "/neighborhoods",
+  neighborhood: (id: string) => `/neighborhoods/${encodeURIComponent(id)}`,
+  neighborhoodPattern: "/neighborhoods/:neighborhoodId",
+  parkRidge: "/park-ridge",
+  maps: "/maps",
+  dataSources: "/data-sources",
+} as const;

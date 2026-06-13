@@ -1,0 +1,119 @@
+.neighborhoods-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.neighborhood-card {
+  display: flex;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.07);
+  background: rgba(255,255,255,0.03);
+  text-decoration: none;
+  overflow: hidden;
+  transition: border-color 140ms, background 140ms, transform 140ms, box-shadow 140ms;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+}
+
+.neighborhood-card:hover {
+  border-color: rgba(255,255,255,0.13);
+  background: rgba(255,255,255,0.05);
+  transform: translateY(-2px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 8px 24px rgba(0,0,0,0.30);
+}
+
+.neighborhood-card-stripe {
+  width: 4px;
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+.neighborhood-card-body {
+  flex: 1;
+  padding: 16px;
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.neighborhood-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.neighborhood-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  border: 1px solid;
+  flex-shrink: 0;
+}
+
+.neighborhood-name {
+  display: block;
+  color: rgba(255,255,255,0.90);
+  font-size: 0.90rem;
+  font-weight: 550;
+  line-height: 1.2;
+}
+
+.neighborhood-count {
+  display: block;
+  color: rgba(255,255,255,0.40);
+  font-size: 0.70rem;
+  font-weight: 400;
+  margin-top: 2px;
+}
+
+.neighborhood-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.neighborhood-stat {
+  display: grid;
+  gap: 2px;
+}
+
+.neighborhood-stat-label {
+  color: rgba(255,255,255,0.35);
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.neighborhood-stat-value {
+  color: rgba(255,255,255,0.80);
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+.neighborhood-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: rgba(255,255,255,0.35);
+  font-size: 0.70rem;
+  font-weight: 400;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  padding-top: 10px;
+}
+
+.neighborhood-arrow {
+  color: rgba(255,255,255,0.22);
+  transition: color 120ms, transform 120ms;
+}
+
+.neighborhood-card:hover .neighborhood-arrow {
+  color: var(--accent);
+  transform: translateX(3px);
+}
+
+@media (max-width: 768px) {
+  .neighborhoods-grid { grid-template-columns: 1fr; }
+}

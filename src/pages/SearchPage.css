@@ -1,0 +1,117 @@
+.search-page-input {
+  max-width: 600px;
+  margin-bottom: 40px;
+}
+
+.search-page-results {
+  margin-top: 8px;
+}
+
+.search-result-list {
+  display: grid;
+  gap: 8px;
+}
+
+.search-result-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.07);
+  background: rgba(255,255,255,0.03);
+  text-decoration: none;
+  transition: border-color 130ms, background 130ms, box-shadow 130ms;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+}
+
+.search-result-card:hover {
+  border-color: rgba(34,211,238,0.30);
+  background: rgba(34,211,238,0.06);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.07), 0 4px 16px rgba(0,0,0,0.25);
+}
+
+.search-result-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.45);
+  flex-shrink: 0;
+}
+
+.search-result-card:hover .search-result-icon {
+  border-color: rgba(34,211,238,0.30);
+  background: rgba(34,211,238,0.10);
+  color: #22d3ee;
+}
+
+.search-result-body {
+  flex: 1;
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.search-result-address {
+  color: rgba(255,255,255,0.90);
+  font-size: 0.86rem;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-result-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.search-result-meta-row span {
+  color: rgba(255,255,255,0.38);
+  font-size: 0.72rem;
+  font-weight: 400;
+}
+
+.search-result-arrow {
+  color: rgba(255,255,255,0.25);
+  flex-shrink: 0;
+  transition: color 120ms, transform 120ms;
+}
+
+.search-result-card:hover .search-result-arrow {
+  color: #22d3ee;
+  transform: translateX(2px);
+}
+
+.search-page-tips {
+  margin-top: 48px;
+  padding: 20px 24px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.07);
+  background: rgba(255,255,255,0.025);
+}
+
+.search-page-tips h3 {
+  margin: 0 0 12px;
+  color: rgba(255,255,255,0.70);
+  font-size: 0.84rem;
+  font-weight: 500;
+}
+
+.search-page-tips ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+}
+
+.search-page-tips li {
+  color: rgba(255,255,255,0.42);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
