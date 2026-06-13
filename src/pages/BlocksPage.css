@@ -1,0 +1,20 @@
+.blocks-info-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.blocks-info-card strong {
+  display: block;
+  color: rgba(255,255,255,0.88);
+  font-size: 0.86rem;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+
+.blocks-info-card p {
+  margin: 0;
+  color: rgba(255,255,255,0.48);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}

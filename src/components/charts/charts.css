@@ -1,0 +1,50 @@
+.chart-wrap {
+  display: grid;
+  gap: 10px;
+}
+
+.chart-title {
+  margin: 0;
+  color: rgba(255,255,255,0.70);
+  font-size: 0.76rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.chart-tooltip {
+  display: grid;
+  gap: 2px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(6, 10, 22, 0.96);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+
+.chart-tooltip-label {
+  color: rgba(255,255,255,0.45);
+  font-size: 0.68rem;
+  font-weight: 400;
+}
+
+.chart-tooltip-value {
+  color: rgba(255,255,255,0.95);
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.chart-empty {
+  display: grid;
+  place-items: center;
+  min-height: 80px;
+  border-radius: 8px;
+  border: 1px dashed rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.02);
+  color: rgba(255,255,255,0.30);
+}
+
+.chart-empty p {
+  margin: 0;
+  font-size: 0.76rem;
+}
