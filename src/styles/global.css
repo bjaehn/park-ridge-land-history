@@ -2922,6 +2922,20 @@ button, input { font: inherit; }
   color: var(--ink-muted);
   font-size: 0.68rem; font-weight: 400; line-height: 1.4;
 }
+.coverage-list {
+  list-style: none; margin: 0; padding: 0;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.coverage-list-item {
+  display: flex; align-items: flex-start; gap: 7px;
+  color: var(--ink-muted);
+  font-size: 0.75rem; line-height: 1.5;
+}
+.coverage-list-item svg {
+  flex-shrink: 0; margin-top: 3px;
+  color: var(--accent-primary);
+  opacity: 0.7;
+}
 
 /* ─── Start Here Section ─────────────────────────── */
 

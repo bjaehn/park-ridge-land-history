@@ -1,11 +1,29 @@
 import type { DataCoverageStats } from "../../lib/dataCoverage";
 
-type DataCoverageNoticeProps = {
+type StatProps = {
   stats: DataCoverageStats;
   title?: string;
+  message?: never;
+  items?: never;
 };
 
-export function DataCoverageNotice({ stats, title = "Data coverage at a glance" }: DataCoverageNoticeProps) {
+type ListProps = {
+  message: string;
+  items: string[];
+  stats?: never;
+  title?: never;
+};
+
+type DataCoverageNoticeProps = StatProps | ListProps;
+
+export function DataCoverageNotice(props: DataCoverageNoticeProps) {
+  if (props.stats !== undefined) {
+    return <StatsCoverageNotice stats={props.stats} title={props.title} />;
+  }
+  return <ListCoverageNotice message={props.message} items={props.items} />;
+}
+
+function StatsCoverageNotice({ stats, title = "Data coverage at a glance" }: { stats: DataCoverageStats; title?: string }) {
   if (stats.total === 0) return null;
 
   const rows: Array<{ label: string; value: number; pct: number; caveat?: string }> = [
@@ -42,6 +60,24 @@ export function DataCoverageNotice({ stats, title = "Data coverage at a glance" 
       <p className="coverage-notice-note">
         Coverage reflects the records linked to this dataset. Some properties may have records in other sources not yet included.
       </p>
+    </section>
+  );
+}
+
+function ListCoverageNotice({ message, items }: { message: string; items: string[] }) {
+  return (
+    <section className="coverage-notice" aria-label={message}>
+      <h3 className="coverage-notice-title">{message}</h3>
+      <ul className="coverage-list">
+        {items.map((item, i) => (
+          <li key={i} className="coverage-list-item">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
+            </svg>
+            {item}
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
