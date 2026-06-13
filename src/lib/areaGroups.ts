@@ -203,7 +203,7 @@ function neighborhoodFor(center: [number, number]) {
   const match = neighborhoodRules.find((rule) => rule.match(lng, lat));
   if (match) {
     return {
-      id: `neighborhood:${match.id}`,
+      id: match.id,
       label: match.label,
       description: match.description,
       displayColor: match.color,
@@ -211,7 +211,7 @@ function neighborhoodFor(center: [number, number]) {
     };
   }
   return {
-    id: "neighborhood:central_residential",
+    id: "central_residential",
     label: "Central Residential",
     description: "The residential middle of Park Ridge outside Uptown and the outer directional areas.",
     displayColor: "#0891b2",
