@@ -192,6 +192,12 @@ export function PropertyPage() {
             <MapIcon size={13} strokeWidth={2} aria-hidden="true" />
             Park Ridge
           </Link>
+          {pin && (
+            <Link to={ROUTES.mapsWithPin(pin)} className="property-context-link">
+              <MapIcon size={13} strokeWidth={2} aria-hidden="true" />
+              View on map
+            </Link>
+          )}
         </div>
       </header>
 

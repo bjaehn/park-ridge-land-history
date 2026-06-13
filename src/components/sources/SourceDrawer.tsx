@@ -21,7 +21,7 @@ function getPropertySources(parcel: ParcelFeature): Source[] {
     sources.push({
       id: "cook-permits",
       label: "Cook County Assessor Permits",
-      description: `${props.permit_count} permit records on file. Sourced from Cook County Open Data (Socrata API).`,
+      description: `${props.permit_count} permit records on file (2019–present). Cook County Assessor's Socrata API does not publish pre-2019 permit data.`,
       url: "https://datacatalog.cookcountyil.gov/",
       recordCount: props.permit_count ?? undefined,
     });

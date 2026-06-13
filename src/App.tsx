@@ -1,17 +1,19 @@
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { ParkRidgeDataProvider } from "./contexts/ParkRidgeDataContext";
 import { AppShell } from "./components/layout/AppShell";
-import { DiscoverPage } from "./pages/DiscoverPage";
-import { SearchPage } from "./pages/SearchPage";
-import { PropertyPage } from "./pages/PropertyPage";
-import { BlocksPage } from "./pages/BlocksPage";
-import { BlockDetailPage } from "./pages/BlockDetailPage";
-import { NeighborhoodsPage } from "./pages/NeighborhoodsPage";
-import { NeighborhoodDetailPage } from "./pages/NeighborhoodDetailPage";
-import { CitywidePage } from "./pages/CitywidePage";
-import { MapsPage } from "./pages/MapsPage";
-import { DataSourcesPage } from "./pages/DataSourcesPage";
 import { ROUTES } from "./lib/routes";
+
+const DiscoverPage          = lazy(() => import("./pages/DiscoverPage").then(m => ({ default: m.DiscoverPage })));
+const SearchPage            = lazy(() => import("./pages/SearchPage").then(m => ({ default: m.SearchPage })));
+const PropertyPage          = lazy(() => import("./pages/PropertyPage").then(m => ({ default: m.PropertyPage })));
+const BlocksPage            = lazy(() => import("./pages/BlocksPage").then(m => ({ default: m.BlocksPage })));
+const BlockDetailPage       = lazy(() => import("./pages/BlockDetailPage").then(m => ({ default: m.BlockDetailPage })));
+const NeighborhoodsPage     = lazy(() => import("./pages/NeighborhoodsPage").then(m => ({ default: m.NeighborhoodsPage })));
+const NeighborhoodDetailPage = lazy(() => import("./pages/NeighborhoodDetailPage").then(m => ({ default: m.NeighborhoodDetailPage })));
+const CitywidePage          = lazy(() => import("./pages/CitywidePage").then(m => ({ default: m.CitywidePage })));
+const MapsPage              = lazy(() => import("./pages/MapsPage").then(m => ({ default: m.MapsPage })));
+const DataSourcesPage       = lazy(() => import("./pages/DataSourcesPage").then(m => ({ default: m.DataSourcesPage })));
 
 export default function App() {
   return (
@@ -19,21 +21,34 @@ export default function App() {
       <ParkRidgeDataProvider>
         <Routes>
           <Route element={<AppShell />}>
-            <Route path={ROUTES.discover} element={<DiscoverPage />} />
-            <Route path={ROUTES.search} element={<SearchPage />} />
-            <Route path={ROUTES.propertyPattern} element={<PropertyPage />} />
-            <Route path={ROUTES.blocks} element={<BlocksPage />} />
-            <Route path={ROUTES.blockPattern} element={<BlockDetailPage />} />
-            <Route path={ROUTES.neighborhoods} element={<NeighborhoodsPage />} />
-            <Route path={ROUTES.neighborhoodPattern} element={<NeighborhoodDetailPage />} />
-            <Route path={ROUTES.parkRidge} element={<CitywidePage />} />
-            <Route path={ROUTES.maps} element={<MapsPage />} />
-            <Route path={ROUTES.dataSources} element={<DataSourcesPage />} />
+            <Route path={ROUTES.discover}             element={<Suspense fallback={<PageLoader />}><DiscoverPage /></Suspense>} />
+            <Route path={ROUTES.search}               element={<Suspense fallback={<PageLoader />}><SearchPage /></Suspense>} />
+            <Route path={ROUTES.propertyPattern}      element={<Suspense fallback={<PageLoader />}><PropertyPage /></Suspense>} />
+            <Route path={ROUTES.blocks}               element={<Suspense fallback={<PageLoader />}><BlocksPage /></Suspense>} />
+            <Route path={ROUTES.blockPattern}         element={<Suspense fallback={<PageLoader />}><BlockDetailPage /></Suspense>} />
+            <Route path={ROUTES.neighborhoods}        element={<Suspense fallback={<PageLoader />}><NeighborhoodsPage /></Suspense>} />
+            <Route path={ROUTES.neighborhoodPattern}  element={<Suspense fallback={<PageLoader />}><NeighborhoodDetailPage /></Suspense>} />
+            <Route path={ROUTES.parkRidge}            element={<Suspense fallback={<PageLoader />}><CitywidePage /></Suspense>} />
+            <Route path={ROUTES.maps}                 element={<Suspense fallback={<PageLoader />}><MapsPage /></Suspense>} />
+            <Route path={ROUTES.dataSources}          element={<Suspense fallback={<PageLoader />}><DataSourcesPage /></Suspense>} />
             <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>
       </ParkRidgeDataProvider>
     </BrowserRouter>
+  );
+}
+
+function PageLoader() {
+  return (
+    <div className="page-container">
+      <div className="loading-spinner">
+        <div className="spinner-dot" />
+        <div className="spinner-dot" />
+        <div className="spinner-dot" />
+        <span>Loading…</span>
+      </div>
+    </div>
   );
 }
 
