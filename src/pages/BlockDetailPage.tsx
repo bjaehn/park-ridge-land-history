@@ -14,7 +14,7 @@ import {
   topLargestAssessmentChange, topMostRedevelopment,
 } from "../lib/rankings";
 import { ROUTES } from "../lib/routes";
-import { formatNumber, formatAddress, formatYear, formatCurrency } from "../lib/formatters";
+import { formatNumber, formatAddress, formatYear, formatCurrency, formatPin } from "../lib/formatters";
 import type { ParcelFeature } from "../lib/parcelTypes";
 import "./BlockDetailPage.css";
 
@@ -280,7 +280,7 @@ export function BlockDetailPage() {
                   const pin = f.properties.pin_normalized || f.properties.pin_original || "";
                   return (
                     <Link key={pin} to={ROUTES.property(pin)} className="block-property-card">
-                      <div className="block-property-address">{formatAddress(f.properties.address)}</div>
+                      <div className="block-property-address">{f.properties.address ? formatAddress(f.properties.address) : formatPin(pin)}</div>
                       <div className="block-property-meta">
                         {f.properties.year_built && <span>Built {f.properties.year_built}</span>}
                         {(f.properties.permit_count ?? 0) > 0 && (

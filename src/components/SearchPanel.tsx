@@ -126,9 +126,9 @@ export function SearchPanel({
                   </svg>
                 </span>
                 <span className="search-result-body">
-                  <span className="search-result-address">{feature.properties.address || "Unknown address"}</span>
+                  <span className="search-result-address">{feature.properties.address || pin || "—"}</span>
                   <span className="search-result-sub">
-                    {pin || "Unknown PIN"}
+                    {pin || "—"}
                     {year ? <span className="search-result-year">{year}</span> : null}
                     {!isVisible && <span className="search-result-hidden">Hidden by filter</span>}
                   </span>

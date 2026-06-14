@@ -32,7 +32,7 @@ export function formatPercent(value: number | null | undefined, decimals = 1): s
 }
 
 export function formatAddress(address: string | null | undefined): string {
-  if (!address) return "Unknown Address";
+  if (!address) return "—";
   return address
     .toLowerCase()
     .replace(/\b\w/g, (c) => c.toUpperCase())

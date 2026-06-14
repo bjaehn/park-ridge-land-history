@@ -453,7 +453,7 @@ export function PropertyPage() {
                       const nPin = f.properties.pin_normalized || f.properties.pin_original || "";
                       return (
                         <Link key={nPin} to={ROUTES.property(nPin)} className="nearby-property-item">
-                          <span className="nearby-address">{formatAddress(f.properties.address)}</span>
+                          <span className="nearby-address">{f.properties.address ? formatAddress(f.properties.address) : formatPin(nPin)}</span>
                           <span className="nearby-meta">
                             {f.properties.year_built ? `${f.properties.year_built}` : "—"}
                           </span>

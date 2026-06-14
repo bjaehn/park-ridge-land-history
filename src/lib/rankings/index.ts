@@ -1,3 +1,4 @@
+import { formatPin } from "../formatters";
 import type { ParcelFeature } from "../parcelTypes";
 
 export type RankedProperty = {
@@ -18,7 +19,7 @@ function makeEntry(f: ParcelFeature, value: number | string, valueLabel: string,
   if (!pin) return null;
   return {
     pin,
-    address: f.properties.address || "Unknown Address",
+    address: f.properties.address || formatPin(pin),
     value,
     valueLabel,
     secondaryLabel,
