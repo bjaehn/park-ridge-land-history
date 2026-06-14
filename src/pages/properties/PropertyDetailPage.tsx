@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useParkRidgeContext } from "../../contexts/ParkRidgeDataContext";
 import { useParcelDetail } from "../../hooks/useParcelDetail";
@@ -6,6 +6,14 @@ import { ParcelDetailPanel, type PropertyView } from "../../components/ParcelDet
 import { buildPhysicalBlock, parcelCollectionFromFeatures } from "../../lib/physicalBlock";
 import { buildAreaSummaries } from "../../lib/areaGroups";
 import { neighborhoodPath, neighborhoodSlugFromId, blockPath, ROUTES } from "../../routes/routeConfig";
+import { fetchSubdivisionForPin } from "../../lib/supabase/subdivisionQueries";
+import { ConfidenceBadge } from "../../components/cards/ConfidenceBadge";
+import {
+  toConfidenceBadgeLevel,
+  confidenceLevelLabel,
+  subdivisionPath,
+} from "../../lib/subdivisionTypes";
+import type { Subdivision, PropertySubdivisionLink } from "../../lib/subdivisionTypes";
 import type { ParcelFeature, ParcelCollection } from "../../lib/parcelTypes";
 import type { AreaSummaryFeature } from "../../lib/areaGroups";
 
@@ -158,6 +166,7 @@ export function PropertyDetailPage() {
             blockLabel={blockLabel}
           />
         )}
+        {decodedPin && <SubdivisionDNASection pin={decodedPin} />}
       </div>
     </div>
   );
@@ -256,6 +265,73 @@ function HomeInContextSection({
         </Link>
         <Link to={ROUTES.explore.path} className="hic-link">
           Find on map →
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function SubdivisionDNASection({ pin }: { pin: string }) {
+  const [isLoading, setIsLoading] = useState(true);
+  const [result, setResult] = useState<{
+    subdivision: Subdivision | null;
+    link: PropertySubdivisionLink | null;
+  } | null>(null);
+
+  useEffect(() => {
+    setIsLoading(true);
+    fetchSubdivisionForPin(pin).then((data) => {
+      setResult(data);
+      setIsLoading(false);
+    });
+  }, [pin]);
+
+  if (isLoading || !result?.subdivision) return null;
+
+  const { subdivision: s, link } = result;
+  const badgeLevel = toConfidenceBadgeLevel(s.confidence_level);
+  const badgeLabel = confidenceLevelLabel(s.confidence_level);
+
+  return (
+    <div className="sdna-section">
+      <p className="sdna-eyebrow">Subdivision DNA</p>
+      <h2 className="sdna-title">Original subdivision</h2>
+      <div className="sdna-card">
+        <div className="sdna-card-header">
+          <Link to={subdivisionPath(s.id)} className="sdna-name">
+            {s.name}
+          </Link>
+          {s.recorded_year && (
+            <span className="sdna-year">Recorded {s.recorded_year}</span>
+          )}
+        </div>
+        {(link?.lot_number || link?.block_number) && (
+          <p className="sdna-lot-block">
+            {[
+              link.lot_number ? `Lot ${link.lot_number}` : null,
+              link.block_number ? `Block ${link.block_number}` : null,
+            ]
+              .filter(Boolean)
+              .join(", ")}
+          </p>
+        )}
+        {s.original_owner && (
+          <p className="sdna-owner">Developed by {s.original_owner}</p>
+        )}
+        <div className="sdna-badge-row">
+          <ConfidenceBadge
+            level={badgeLevel}
+            label={badgeLabel}
+            explanation={s.confidence_reason ?? ""}
+          />
+        </div>
+      </div>
+      <div className="sdna-links">
+        <Link to={subdivisionPath(s.id)} className="sdna-link">
+          Full {s.name} history →
+        </Link>
+        <Link to={ROUTES.subdivisions.path} className="sdna-link">
+          Browse all subdivisions →
         </Link>
       </div>
     </div>

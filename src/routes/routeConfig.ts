@@ -107,6 +107,26 @@ export const ROUTES = {
     searchable: false
   },
 
+  // ── Subdivisions ───────────────────────────────────────────────────────────
+  subdivisions: {
+    path: "/subdivisions",
+    label: "Subdivisions",
+    breadcrumb: "Subdivisions",
+    navSection: "primary",
+    inNav: true,
+    searchable: false,
+    description: "Explore how Park Ridge took shape through recorded subdivision plats."
+  },
+  subdivisionDetail: {
+    path: "/subdivisions/:id",
+    label: "Subdivision",
+    breadcrumb: "Subdivision",
+    navSection: "entity",
+    inNav: false,
+    searchable: false,
+    description: "Full history for a single Park Ridge subdivision."
+  },
+
   // ── City ───────────────────────────────────────────────────────────────────
   city: {
     path: "/city",
@@ -153,6 +173,7 @@ export const ROUTES = {
 
 /** Navigation items for the top nav bar, in display order. */
 export const primaryNav: RouteConfig[] = [
+  ROUTES.subdivisions,
   ROUTES.neighborhoods,
   ROUTES.city,
   ROUTES.maps,
