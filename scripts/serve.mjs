@@ -33,8 +33,10 @@ const server = createServer((request, response) => {
     filePath = join(root, "index.html");
   }
 
+  const isHtml = extname(filePath) === ".html" || filePath === join(root, "index.html");
   response.writeHead(200, {
-    "Content-Type": mimeTypes[extname(filePath)] || "application/octet-stream"
+    "Content-Type": mimeTypes[extname(filePath)] || "application/octet-stream",
+    ...(isHtml ? { "Cache-Control": "no-store, must-revalidate" } : {})
   });
   createReadStream(filePath).pipe(response);
 });

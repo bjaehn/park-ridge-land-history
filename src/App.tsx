@@ -736,7 +736,6 @@ export default function App() {
 
   return (
     <main className="app-shell product-app-shell">
-        <div style={{background:'red',color:'white',padding:'8px',textAlign:'center',fontWeight:'bold',fontSize:'18px'}}>🚨 DEPLOY TEST — IF YOU SEE THIS, RAILWAY IS LIVE 🚨</div>
         <header className="app-header">
           <div className="app-header-brand">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
