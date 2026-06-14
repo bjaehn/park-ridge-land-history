@@ -3,8 +3,8 @@ import { formatCurrency, formatFlags, formatNumber, formatYear } from "../lib/fo
 import type { PermitPressureWindow } from "../lib/permitPressure";
 import type { ParcelCollection, ParcelFeature } from "../lib/parcelTypes";
 import { HouseRelatives } from "./HouseRelatives";
+import { HouseStoryTimeline } from "./HouseStoryTimeline";
 import { NearbyActivitySummary } from "./NearbyActivitySummary";
-import { PropertyTimeline } from "./PropertyTimeline";
 import { WhatWeKnowCard } from "./cards/WhatWeKnowCard";
 import { ComparisonCard } from "./cards/ComparisonCard";
 
@@ -142,13 +142,7 @@ export function ParcelDetailPanel({
             neighborhoodParcels={neighborhoodParcels}
             allParcels={parcels?.features ?? []}
           />
-          <PropertyTimeline
-            properties={properties}
-            parcel={parcel}
-            blockParcels={blockParcels}
-            neighborhoodParcels={neighborhoodParcels}
-            allParcels={parcels?.features ?? []}
-          />
+          <HouseStoryTimeline properties={properties} />
           <NearbyActivitySummary parcel={parcel} parcels={parcels} permitPressureWindow={permitPressureWindow} />
         </div>
       )}
