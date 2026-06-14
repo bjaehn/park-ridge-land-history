@@ -4417,3 +4417,254 @@ button, input { font: inherit; }
   .hero-quick-nav      { gap: 5px; }
   .hero-quick-btn      { font-size: 0.68rem; padding: 5px 10px; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SPRINT: LOCAL HISTORY FIRST
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ─── Discovery modules (homepage) ─────────────────────────────────── */
+
+.home-discovery {
+  padding: 40px 24px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  background: radial-gradient(ellipse 80% 50% at 50% 100%, rgba(34,211,238,0.03) 0%, transparent 70%);
+}
+
+.home-discovery-inner {
+  max-width: 900px; margin: 0 auto; display: grid; gap: 20px;
+}
+
+.home-discovery-eyebrow {
+  font-size: 0.60rem; font-weight: 700; color: var(--accent);
+  text-transform: uppercase; letter-spacing: 0.10em; margin: 0;
+}
+
+.home-discovery-title {
+  font-size: clamp(1.0rem, 2.2vw, 1.3rem);
+  font-weight: 700; letter-spacing: -0.015em; color: var(--ink);
+  margin: 0;
+}
+
+.home-discovery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
+}
+
+.disc-card {
+  display: grid; gap: 8px; align-content: start;
+  padding: 16px; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--glass-0);
+  text-decoration: none; color: inherit;
+  transition: background 140ms, border-color 140ms;
+}
+.disc-card:hover { background: var(--glass-1); border-color: var(--border-bright); }
+
+.disc-card-icon {
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 8px; border: 1px solid var(--border-accent);
+  background: var(--accent-tint); color: var(--accent);
+  flex: 0 0 auto;
+}
+
+.disc-card-title {
+  font-size: 0.84rem; font-weight: 600; color: var(--ink); margin: 0;
+  line-height: 1.3;
+}
+
+.disc-card-body {
+  font-size: 0.72rem; color: var(--ink-muted); line-height: 1.5; margin: 0;
+}
+
+.disc-card-cta {
+  font-size: 0.70rem; font-weight: 600; color: var(--accent);
+  margin-top: 2px;
+}
+
+/* ─── Exploration pathways (homepage) ──────────────────────────────── */
+
+.home-pathways {
+  padding: 28px 24px 36px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+.home-pathways-inner {
+  max-width: 900px; margin: 0 auto; display: grid; gap: 14px;
+}
+
+.home-pathways-label {
+  font-size: 0.60rem; font-weight: 700; color: var(--ink-muted);
+  text-transform: uppercase; letter-spacing: 0.08em; margin: 0;
+}
+
+.home-pathways-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 8px;
+}
+
+.home-pathway-btn {
+  display: grid; gap: 3px; align-content: start;
+  padding: 14px 16px; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--glass-0);
+  text-decoration: none; color: inherit;
+  transition: background 120ms, border-color 120ms;
+}
+.home-pathway-btn:hover { background: var(--glass-1); border-color: var(--border-bright); }
+
+.home-pathway-step {
+  font-size: 0.58rem; font-weight: 700; color: var(--accent);
+  text-transform: uppercase; letter-spacing: 0.08em;
+}
+
+.home-pathway-name {
+  font-size: 0.82rem; font-weight: 600; color: var(--ink); line-height: 1.2;
+}
+
+.home-pathway-hint {
+  font-size: 0.66rem; color: var(--ink-muted); line-height: 1.4;
+}
+
+/* ─── Neighborhood era badge ────────────────────────────────────────── */
+
+.nc-era {
+  font-size: 0.64rem; font-weight: 600; color: var(--accent);
+  letter-spacing: 0.01em;
+}
+
+/* ─── Development waves (city page) ────────────────────────────────── */
+
+.dev-waves {
+  padding: 20px 0 28px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  margin-bottom: 8px;
+}
+
+.dev-waves-eyebrow {
+  font-size: 0.60rem; font-weight: 700; color: var(--accent);
+  text-transform: uppercase; letter-spacing: 0.10em; margin: 0 0 4px;
+}
+
+.dev-waves-title {
+  font-size: clamp(1.05rem, 2vw, 1.25rem);
+  font-weight: 700; letter-spacing: -0.015em; color: var(--ink);
+  margin: 0 0 8px;
+}
+
+.dev-waves-intro {
+  font-size: 0.80rem; color: var(--ink-soft); line-height: 1.6; margin: 0 0 18px;
+  max-width: 620px;
+}
+
+.dev-waves-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.dev-wave {
+  display: grid; gap: 6px; align-content: start;
+  padding: 14px; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--glass-0);
+}
+
+.dev-wave-header {
+  display: flex; flex-direction: column; gap: 2px;
+}
+
+.dev-wave-era {
+  font-size: 0.82rem; font-weight: 700; color: var(--ink);
+}
+
+.dev-wave-range {
+  font-size: 0.64rem; color: var(--accent); font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.05em;
+}
+
+.dev-wave-bar-track {
+  height: 6px; border-radius: 3px;
+  background: var(--glass-1); overflow: hidden;
+}
+
+.dev-wave-bar {
+  height: 100%; border-radius: 3px;
+  background: var(--accent); opacity: 0.7;
+  transition: width 600ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dev-wave-count {
+  font-size: 0.70rem; color: var(--ink-soft);
+}
+.dev-wave-count strong { color: var(--ink); font-weight: 700; }
+
+.dev-wave-desc {
+  font-size: 0.68rem; color: var(--ink-muted); line-height: 1.5; margin: 0;
+}
+
+/* ─── Home in context (property page) ──────────────────────────────── */
+
+.hic-section {
+  margin-top: 24px; padding: 20px 0;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.hic-eyebrow {
+  font-size: 0.58rem; font-weight: 700; color: var(--accent);
+  text-transform: uppercase; letter-spacing: 0.10em; margin: 0 0 4px;
+}
+
+.hic-title {
+  font-size: clamp(0.98rem, 2vw, 1.15rem);
+  font-weight: 700; letter-spacing: -0.01em; color: var(--ink);
+  margin: 0 0 14px;
+}
+
+.hic-stats-row {
+  display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 14px;
+}
+
+.hic-stat {
+  display: flex; flex-direction: column; gap: 1px;
+}
+
+.hic-stat-value {
+  font-size: 1.05rem; font-weight: 700; color: var(--ink);
+}
+
+.hic-stat-label {
+  font-size: 0.58rem; color: var(--ink-muted);
+  text-transform: uppercase; letter-spacing: 0.05em;
+}
+
+.hic-narrative {
+  font-size: 0.78rem; color: var(--ink-soft); line-height: 1.65; margin: 0 0 14px;
+  max-width: 580px;
+}
+
+.hic-links {
+  display: flex; flex-wrap: wrap; gap: 10px;
+}
+
+.hic-link {
+  font-size: 0.74rem; font-weight: 600; color: var(--accent);
+  text-decoration: none; border-bottom: 1px solid rgba(34,211,238,0.3);
+  padding-bottom: 1px;
+  transition: border-color 120ms;
+}
+.hic-link:hover { border-color: var(--accent); }
+
+/* ─── Sprint responsive additions ──────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .home-discovery      { padding: 28px 16px; }
+  .home-pathways       { padding: 20px 16px 28px; }
+  .dev-waves-grid      { grid-template-columns: 1fr 1fr; }
+  .hic-stats-row       { gap: 12px; }
+}
+
+@media (max-width: 480px) {
+  .dev-waves-grid      { grid-template-columns: 1fr; }
+  .home-discovery-grid { grid-template-columns: 1fr; }
+  .home-pathways-grid  { grid-template-columns: 1fr 1fr; }
+}

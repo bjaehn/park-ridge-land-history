@@ -118,13 +118,13 @@ export function HomePage() {
         <div className="hero-inner">
           <p className="hero-eyebrow">Park Ridge, Illinois</p>
           <h1 className="hero-title">
-            Explore the history of every home,<br />
-            block, and neighborhood.
+            Discover how Park Ridge grew, one home,
+            block, and neighborhood at a time.
           </h1>
           <p className="hero-tagline">
-            Discover when homes were built, how blocks developed, how
-            neighborhoods changed, and how Park Ridge grew, decade by decade.
-            Every fact is tied to a source.
+            Every home has a story. Every block has an era. Park Ridge grew in
+            waves that shaped every street you know. Start exploring — the history
+            is all here, sourced and searchable.
           </p>
 
           {/* Search */}
@@ -270,6 +270,76 @@ export function HomePage() {
         </div>
       </HomeSection>
 
+      {/* ── Discovery modules ──────────────────────────────────────────────── */}
+      <section className="home-discovery" aria-label="Ways to explore">
+        <div className="home-discovery-inner">
+          <p className="home-discovery-eyebrow">Where do you want to start?</p>
+          <h2 className="home-discovery-title">Six ways to explore Park Ridge history</h2>
+          <div className="home-discovery-grid">
+            <Link to={ROUTES.city.path} className="disc-card">
+              <div className="disc-card-icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="1" y1="22" x2="23" y2="22"/><path d="M2 22V15l5-2v9"/><path d="M7 22V10l5-5v17"/><path d="M12 22V13l5-3v12"/><path d="M17 22V17l4-2v7"/>
+                </svg>
+              </div>
+              <h3 className="disc-card-title">The decade that built Park Ridge</h3>
+              <p className="disc-card-body">One decade stands out as Park Ridge's greatest building boom. Explore how construction unfolded from 1890 to today.</p>
+              <span className="disc-card-cta">See the full growth story →</span>
+            </Link>
+            <Link to={ROUTES.neighborhoods.path} className="disc-card">
+              <div className="disc-card-icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 2a7 7 0 017 7c0 4.97-6.22 12.18-6.7 12.76a.4.4 0 01-.6 0C11.22 21.18 5 13.97 5 9a7 7 0 017-7z"/><circle cx="12" cy="9" r="2.5"/>
+                </svg>
+              </div>
+              <h3 className="disc-card-title">Neighborhoods by development era</h3>
+              <p className="disc-card-body">When was your neighborhood built? Compare pre-war, postwar boom, and modern development across Park Ridge's areas.</p>
+              <span className="disc-card-cta">Browse neighborhoods →</span>
+            </Link>
+            <Link to={ROUTES.city.path} className="disc-card">
+              <div className="disc-card-icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
+                </svg>
+              </div>
+              <h3 className="disc-card-title">The oldest homes found so far</h3>
+              <p className="disc-card-body">Some Park Ridge homes date back to the 1880s. See the oldest confirmed properties and the stories recorded in assessor files.</p>
+              <span className="disc-card-cta">See oldest properties →</span>
+            </Link>
+            <Link to={ROUTES.explore.path} className="disc-card">
+              <div className="disc-card-icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+              </div>
+              <h3 className="disc-card-title">See every property on the map</h3>
+              <p className="disc-card-body">All 13,000+ Park Ridge properties, colored by age and development era. Zoom from citywide to individual block in seconds.</p>
+              <span className="disc-card-cta">Open map explorer →</span>
+            </Link>
+            <Link to={ROUTES.explore.path} className="disc-card">
+              <div className="disc-card-icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                </svg>
+              </div>
+              <h3 className="disc-card-title">How Park Ridge transformed, 2000–2021</h3>
+              <p className="disc-card-body">Track parcel-level changes over two decades. Find teardowns, new builds, and blocks that stayed exactly the same.</p>
+              <span className="disc-card-cta">Explore the map →</span>
+            </Link>
+            <Link to={ROUTES.sources.path} className="disc-card">
+              <div className="disc-card-icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+              </div>
+              <h3 className="disc-card-title">What we know — and what's missing</h3>
+              <p className="disc-card-body">Every claim is sourced. This page explains where our data comes from, what gaps exist, and how to read uncertainty honestly.</p>
+              <span className="disc-card-cta">See our sources →</span>
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* ── Top 10 oldest properties ──────────────────────────────────────── */}
       <HomeSection
         eyebrow="Oldest known homes"
@@ -371,6 +441,35 @@ export function HomePage() {
               <polyline points="9 18 15 12 9 6"/>
             </svg>
           </Link>
+        </div>
+      </div>
+
+      {/* ── Exploration pathways ─────────────────────────────────────────── */}
+      <div className="home-pathways">
+        <div className="home-pathways-inner">
+          <p className="home-pathways-label">Where do you want to start?</p>
+          <div className="home-pathways-grid">
+            <Link to={ROUTES.city.path} className="home-pathway-btn">
+              <span className="home-pathway-step">1</span>
+              <span className="home-pathway-name">Start with the city</span>
+              <span className="home-pathway-hint">The full arc of how Park Ridge grew</span>
+            </Link>
+            <Link to={ROUTES.neighborhoods.path} className="home-pathway-btn">
+              <span className="home-pathway-step">2</span>
+              <span className="home-pathway-name">Choose a neighborhood</span>
+              <span className="home-pathway-hint">Compare development eras across areas</span>
+            </Link>
+            <a href="#hero-search" className="home-pathway-btn" onClick={(e) => { e.preventDefault(); document.getElementById("hero-search")?.focus(); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
+              <span className="home-pathway-step">3</span>
+              <span className="home-pathway-name">Look up a home</span>
+              <span className="home-pathway-hint">Search any Park Ridge address</span>
+            </a>
+            <Link to={ROUTES.explore.path} className="home-pathway-btn">
+              <span className="home-pathway-step">4</span>
+              <span className="home-pathway-name">Explore the map</span>
+              <span className="home-pathway-hint">13,000+ properties, colored by era</span>
+            </Link>
+          </div>
         </div>
       </div>
 

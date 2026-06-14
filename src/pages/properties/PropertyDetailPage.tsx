@@ -6,7 +6,8 @@ import { ParcelDetailPanel, type PropertyView } from "../../components/ParcelDet
 import { buildPhysicalBlock, parcelCollectionFromFeatures } from "../../lib/physicalBlock";
 import { buildAreaSummaries } from "../../lib/areaGroups";
 import { neighborhoodPath, neighborhoodSlugFromId, ROUTES } from "../../routes/routeConfig";
-import type { ParcelFeature } from "../../lib/parcelTypes";
+import type { ParcelFeature, ParcelCollection } from "../../lib/parcelTypes";
+import type { AreaSummaryFeature } from "../../lib/areaGroups";
 
 const emptyHotspots = { type: "FeatureCollection" as const, features: [] };
 
@@ -135,6 +136,103 @@ export function PropertyDetailPage() {
           }}
           onClearSelection={() => navigate(ROUTES.home.path)}
         />
+        {selectedParcel && (
+          <HomeInContextSection
+            parcel={selectedParcel}
+            neighborhood={parcelNeighborhood}
+            allParcels={pressureDecoratedParcels}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function HomeInContextSection({
+  parcel,
+  neighborhood,
+  allParcels,
+}: {
+  parcel: ParcelFeature;
+  neighborhood: AreaSummaryFeature | null;
+  allParcels: ParcelCollection | null;
+}) {
+  const yearBuilt = parcel.properties.year_built;
+  if (!yearBuilt || !allParcels) return null;
+
+  const decade = Math.floor(yearBuilt / 10) * 10;
+  const decadeLabel = `${decade}s`;
+
+  const decadeCount = allParcels.features.filter((f) => {
+    const y = f.properties.year_built;
+    return typeof y === "number" && Math.floor(y / 10) * 10 === decade;
+  }).length;
+
+  const totalWithYear = allParcels.features.filter((f) =>
+    typeof f.properties.year_built === "number" && f.properties.year_built > 0
+  ).length;
+
+  function eraName(year: number): string {
+    if (year < 1920) return "Early Park Ridge";
+    if (year < 1945) return "the pre-war era";
+    if (year < 1970) return "the postwar boom";
+    if (year < 1990) return "the mid-century period";
+    return "the modern era";
+  }
+
+  const neighborhoodLabel = neighborhood?.properties.label;
+  const neighborhoodMedian = neighborhood?.properties.medianYearBuilt;
+  const neighborhoodPeak = neighborhood?.properties.peakDecade;
+
+  const contextNote = [
+    `This home was built in ${yearBuilt}, during ${eraName(yearBuilt)}.`,
+    decadeCount > 0
+      ? `${decadeCount.toLocaleString()} of the ${totalWithYear.toLocaleString()} Park Ridge properties with known build years share the ${decadeLabel}.`
+      : null,
+    neighborhoodLabel && neighborhoodMedian
+      ? `The ${neighborhoodLabel} neighborhood has a typical build year of ${neighborhoodMedian}${neighborhoodPeak ? `, with its peak construction in the ${neighborhoodPeak}` : ""}.`
+      : null,
+  ].filter(Boolean).join(" ");
+
+  return (
+    <div className="hic-section">
+      <p className="hic-eyebrow">Local history context</p>
+      <h2 className="hic-title">This home in Park Ridge's story</h2>
+      <div className="hic-stats-row">
+        <div className="hic-stat">
+          <span className="hic-stat-value">{yearBuilt}</span>
+          <span className="hic-stat-label">Year built</span>
+        </div>
+        <div className="hic-stat">
+          <span className="hic-stat-value">{decadeLabel}</span>
+          <span className="hic-stat-label">Decade</span>
+        </div>
+        {decadeCount > 0 && (
+          <div className="hic-stat">
+            <span className="hic-stat-value">{decadeCount.toLocaleString()}</span>
+            <span className="hic-stat-label">Park Ridge homes same decade</span>
+          </div>
+        )}
+        {neighborhoodLabel && (
+          <div className="hic-stat">
+            <span className="hic-stat-value">{neighborhoodLabel}</span>
+            <span className="hic-stat-label">Neighborhood</span>
+          </div>
+        )}
+      </div>
+      <p className="hic-narrative">{contextNote}</p>
+      <div className="hic-links">
+        {neighborhood && (
+          <Link to={neighborhoodPath(neighborhoodSlugFromId(neighborhood.properties.id))} className="hic-link">
+            {neighborhoodLabel} history →
+          </Link>
+        )}
+        <Link to={ROUTES.city.path} className="hic-link">
+          Park Ridge growth story →
+        </Link>
+        <Link to={ROUTES.explore.path} className="hic-link">
+          Find on map →
+        </Link>
       </div>
     </div>
   );

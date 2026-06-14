@@ -16,6 +16,7 @@ import {
   computeTopAssessedChange
 } from "../../lib/rankedInsights";
 import { neighborhoodPath, neighborhoodSlugFromId, propertyPath, ROUTES } from "../../routes/routeConfig";
+import type { ParcelCollection } from "../../lib/parcelTypes";
 
 const emptyHotspots = { type: "FeatureCollection" as const, features: [] };
 
@@ -76,6 +77,8 @@ export function CityPage() {
           <>
             <GrowthStoryPanel parcels={parcels} />
 
+            <DevelopmentWaves parcels={parcels} />
+
             <ChangeStoryCard scope="city" parcels={pressureDecoratedParcels} />
 
             <DecadeDistributionChart parcels={parcels} />
@@ -129,6 +132,56 @@ export function CityPage() {
             <DataCoverageNotice stats={cityDataCoverage} />
           </>
         )}
+      </div>
+    </div>
+  );
+}
+
+function DevelopmentWaves({ parcels }: { parcels: ParcelCollection }) {
+  const waves = useMemo(() => {
+    const features = parcels?.features ?? [];
+    const total = features.filter((f) => {
+      const y = f.properties.year_built;
+      return typeof y === "number" && y > 1800 && y < 2026;
+    }).length;
+    function waveCount(from: number, to: number) {
+      return features.filter((f) => {
+        const y = f.properties.year_built;
+        return typeof y === "number" && y >= from && y < to;
+      }).length;
+    }
+    const pct = (n: number) => total > 0 ? Math.round((n / total) * 100) : 0;
+    return [
+      { era: "Early Park Ridge", range: "Before 1920", count: waveCount(0, 1920), pct: pct(waveCount(0, 1920)), desc: "The city's earliest settled homes, many near the original railroad depot and Uptown core." },
+      { era: "Pre-war growth", range: "1920 – 1945", count: waveCount(1920, 1945), pct: pct(waveCount(1920, 1945)), desc: "Steady residential expansion through the 1920s boom, Depression, and the years before WWII." },
+      { era: "Postwar boom", range: "1945 – 1970", count: waveCount(1945, 1970), pct: pct(waveCount(1945, 1970)), desc: "The largest single wave of construction in Park Ridge history. Veterans returning home fueled rapid neighborhood buildout." },
+      { era: "Modern era", range: "1970 onward", count: waveCount(1970, 2026), pct: pct(waveCount(1970, 2026)), desc: "Infill, teardown rebuilds, and selective new construction in an already-built city." },
+    ];
+  }, [parcels]);
+
+  const maxCount = Math.max(1, ...waves.map((w) => w.count));
+
+  return (
+    <div className="dev-waves">
+      <p className="dev-waves-eyebrow">Park Ridge through time</p>
+      <h2 className="dev-waves-title">Four waves of development</h2>
+      <p className="dev-waves-intro">Park Ridge did not grow all at once. It grew in distinct bursts, each shaped by national trends, transportation access, and the families who chose to build here.</p>
+      <div className="dev-waves-grid">
+        {waves.map((wave) => (
+          <div key={wave.era} className="dev-wave">
+            <div className="dev-wave-header">
+              <span className="dev-wave-era">{wave.era}</span>
+              <span className="dev-wave-range">{wave.range}</span>
+            </div>
+            <div className="dev-wave-bar-track" aria-hidden="true">
+              <div className="dev-wave-bar" style={{ width: `${Math.max(4, (wave.count / maxCount) * 100)}%` }} />
+            </div>
+            <div className="dev-wave-count">
+              <strong>{wave.count.toLocaleString()}</strong> homes ({wave.pct}% of known records)
+            </div>
+            <p className="dev-wave-desc">{wave.desc}</p>
+          </div>
+        ))}
       </div>
     </div>
   );

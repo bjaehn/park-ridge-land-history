@@ -33,8 +33,8 @@ export function NeighborhoodsPage() {
         <header className="content-page-header">
           <h1 className="content-page-title">Park Ridge Neighborhoods</h1>
           <p className="content-page-subtitle">
-            Compare development history, housing age, and permit activity across Park Ridge's
-            common neighborhoods. Boundaries are approximate based on parcel locations.
+            Park Ridge grew neighborhood by neighborhood. Explore when each area developed,
+            which eras shaped its homes, and how each area compares today.
           </p>
         </header>
 
@@ -49,7 +49,11 @@ export function NeighborhoodsPage() {
             <div className="neighborhood-grid">
               {neighborhoods
                 .filter((n) => n.properties.id.startsWith("neighborhood:"))
-                .sort((a, b) => a.properties.label.localeCompare(b.properties.label))
+                .sort((a, b) => {
+                  const mya = a.properties.medianYearBuilt ?? 9999;
+                  const myb = b.properties.medianYearBuilt ?? 9999;
+                  return mya - myb;
+                })
                 .map((n) => (
                   <NeighborhoodCard key={n.properties.id} neighborhood={n} />
                 ))}
@@ -67,6 +71,15 @@ export function NeighborhoodsPage() {
   );
 }
 
+function eraLabel(medianYear: number | null): string {
+  if (!medianYear) return "";
+  if (medianYear < 1930) return "Early Park Ridge";
+  if (medianYear < 1945) return "Pre-war era";
+  if (medianYear < 1962) return "Postwar boom";
+  if (medianYear < 1978) return "Mid-century";
+  return "Modern era";
+}
+
 function NeighborhoodCard({ neighborhood }: { neighborhood: AreaSummaryFeature }) {
   const p = neighborhood.properties;
   const slug = neighborhoodSlugFromId(p.id);
@@ -74,8 +87,8 @@ function NeighborhoodCard({ neighborhood }: { neighborhood: AreaSummaryFeature }
 
   const stats: Array<{ label: string; value: string }> = [
     { label: "Properties", value: p.parcelCount.toLocaleString() },
+    ...(p.medianYearBuilt ? [{ label: "Typical build year", value: String(p.medianYearBuilt) }] : []),
     { label: "Older homes", value: `${p.olderHomePercent}%` },
-    { label: "Remodel activity", value: `${p.remodelPercent}%` },
   ];
 
   return (
@@ -85,6 +98,9 @@ function NeighborhoodCard({ neighborhood }: { neighborhood: AreaSummaryFeature }
         <span className={`nc-signal nc-signal--${p.signal}`}>{p.signalLabel}</span>
       </div>
       <p className="nc-description">{p.description}</p>
+      {p.medianYearBuilt && (
+        <span className="nc-era">{eraLabel(p.medianYearBuilt)}{p.peakDecade ? ` · peak ${p.peakDecade}` : ""}</span>
+      )}
       <ul className="nc-stats" aria-label="Key stats">
         {stats.map((s) => (
           <li key={s.label} className="nc-stat">
