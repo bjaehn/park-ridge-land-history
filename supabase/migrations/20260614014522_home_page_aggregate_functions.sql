@@ -1,0 +1,7 @@
+-- Stub: this migration was applied directly to the remote database via MCP
+-- before local migration tracking was set up.
+--
+-- It created two RPC functions used by the home page:
+--   home_stats()          -- returns aggregate counts as JSON
+--   decade_distribution() -- returns table(decade text, count bigint)
+-- Both were granted to anon and authenticated roles.
