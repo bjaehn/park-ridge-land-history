@@ -6,9 +6,12 @@ import {
   neighborhoodPath,
   neighborhoodSlugFromId,
   neighborhoodIdFromSlug,
+  blockPath,
   propertyPath,
   ROUTES
 } from "../../routes/routeConfig";
+import { eraLabel } from "../../lib/formatters";
+import type { ParcelCollection } from "../../lib/parcelTypes";
 import { GrowthStoryPanel } from "../../components/GrowthStoryPanel";
 import { ChangeStoryCard } from "../../components/ChangeStoryCard";
 import { DecadeComparisonTable } from "../../components/DecadeComparisonTable";
@@ -143,6 +146,14 @@ export function NeighborhoodDetailPage() {
             />
           )}
 
+          {/* Blocks in this neighborhood */}
+          {neighborhoodParcels && (
+            <BlocksInNeighborhoodSection
+              parcels={neighborhoodParcels}
+              onSelectBlock={(id) => navigate(blockPath(id))}
+            />
+          )}
+
           {/* Notable properties */}
           {neighborhood && pressureDecoratedParcels && (
             <NotablePropertiesSection
@@ -234,6 +245,67 @@ function NotablePropertiesSection({
           </ol>
         </div>
       )}
+    </div>
+  );
+}
+
+function BlocksInNeighborhoodSection({
+  parcels,
+  onSelectBlock,
+}: {
+  parcels: ParcelCollection;
+  onSelectBlock: (blockId: string) => void;
+}) {
+  const blocks = useMemo(() => {
+    const map = new Map<string, { label: string; count: number; years: number[] }>();
+    parcels.features.forEach((f) => {
+      const id = f.properties.street_block_id;
+      if (!id) return;
+      const existing = map.get(id);
+      const addr = f.properties.address ?? "";
+      const streetName = addr.split(" ").slice(1).join(" ") || `Block ${id}`;
+      if (existing) {
+        existing.count += 1;
+        if (typeof f.properties.year_built === "number") existing.years.push(f.properties.year_built);
+      } else {
+        map.set(id, {
+          label: streetName,
+          count: 1,
+          years: typeof f.properties.year_built === "number" ? [f.properties.year_built] : [],
+        });
+      }
+    });
+    return Array.from(map.entries())
+      .map(([id, b]) => {
+        const sorted = [...b.years].sort((a, c) => a - c);
+        const median = sorted.length > 0 ? sorted[Math.floor(sorted.length / 2)] : null;
+        return { id, label: b.label, count: b.count, medianYear: median };
+      })
+      .sort((a, b) => (a.medianYear ?? 9999) - (b.medianYear ?? 9999));
+  }, [parcels]);
+
+  if (blocks.length === 0) return null;
+
+  return (
+    <div className="bin-section">
+      <h2 className="bin-title">Blocks in this neighborhood</h2>
+      <p className="bin-desc">Sorted by typical build year — oldest blocks first. Click any block to explore its properties.</p>
+      <div className="bin-list">
+        {blocks.slice(0, 24).map((b) => (
+          <button
+            key={b.id}
+            type="button"
+            className="bin-item"
+            onClick={() => onSelectBlock(b.id)}
+          >
+            <span className="bin-label">{b.label}</span>
+            <span className="bin-meta">
+              {b.medianYear ? `${eraLabel(b.medianYear)} · ~${b.medianYear}` : "Era unknown"}
+              {" · "}{b.count} {b.count === 1 ? "property" : "properties"}
+            </span>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

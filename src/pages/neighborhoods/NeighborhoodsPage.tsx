@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useParkRidgeContext } from "../../contexts/ParkRidgeDataContext";
 import { buildAreaSummaries } from "../../lib/areaGroups";
 import { neighborhoodPath, neighborhoodSlugFromId, ROUTES } from "../../routes/routeConfig";
+import { eraLabel } from "../../lib/formatters";
 import type { AreaSummaryFeature } from "../../lib/areaGroups";
 
 const emptyHotspots = { type: "FeatureCollection" as const, features: [] };
@@ -71,14 +72,6 @@ export function NeighborhoodsPage() {
   );
 }
 
-function eraLabel(medianYear: number | null): string {
-  if (!medianYear) return "";
-  if (medianYear < 1930) return "Early Park Ridge";
-  if (medianYear < 1945) return "Pre-war era";
-  if (medianYear < 1962) return "Postwar boom";
-  if (medianYear < 1978) return "Mid-century";
-  return "Modern era";
-}
 
 function NeighborhoodCard({ neighborhood }: { neighborhood: AreaSummaryFeature }) {
   const p = neighborhood.properties;
@@ -101,6 +94,7 @@ function NeighborhoodCard({ neighborhood }: { neighborhood: AreaSummaryFeature }
       {p.medianYearBuilt && (
         <span className="nc-era">{eraLabel(p.medianYearBuilt)}{p.peakDecade ? ` · peak ${p.peakDecade}` : ""}</span>
       )}
+
       <ul className="nc-stats" aria-label="Key stats">
         {stats.map((s) => (
           <li key={s.label} className="nc-stat">

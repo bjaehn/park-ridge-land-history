@@ -5,7 +5,7 @@ import { useParcelDetail } from "../../hooks/useParcelDetail";
 import { ParcelDetailPanel, type PropertyView } from "../../components/ParcelDetailPanel";
 import { buildPhysicalBlock, parcelCollectionFromFeatures } from "../../lib/physicalBlock";
 import { buildAreaSummaries } from "../../lib/areaGroups";
-import { neighborhoodPath, neighborhoodSlugFromId, ROUTES } from "../../routes/routeConfig";
+import { neighborhoodPath, neighborhoodSlugFromId, blockPath, ROUTES } from "../../routes/routeConfig";
 import type { ParcelFeature, ParcelCollection } from "../../lib/parcelTypes";
 import type { AreaSummaryFeature } from "../../lib/areaGroups";
 
@@ -73,6 +73,13 @@ export function PropertyDetailPage() {
   const neighborhoodLabel = parcelNeighborhood?.properties.label;
   const neighborhoodId = parcelNeighborhood?.properties.id;
 
+  const blockId = selectedParcel?.properties.street_block_id ?? null;
+  const blockLabel = useMemo(() => {
+    if (!selectedParcel || !blockId) return null;
+    const addr = selectedParcel.properties.address ?? "";
+    return addr.split(" ").slice(1).join(" ") || null;
+  }, [selectedParcel, blockId]);
+
   return (
     <div className="detail-page">
       {/* Breadcrumb */}
@@ -92,6 +99,12 @@ export function PropertyDetailPage() {
             <span aria-hidden="true">›</span>
           </>
         )}
+        {blockId && blockLabel && (
+          <>
+            <Link to={blockPath(blockId)}>{blockLabel}</Link>
+            <span aria-hidden="true">›</span>
+          </>
+        )}
         <span aria-current="page">{address}</span>
       </nav>
 
@@ -104,7 +117,7 @@ export function PropertyDetailPage() {
               ? `Built ${selectedParcel.properties.year_built}`
               : "Year built not confirmed"}
             {neighborhoodLabel ? ` · ${neighborhoodLabel}` : ""}
-            {decodedPin ? ` · PIN: ${decodedPin}` : ""}
+            {blockLabel ? ` · ${blockLabel} block` : ""}
           </p>
         </div>
         <Link
@@ -141,6 +154,8 @@ export function PropertyDetailPage() {
             parcel={selectedParcel}
             neighborhood={parcelNeighborhood}
             allParcels={pressureDecoratedParcels}
+            blockId={blockId}
+            blockLabel={blockLabel}
           />
         )}
       </div>
@@ -152,10 +167,14 @@ function HomeInContextSection({
   parcel,
   neighborhood,
   allParcels,
+  blockId,
+  blockLabel,
 }: {
   parcel: ParcelFeature;
   neighborhood: AreaSummaryFeature | null;
   allParcels: ParcelCollection | null;
+  blockId: string | null;
+  blockLabel: string | null;
 }) {
   const yearBuilt = parcel.properties.year_built;
   if (!yearBuilt || !allParcels) return null;
@@ -222,6 +241,11 @@ function HomeInContextSection({
       </div>
       <p className="hic-narrative">{contextNote}</p>
       <div className="hic-links">
+        {blockId && blockLabel && (
+          <Link to={blockPath(blockId)} className="hic-link">
+            Explore {blockLabel} block →
+          </Link>
+        )}
         {neighborhood && (
           <Link to={neighborhoodPath(neighborhoodSlugFromId(neighborhood.properties.id))} className="hic-link">
             {neighborhoodLabel} history →

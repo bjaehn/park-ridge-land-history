@@ -4668,3 +4668,198 @@ button, input { font: inherit; }
   .home-discovery-grid { grid-template-columns: 1fr; }
   .home-pathways-grid  { grid-template-columns: 1fr 1fr; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   BLOCK LEVEL + EMBEDDED MAP
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ─── Embedded map ──────────────────────────────────────────────────── */
+
+.embedded-map {
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  width: 100%;
+}
+
+.maplibregl-popup-content {
+  background: #1e2a3a !important;
+  border: 1px solid rgba(34,211,238,0.2) !important;
+  border-radius: 7px !important;
+  padding: 8px 10px !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5) !important;
+}
+
+.maplibregl-popup-tip { border-top-color: #1e2a3a !important; }
+
+/* ─── Block era banner ──────────────────────────────────────────────── */
+
+.block-era-banner {
+  display: grid; gap: 10px;
+  padding: 16px 18px; margin-bottom: 16px;
+  border-radius: 10px;
+  border: 1px solid var(--border-accent);
+  background: var(--accent-tint);
+}
+
+.beb-top {
+  display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+}
+
+.beb-era {
+  font-size: 1.0rem; font-weight: 700; color: var(--accent);
+  letter-spacing: -0.01em;
+}
+
+.beb-range {
+  font-size: 0.68rem; color: var(--ink-muted); font-weight: 500;
+}
+
+.beb-stats {
+  display: flex; flex-wrap: wrap; gap: 18px;
+}
+
+.beb-stat { display: flex; flex-direction: column; gap: 1px; }
+
+.beb-stat-value {
+  font-size: 1.0rem; font-weight: 700; color: var(--ink);
+}
+
+.beb-stat-label {
+  font-size: 0.56rem; color: var(--ink-muted);
+  text-transform: uppercase; letter-spacing: 0.05em;
+}
+
+/* ─── Block map section ─────────────────────────────────────────────── */
+
+.block-map-section { margin-bottom: 20px; }
+
+.block-map-header {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 8px; flex-wrap: wrap; gap: 6px;
+}
+
+.block-map-title {
+  font-size: 0.64rem; font-weight: 700; color: var(--ink-muted);
+  text-transform: uppercase; letter-spacing: 0.07em; margin: 0;
+}
+
+.block-map-note {
+  font-size: 0.60rem; color: var(--ink-muted);
+}
+
+/* ─── Block build timeline ──────────────────────────────────────────── */
+
+.block-build-timeline { margin-bottom: 20px; }
+
+.bbt-label {
+  font-size: 0.62rem; font-weight: 700; color: var(--ink-muted);
+  text-transform: uppercase; letter-spacing: 0.07em; margin: 0 0 8px;
+}
+
+.bbt-row {
+  display: flex; flex-wrap: wrap; gap: 5px;
+}
+
+.bbt-chip {
+  display: flex; flex-direction: column; gap: 1px;
+  padding: 6px 10px; border-radius: 7px;
+  border: 1px solid transparent;
+  background: transparent; cursor: pointer; text-align: left;
+  transition: filter 120ms;
+}
+.bbt-chip:hover { filter: brightness(1.2); }
+
+.bbt-chip-year {
+  font-size: 0.80rem; font-weight: 700;
+}
+
+.bbt-chip-addr {
+  font-size: 0.56rem; color: var(--ink-muted);
+}
+
+/* ─── Oldest home callout ───────────────────────────────────────────── */
+
+.block-oldest-callout {
+  display: flex; gap: 14px; align-items: flex-start;
+  padding: 14px 16px; border-radius: 10px;
+  border: 1px solid var(--border-accent); background: var(--accent-tint);
+  margin-bottom: 20px;
+}
+
+.boc-icon {
+  flex: 0 0 auto; width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 8px; border: 1px solid var(--border-accent);
+  color: var(--accent); background: rgba(34,211,238,0.08);
+}
+
+.boc-body { display: grid; gap: 3px; min-width: 0; }
+
+.boc-eyebrow {
+  font-size: 0.56rem; font-weight: 700; color: var(--accent);
+  text-transform: uppercase; letter-spacing: 0.08em; margin: 0;
+}
+
+.boc-address {
+  font-size: 0.90rem; font-weight: 600; color: var(--ink); margin: 0;
+}
+
+.boc-year {
+  font-size: 0.72rem; color: var(--ink-muted); margin: 0;
+}
+
+.boc-link {
+  font-size: 0.70rem; font-weight: 600; color: var(--accent);
+  background: none; border: none; cursor: pointer; padding: 0;
+  text-align: left;
+}
+.boc-link:hover { text-decoration: underline; }
+
+/* ─── Blocks in neighborhood section ───────────────────────────────── */
+
+.bin-section { margin-bottom: 24px; }
+
+.bin-title {
+  font-size: 0.90rem; font-weight: 700; color: var(--ink); margin: 0 0 4px;
+}
+
+.bin-desc {
+  font-size: 0.68rem; color: var(--ink-muted); margin: 0 0 12px;
+}
+
+.bin-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 6px;
+}
+
+.bin-item {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 10px 12px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--glass-0);
+  cursor: pointer; text-align: left;
+  transition: background 120ms, border-color 120ms;
+}
+.bin-item:hover { background: var(--glass-1); border-color: var(--border-bright); }
+
+.bin-label {
+  font-size: 0.78rem; font-weight: 600; color: var(--ink);
+}
+
+.bin-meta {
+  font-size: 0.62rem; color: var(--ink-muted);
+}
+
+/* ─── Block level responsive ────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .beb-stats        { gap: 12px; }
+  .bbt-row          { gap: 4px; }
+  .bin-list         { grid-template-columns: 1fr 1fr; }
+  .block-oldest-callout { flex-direction: column; }
+}
+
+@media (max-width: 480px) {
+  .bin-list         { grid-template-columns: 1fr; }
+}

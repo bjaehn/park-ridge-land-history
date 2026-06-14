@@ -1,7 +1,8 @@
 import { useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useParkRidgeContext } from "../../contexts/ParkRidgeDataContext";
-import { blockPath, propertyPath, ROUTES } from "../../routes/routeConfig";
+import { blockPath, ROUTES } from "../../routes/routeConfig";
+import { eraLabel } from "../../lib/formatters";
 
 type BlockSummary = {
   blockId: string;
@@ -73,15 +74,10 @@ export function BlocksPage() {
         </nav>
 
         <header className="content-page-header">
-          <h1 className="content-page-title">Park Ridge Blocks</h1>
+          <h1 className="content-page-title">Park Ridge Grew Block by Block</h1>
           <p className="content-page-subtitle">
-            Blocks are the building blocks of Park Ridge: groups of properties sharing a street or
-            census tract. Explore by age, permit activity, or development pattern.
-          </p>
-          <p className="content-page-note">
-            Block boundaries are derived from Census tract and street-level parcel data. They are
-            not official city blocks and may include connected parcel groups rather than
-            single-street blocks.
+            Every block has a story. Some were built in a single decade. Some grew over a century.
+            Find the oldest blocks, the most active, and the ones time left behind.
           </p>
         </header>
 
@@ -98,17 +94,17 @@ export function BlocksPage() {
 
             <div className="blocks-ranked-grid">
               <RankedBlockList
-                title="Oldest Blocks (by median year built)"
+                title="Oldest blocks by typical build year"
                 blocks={topOldest}
                 valueKey="medianYear"
-                formatValue={(b) => b.medianYear ? `Median: ${b.medianYear}` : "Unknown"}
+                formatValue={(b) => b.medianYear ? `${eraLabel(b.medianYear)} · ~${b.medianYear}` : "Unknown era"}
                 onSelect={(id) => navigate(blockPath(id))}
               />
               <RankedBlockList
-                title="Most Permitted Blocks"
+                title="Most permitted blocks"
                 blocks={topPermitted}
                 valueKey="totalPermits"
-                formatValue={(b) => `${b.totalPermits.toLocaleString()} total permits`}
+                formatValue={(b) => `${b.totalPermits.toLocaleString()} permits recorded`}
                 onSelect={(id) => navigate(blockPath(id))}
               />
             </div>
