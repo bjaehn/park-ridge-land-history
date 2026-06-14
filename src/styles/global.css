@@ -1283,6 +1283,75 @@ button, input { font: inherit; }
 .block-readout { border-color: rgba(34,211,238,0.20); background: rgba(34,211,238,0.06); }
 .block-preset-grid { margin-top: 2px; }
 
+/* ─── Block Era Card ─────────────────────────────────────────────── */
+
+.block-era-card {
+  padding: 14px 16px; border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--glass-0);
+  margin-bottom: 12px;
+}
+
+.bec-eyebrow {
+  font-size: 0.60rem; font-weight: 700; color: var(--ink-muted);
+  text-transform: uppercase; letter-spacing: 0.09em;
+  margin: 0 0 7px;
+}
+
+.bec-headline {
+  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.bec-decade {
+  font-size: 1.55rem; font-weight: 700; color: var(--accent);
+  letter-spacing: -0.03em; line-height: 1;
+}
+
+.bec-percentile {
+  font-size: 0.72rem; color: var(--ink-soft); font-weight: 400;
+}
+
+.bec-chart {
+  display: flex; align-items: flex-end; gap: 3px;
+  height: 52px; margin-bottom: 4px;
+}
+
+.bec-bar-wrap {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  height: 100%; justify-content: flex-end; position: relative;
+}
+
+.bec-bar {
+  width: 100%; border-radius: 2px 2px 0 0;
+  background: var(--glass-2, rgba(255,255,255,0.09));
+  min-height: 3px;
+}
+
+.bec-bar-wrap.is-active .bec-bar {
+  background: var(--accent);
+}
+
+.bec-bar-label {
+  position: absolute; top: -17px;
+  font-size: 0.54rem; font-weight: 700; color: var(--accent);
+  white-space: nowrap; pointer-events: none;
+}
+
+.bec-chart-axis {
+  display: flex; justify-content: space-between;
+  font-size: 0.56rem; color: var(--ink-muted);
+  margin-bottom: 10px;
+}
+
+.bec-chart-axis span:nth-child(2) { text-align: center; }
+
+.bec-note {
+  font-size: 0.68rem; color: var(--ink-muted); margin: 0; line-height: 1.4;
+}
+
+/* ─── Block biography card ─────────────────────────────────────────── */
+
 .block-biography-card {
   display: grid; gap: 10px; padding: 12px;
   border-radius: 10px;
