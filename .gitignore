@@ -1,5 +1,6 @@
 node_modules/
 .venv/
+.claude/
 .env
 .env.local
 .pytest_cache/
