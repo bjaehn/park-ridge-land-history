@@ -65,7 +65,7 @@ export function Legend({
   function renderAgeLegend() {
     return (
       <div className="legend-section">
-        <h3>Home Age</h3>
+        <h3>When it was built</h3>
         {!compact && <p className="legend-note">{ageLegendNote(activePreset)}</p>}
         <div className="legend-grid">
           {decadeOrder.map((bucket) => (
@@ -85,7 +85,7 @@ export function Legend({
   function renderPermitLegend() {
     return (
       <div className="legend-section" aria-label="Permit pressure color legend">
-        <h3>{permitPressureMapMode === "stability" ? "Stable vs Changing" : "Permit Work"}</h3>
+        <h3>{permitPressureMapMode === "stability" ? "Settled vs. active" : "Recent work type"}</h3>
         {!compact && <p className="legend-note">{permitLegendNote(permitPressureMapMode)}</p>}
         <div className="legend-grid">
           {permitPressureMapMode === "stability"
