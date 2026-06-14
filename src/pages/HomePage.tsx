@@ -1,69 +1,117 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useParkRidgeContext } from "../contexts/ParkRidgeDataContext";
 import {
-  propertyPath, blockPath, neighborhoodPath,
+  propertyPath, neighborhoodPath,
   neighborhoodSlugFromId, ROUTES
 } from "../routes/routeConfig";
-import { computeTopOldest, computeTopPermitted, computeTopAssessedChange } from "../lib/rankedInsights";
 import { RankedInsightSection } from "../components/RankedInsightSection";
 import { getNeighborhoodSummaries, getNamedNeighborhoods } from "../lib/data/neighborhoods";
-import { getHomePageStats, getHomeCityGrowthRows, getOldestBlocks } from "../lib/data/home";
-import type { ParcelFeature } from "../lib/parcelTypes";
-import type { BlockSummary } from "../lib/data/blocks";
-import type { AreaSummaryFeature, AreaSignal } from "../lib/areaGroups";
-import type { HomeCityGrowthRow, HomePageStats } from "../lib/data/home";
+import type { AreaSummaryFeature } from "../lib/areaGroups";
+import {
+  fetchHomeStats, fetchDecadeDistribution, fetchOldestProperties,
+  fetchMostPermitted, fetchTopAssessedChange, searchParcels,
+  type HomeStats, type DecadeRow, type SearchResult,
+} from "../lib/supabase/homeQueries";
+import type { RankedItem, RankedInsightList } from "../lib/rankedInsights";
+
+function toInsightList(
+  title: string,
+  description: string,
+  sourceNote: string,
+  items: RankedItem[],
+  emptyText: string
+): RankedInsightList {
+  return { title, description, sourceNote, items, emptyText };
+}
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export function HomePage() {
-  const { parcels } = useParkRidgeContext();
+  const { parcels } = useParkRidgeContext(); // only used for neighborhood grid
   const navigate = useNavigate();
+
+  // ── Hero search (debounced, direct Supabase query — works before parcels load) ──
   const [query, setQuery] = useState("");
   const [isFocused, setIsFocused] = useState(false);
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const features = useMemo(() => parcels?.features ?? [], [parcels]);
-  const isLoading = !parcels;
+  useEffect(() => {
+    if (query.trim().length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(async () => {
+      const results = await searchParcels(query, 8);
+      setSearchResults(results);
+    }, 180);
+    return () => {
+      if (searchTimer.current) clearTimeout(searchTimer.current);
+    };
+  }, [query]);
 
-  // ── Search results ──────────────────────────────────────────────────────────
-  const normalizedQuery = query.trim().toLowerCase();
-  const searchResults = useMemo<ParcelFeature[]>(() => {
-    if (normalizedQuery.length < 2) return [];
-    return features
-      .filter((f) => {
-        const addr = (f.properties.address ?? "").toLowerCase();
-        const pin = (f.properties.pin_normalized ?? "").toLowerCase();
-        return addr.includes(normalizedQuery) || pin.includes(normalizedQuery);
-      })
-      .slice(0, 8);
-  }, [normalizedQuery, features]);
-  const showDropdown = isFocused && normalizedQuery.length >= 2;
+  const showDropdown = isFocused && query.trim().length >= 2;
 
   function handleSelect(pin: string) {
     setQuery("");
+    setSearchResults([]);
     navigate(propertyPath(pin));
   }
 
-  // ── Derived data (all memoized to run once per load) ────────────────────────
-  const stats = useMemo<HomePageStats>(() => getHomePageStats(features), [features]);
-  const cityGrowthRows = useMemo<HomeCityGrowthRow[]>(() => getHomeCityGrowthRows(features), [features]);
-  const peakDecade = useMemo(() => cityGrowthRows.find((r) => r.isPeak) ?? null, [cityGrowthRows]);
-  const maxGrowthCount = useMemo(() => Math.max(1, ...cityGrowthRows.map((r) => r.count)), [cityGrowthRows]);
+  // ── Section state: each loads independently ─────────────────────────────────
+  const [stats, setStats] = useState<HomeStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
 
-  const topOldest = useMemo(() => computeTopOldest(features, 10), [features]);
-  const topPermitted = useMemo(() => computeTopPermitted(features, 10), [features]);
-  const topAssessedChange = useMemo(() => computeTopAssessedChange(features, 10), [features]);
-  const oldestBlocks = useMemo<BlockSummary[]>(() => getOldestBlocks(features, 10), [features]);
+  const [decades, setDecades] = useState<DecadeRow[]>([]);
+  const [decadesLoading, setDecadesLoading] = useState(true);
 
+  const [oldest, setOldest] = useState<RankedItem[]>([]);
+  const [oldestLoading, setOldestLoading] = useState(true);
+
+  const [permitted, setPermitted] = useState<RankedItem[]>([]);
+  const [permittedLoading, setPermittedLoading] = useState(true);
+
+  const [assessed, setAssessed] = useState<RankedItem[]>([]);
+  const [assessedLoading, setAssessedLoading] = useState(true);
+
+  // ── Parallel loads on mount ─────────────────────────────────────────────────
+  useEffect(() => {
+    let active = true;
+
+    fetchHomeStats().then((d) => {
+      if (active) { setStats(d); setStatsLoading(false); }
+    });
+    fetchDecadeDistribution().then((d) => {
+      if (active) { setDecades(d); setDecadesLoading(false); }
+    });
+    fetchOldestProperties(10).then((d) => {
+      if (active) { setOldest(d); setOldestLoading(false); }
+    });
+    fetchMostPermitted(10).then((d) => {
+      if (active) { setPermitted(d); setPermittedLoading(false); }
+    });
+    fetchTopAssessedChange(10).then((d) => {
+      if (active) { setAssessed(d); setAssessedLoading(false); }
+    });
+
+    return () => { active = false; };
+  }, []);
+
+  // ── Neighborhood grid (still needs parcels) ─────────────────────────────────
   const neighborhoodSummaries = useMemo(() => getNeighborhoodSummaries(parcels), [parcels]);
   const neighborhoods = useMemo(() => getNamedNeighborhoods(neighborhoodSummaries), [neighborhoodSummaries]);
+  const neighborhoodsLoading = !parcels;
 
-  const hasAssessmentData = topAssessedChange.items.length > 0;
+  // ── Decade chart derived values ─────────────────────────────────────────────
+  const peakDecade = decades.find((r) => r.isPeak) ?? null;
+  const maxGrowthCount = Math.max(1, ...decades.map((r) => r.count));
 
   return (
     <div className="home-page">
 
-      {/* ── Hero ───────────────────────────────────────────────────────────── */}
+      {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <section className="hero-section" aria-label="Welcome">
         <div className="hero-inner">
           <p className="hero-eyebrow">Park Ridge, Illinois</p>
@@ -102,20 +150,17 @@ export function HomePage() {
             </div>
             {showDropdown && searchResults.length > 0 && (
               <ul className="hero-search-results" id="hero-search-results" role="listbox">
-                {searchResults.map((f) => {
-                  const pin = f.properties.pin_normalized ?? f.properties.pin_original ?? "";
-                  return (
-                    <li key={pin} role="option" aria-selected={false}>
-                      <button type="button" className="hsr-btn" onMouseDown={() => handleSelect(pin)}>
-                        <span className="hsr-address">{f.properties.address}</span>
-                        <span className="hsr-meta">
-                          {f.properties.year_built ? `Built ${f.properties.year_built}` : "Year unknown"}
-                          {f.properties.permit_count ? ` · ${f.properties.permit_count} permits` : ""}
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
+                {searchResults.map((r) => (
+                  <li key={r.pin} role="option" aria-selected={false}>
+                    <button type="button" className="hsr-btn" onMouseDown={() => handleSelect(r.pin)}>
+                      <span className="hsr-address">{r.address}</span>
+                      <span className="hsr-meta">
+                        {r.yearBuilt ? `Built ${r.yearBuilt}` : "Year unknown"}
+                        {r.permitCount ? ` · ${r.permitCount} permits` : ""}
+                      </span>
+                    </button>
+                  </li>
+                ))}
               </ul>
             )}
             {showDropdown && searchResults.length === 0 && (
@@ -158,32 +203,35 @@ export function HomePage() {
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
             </svg>
             Every claim is sourced. Missing data is shown, not hidden.
-            {stats.totalProperties > 0 && ` Covering ${stats.totalProperties.toLocaleString()} Park Ridge properties.`}
+            {stats && stats.totalProperties > 0 && ` Covering ${stats.totalProperties.toLocaleString()} Park Ridge properties.`}
           </p>
         </div>
       </section>
 
-      {/* ── Stats strip ────────────────────────────────────────────────────── */}
-      {stats.totalProperties > 0 && (
+      {/* ── Stats strip ──────────────────────────────────────────────────── */}
+      {(statsLoading || (stats && stats.totalProperties > 0)) && (
         <div className="home-stats-strip" aria-label="Dataset overview">
-          <StatChip value={stats.totalProperties.toLocaleString()} label="Properties indexed" accent />
-          <StatChip value={`${stats.yearBuiltKnown.toLocaleString()} (${stats.yearBuiltPct}%)`} label="Known year built" />
-          <StatChip value={stats.uniqueBlocks.toLocaleString()} label="Street blocks" />
-          <StatChip value={stats.permitRecords.toLocaleString()} label="With permit records" />
-          <StatChip value={stats.salesRecords.toLocaleString()} label="With sale records" />
-          <StatChip value={stats.historicSurveyCount.toLocaleString()} label="Historic survey matches" />
-          {stats.sanbornCount > 0 && (
-            <StatChip value={stats.sanbornCount.toLocaleString()} label="Sanborn map snapshots" />
-          )}
-        </div>
-      )}
-      {isLoading && (
-        <div className="home-stats-strip home-stats-strip--loading" aria-label="Loading dataset stats">
-          {[...Array(5)].map((_, i) => <div key={i} className="home-stat-skeleton" />)}
+          <div className="home-stats-strip-inner">
+            {statsLoading ? (
+              [...Array(5)].map((_, i) => <div key={i} className="home-stat-skeleton" />)
+            ) : stats ? (
+              <>
+                <StatChip value={stats.totalProperties.toLocaleString()} label="Properties indexed" accent />
+                <StatChip value={`${stats.yearBuiltKnown.toLocaleString()} (${stats.yearBuiltPct}%)`} label="Known year built" />
+                <StatChip value={stats.uniqueBlocks.toLocaleString()} label="Street blocks" />
+                <StatChip value={`${stats.withPermits.toLocaleString()} (${stats.permitsPct}%)`} label="With permit records" />
+                <StatChip value={`${stats.withSales.toLocaleString()} (${stats.salesPct}%)`} label="With sale records" />
+                <StatChip value={stats.historicSurveys.toLocaleString()} label="Historic survey matches" />
+                {stats.pre1945Count > 0 && (
+                  <StatChip value={`${stats.pre1945Count.toLocaleString()} (${stats.pre1945Pct}%)`} label="Built before 1945" />
+                )}
+              </>
+            ) : null}
+          </div>
         </div>
       )}
 
-      {/* ── City growth chart ──────────────────────────────────────────────── */}
+      {/* ── City growth chart ─────────────────────────────────────────────── */}
       <HomeSection
         eyebrow="Park Ridge history"
         title="How did Park Ridge grow?"
@@ -195,11 +243,11 @@ export function HomePage() {
         source="Cook County Assessor year-built field. Records with unknown or suspicious years are excluded."
         linkTo={ROUTES.city.path}
         linkLabel="Full city growth story →"
-        isEmpty={cityGrowthRows.length === 0}
-        isLoading={isLoading}
+        isEmpty={!decadesLoading && decades.length === 0}
+        isLoading={decadesLoading}
       >
         <div className="home-decade-chart" aria-label="Park Ridge homes by decade built">
-          {cityGrowthRows.map((row) => (
+          {decades.map((row) => (
             <div key={row.decade} className="hdc-row">
               <span className="hdc-label">{row.decade}s</span>
               <span className="hdc-bar-track" aria-hidden="true">
@@ -217,89 +265,86 @@ export function HomePage() {
         </div>
       </HomeSection>
 
-      {/* ── Top 10 Oldest Properties ───────────────────────────────────────── */}
+      {/* ── Top 10 oldest properties ──────────────────────────────────────── */}
       <HomeSection
         eyebrow="Oldest known homes"
         title="Top 10 oldest properties in Park Ridge"
         desc="Properties with the earliest confirmed construction year from Cook County Assessor records. Year built reflects the current structure, not necessarily the original construction on the site."
         source="Cook County Assessor year-built field. Earliest records only."
-        isEmpty={topOldest.items.length === 0}
-        isLoading={isLoading}
+        isEmpty={!oldestLoading && oldest.length === 0}
+        isLoading={oldestLoading}
       >
         <RankedInsightSection
-          insight={topOldest}
+          insight={toInsightList(
+            "Top 10 Oldest Properties",
+            "Properties with the earliest confirmed year built from assessor records.",
+            "Source: Cook County Assessor year-built field.",
+            oldest,
+            "No year-built data is available yet."
+          )}
           onSelectProperty={(pin) => navigate(propertyPath(pin))}
         />
       </HomeSection>
 
-      {/* ── Top 10 Oldest Blocks ───────────────────────────────────────────── */}
+      {/* ── Neighborhood overview ─────────────────────────────────────────── */}
       <HomeSection
-        eyebrow="Earliest developed areas"
-        title="Top 10 oldest known street blocks"
-        desc="Street blocks with the earliest known construction year among their properties. Requires at least 2 properties with known year built. Block boundaries are Census-derived, not official city blocks."
-        source="Derived from Cook County Assessor year-built records grouped by Census street block ID."
-        isEmpty={oldestBlocks.length === 0}
-        isLoading={isLoading}
+        eyebrow="Neighborhood overview"
+        title="Park Ridge neighborhoods at a glance"
+        desc="Approximate local area boundaries based on parcel centroid location. Signal reflects dominant development pattern in available records."
+        source="Boundaries are approximate and derived from parcel location data, not official city designations."
+        linkTo={ROUTES.neighborhoods.path}
+        linkLabel="Explore all neighborhoods →"
+        isEmpty={!neighborhoodsLoading && neighborhoods.length === 0}
+        isLoading={neighborhoodsLoading}
       >
-        <OldestBlockList blocks={oldestBlocks} onNavigate={(id) => navigate(blockPath(id))} />
+        <div className="home-neighborhood-grid">
+          {neighborhoods.map((n) => (
+            <NeighborhoodCard key={n.properties.id} neighborhood={n} />
+          ))}
+        </div>
       </HomeSection>
 
-      {/* ── Neighborhood comparison ────────────────────────────────────────── */}
-      {neighborhoods.length > 0 && (
-        <HomeSection
-          eyebrow="Neighborhood overview"
-          title="Park Ridge neighborhoods at a glance"
-          desc="Approximate local area boundaries based on parcel centroid location. Signal reflects dominant development pattern in available records."
-          source="Boundaries are approximate and derived from parcel location data, not official city designations."
-          linkTo={ROUTES.neighborhoods.path}
-          linkLabel="Explore all neighborhoods →"
-        >
-          <div className="home-neighborhood-grid">
-            {neighborhoods.map((n) => (
-              <NeighborhoodCard key={n.properties.id} neighborhood={n} />
-            ))}
-          </div>
-        </HomeSection>
-      )}
-
-      {/* ── Top 10 Most Permitted ─────────────────────────────────────────── */}
+      {/* ── Top 10 most active (most permitted) ──────────────────────────── */}
       <HomeSection
         eyebrow="Most active properties"
-        title="Top 10 most permitted properties"
-        desc="Properties with the most building permit records on file. High permit counts can reflect active long-term reinvestment, renovations, or additions over many years."
+        title="Top 10 most renovated properties"
+        desc="Properties with the most building permit records. High counts reflect long-term reinvestment, renovations, and additions across many decades — the properties that have been continuously cared for."
         source="Cook County building permit records. Older permit records may be missing or incomplete."
-        isEmpty={topPermitted.items.length === 0}
-        isLoading={isLoading}
+        isEmpty={!permittedLoading && permitted.length === 0}
+        isLoading={permittedLoading}
       >
         <RankedInsightSection
-          insight={topPermitted}
+          insight={toInsightList(
+            "Top 10 Most Renovated",
+            "Properties with the most building permit records on file.",
+            "Source: Cook County building permit records. Older permits may be missing.",
+            permitted,
+            "No permit data is available in the current dataset."
+          )}
           onSelectProperty={(pin) => navigate(propertyPath(pin))}
         />
       </HomeSection>
 
-      {/* ── Top 10 Assessment Value Changes ───────────────────────────────── */}
-      {hasAssessmentData && (
+      {/* ── Assessment history ────────────────────────────────────────────── */}
+      {(!assessedLoading && assessed.length > 0) && (
         <HomeSection
           eyebrow="Assessment history"
           title="Top 10 largest assessed value changes"
           desc="Properties with the largest percentage increase in assessed value between their earliest and latest assessment records. Large increases may reflect major renovations, new construction, or market-driven reassessment."
           source="Cook County Assessor assessment records. Assessed value is not the same as market value."
+          isEmpty={false}
+          isLoading={false}
         >
           <RankedInsightSection
-            insight={topAssessedChange}
+            insight={toInsightList(
+              "Top 10 Largest Assessed Value Changes",
+              "Properties with the largest % increase in assessed value across available records.",
+              "Source: Cook County Assessor records. Assessed value ≠ market value.",
+              assessed,
+              "Not enough assessment history available yet."
+            )}
             onSelectProperty={(pin) => navigate(propertyPath(pin))}
           />
-        </HomeSection>
-      )}
-      {!hasAssessmentData && !isLoading && (
-        <HomeSection
-          eyebrow="Assessment history"
-          title="Top 10 largest assessed value changes"
-          isEmpty
-          emptyText="Assessment history comparison is not yet available in the current dataset."
-          source=""
-        >
-          <></>
         </HomeSection>
       )}
 
@@ -377,8 +422,8 @@ function HomeSection({
   eyebrow: string;
   title: string;
   desc?: string;
-  source: string;
-  children: React.ReactNode;
+  source?: string;
+  children?: React.ReactNode;
   linkTo?: string;
   linkLabel?: string;
   isEmpty?: boolean;
@@ -434,49 +479,6 @@ function StatChip({ value, label, accent }: { value: string; label: string; acce
       <span className="home-stat-value">{value}</span>
       <span className="home-stat-label">{label}</span>
     </div>
-  );
-}
-
-// ─── Oldest block list ────────────────────────────────────────────────────────
-
-function OldestBlockList({
-  blocks,
-  onNavigate,
-}: {
-  blocks: BlockSummary[];
-  onNavigate: (blockId: string) => void;
-}) {
-  if (blocks.length === 0) {
-    return <p className="home-section-empty">No block data available yet.</p>;
-  }
-
-  return (
-    <ol className="home-block-list" aria-label="Oldest street blocks">
-      {blocks.map((block, i) => (
-        <li key={block.blockId} className="hbl-item">
-          <span className="hbl-rank" aria-hidden="true">{i + 1}</span>
-          <button
-            type="button"
-            className="hbl-btn"
-            onClick={() => onNavigate(block.blockId)}
-            aria-label={`${block.label} — oldest known: ${block.oldestYearBuilt}`}
-          >
-            <span className="hbl-info">
-              <span className="hbl-label">{block.label}</span>
-              <span className="hbl-meta">{block.propertyCount} properties known</span>
-            </span>
-            <span className="hbl-values">
-              <span className="hbl-value">
-                {block.oldestYearBuilt ? `Built ${block.oldestYearBuilt}` : "Year unknown"}
-              </span>
-              {block.medianYearBuilt && (
-                <span className="hbl-count">Median {block.medianYearBuilt}</span>
-              )}
-            </span>
-          </button>
-        </li>
-      ))}
-    </ol>
   );
 }
 

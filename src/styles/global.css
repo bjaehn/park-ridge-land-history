@@ -4097,12 +4097,17 @@ button, input { font: inherit; }
 /* ─── Stats strip ───────────────────────────────────────────────────────── */
 
 .home-stats-strip {
-  display: flex; flex-wrap: wrap; gap: 8px;
   padding: 20px 24px;
   border-top: 1px solid rgba(255,255,255,0.05);
 }
 
-.home-stats-strip--loading { align-items: stretch; }
+.home-stats-strip-inner {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  max-width: 900px; margin: 0 auto;
+  align-items: stretch;
+}
+
+.home-stats-strip--loading .home-stats-strip-inner { align-items: stretch; }
 
 .home-stat-chip {
   display: flex; flex-direction: column; gap: 3px;
