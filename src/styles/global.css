@@ -3058,3 +3058,158 @@ button, input { font: inherit; }
   .app-header h1 { font-size: 1.15rem; }
   .decade-list, .legend-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
 }
+
+/* ─── Block Comparison Section ──────────────────── */
+.block-comparison-section {
+  margin: 16px 0;
+  padding: 14px 16px;
+  background: var(--glass-1);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.block-comparison-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+  margin: 0 0 10px;
+}
+
+.block-comparison-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.block-comparison-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bci-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.bci-value {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+
+/* ─── Area Story Note ────────────────────────────── */
+.area-story-note {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  line-height: 1.6;
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  background: var(--glass-0);
+  border-left: 2px solid var(--accent-dark);
+  border-radius: 4px;
+}
+
+/* ─── Growth Story Panel ─────────────────────────── */
+.growth-story-panel {
+  margin: 8px 0 16px;
+  padding: 16px;
+  background: var(--glass-1);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.growth-story-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0 0 12px;
+}
+
+.growth-story-lead {
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  line-height: 1.6;
+  margin: 0 0 14px;
+}
+
+.growth-story-stats {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.gss-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gss-stat-value {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.gss-stat-label {
+  font-size: 0.68rem;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.growth-decade-bars {
+  margin-bottom: 16px;
+}
+
+.growth-decade-title {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 8px;
+}
+
+.growth-decade-row {
+  display: grid;
+  grid-template-columns: 44px 1fr 80px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+
+.gdr-label {
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+  text-align: right;
+}
+
+.gdr-bar-wrap {
+  background: var(--glass-1);
+  border-radius: 3px;
+  overflow: hidden;
+  height: 10px;
+}
+
+.gdr-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-dark), var(--accent));
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.gdr-count {
+  font-size: 0.68rem;
+  color: var(--ink-muted);
+}

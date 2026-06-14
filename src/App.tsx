@@ -16,6 +16,7 @@ import { HotspotPanel, type AreaView } from "./components/HotspotPanel";
 import { ParcelDetailPanel, type PropertyView } from "./components/ParcelDetailPanel";
 import { PermitWorkComparisonTable } from "./components/PermitWorkComparisonTable";
 import { ProductEvidencePanel } from "./components/ProductEvidencePanel";
+import { GrowthStoryPanel } from "./components/GrowthStoryPanel";
 import { RoadParcelTimelinePanel } from "./components/RoadParcelTimelinePanel";
 import { SearchPanel } from "./components/SearchPanel";
 import { TimelineControl } from "./components/TimelineControl";
@@ -893,6 +894,7 @@ export default function App() {
                 onClearSelectedRoad={() => setSelectedRoadHistory(null)}
               />
               <ChangeStoryCard scope="city" parcels={pressureDecoratedParcels} />
+              <GrowthStoryPanel parcels={parcels} />
               {activeVisualizationPreset === "age" && (
                 <>
                   <DecadeComparisonTable parcels={pressureDecoratedParcels} />

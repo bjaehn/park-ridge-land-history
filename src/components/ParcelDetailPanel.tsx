@@ -5,6 +5,8 @@ import type { ParcelCollection, ParcelFeature } from "../lib/parcelTypes";
 import { HouseRelatives } from "./HouseRelatives";
 import { NearbyActivitySummary } from "./NearbyActivitySummary";
 import { PropertyTimeline } from "./PropertyTimeline";
+import { WhatWeKnowCard } from "./cards/WhatWeKnowCard";
+import { ComparisonCard } from "./cards/ComparisonCard";
 
 export type PropertyView = "timeline" | "relatives";
 
@@ -133,6 +135,13 @@ export function ParcelDetailPanel({
       {/* Story — the full unified scroll */}
       {activeView === "timeline" && (
         <div className="property-view-content">
+          <WhatWeKnowCard properties={properties} />
+          <ComparisonCard
+            parcel={parcel!}
+            blockParcels={blockParcels}
+            neighborhoodParcels={neighborhoodParcels}
+            allParcels={parcels?.features ?? []}
+          />
           <PropertyTimeline
             properties={properties}
             parcel={parcel}

@@ -241,7 +241,34 @@ function AreaReadout({ area }: { area: AreaSummaryFeature }) {
           <dd>{area.properties.sourceLabel}</dd>
         </div>
       </dl>
+      <AreaStoryNote area={area} />
     </div>
+  );
+}
+
+function AreaStoryNote({ area }: { area: AreaSummaryFeature }) {
+  const p = area.properties;
+  const parts: string[] = [];
+
+  if (p.olderHomePercent >= 40) {
+    parts.push(`${p.olderHomePercent}% of homes here were built before 1960`);
+  }
+  if (p.remodelPercent >= 20) {
+    parts.push(`${p.remodelPercent}% show recent permit activity`);
+  }
+  if (p.teardownPressurePercent >= 5) {
+    parts.push(`${p.teardownPressurePercent}% show rebuild signals`);
+  }
+  if (p.soldLastThreeYearsPercent >= 10) {
+    parts.push(`${p.soldLastThreeYearsPercent}% changed hands in the last 3 years`);
+  }
+
+  if (parts.length === 0) return null;
+
+  return (
+    <p className="area-story-note">
+      {parts.join("; ")}.
+    </p>
   );
 }
 
