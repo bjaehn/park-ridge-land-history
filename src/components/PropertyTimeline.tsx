@@ -116,7 +116,7 @@ export function PropertyTimeline({ properties, parcel, blockParcels = [], neighb
         <div className="pt-stat-divider" />
         <div className="pt-stat">
           <span>Assessed</span>
-          <strong>{formatCurrency(properties.latest_assessed_total) !== "Unknown" ? formatCurrency(properties.latest_assessed_total) : "—"}</strong>
+          <strong>{formatCurrency(properties.latest_assessed_total) !== "Unknown" ? formatCurrency(properties.latest_assessed_total) : "N/A"}</strong>
         </div>
         {properties.assessed_value_change_pct != null && (
           <>

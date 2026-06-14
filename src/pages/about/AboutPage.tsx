@@ -25,7 +25,7 @@ export function AboutPage() {
               development history of properties, blocks, and neighborhoods in Park Ridge, Illinois.
             </p>
             <p>
-              The goal is to make public property records understandable — not just raw data
+              The goal is to make public property records understandable: not just raw data
               dumps, but real historical context: when was this house built? Has it been renovated?
               What does the permit record show? How does it compare to other houses on the block?
             </p>

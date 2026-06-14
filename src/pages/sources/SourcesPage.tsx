@@ -27,7 +27,7 @@ const sources: Source[] = [
     notes: "Older permits may be incomplete or not digitized. Permit pressure scores are computed from available records only."
   },
   {
-    name: "Cook County Recorder of Deeds — Sales Records",
+    name: "Cook County Recorder of Deeds: Sales Records",
     publisher: "Cook County Recorder of Deeds",
     coverage: "Property sales since approximately 1999",
     fields: ["sale_count", "latest_sale_year", "latest_sale_price"],
@@ -138,7 +138,7 @@ export function SourcesPage() {
             <li>Sales records begin approximately 1999. Earlier sales are not included.</li>
             <li>Year built reflects the current structure as assessed. Demolitions, rebuilds, and significant renovations may shift the year built forward.</li>
             <li>Neighborhood boundaries are approximate and not official City of Park Ridge definitions.</li>
-            <li>Historic survey coverage is partial — not all historic structures in Park Ridge have been surveyed.</li>
+            <li>Historic survey coverage is partial; not all historic structures in Park Ridge have been surveyed.</li>
             <li>Assessment appeals and reassessments may lag behind actual changes.</li>
           </ul>
         </section>

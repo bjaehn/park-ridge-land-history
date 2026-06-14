@@ -8,6 +8,8 @@ import {
 import { RankedInsightSection } from "../components/RankedInsightSection";
 import { getNeighborhoodSummaries, getNamedNeighborhoods } from "../lib/data/neighborhoods";
 import type { AreaSummaryFeature } from "../lib/areaGroups";
+import { decadeColors } from "../lib/colorScales";
+import type { DecadeBucket } from "../lib/parcelTypes";
 import {
   fetchHomeStats, fetchDecadeDistribution, fetchOldestProperties,
   fetchMostPermitted, fetchTopAssessedChange, searchParcels,
@@ -121,7 +123,7 @@ export function HomePage() {
           </h1>
           <p className="hero-tagline">
             Discover when homes were built, how blocks developed, how
-            neighborhoods changed, and how Park Ridge grew — decade by decade.
+            neighborhoods changed, and how Park Ridge grew, decade by decade.
             Every fact is tied to a source.
           </p>
 
@@ -237,7 +239,7 @@ export function HomePage() {
         title="How did Park Ridge grow?"
         desc={
           peakDecade
-            ? `Most known homes were built in the ${peakDecade.decade}s — ${peakDecade.count.toLocaleString()} properties (${peakDecade.percent}% of those with known construction years). Chart shows known construction year records only.`
+            ? `Most known homes were built in the ${peakDecade.decade}: ${peakDecade.count.toLocaleString()} properties (${peakDecade.percent}% with known construction years). Chart shows known year-built records only.`
             : "Decade-by-decade construction based on known year-built records from the Cook County Assessor."
         }
         source="Cook County Assessor year-built field. Records with unknown or suspicious years are excluded."
@@ -246,17 +248,20 @@ export function HomePage() {
         isEmpty={!decadesLoading && decades.length === 0}
         isLoading={decadesLoading}
       >
-        <div className="home-decade-chart" aria-label="Park Ridge homes by decade built">
+        <div className="decade-chart" aria-label="Park Ridge homes by decade built">
           {decades.map((row) => (
-            <div key={row.decade} className="hdc-row">
-              <span className="hdc-label">{row.decade}s</span>
-              <span className="hdc-bar-track" aria-hidden="true">
+            <div key={row.decade} className="chart-row">
+              <span className="chart-label">{row.decade}</span>
+              <span className="chart-track" aria-hidden="true">
                 <span
-                  className={`hdc-bar${row.isPeak ? " hdc-bar--peak" : ""}`}
-                  style={{ width: `${Math.max(2, (row.count / maxGrowthCount) * 100)}%` }}
+                  className="chart-bar"
+                  style={{
+                    width: `${Math.max(4, (row.count / maxGrowthCount) * 100)}%`,
+                    backgroundColor: decadeColors[row.decade as DecadeBucket] ?? "#9ca3af",
+                  }}
                 />
               </span>
-              <span className="hdc-count">
+              <span className="chart-value">
                 {row.count.toLocaleString()}
                 {row.isPeak && <span className="hdc-peak-badge">peak</span>}
               </span>
@@ -308,7 +313,7 @@ export function HomePage() {
       <HomeSection
         eyebrow="Most active properties"
         title="Top 10 most renovated properties"
-        desc="Properties with the most building permit records. High counts reflect long-term reinvestment, renovations, and additions across many decades — the properties that have been continuously cared for."
+        desc="Properties with the most building permit records. High counts reflect long-term reinvestment, renovations, and additions across many decades."
         source="Cook County building permit records. Older permit records may be missing or incomplete."
         isEmpty={!permittedLoading && permitted.length === 0}
         isLoading={permittedLoading}
@@ -375,10 +380,10 @@ export function HomePage() {
           <h2 className="home-transparency-title">Data sources</h2>
           <div className="home-transparency-grid">
             {[
-              "Cook County Assessor — year built, assessments",
-              "Cook County Recorder — sale history",
+              "Cook County Assessor (year built, assessments)",
+              "Cook County Recorder (sale history)",
               "Cook County Building Permits",
-              "Hargis Historic Survey — 109 properties",
+              "Hargis Historic Survey (109 properties)",
               "Sanborn Fire Insurance Maps",
               "Park Ridge civic records",
               "Census street block groupings",

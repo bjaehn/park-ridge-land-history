@@ -31,7 +31,7 @@ export function RankedInsightSection({
                 onClick={() => item.pin && onSelectProperty(item.pin)}
                 disabled={!item.pin}
                 title={`View ${item.address}`}
-                aria-label={`${item.address} — ${item.primaryValue}`}
+                aria-label={`${item.address}: ${item.primaryValue}`}
               >
                 <span className="ris-address">{item.address}</span>
                 <span className="ris-values">

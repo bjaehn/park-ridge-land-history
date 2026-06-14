@@ -54,7 +54,7 @@ function TopNav() {
     <header className="top-nav" role="banner">
       <div className="top-nav-inner">
         {/* Brand */}
-        <Link to="/" className="top-nav-brand" aria-label="Park Ridge Land History — home">
+        <Link to="/" className="top-nav-brand" aria-label="Park Ridge Land History home">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V10.5z" />
             <polyline points="9 21 9 12 15 12 15 21" />

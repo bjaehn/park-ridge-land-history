@@ -189,8 +189,8 @@ function BlockPropertyTable({
                       {f.properties.address ?? "Unknown"}
                     </button>
                   </td>
-                  <td>{f.properties.year_built ?? "—"}</td>
-                  <td>{f.properties.permit_count ?? "—"}</td>
+                  <td>{f.properties.year_built ?? "N/A"}</td>
+                  <td>{f.properties.permit_count ?? "N/A"}</td>
                   <td>
                     {f.properties.latest_sale_year ? (
                       <>
@@ -199,12 +199,12 @@ function BlockPropertyTable({
                           ? ` · ${formatCurrency(f.properties.latest_sale_price)}`
                           : ""}
                       </>
-                    ) : "—"}
+                    ) : "N/A"}
                   </td>
                   <td>
                     {f.properties.latest_assessed_total
                       ? formatCurrency(f.properties.latest_assessed_total)
-                      : "—"}
+                      : "N/A"}
                   </td>
                 </tr>
               );

@@ -79,7 +79,7 @@ function NeighborhoodCard({ neighborhood }: { neighborhood: AreaSummaryFeature }
   ];
 
   return (
-    <Link to={href} className="neighborhood-card" aria-label={`${p.label} — ${p.description}`}>
+    <Link to={href} className="neighborhood-card" aria-label={`${p.label}: ${p.description}`}>
       <div className="nc-header">
         <h2 className="nc-title">{p.label}</h2>
         <span className={`nc-signal nc-signal--${p.signal}`}>{p.signalLabel}</span>

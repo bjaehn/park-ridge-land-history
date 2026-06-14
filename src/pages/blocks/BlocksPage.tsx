@@ -75,7 +75,7 @@ export function BlocksPage() {
         <header className="content-page-header">
           <h1 className="content-page-title">Park Ridge Blocks</h1>
           <p className="content-page-subtitle">
-            Blocks are the building blocks of Park Ridge — groups of properties sharing a street or
+            Blocks are the building blocks of Park Ridge: groups of properties sharing a street or
             census tract. Explore by age, permit activity, or development pattern.
           </p>
           <p className="content-page-note">
