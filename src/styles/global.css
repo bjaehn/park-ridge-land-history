@@ -3024,8 +3024,9 @@ button, input { font: inherit; }
   .analysis-workspace-card { overflow: visible; }
   .scale-workspace { grid-template-columns: 1fr; height: auto; }
   .scale-analysis-column { overflow: visible; border-right: 0; box-shadow: none; }
-  .scale-map-column { min-height: 640px; }
-  .tab-map-workspace { position: relative; top: auto; height: 620px; min-height: 620px; }
+  /* Map column first visually so users see the map before the analysis panel */
+  .scale-map-column { order: -1; min-height: 0; padding: 10px 10px 0; }
+  .tab-map-workspace { position: relative; top: auto; height: clamp(360px, 55vh, 620px); min-height: 0; }
   .biography-chapters { grid-template-columns: repeat(2, minmax(0,1fr)); }
 }
 
@@ -3033,30 +3034,64 @@ button, input { font: inherit; }
   .home-ancestry-story, .ancestry-summary-grid, .artifact-gallery, .document-tray, .historic-mention-grid, .home-artifact-grid { grid-template-columns: 1fr; }
   .historic-mentions-heading { grid-template-columns: 1fr; }
   .historic-mentions-heading p { text-align: left; }
+  .blocks-ranked-grid { grid-template-columns: 1fr; }
+  .neighborhood-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
 }
 
 @media (max-width: 720px) {
-  .product-app-shell { gap: 12px; padding: 10px; }
+  .product-app-shell { gap: 8px; padding: 8px; }
   .app-header { display: grid; gap: 4px; }
   .app-header-tagline { display: none; }
   .app-header-title { font-size: 1.05rem; }
   .start-here-cards { grid-template-columns: 1fr; }
   .home-welcome-hero { flex-direction: column; gap: 10px; }
   .map-companion-overlay { top: 10px; left: 10px; right: 10px; }
-  .tab-map-workspace .map-companion-overlay { top: 10px; left: 10px; right: auto; width: min(420px, calc(100% - 20px)); }
-  .map-companion { grid-template-columns: 1fr; gap: 8px; min-height: 0; padding: 10px; }
-  .map-companion-main h2 { font-size: 0.88rem; }
+  .tab-map-workspace .map-companion-overlay { top: 10px; left: 10px; right: auto; width: min(360px, calc(100% - 20px)); }
+  .map-companion { grid-template-columns: 1fr; gap: 6px; min-height: 0; padding: 9px 10px; }
+  .map-companion-main h2 { font-size: 0.85rem; }
   .map-companion-facts { display: flex; flex-wrap: wrap; }
   .map-companion-facts span { max-width: none; text-align: left; }
   .map-legend-overlay { left: 10px; right: 10px; bottom: 10px; width: auto; min-width: 0; }
-  .tab-map-workspace .map-legend-overlay { right: 10px; left: auto; bottom: 10px; width: min(280px, calc(100% - 20px)); }
-  .analysis-tabs { position: static; grid-template-columns: repeat(2, minmax(0,1fr)); padding: 7px; }
-  .scale-breadcrumbs { padding: 12px; }
-  .scale-map-column { padding: 10px; min-height: 560px; }
-  .tab-map-workspace { height: 540px; min-height: 540px; }
-  .analysis-tabs button { min-height: 52px; }
-  .app-header h1 { font-size: 1.15rem; }
+  .tab-map-workspace .map-legend-overlay { right: 10px; left: auto; bottom: 10px; width: min(240px, calc(100% - 20px)); }
+  .analysis-tabs { position: static; grid-template-columns: repeat(4, minmax(0,1fr)); padding: 6px; gap: 4px; }
+  .analysis-tabs button { grid-template-columns: 1fr; place-items: center; text-align: center; min-height: 56px; padding: 8px 4px; gap: 4px; border-radius: 8px; }
+  .analysis-tabs .tab-copy > span { display: none; }
+  .tab-icon { width: 26px; height: 26px; flex: 0 0 26px; }
+  .tab-icon svg { width: 15px; height: 15px; }
+  .scale-breadcrumbs { padding: 10px 12px; }
+  .scale-breadcrumbs .breadcrumb-label { font-size: 0.7rem; }
+  .scale-map-column { padding: 8px 8px 0; }
+  .tab-map-workspace { height: clamp(260px, 48vh, 420px); }
+  .app-header h1 { font-size: 1.1rem; }
   .decade-list, .legend-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .content-page { padding: 0 14px 40px; }
+  .content-page-inner { padding: 20px 0; }
+  .page-breadcrumb { font-size: 0.72rem; padding: 8px 0; gap: 5px; }
+  .detail-page-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .explore-map-btn { align-self: flex-start; }
+}
+
+@media (max-width: 480px) {
+  .product-app-shell { padding: 6px; gap: 6px; }
+  .analysis-workspace-card { border-radius: 8px; }
+  .analysis-tabs { grid-template-columns: repeat(4, minmax(0,1fr)); padding: 5px; gap: 3px; }
+  .analysis-tabs button { min-height: 46px; padding: 6px 2px; }
+  .analysis-tabs strong { font-size: 0.6rem; }
+  .tab-map-workspace { height: clamp(220px, 44vh, 340px); }
+  .scale-map-column { padding: 6px 6px 0; }
+  .scale-breadcrumbs { padding: 8px 10px; }
+  .scale-breadcrumbs .breadcrumb-label { display: none; }
+  .scale-breadcrumbs .breadcrumb-icon { width: 16px; height: 16px; }
+  .scale-breadcrumbs ol { gap: 2px; }
+  .content-page { padding: 0 10px 32px; }
+  .neighborhood-grid { grid-template-columns: 1fr; }
+  .nc-stats { grid-template-columns: repeat(2, 1fr); }
+  .blocks-ranked-grid { grid-template-columns: 1fr; }
+  .detail-page-title { font-size: 1.3rem; }
+  .map-legend-overlay, .tab-map-workspace .map-legend-overlay { display: none; }
+  .map-companion { padding: 8px 9px; gap: 4px; }
+  .map-companion-main h2 { font-size: 0.8rem; }
+  .map-companion-facts { display: none; }
 }
 
 /* ─── Block Comparison Section ──────────────────── */
