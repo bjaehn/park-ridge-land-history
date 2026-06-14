@@ -40,10 +40,10 @@ export function LayerToggle({
             checked={showPermitPressure}
             onChange={(event) => onSetShowPermitPressure(event.target.checked)}
           />
-          <span>Show permit evidence</span>
+          <span>Show renovation signals</span>
         </label>
         <label className="select-control">
-          <span>Permit map view</span>
+          <span>What to highlight</span>
           <select
             value={permitPressureMapMode}
             onChange={(event) => onSetPermitPressureMapMode(parsePermitPressureMapMode(event.target.value))}
@@ -56,7 +56,7 @@ export function LayerToggle({
           </select>
         </label>
         <label className="select-control">
-          <span>Years included</span>
+          <span>How far back to look</span>
           <select
             value={String(permitPressureWindow)}
             onChange={(event) => onSetPermitPressureWindow(parsePermitPressureWindow(event.target.value))}
@@ -75,7 +75,7 @@ export function LayerToggle({
           checked={showOutlines}
           onChange={(event) => onSetShowOutlines(event.target.checked)}
         />
-        <span>Parcel outlines</span>
+        <span>Property outlines</span>
       </label>
       <label className="check-row check-row-strong">
         <input

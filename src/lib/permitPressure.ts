@@ -13,15 +13,15 @@ export type PermitPressureMapMode = "activity" | "stability";
 export const permitPressureCurrentYear = 2026;
 
 export const permitPressureWindowLabels: Record<PermitPressureWindow, string> = {
-  1: "1 year",
-  5: "5 years",
-  10: "10 years",
-  all: "All"
+  1: "Past year",
+  5: "Past 5 years",
+  10: "Past 10 years",
+  all: "All time"
 };
 
 export const permitPressureMapModeLabels: Record<PermitPressureMapMode, string> = {
-  activity: "Activity type",
-  stability: "Stable vs changing"
+  activity: "Type of recent work",
+  stability: "Settled vs. active"
 };
 
 export const permitPressureColors: Record<PermitPressureType, string> = {
@@ -84,10 +84,10 @@ export function permitPressureLabel(pressureType: PermitPressureType): string {
 
 export function permitStabilityLabel(stabilityType: PermitStabilityType): string {
   const labels: Record<PermitStabilityType, string> = {
-    stable: "Stable",
-    watch: "Watch",
-    changing: "Changing",
-    teardown_pressure: "Teardown pressure"
+    stable: "Settled",
+    watch: "Some activity",
+    changing: "Active renovation",
+    teardown_pressure: "Teardown signals"
   };
   return labels[stabilityType];
 }

@@ -96,8 +96,8 @@ function mapModeLabel(
   permitPressureMapMode: PermitPressureMapMode,
   isBuildoutPlaying: boolean
 ): string {
-  if (activePreset === "buildout" || isBuildoutPlaying) return "Growth through time";
-  if (!showPermitPressure || activePreset === "age") return "Home age";
-  if (permitPressureMapMode === "activity") return "Permit work";
-  return "Stable vs changing";
+  if (activePreset === "buildout" || isBuildoutPlaying) return "Growing through time";
+  if (!showPermitPressure || activePreset === "age") return "Colored by age";
+  if (permitPressureMapMode === "activity") return "Colored by recent work";
+  return "Settled vs. active";
 }
