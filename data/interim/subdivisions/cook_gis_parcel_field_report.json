@@ -1,0 +1,9 @@
+{
+  "source": "Cook County GIS Hosted Parcel FeatureServer",
+  "url": "https://gis.cookcountyil.gov/hosting/rest/services/Hosted/Parcel/FeatureServer/0",
+  "status": "error",
+  "all_fields": [],
+  "subdivision_candidate_fields": [],
+  "sample_record": null,
+  "error": "HTTP Error 403: Forbidden"
+}

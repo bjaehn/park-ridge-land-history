@@ -1,0 +1,9 @@
+{
+  "source": "Cook County Assessor Parcel Universe",
+  "url": "https://datacatalog.cookcountyil.gov/resource/nj4t-kc8j.json",
+  "dataset_id": "nj4t-kc8j",
+  "status": "error",
+  "all_columns": [],
+  "subdivision_candidate_columns": [],
+  "error": "HTTP Error 403: Forbidden"
+}
