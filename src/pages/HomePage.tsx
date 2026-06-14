@@ -12,7 +12,7 @@ import { decadeColors } from "../lib/colorScales";
 import type { DecadeBucket } from "../lib/parcelTypes";
 import {
   fetchHomeStats, fetchDecadeDistribution, fetchOldestProperties,
-  fetchMostPermitted, fetchTopAssessedChange, searchParcels,
+  searchParcels,
   type HomeStats, type DecadeRow, type SearchResult,
 } from "../lib/supabase/homeQueries";
 import type { RankedItem, RankedInsightList } from "../lib/rankedInsights";
@@ -27,17 +27,25 @@ function toInsightList(
   return { title, description, sourceNote, items, emptyText };
 }
 
+const EXAMPLE_CHIPS = [
+  { label: "Prospect", query: "Prospect" },
+  { label: "Touhy", query: "Touhy" },
+  { label: "Uptown", query: "Uptown" },
+  { label: "09-21", query: "09-21" },
+];
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export function HomePage() {
-  const { parcels } = useParkRidgeContext(); // only used for neighborhood grid
+  const { parcels } = useParkRidgeContext();
   const navigate = useNavigate();
 
-  // ── Hero search (debounced, direct Supabase query — works before parcels load) ──
+  // ── Hero search ─────────────────────────────────────────────────────────────
   const [query, setQuery] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (query.trim().length < 2) {
@@ -62,7 +70,12 @@ export function HomePage() {
     navigate(propertyPath(pin));
   }
 
-  // ── Section state: each loads independently ─────────────────────────────────
+  function handleChip(chipQuery: string) {
+    setQuery(chipQuery);
+    inputRef.current?.focus();
+  }
+
+  // ── Section state ───────────────────────────────────────────────────────────
   const [stats, setStats] = useState<HomeStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
 
@@ -72,13 +85,6 @@ export function HomePage() {
   const [oldest, setOldest] = useState<RankedItem[]>([]);
   const [oldestLoading, setOldestLoading] = useState(true);
 
-  const [permitted, setPermitted] = useState<RankedItem[]>([]);
-  const [permittedLoading, setPermittedLoading] = useState(true);
-
-  const [assessed, setAssessed] = useState<RankedItem[]>([]);
-  const [assessedLoading, setAssessedLoading] = useState(true);
-
-  // ── Parallel loads on mount ─────────────────────────────────────────────────
   useEffect(() => {
     let active = true;
 
@@ -88,25 +94,19 @@ export function HomePage() {
     fetchDecadeDistribution().then((d) => {
       if (active) { setDecades(d); setDecadesLoading(false); }
     });
-    fetchOldestProperties(10).then((d) => {
+    fetchOldestProperties(5).then((d) => {
       if (active) { setOldest(d); setOldestLoading(false); }
-    });
-    fetchMostPermitted(10).then((d) => {
-      if (active) { setPermitted(d); setPermittedLoading(false); }
-    });
-    fetchTopAssessedChange(10).then((d) => {
-      if (active) { setAssessed(d); setAssessedLoading(false); }
     });
 
     return () => { active = false; };
   }, []);
 
-  // ── Neighborhood grid (still needs parcels) ─────────────────────────────────
+  // ── Neighborhood grid ───────────────────────────────────────────────────────
   const neighborhoodSummaries = useMemo(() => getNeighborhoodSummaries(parcels), [parcels]);
   const neighborhoods = useMemo(() => getNamedNeighborhoods(neighborhoodSummaries), [neighborhoodSummaries]);
   const neighborhoodsLoading = !parcels;
 
-  // ── Decade chart derived values ─────────────────────────────────────────────
+  // ── Decade chart ────────────────────────────────────────────────────────────
   const peakDecade = decades.find((r) => r.isPeak) ?? null;
   const maxGrowthCount = Math.max(1, ...decades.map((r) => r.count));
 
@@ -118,18 +118,16 @@ export function HomePage() {
         <div className="hero-inner">
           <p className="hero-eyebrow">Park Ridge, Illinois</p>
           <h1 className="hero-title">
-            Discover how Park Ridge grew, one home,
-            block, and neighborhood at a time.
+            Discover the story of any Park Ridge home
           </h1>
           <p className="hero-tagline">
-            Every home has a story. Every block has an era. Park Ridge grew in
-            waves that shaped every street you know. Start exploring — the history
-            is all here, sourced and searchable.
+            Search by address to see year built, permits, sales, assessments,
+            historic records, neighborhood context, and source-backed development history.
           </p>
 
           {/* Search */}
-          <div className="hero-search-wrap" role="search">
-            <label htmlFor="hero-search" className="sr-only">Search a Park Ridge address</label>
+          <div className="hero-search-wrap" role="search" aria-label="Property search">
+            <label htmlFor="hero-search" className="sr-only">Search a Park Ridge address or PIN</label>
             <div className={`hero-search-input-wrap${isFocused ? " is-focused" : ""}`}>
               <svg className="hero-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -137,6 +135,7 @@ export function HomePage() {
               </svg>
               <input
                 id="hero-search"
+                ref={inputRef}
                 className="hero-search-input"
                 type="search"
                 placeholder="Search an address or PIN…"
@@ -151,7 +150,7 @@ export function HomePage() {
               />
             </div>
             {showDropdown && searchResults.length > 0 && (
-              <ul className="hero-search-results" id="hero-search-results" role="listbox">
+              <ul className="hero-search-results" id="hero-search-results" role="listbox" aria-label="Search results">
                 {searchResults.map((r) => (
                   <li key={r.pin} role="option" aria-selected={false}>
                     <button type="button" className="hsr-btn" onMouseDown={() => handleSelect(r.pin)}>
@@ -166,19 +165,32 @@ export function HomePage() {
               </ul>
             )}
             {showDropdown && searchResults.length === 0 && (
-              <div className="hero-search-empty">
-                No matching addresses. Try a street name or the first digits of a PIN.
+              <div className="hero-search-empty" role="status">
+                No matches found. Try a street name like "Prospect" or the first digits of a PIN.
               </div>
             )}
           </div>
 
+          {/* Example chips */}
+          <div className="hero-chips" aria-label="Search examples">
+            <span className="hero-chips-label">Try:</span>
+            {EXAMPLE_CHIPS.map((chip) => (
+              <button
+                key={chip.query}
+                type="button"
+                className="hero-chip"
+                onClick={() => handleChip(chip.query)}
+                aria-label={`Search for ${chip.label}`}
+              >
+                {chip.label}
+              </button>
+            ))}
+          </div>
+
           {/* Hero quick-nav */}
           <div className="hero-quick-nav" aria-label="Quick navigation">
-            <Link to={ROUTES.neighborhoods.path} className="hero-quick-btn">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M12 2a7 7 0 017 7c0 4.97-6.22 12.18-6.7 12.76a.4.4 0 01-.6 0C11.22 21.18 5 13.97 5 9a7 7 0 017-7z"/><circle cx="12" cy="9" r="2.5"/>
-              </svg>
-              Neighborhoods
+            <Link to={ROUTES.neighborhoods.path} className="hero-quick-btn hero-quick-btn--primary">
+              Explore neighborhoods
             </Link>
             <Link to={ROUTES.city.path} className="hero-quick-btn">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -204,11 +216,44 @@ export function HomePage() {
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
             </svg>
-            Every claim is sourced. Missing data is shown, not hidden.
+            Source-backed and coverage-honest. Missing records are shown explicitly, not hidden.
             {stats && stats.totalProperties > 0 && ` Covering ${stats.totalProperties.toLocaleString()} Park Ridge properties.`}
           </p>
         </div>
       </section>
+
+      {/* ── Start here ───────────────────────────────────────────────────── */}
+      <div className="home-start-here">
+        <div className="home-start-here-inner">
+          <p className="home-start-here-label">How it works</p>
+          <ol className="home-start-steps" aria-label="How to use this site">
+            <li className="home-start-step">
+              <span className="home-start-num" aria-hidden="true">1</span>
+              <span className="home-start-text">
+                <strong>Search an address</strong> to pull up its property record
+              </span>
+            </li>
+            <li className="home-start-step">
+              <span className="home-start-num" aria-hidden="true">2</span>
+              <span className="home-start-text">
+                <strong>Review what the records say</strong> about year built, permits, sales, and assessments
+              </span>
+            </li>
+            <li className="home-start-step">
+              <span className="home-start-num" aria-hidden="true">3</span>
+              <span className="home-start-text">
+                <strong>Compare the property</strong> to its block, neighborhood, and the city
+              </span>
+            </li>
+            <li className="home-start-step">
+              <span className="home-start-num" aria-hidden="true">4</span>
+              <span className="home-start-text">
+                <strong>Check sources and caveats</strong> before drawing conclusions
+              </span>
+            </li>
+          </ol>
+        </div>
+      </div>
 
       {/* ── Stats strip ──────────────────────────────────────────────────── */}
       {(statsLoading || (stats && stats.totalProperties > 0)) && (
@@ -230,6 +275,9 @@ export function HomePage() {
               </>
             ) : null}
           </div>
+          <p className="home-stats-note">
+            Coverage reflects records linked to this dataset, not a complete historical record.
+          </p>
         </div>
       )}
 
@@ -239,12 +287,12 @@ export function HomePage() {
         title="How did Park Ridge grow?"
         desc={
           peakDecade
-            ? `Most known homes were built in the ${peakDecade.decade}: ${peakDecade.count.toLocaleString()} properties (${peakDecade.percent}% with known construction years). Chart shows known year-built records only.`
+            ? `Most homes with known build years were constructed in the ${peakDecade.decade}: ${peakDecade.count.toLocaleString()} properties (${peakDecade.percent}% of records with known years). Chart shows records with confirmed year built only.`
             : "Decade-by-decade construction based on known year-built records from the Cook County Assessor."
         }
-        source="Cook County Assessor year-built field. Records with unknown or suspicious years are excluded."
+        source="Source dataset: Cook County Assessor year-built field. Records with unknown or suspicious years are excluded."
         linkTo={ROUTES.city.path}
-        linkLabel="Full city growth story →"
+        linkLabel="Full city growth story"
         isEmpty={!decadesLoading && decades.length === 0}
         isLoading={decadesLoading}
       >
@@ -270,21 +318,21 @@ export function HomePage() {
         </div>
       </HomeSection>
 
-      {/* ── Discovery modules ──────────────────────────────────────────────── */}
+      {/* ── Ways to explore ──────────────────────────────────────────────── */}
       <section className="home-discovery" aria-label="Ways to explore">
         <div className="home-discovery-inner">
           <p className="home-discovery-eyebrow">Where do you want to start?</p>
-          <h2 className="home-discovery-title">Six ways to explore Park Ridge history</h2>
-          <div className="home-discovery-grid">
+          <h2 className="home-discovery-title">Four ways to explore Park Ridge history</h2>
+          <div className="home-discovery-grid home-discovery-grid--four">
             <Link to={ROUTES.city.path} className="disc-card">
               <div className="disc-card-icon" aria-hidden="true">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="1" y1="22" x2="23" y2="22"/><path d="M2 22V15l5-2v9"/><path d="M7 22V10l5-5v17"/><path d="M12 22V13l5-3v12"/><path d="M17 22V17l4-2v7"/>
                 </svg>
               </div>
-              <h3 className="disc-card-title">The decade that built Park Ridge</h3>
-              <p className="disc-card-body">One decade stands out as Park Ridge's greatest building boom. Explore how construction unfolded from 1890 to today.</p>
-              <span className="disc-card-cta">See the full growth story →</span>
+              <h3 className="disc-card-title">How Park Ridge grew</h3>
+              <p className="disc-card-body">See the full arc of construction from the 1880s to today. One decade stands out as Park Ridge's peak building era.</p>
+              <span className="disc-card-cta">City growth story</span>
             </Link>
             <Link to={ROUTES.neighborhoods.path} className="disc-card">
               <div className="disc-card-icon" aria-hidden="true">
@@ -292,19 +340,9 @@ export function HomePage() {
                   <path d="M12 2a7 7 0 017 7c0 4.97-6.22 12.18-6.7 12.76a.4.4 0 01-.6 0C11.22 21.18 5 13.97 5 9a7 7 0 017-7z"/><circle cx="12" cy="9" r="2.5"/>
                 </svg>
               </div>
-              <h3 className="disc-card-title">Neighborhoods by development era</h3>
-              <p className="disc-card-body">When was your neighborhood built? Compare pre-war, postwar boom, and modern development across Park Ridge's areas.</p>
-              <span className="disc-card-cta">Browse neighborhoods →</span>
-            </Link>
-            <Link to={ROUTES.city.path} className="disc-card">
-              <div className="disc-card-icon" aria-hidden="true">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
-                </svg>
-              </div>
-              <h3 className="disc-card-title">The oldest homes found so far</h3>
-              <p className="disc-card-body">Some Park Ridge homes date back to the 1880s. See the oldest confirmed properties and the stories recorded in assessor files.</p>
-              <span className="disc-card-cta">See oldest properties →</span>
+              <h3 className="disc-card-title">Neighborhoods by era</h3>
+              <p className="disc-card-body">Compare when each neighborhood developed. Pre-war, postwar boom, or modern infill — each area has a distinct building character.</p>
+              <span className="disc-card-cta">Browse neighborhoods</span>
             </Link>
             <Link to={ROUTES.explore.path} className="disc-card">
               <div className="disc-card-icon" aria-hidden="true">
@@ -312,19 +350,9 @@ export function HomePage() {
                   <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
                 </svg>
               </div>
-              <h3 className="disc-card-title">See every property on the map</h3>
-              <p className="disc-card-body">All 13,000+ Park Ridge properties, colored by age and development era. Zoom from citywide to individual block in seconds.</p>
-              <span className="disc-card-cta">Open map explorer →</span>
-            </Link>
-            <Link to={ROUTES.explore.path} className="disc-card">
-              <div className="disc-card-icon" aria-hidden="true">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-                </svg>
-              </div>
-              <h3 className="disc-card-title">How Park Ridge transformed, 2000–2021</h3>
-              <p className="disc-card-body">Track parcel-level changes over two decades. Find teardowns, new builds, and blocks that stayed exactly the same.</p>
-              <span className="disc-card-cta">Explore the map →</span>
+              <h3 className="disc-card-title">Every property on the map</h3>
+              <p className="disc-card-body">13,000+ Park Ridge properties, colored by age and development era. Layer in historical maps and timeline controls.</p>
+              <span className="disc-card-cta">Open map explorer</span>
             </Link>
             <Link to={ROUTES.sources.path} className="disc-card">
               <div className="disc-card-icon" aria-hidden="true">
@@ -332,28 +360,30 @@ export function HomePage() {
                   <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                 </svg>
               </div>
-              <h3 className="disc-card-title">What we know — and what's missing</h3>
-              <p className="disc-card-body">Every claim is sourced. This page explains where our data comes from, what gaps exist, and how to read uncertainty honestly.</p>
-              <span className="disc-card-cta">See our sources →</span>
+              <h3 className="disc-card-title">What we know and what's missing</h3>
+              <p className="disc-card-body">Where our data comes from, what gaps exist, and how to read uncertainty honestly. Missing records are shown, not hidden.</p>
+              <span className="disc-card-cta">See our sources</span>
             </Link>
           </div>
         </div>
       </section>
 
-      {/* ── Top 10 oldest properties ──────────────────────────────────────── */}
+      {/* ── A few oldest homes (compact, 5 only) ─────────────────────────── */}
       <HomeSection
         eyebrow="Oldest known homes"
-        title="Top 10 oldest properties in Park Ridge"
-        desc="Properties with the earliest confirmed construction year from Cook County Assessor records. Year built reflects the current structure, not necessarily the original construction on the site."
-        source="Cook County Assessor year-built field. Earliest records only."
+        title="Some of Park Ridge's earliest recorded properties"
+        desc="Properties with the earliest confirmed year built from Cook County Assessor records. Year built may reflect the current structure, not necessarily the original construction on the site."
+        source="Source dataset: Cook County Assessor year-built field."
+        linkTo={ROUTES.city.path}
+        linkLabel="See full list on the city page"
         isEmpty={!oldestLoading && oldest.length === 0}
         isLoading={oldestLoading}
       >
         <RankedInsightSection
           insight={toInsightList(
-            "Top 10 Oldest Properties",
+            "Oldest known homes in Park Ridge",
             "Properties with the earliest confirmed year built from assessor records.",
-            "Source: Cook County Assessor year-built field.",
+            "Source dataset: Cook County Assessor year-built field.",
             oldest,
             "No year-built data is available yet."
           )}
@@ -365,10 +395,10 @@ export function HomePage() {
       <HomeSection
         eyebrow="Neighborhood overview"
         title="Park Ridge neighborhoods at a glance"
-        desc="Approximate local area boundaries based on parcel centroid location. Signal reflects dominant development pattern in available records."
-        source="Boundaries are approximate and derived from parcel location data, not official city designations."
+        desc="Approximate local area boundaries based on parcel location. Each area's signal reflects its dominant development pattern in available records."
+        source="Boundaries are approximate and based on parcel location data, not official city designations."
         linkTo={ROUTES.neighborhoods.path}
-        linkLabel="Explore all neighborhoods →"
+        linkLabel="Explore all neighborhoods"
         isEmpty={!neighborhoodsLoading && neighborhoods.length === 0}
         isLoading={neighborhoodsLoading}
       >
@@ -378,100 +408,6 @@ export function HomePage() {
           ))}
         </div>
       </HomeSection>
-
-      {/* ── Top 10 most active (most permitted) ──────────────────────────── */}
-      <HomeSection
-        eyebrow="Most active properties"
-        title="Top 10 most renovated properties"
-        desc="Properties with the most building permit records. High counts reflect long-term reinvestment, renovations, and additions across many decades."
-        source="Cook County building permit records. Older permit records may be missing or incomplete."
-        isEmpty={!permittedLoading && permitted.length === 0}
-        isLoading={permittedLoading}
-      >
-        <RankedInsightSection
-          insight={toInsightList(
-            "Top 10 Most Renovated",
-            "Properties with the most building permit records on file.",
-            "Source: Cook County building permit records. Older permits may be missing.",
-            permitted,
-            "No permit data is available in the current dataset."
-          )}
-          onSelectProperty={(pin) => navigate(propertyPath(pin))}
-        />
-      </HomeSection>
-
-      {/* ── Assessment history ────────────────────────────────────────────── */}
-      {(!assessedLoading && assessed.length > 0) && (
-        <HomeSection
-          eyebrow="Assessment history"
-          title="Top 10 largest assessed value changes"
-          desc="Properties with the largest percentage increase in assessed value between their earliest and latest assessment records. Large increases may reflect major renovations, new construction, or market-driven reassessment."
-          source="Cook County Assessor assessment records. Assessed value is not the same as market value."
-          isEmpty={false}
-          isLoading={false}
-        >
-          <RankedInsightSection
-            insight={toInsightList(
-              "Top 10 Largest Assessed Value Changes",
-              "Properties with the largest % increase in assessed value across available records.",
-              "Source: Cook County Assessor records. Assessed value ≠ market value.",
-              assessed,
-              "Not enough assessment history available yet."
-            )}
-            onSelectProperty={(pin) => navigate(propertyPath(pin))}
-          />
-        </HomeSection>
-      )}
-
-      {/* ── Map explorer CTA ──────────────────────────────────────────────── */}
-      <div className="home-explore-cta">
-        <div className="home-explore-cta-inner">
-          <div className="home-explore-cta-icon" aria-hidden="true">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
-          </div>
-          <h2 className="home-explore-cta-title">Explore everything on the map</h2>
-          <p className="home-explore-cta-body">
-            The interactive map explorer shows all 13,000+ Park Ridge properties colored by age, permit pressure, or development era. Layer in historical map overlays and timeline controls.
-          </p>
-          <Link to={ROUTES.explore.path} className="home-explore-cta-btn">
-            Open map explorer
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <polyline points="9 18 15 12 9 6"/>
-            </svg>
-          </Link>
-        </div>
-      </div>
-
-      {/* ── Exploration pathways ─────────────────────────────────────────── */}
-      <div className="home-pathways">
-        <div className="home-pathways-inner">
-          <p className="home-pathways-label">Where do you want to start?</p>
-          <div className="home-pathways-grid">
-            <Link to={ROUTES.city.path} className="home-pathway-btn">
-              <span className="home-pathway-step">1</span>
-              <span className="home-pathway-name">Start with the city</span>
-              <span className="home-pathway-hint">The full arc of how Park Ridge grew</span>
-            </Link>
-            <Link to={ROUTES.neighborhoods.path} className="home-pathway-btn">
-              <span className="home-pathway-step">2</span>
-              <span className="home-pathway-name">Choose a neighborhood</span>
-              <span className="home-pathway-hint">Compare development eras across areas</span>
-            </Link>
-            <a href="#hero-search" className="home-pathway-btn" onClick={(e) => { e.preventDefault(); document.getElementById("hero-search")?.focus(); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
-              <span className="home-pathway-step">3</span>
-              <span className="home-pathway-name">Look up a home</span>
-              <span className="home-pathway-hint">Search any Park Ridge address</span>
-            </a>
-            <Link to={ROUTES.explore.path} className="home-pathway-btn">
-              <span className="home-pathway-step">4</span>
-              <span className="home-pathway-name">Explore the map</span>
-              <span className="home-pathway-hint">13,000+ properties, colored by era</span>
-            </Link>
-          </div>
-        </div>
-      </div>
 
       {/* ── Source transparency ────────────────────────────────────────────── */}
       <div className="home-transparency">
@@ -496,10 +432,11 @@ export function HomePage() {
             ))}
           </div>
           <p className="home-transparency-note">
-            All data is derived from public records. Missing or incomplete records are shown explicitly.
-            Claims about historical patterns reflect the current indexed dataset, not a complete historical record.{" "}
+            All data is derived from public records. Links point to dataset sources, not individual record citations.
+            Missing or incomplete records are shown explicitly. Claims about historical patterns reflect the
+            current indexed dataset, not a complete historical record.{" "}
             <Link to={ROUTES.sources.path} className="home-transparency-link">
-              Full source documentation →
+              Full source documentation
             </Link>
           </p>
         </div>
@@ -568,7 +505,7 @@ function HomeSection({
         )}
 
         {linkTo && linkLabel && (
-          <Link to={linkTo} className="home-section-link">{linkLabel}</Link>
+          <Link to={linkTo} className="home-section-link">{linkLabel} →</Link>
         )}
       </div>
     </section>

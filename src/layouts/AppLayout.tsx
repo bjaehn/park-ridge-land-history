@@ -18,7 +18,7 @@ function TopNav() {
   const { parcels } = useParkRidgeContext();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<Array<{ pin: string; address: string }>>([]);
+  const [searchResults, setSearchResults] = useState<Array<{ pin: string; address: string; yearBuilt?: number; permitCount?: number }>>([]);
   const [showResults, setShowResults] = useState(false);
 
   function handleSearch(q: string) {
@@ -38,7 +38,9 @@ function TopNav() {
       .slice(0, 6)
       .map((f) => ({
         pin: f.properties.pin_normalized ?? f.properties.pin_original ?? "",
-        address: f.properties.address ?? "Unknown address"
+        address: f.properties.address ?? "Unknown address",
+        yearBuilt: f.properties.year_built ?? undefined,
+        permitCount: f.properties.permit_count ?? undefined,
       }));
     setSearchResults(matches);
     setShowResults(matches.length > 0);
@@ -108,7 +110,10 @@ function TopNav() {
                     onMouseDown={() => selectResult(r.pin)}
                   >
                     <span className="tns-result-address">{r.address}</span>
-                    <span className="tns-result-pin">{r.pin}</span>
+                    <span className="tns-result-meta">
+                      {r.yearBuilt ? `Built ${r.yearBuilt}` : "Year unknown"}
+                      {r.permitCount ? ` · ${r.permitCount} permits` : ""}
+                    </span>
                   </button>
                 </li>
               ))}

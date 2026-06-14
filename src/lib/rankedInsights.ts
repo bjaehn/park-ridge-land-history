@@ -43,10 +43,10 @@ export function computeTopPermitted(parcels: ParcelFeature[], limit = 10): Ranke
     }));
 
   return {
-    title: "Top 10 Most Permitted",
+    title: "Most documented properties",
     description:
-      "Properties with the most building permit records on file. High permit counts can reflect renovations, additions, or active reinvestment over many years.",
-    sourceNote: "Source: Cook County building permit records. Older permits may be missing.",
+      "Properties with the most building permit records on file. High permit counts reflect renovations, additions, or active reinvestment over many years. Permit records may be incomplete for older work.",
+    sourceNote: "Source dataset: Cook County building permit records. Older permits may be missing.",
     items,
     emptyText: "No permit data is available in the current dataset.",
   };
@@ -74,11 +74,11 @@ export function computeTopOldest(parcels: ParcelFeature[], limit = 10): RankedIn
     }));
 
   return {
-    title: "Top 10 Oldest Properties",
+    title: "Oldest known homes in Park Ridge",
     description:
-      "Properties with the earliest confirmed year built from assessor records. These are the oldest parts of Park Ridge's built fabric.",
+      "Properties with the earliest confirmed year built from assessor records. Year built may reflect the current structure, not the original construction on the site.",
     sourceNote:
-      "Source: Cook County Assessor year-built field. May reflect the current structure, not the original construction.",
+      "Source dataset: Cook County Assessor year-built field. Records reflect assessor data, not necessarily original construction documents.",
     items,
     emptyText: "No year-built data is available in the current dataset.",
   };
@@ -125,13 +125,13 @@ export function computeTopAssessedChange(
     });
 
   return {
-    title: "Top 10 Largest Assessed Value Changes",
+    title: "Notable assessment history",
     description:
-      "Properties with the largest percentage increase in assessed value between their earliest and latest assessment records. Large increases can reflect renovations, new construction, or reassessment.",
+      "Properties with the largest percentage increase in assessed value between their earliest and latest assessor records. Large increases may reflect renovations, new construction, or reassessment cycles. Assessed value is not the same as market value.",
     sourceNote:
-      "Source: Cook County Assessor records. Assessed value is not the same as market value.",
+      "Source dataset: Cook County Assessor records. Assessed value is not market value and should not be used as a price estimate.",
     items,
     emptyText:
-      "Not enough assessment history is available to compute assessed value changes.",
+      "Not enough assessment history is available to show assessment changes.",
   };
 }

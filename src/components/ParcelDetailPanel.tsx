@@ -99,23 +99,11 @@ export function ParcelDetailPanel({
       <div className="parcel-header">
         <div className="parcel-header-main">
           <div className="parcel-header-address">{properties.address || "Selected parcel"}</div>
-          <div className="parcel-header-meta">
-            {properties.hargis_record_count ? <span className="parcel-chip parcel-chip-green">Historic survey</span> : null}
-            {(properties.pin_normalized || properties.pin_original) && (
-              <Link
-                to={propertyPath(properties.pin_normalized ?? properties.pin_original ?? "")}
-                className="parcel-full-page-link"
-                title="Open the full property page"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
-                </svg>
-                Full page
-              </Link>
-            )}
-          </div>
+          {properties.hargis_record_count ? (
+            <div className="parcel-header-meta">
+              <span className="parcel-chip parcel-chip-green">Historic survey</span>
+            </div>
+          ) : null}
         </div>
         <button className="parcel-clear-btn" type="button" onClick={onClearSelection} aria-label="Clear selection">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -123,6 +111,23 @@ export function ParcelDetailPanel({
           </svg>
         </button>
       </div>
+
+      {/* View full property story CTA */}
+      {(properties.pin_normalized || properties.pin_original) && (
+        <div className="parcel-story-cta">
+          <Link
+            to={propertyPath(properties.pin_normalized ?? properties.pin_original ?? "")}
+            className="parcel-story-cta-link"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            View full property story
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+            </svg>
+          </Link>
+        </div>
+      )}
 
       {isLoadingDetail && (
         <div className="parcel-loading">

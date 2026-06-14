@@ -1,10 +1,8 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useParkRidgeContext } from "../../contexts/ParkRidgeDataContext";
 import { buildAreaSummaries } from "../../lib/areaGroups";
 import {
-  neighborhoodPath,
-  neighborhoodSlugFromId,
   neighborhoodIdFromSlug,
   blockPath,
   propertyPath,
@@ -19,7 +17,6 @@ import { PermitWorkComparisonTable } from "../../components/PermitWorkComparison
 import { parcelCollectionFromFeatures } from "../../lib/physicalBlock";
 import type { ParcelFeature } from "../../lib/parcelTypes";
 import type { AreaSummaryFeature } from "../../lib/areaGroups";
-import { HotspotPanel, type AreaView } from "../../components/HotspotPanel";
 
 const emptyHotspots = { type: "FeatureCollection" as const, features: [] };
 const emptyAreas = { type: "FeatureCollection" as const, features: [] };
@@ -27,7 +24,7 @@ const emptyAreas = { type: "FeatureCollection" as const, features: [] };
 export function NeighborhoodDetailPage() {
   const { neighborhoodId } = useParams<{ neighborhoodId: string }>();
   const navigate = useNavigate();
-  const { pressureDecoratedParcels, parcels } = useParkRidgeContext();
+  const { pressureDecoratedParcels } = useParkRidgeContext();
 
   const areaId = neighborhoodId ? neighborhoodIdFromSlug(decodeURIComponent(neighborhoodId)) : null;
 
@@ -55,8 +52,6 @@ export function NeighborhoodDetailPage() {
     );
   }, [neighborhood, pressureDecoratedParcels]);
 
-  const [activeAreaView, setActiveAreaView] = useState<AreaView>("age");
-
   const isLoading = !pressureDecoratedParcels;
 
   if (!areaId) {
@@ -73,7 +68,6 @@ export function NeighborhoodDetailPage() {
   }
 
   const label = neighborhood?.properties.label ?? "Neighborhood";
-  const slug = neighborhoodId ?? "";
 
   return (
     <div className="detail-page">
@@ -109,6 +103,19 @@ export function NeighborhoodDetailPage() {
         <div className="page-loading">Loading neighborhood data…</div>
       ) : (
         <div className="detail-page-body">
+
+          {/* ── Boundary caveat ───────────────────────────────────── */}
+          <div className="geo-caveat-notice" role="note">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+            </svg>
+            <span>
+              Neighborhood boundaries in this app are approximate and based on geographic analysis of
+              parcel locations and common Park Ridge area names. They are not official municipal
+              boundaries unless explicitly sourced.
+            </span>
+          </div>
+
           {/* Signal banner */}
           {neighborhood && (
             <div className="neighborhood-signal-banner">

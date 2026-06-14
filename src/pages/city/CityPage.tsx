@@ -60,8 +60,8 @@ export function CityPage() {
         <header className="content-page-header">
           <h1 className="content-page-title">How Park Ridge Grew</h1>
           <p className="content-page-subtitle">
-            Citywide development history, decade by decade. Every claim is tied to Cook County
-            assessor and permit records.
+            Citywide development history, decade by decade. All figures are derived from Cook County
+            assessor and permit records. Where records are incomplete, gaps are shown explicitly.
           </p>
           <Link to={ROUTES.explore.path} className="explore-map-btn explore-map-btn--inline">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -88,6 +88,15 @@ export function CityPage() {
               title="Park Ridge by Decade Built"
               note="Every property with a known year built, grouped by decade."
             />
+
+            <div className="city-notable-section">
+              <p className="city-notable-eyebrow">Notable records</p>
+              <h2 className="city-notable-title">Properties worth exploring</h2>
+              <p className="city-notable-desc">
+                These lists highlight properties with unusual records. They are starting points for
+                exploration, not rankings of value, quality, or desirability.
+              </p>
+            </div>
 
             <RankedInsightSection
               insight={rankedTopOldest}

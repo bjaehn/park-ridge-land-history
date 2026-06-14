@@ -4,6 +4,7 @@ import { ParcelChangeDetailPanel } from "./ParcelChangeDetailPanel";
 import { ParcelChangeSummaryPanel } from "./ParcelChangeSummaryPanel";
 import {
   historicalLayerGroupLabels,
+  historicalLayerGroupCaveats,
   layerCanToggle,
   type HistoricalLayer,
   type HistoricalLayerGroup,
@@ -95,9 +96,30 @@ export function HistoricalLayerPanel({
       />
       {layersByGroup.map(({ group, layers: groupLayers }) => {
         const layerSections = sectionLayers(groupLayers, activeLayerIds);
+        const caveat = historicalLayerGroupCaveats[group];
         return (
         <div key={group} className="historical-group">
           <h3>{historicalLayerGroupLabels[group]}</h3>
+          {caveat && (
+            <details className="historical-group-caveat">
+              <summary>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+                </svg>
+                What this can and cannot show
+              </summary>
+              <div className="historical-group-caveat-body">
+                <div className="historical-group-caveat-row">
+                  <span className="historical-group-caveat-label">Can show</span>
+                  <p className="historical-group-caveat-text">{caveat.canShow}</p>
+                </div>
+                <div className="historical-group-caveat-row">
+                  <span className="historical-group-caveat-label">Cannot prove</span>
+                  <p className="historical-group-caveat-text">{caveat.cannotProve}</p>
+                </div>
+              </div>
+            </details>
+          )}
           {layerSections.map((section) => (
             <div className="historical-layer-section" key={`${group}-${section.label}`}>
               <h4>{section.label}</h4>
