@@ -23,6 +23,7 @@ import { RoadParcelTimelinePanel } from "./components/RoadParcelTimelinePanel";
 import { SearchPanel } from "./components/SearchPanel";
 import { TimelineControl } from "./components/TimelineControl";
 import { VisualizationPanel, type VisualizationPreset } from "./components/VisualizationPanel";
+import { CityNextSteps } from "./components/CityNextSteps";
 import { DataCoverageNotice } from "./components/cards/DataCoverageNotice";
 import { StartHereSection } from "./components/layout/StartHereSection";
 import { computeDataCoverage } from "./lib/dataCoverage";
@@ -923,10 +924,17 @@ export default function App() {
 
           {activeAnalysisScale === "city" && (
             <>
-              <VisualizationPanel
-                activePreset={activeVisualizationPreset}
-                onSelectPreset={selectVisualizationPreset}
-              />
+              {activeVisualizationPreset === "age" ? (
+                <CityNextSteps
+                  onNavigate={navigateToScale}
+                  onSelectPreset={selectVisualizationPreset}
+                />
+              ) : (
+                <VisualizationPanel
+                  activePreset={activeVisualizationPreset}
+                  onSelectPreset={selectVisualizationPreset}
+                />
+              )}
               <TimelineControl
                 activePreset={activeVisualizationPreset}
                 maxBuiltYear={maxBuiltYear}
