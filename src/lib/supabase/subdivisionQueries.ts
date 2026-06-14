@@ -30,7 +30,7 @@ export async function fetchSubdivisionIndex(): Promise<SubdivisionSummary[]> {
     .order("normalized_name", { ascending: true });
 
   if (error || !data) return [];
-  return data as SubdivisionSummary[];
+  return data as unknown as SubdivisionSummary[];
 }
 
 // ─── Subdivision detail ───────────────────────────────────────────────────────
@@ -101,7 +101,7 @@ export async function searchSubdivisions(
     .limit(limit);
 
   if (error || !data) return [];
-  return data as SubdivisionSummary[];
+  return data as unknown as SubdivisionSummary[];
 }
 
 // ─── Parcels in a subdivision ─────────────────────────────────────────────────
@@ -220,5 +220,5 @@ export async function fetchSubdivisionsByDecade(
     .order("recorded_year", { ascending: true });
 
   if (error || !data) return [];
-  return data as SubdivisionSummary[];
+  return data as unknown as SubdivisionSummary[];
 }
