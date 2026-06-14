@@ -2,7 +2,8 @@ import {
   areaGroupingDefinitions,
   type AreaGroupingId,
   type AreaSummaryCollection,
-  type AreaSummaryFeature
+  type AreaSummaryFeature,
+  type AreaSummaryProperties
 } from "../lib/areaGroups";
 import type { PermitPressureWindow } from "../lib/permitPressure";
 import type { HotspotCollection } from "../lib/hotspots";
@@ -106,13 +107,21 @@ export function HotspotPanel({
         )}
       </div>
 
-      <AreaList
-        areas={areaSummaries.features}
-        activeGrouping={activeGrouping}
-        hasWardBoundaries={hasWardBoundaries}
-        selectedAreaId={selectedAreaId}
-        onSelectArea={onSelectArea}
-      />
+      {activeGrouping === "neighborhoods" ? (
+        <NeighborhoodBrowser
+          areas={areaSummaries.features}
+          selectedAreaId={selectedAreaId}
+          onSelectArea={onSelectArea}
+        />
+      ) : (
+        <AreaList
+          areas={areaSummaries.features}
+          activeGrouping={activeGrouping}
+          hasWardBoundaries={hasWardBoundaries}
+          selectedAreaId={selectedAreaId}
+          onSelectArea={onSelectArea}
+        />
+      )}
 
       {selectedArea ? (
         <>
@@ -157,6 +166,118 @@ export function HotspotPanel({
     </section>
   );
 }
+
+// ─── Neighborhood character helpers ─────────────────────────────────────────
+
+type NeighborhoodCharacter = {
+  label: string;
+  description: string;
+};
+
+function neighborhoodCharacter(p: AreaSummaryProperties): NeighborhoodCharacter {
+  if (p.teardownPressurePercent >= 5) {
+    return { label: "In transition", description: "New homes replacing older ones — character is actively changing." };
+  }
+  if (p.olderHomePercent >= 35 && p.medianYearBuilt !== null && p.medianYearBuilt < 1950) {
+    return { label: "Pre-war character", description: "Architecture and street scale from before WWII — hard to replicate." };
+  }
+  if (p.remodelPercent >= 20 && p.soldLastThreeYearsPercent < 12) {
+    return { label: "Invested & stable", description: "Owners are improving their homes and staying put." };
+  }
+  if (p.soldLastThreeYearsPercent >= 12) {
+    return { label: "Active turnover", description: "Homes change hands more often — a neighborhood still in motion." };
+  }
+  if (p.medianYearBuilt !== null && p.medianYearBuilt < 1960) {
+    return { label: "Mid-century roots", description: "Post-war fabric with long-standing neighbors." };
+  }
+  return { label: "Settled", description: "Quiet, consistent Park Ridge character." };
+}
+
+// ─── Neighborhood browser cards ─────────────────────────────────────────────
+
+function NeighborhoodBrowser({
+  areas,
+  selectedAreaId,
+  onSelectArea
+}: {
+  areas: AreaSummaryFeature[];
+  selectedAreaId: string | null;
+  onSelectArea: (area: AreaSummaryFeature) => void;
+}) {
+  if (areas.length === 0) return <p className="quiet-note hotspot-empty">No neighborhoods found.</p>;
+  return (
+    <div className="nbr-grid" aria-label="Browse Park Ridge neighborhoods">
+      {areas.map((area) => (
+        <NeighborhoodCard
+          key={area.properties.id}
+          area={area}
+          isSelected={area.properties.id === selectedAreaId}
+          onSelect={() => onSelectArea(area)}
+        />
+      ))}
+    </div>
+  );
+}
+
+function MiniBar({ label, pct, value }: { label: string; pct: number; value: string }) {
+  return (
+    <div className="nbr-minibar">
+      <span className="nbr-minibar-label">{label}</span>
+      <div className="nbr-minibar-track">
+        <div className="nbr-minibar-fill" style={{ width: `${Math.max(2, Math.min(100, pct))}%` }} />
+      </div>
+      <span className="nbr-minibar-value">{value}</span>
+    </div>
+  );
+}
+
+function NeighborhoodCard({
+  area,
+  isSelected,
+  onSelect
+}: {
+  area: AreaSummaryFeature;
+  isSelected: boolean;
+  onSelect: () => void;
+}) {
+  const p = area.properties;
+  const character = neighborhoodCharacter(p);
+
+  // Normalize signals to 0–100 for mini bars
+  const reinvestPct = Math.min(100, Math.round((p.remodelPercent / 35) * 100));
+  const stabilityPct = Math.max(0, Math.min(100, 100 - p.soldLastThreeYearsPercent * 4));
+  const prewarPct = Math.min(100, p.olderHomePercent);
+
+  return (
+    <button
+      type="button"
+      className={`nbr-card${isSelected ? " is-active" : ""}`}
+      onClick={onSelect}
+      aria-pressed={isSelected}
+    >
+      <div className="nbr-card-top">
+        <div className="nbr-name-row">
+          {p.displayColor && (
+            <span className="nbr-dot" style={{ background: p.displayColor }} aria-hidden="true" />
+          )}
+          <span className="nbr-name">{p.label}</span>
+          {p.peakDecade && <span className="nbr-era-chip">{p.peakDecade}</span>}
+        </div>
+        <div className="nbr-character-row">
+          <span className="nbr-character-label">{character.label}</span>
+          <span className="nbr-homes">{p.parcelCount.toLocaleString()} homes</span>
+        </div>
+      </div>
+      <div className="nbr-signals">
+        <MiniBar label="Reinvesting" pct={reinvestPct} value={`${p.remodelPercent}%`} />
+        <MiniBar label="Staying put" pct={stabilityPct} value={`${Math.max(0, 100 - p.soldLastThreeYearsPercent * 4)}%`} />
+        <MiniBar label="Pre-war homes" pct={prewarPct} value={`${p.olderHomePercent}%`} />
+      </div>
+    </button>
+  );
+}
+
+// ─── Area list (wards / change zones) ───────────────────────────────────────
 
 function AreaList({
   areas,
@@ -207,70 +328,47 @@ function AreaList({
 }
 
 function AreaReadout({ area }: { area: AreaSummaryFeature }) {
+  const p = area.properties;
+  const character = p.grouping === "neighborhoods" ? neighborhoodCharacter(p) : null;
+
   return (
     <div className="area-readout">
-      <h3>{area.properties.label}</h3>
-      <p>{area.properties.evaluation || area.properties.description}</p>
-      <div className={`area-change-story change-story-${area.properties.changeStoryType}`}>
-        <strong>{area.properties.changeStoryLabel}</strong>
-        <span>{area.properties.changeStoryRead}</span>
+      <div className="area-readout-header">
+        <div>
+          <h3>{p.label}</h3>
+          {p.medianYearBuilt && (
+            <span className="area-readout-era">
+              {p.peakDecade ? `${p.peakDecade} peak · ` : ""}Median year built: {p.medianYearBuilt}
+            </span>
+          )}
+        </div>
+        {character && (
+          <div className="area-character-badge">
+            <strong>{character.label}</strong>
+            <span>{character.description}</span>
+          </div>
+        )}
       </div>
-      <dl className="detail-list cluster-detail-list">
-        <div>
-          <dt>Homes</dt>
-          <dd>{area.properties.parcelCount.toLocaleString()}</dd>
-        </div>
-        <div>
-          <dt>Remodeling</dt>
-          <dd>{countAndPercent(area.properties.remodelCount, area.properties.remodelPercent)}</dd>
-        </div>
-        <div>
-          <dt>Older homes</dt>
-          <dd>{countAndPercent(area.properties.olderHomeCount, area.properties.olderHomePercent)}</dd>
-        </div>
-        <div>
-          <dt>Rebuild signals</dt>
-          <dd>{countAndPercent(area.properties.teardownPressureCount, area.properties.teardownPressurePercent)}</dd>
-        </div>
-        <div>
-          <dt>Sold recently</dt>
-          <dd>{countAndPercent(area.properties.soldLastThreeYearsCount, area.properties.soldLastThreeYearsPercent)}</dd>
-        </div>
-        <div>
-          <dt>Source</dt>
-          <dd>{area.properties.sourceLabel}</dd>
-        </div>
-      </dl>
-      <AreaStoryNote area={area} />
+      <p className="area-readout-eval">{p.evaluation || p.description}</p>
+      <div className={`area-change-story change-story-${p.changeStoryType}`}>
+        <strong>{p.changeStoryLabel}</strong>
+        <span>{p.changeStoryRead}</span>
+      </div>
+      <details className="area-stats-disclosure">
+        <summary>Data details</summary>
+        <dl className="detail-list cluster-detail-list">
+          <div><dt>Homes</dt><dd>{p.parcelCount.toLocaleString()}</dd></div>
+          <div><dt>Remodeling</dt><dd>{countAndPercent(p.remodelCount, p.remodelPercent)}</dd></div>
+          <div><dt>Pre-war homes</dt><dd>{countAndPercent(p.olderHomeCount, p.olderHomePercent)}</dd></div>
+          <div><dt>Rebuild signals</dt><dd>{countAndPercent(p.teardownPressureCount, p.teardownPressurePercent)}</dd></div>
+          <div><dt>Sold recently</dt><dd>{countAndPercent(p.soldLastThreeYearsCount, p.soldLastThreeYearsPercent)}</dd></div>
+          <div><dt>Source</dt><dd>{p.sourceLabel}</dd></div>
+        </dl>
+      </details>
     </div>
   );
 }
 
-function AreaStoryNote({ area }: { area: AreaSummaryFeature }) {
-  const p = area.properties;
-  const parts: string[] = [];
-
-  if (p.olderHomePercent >= 40) {
-    parts.push(`${p.olderHomePercent}% of homes here were built before 1960`);
-  }
-  if (p.remodelPercent >= 20) {
-    parts.push(`${p.remodelPercent}% show recent permit activity`);
-  }
-  if (p.teardownPressurePercent >= 5) {
-    parts.push(`${p.teardownPressurePercent}% show rebuild signals`);
-  }
-  if (p.soldLastThreeYearsPercent >= 10) {
-    parts.push(`${p.soldLastThreeYearsPercent}% changed hands in the last 3 years`);
-  }
-
-  if (parts.length === 0) return null;
-
-  return (
-    <p className="area-story-note">
-      {parts.join("; ")}.
-    </p>
-  );
-}
 
 function AreaViewContent({
   activeView,

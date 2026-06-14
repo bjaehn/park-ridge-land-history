@@ -1262,15 +1262,111 @@ button, input { font: inherit; }
 .selected-place-card,
 .block-readout,
 .area-readout {
-  display: grid; gap: 6px; padding: 10px;
+  display: grid; gap: 8px; padding: 12px;
   border-radius: 8px;
   border: 1px solid rgba(255,255,255,0.07);
   background: rgba(255,255,255,0.04);
   box-shadow: var(--shadow-xs);
 }
+.area-readout-header { display: grid; gap: 8px; }
+.area-readout-header h3 { margin: 0; color: var(--ink); font-size: 0.88rem; font-weight: 600; }
+.area-readout-era { font-size: 0.66rem; color: var(--ink-muted); font-weight: 400; }
+.area-readout-eval { margin: 0; color: var(--ink-soft); font-size: 0.73rem; line-height: 1.4; }
+
+.area-character-badge {
+  display: grid; gap: 2px; padding: 9px 11px;
+  border-radius: 8px;
+  border: 1px solid var(--border-accent);
+  background: var(--accent-tint);
+}
+.area-character-badge strong { color: var(--accent); font-size: 0.76rem; font-weight: 600; }
+.area-character-badge span { color: var(--ink-soft); font-size: 0.68rem; line-height: 1.35; }
+
+.area-stats-disclosure { margin-top: 2px; }
+.area-stats-disclosure > summary {
+  cursor: pointer; list-style: none;
+  font-size: 0.64rem; color: var(--ink-muted); font-weight: 500;
+  padding: 2px 0;
+}
+.area-stats-disclosure > summary::-webkit-details-marker { display: none; }
+.area-stats-disclosure > summary::before { content: "▸ "; }
+.area-stats-disclosure[open] > summary::before { content: "▾ "; }
+
 .scale-definition { background: rgba(255,255,255,0.02); }
-.scale-definition strong, .selected-place-card strong, .block-readout strong, .area-readout h3 { margin: 0; color: var(--ink); font-size: 0.84rem; font-weight: 500; }
-.scale-definition p, .block-readout p, .area-readout p { margin: 0; color: var(--ink-soft); font-size: 0.74rem; font-weight: 400; line-height: 1.38; }
+.scale-definition strong, .selected-place-card strong, .block-readout strong { margin: 0; color: var(--ink); font-size: 0.84rem; font-weight: 500; }
+.scale-definition p, .block-readout p { margin: 0; color: var(--ink-soft); font-size: 0.74rem; font-weight: 400; line-height: 1.38; }
+
+/* ─── Neighborhood browser cards ───────────────────────────────────── */
+
+.nbr-grid { display: grid; gap: 6px; margin-bottom: 4px; }
+
+.nbr-card {
+  display: grid; gap: 10px; padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--glass-0);
+  cursor: pointer; text-align: left;
+  transition: border-color 140ms, background 140ms;
+  width: 100%;
+}
+.nbr-card:hover { background: var(--glass-1); border-color: var(--border-bright); }
+.nbr-card.is-active {
+  border-color: var(--border-accent);
+  background: var(--accent-tint);
+}
+
+.nbr-card-top { display: grid; gap: 4px; }
+
+.nbr-name-row {
+  display: flex; align-items: center; gap: 7px;
+  flex-wrap: wrap;
+}
+.nbr-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex: 0 0 8px;
+}
+.nbr-name {
+  font-size: 0.84rem; font-weight: 600; color: var(--ink); flex: 1;
+}
+.nbr-era-chip {
+  font-size: 0.62rem; font-weight: 600; color: var(--accent);
+  padding: 1px 6px; border-radius: 999px;
+  border: 1px solid var(--border-accent);
+  background: var(--accent-tint);
+  white-space: nowrap;
+}
+
+.nbr-character-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+.nbr-character-label {
+  font-size: 0.68rem; font-weight: 500; color: var(--ink-soft);
+}
+.nbr-homes {
+  font-size: 0.62rem; color: var(--ink-muted); white-space: nowrap;
+}
+
+.nbr-signals { display: grid; gap: 5px; }
+
+.nbr-minibar {
+  display: grid; grid-template-columns: 76px 1fr 30px; align-items: center; gap: 6px;
+}
+.nbr-minibar-label { font-size: 0.60rem; color: var(--ink-muted); }
+.nbr-minibar-track {
+  height: 4px; border-radius: 2px; background: rgba(255,255,255,0.07);
+  overflow: hidden;
+}
+.nbr-minibar-fill {
+  height: 100%; border-radius: 2px;
+  background: var(--accent);
+  opacity: 0.55;
+  transition: width 300ms ease;
+}
+.nbr-card.is-active .nbr-minibar-fill { opacity: 0.85; }
+.nbr-minibar-value {
+  font-size: 0.58rem; color: var(--ink-muted); text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 .area-change-story {
   display: grid; gap: 3px; padding: 9px;
   border-radius: 8px;
