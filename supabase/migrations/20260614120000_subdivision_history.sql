@@ -313,16 +313,23 @@ language sql
 stable
 security definer
 as $$
-  select
-    case
-      when recorded_year is null then 'Unknown'
-      else (floor(recorded_year / 10) * 10)::text || 's'
-    end as decade,
-    count(*) as count
-  from subdivisions
-  group by 1
-  order by
-    case when recorded_year is null then 9999 else floor(recorded_year / 10) * 10 end;
+  with grouped as (
+    select
+      case
+        when recorded_year is null then 'Unknown'
+        else (floor(recorded_year / 10) * 10)::text || 's'
+      end as decade,
+      case
+        when recorded_year is null then 9999
+        else floor(recorded_year / 10) * 10
+      end as sort_key,
+      count(*) as count
+    from subdivisions
+    group by 1, 2
+  )
+  select decade, count
+  from grouped
+  order by sort_key;
 $$;
 
 grant execute on function subdivision_decade_distribution() to anon, authenticated;
