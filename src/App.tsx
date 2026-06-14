@@ -1,5 +1,5 @@
-import { startTransition, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { startTransition, useEffect, useMemo, useRef, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { AnalysisNarrative } from "./components/AnalysisNarrative";
 import { AnalysisTabs, type AnalysisScale } from "./components/AnalysisTabs";
 import { BlockPanel, type BlockView } from "./components/BlockPanel";
@@ -88,15 +88,39 @@ const emptyAreas: AreaSummaryCollection = {
 
 const INTRO_KEY = "pr-explorer-intro-v1";
 
+function urlScale(s: string | null): AnalysisScale {
+  if (s === "block" || s === "area" || s === "city") return s;
+  return "home";
+}
+function urlGrouping(areaId: string | null, g: string | null): AreaGroupingId {
+  if (g === "change_zones" || g === "wards") return g as AreaGroupingId;
+  if (areaId?.startsWith("change:")) return "change_zones";
+  return "neighborhoods";
+}
+
 export default function App() {
   const { parcels, boundary, wardBoundaries, historicalLayers, roadParcelHistory } = useParkRidgeContext();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Read initial URL params once — used only for lazy state initializers below
+  const initParams = useRef(new URLSearchParams(window.location.search));
+  const initPin    = initParams.current.get("pin");
+  const initArea   = initParams.current.get("area");
+  const initScale  = initParams.current.get("scale");
+  const initPreset = initParams.current.get("preset");
+  const hasSharedUrl = Boolean(initPin || initArea || initScale);
+
   const [showOutlines, setShowOutlines] = useState(true);
   const [showBoundary, setShowBoundary] = useState(true);
-  const [showPermitPressure, setShowPermitPressure] = useState(true);
+  const [showPermitPressure, setShowPermitPressure] = useState(
+    () => initPreset === "stability" || initPreset === "activity"
+  );
   const [permitPressureWindow, setPermitPressureWindow] = useState<PermitPressureWindow>(5);
-  const [permitPressureMapMode, setPermitPressureMapMode] = useState<PermitPressureMapMode>("stability");
+  const [permitPressureMapMode, setPermitPressureMapMode] = useState<PermitPressureMapMode>(
+    () => initPreset === "activity" ? "activity" : "stability"
+  );
   const [maxBuiltYear, setMaxBuiltYear] = useState(2026);
-  const [selectedPin, setSelectedPin] = useState<string | null>(null);
+  const [selectedPin, setSelectedPin] = useState<string | null>(() => initPin);
   const [isBuildoutPlaying, setIsBuildoutPlaying] = useState(false);
   const [blockMaxBuiltYear, setBlockMaxBuiltYear] = useState(2026);
   const [isBlockBuildoutPlaying, setIsBlockBuildoutPlaying] = useState(false);
@@ -116,12 +140,16 @@ export default function App() {
   const [swipeEnabled, setSwipeEnabled] = useState(false);
   const [swipePosition, setSwipePosition] = useState(50);
   const [selectedHotspot, setSelectedHotspot] = useState<HotspotFeature | null>(null);
-  const [activeAnalysisScale, setActiveAnalysisScale] = useState<AnalysisScale>("home");
+  const [activeAnalysisScale, setActiveAnalysisScale] = useState<AnalysisScale>(
+    () => urlScale(initScale ?? (initArea ? "area" : initPin ? "home" : null))
+  );
   const [activePropertyView, setActivePropertyView] = useState<PropertyView>("timeline");
   const [activeBlockView, setActiveBlockView] = useState<BlockView>("age");
   const [activeAreaView, setActiveAreaView] = useState<AreaView>("age");
-  const [activeAreaGrouping, setActiveAreaGrouping] = useState<AreaGroupingId>("neighborhoods");
-  const [selectedAreaId, setSelectedAreaId] = useState<string | null>(null);
+  const [activeAreaGrouping, setActiveAreaGrouping] = useState<AreaGroupingId>(
+    () => urlGrouping(initArea, initParams.current.get("group"))
+  );
+  const [selectedAreaId, setSelectedAreaId] = useState<string | null>(() => initArea);
   const [selectedHistoryPeriod, setSelectedHistoryPeriod] = useState<HistoryPeriodId>("pre_1939");
   const [showRoadHistory, setShowRoadHistory] = useState(true);
   const [selectedRoadHistory, setSelectedRoadHistory] = useState<RoadSegmentHistoryFeature | null>(null);
@@ -142,9 +170,11 @@ export default function App() {
     setIsBuildoutPlaying(false);
   }, [yearRange.max]);
 
-  // First-visit intro: play buildout animation once so the city "grows" before the user
+  // First-visit intro: play buildout animation once so the city "grows" before the user.
+  // Skip entirely when arriving via a shared URL — the shared context matters more.
   useEffect(() => {
     if (!parcels) return;
+    if (hasSharedUrl) return;
     if (localStorage.getItem(INTRO_KEY)) return;
     localStorage.setItem(INTRO_KEY, "true");
     setActiveAnalysisScale("city");
@@ -160,6 +190,24 @@ export default function App() {
   useEffect(() => {
     if (!isBuildoutPlaying) setIsIntroActive(false);
   }, [isBuildoutPlaying]);
+
+  // Sync key view state to URL so any view can be bookmarked or shared.
+  // Skipped during animations to avoid flooding history.
+  useEffect(() => {
+    if (isIntroActive || isBuildoutPlaying) return;
+    const p = new URLSearchParams();
+    if (selectedPin) p.set("pin", selectedPin);
+    if (activeAnalysisScale !== "home") p.set("scale", activeAnalysisScale);
+    if (selectedAreaId) p.set("area", selectedAreaId);
+    if (activeAreaGrouping !== "neighborhoods") p.set("group", activeAreaGrouping);
+    if (activeVisualizationPreset === "stability" || activeVisualizationPreset === "activity") {
+      p.set("preset", activeVisualizationPreset);
+    }
+    setSearchParams(p, { replace: true });
+  // activeVisualizationPreset is derived — include its key inputs instead
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPin, activeAnalysisScale, selectedAreaId, activeAreaGrouping,
+      showPermitPressure, permitPressureMapMode, isIntroActive, isBuildoutPlaying]);
 
   useEffect(() => {
     if (!isBuildoutPlaying) return;
