@@ -1,0 +1,185 @@
+{
+  "source": "Cook County GIS Hosted Parcel FeatureServer",
+  "url": "https://gis.cookcountyil.gov/hosting/rest/services/Hosted/Parcel/FeatureServer/0",
+  "status": "metadata_fetched",
+  "all_fields": [
+    {
+      "name": "objectid",
+      "alias": "OBJECTID",
+      "type": "esriFieldTypeOID"
+    },
+    {
+      "name": "name",
+      "alias": "PIN14",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "name": "pin10",
+      "alias": "PIN10",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "name": "pina",
+      "alias": "PINA",
+      "type": "esriFieldTypeSmallInteger"
+    },
+    {
+      "name": "pinsa",
+      "alias": "PINSA",
+      "type": "esriFieldTypeSmallInteger"
+    },
+    {
+      "name": "pinb",
+      "alias": "PINB",
+      "type": "esriFieldTypeSmallInteger"
+    },
+    {
+      "name": "pinp",
+      "alias": "PINP",
+      "type": "esriFieldTypeSmallInteger"
+    },
+    {
+      "name": "pinu",
+      "alias": "PINU",
+      "type": "esriFieldTypeSmallInteger"
+    },
+    {
+      "name": "pinac",
+      "alias": "PINAC",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "taxcode",
+      "alias": "TAXCODE",
+      "type": "esriFieldTypeInteger"
+    },
+    {
+      "name": "job_no",
+      "alias": "JOB_NO",
+      "type": "esriFieldTypeInteger"
+    },
+    {
+      "name": "upper_elev",
+      "alias": "UPPER_ELEV",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "lower_elev",
+      "alias": "LOWER_ELEV",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "survey_calc_footage",
+      "alias": "SURVEY_CALC_FOOTAGE",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "created_user",
+      "alias": "created_user",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "name": "created_date",
+      "alias": "created_date",
+      "type": "esriFieldTypeDate"
+    },
+    {
+      "name": "last_edited_user",
+      "alias": "last_edited_user",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "name": "last_edited_date",
+      "alias": "last_edited_date",
+      "type": "esriFieldTypeDate"
+    },
+    {
+      "name": "upper_floor",
+      "alias": "UPPER_FLOOR",
+      "type": "esriFieldTypeInteger"
+    },
+    {
+      "name": "lower_floor",
+      "alias": "LOWER_FLOOR",
+      "type": "esriFieldTypeInteger"
+    },
+    {
+      "name": "map_id",
+      "alias": "MAP_ID",
+      "type": "esriFieldTypeInteger"
+    },
+    {
+      "name": "fly_id",
+      "alias": "FLY_ID",
+      "type": "esriFieldTypeInteger"
+    },
+    {
+      "name": "plan_number",
+      "alias": "PLAN_NUMBER",
+      "type": "esriFieldTypeInteger"
+    },
+    {
+      "name": "flyleaf_title",
+      "alias": "FLYLEAF_TITLE",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "name": "parceltype",
+      "alias": "PARCELTYPE",
+      "type": "esriFieldTypeInteger"
+    },
+    {
+      "name": "cc_floordesignator",
+      "alias": "FloorDesignator",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "origoid",
+      "alias": "Original Object ID",
+      "type": "esriFieldTypeInteger"
+    },
+    {
+      "name": "SHAPE__Length",
+      "alias": "SHAPE__Length",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "SHAPE__Area",
+      "alias": "SHAPE__Area",
+      "type": "esriFieldTypeDouble"
+    }
+  ],
+  "subdivision_candidate_fields": [],
+  "sample_record": {
+    "lower_elev": null,
+    "upper_floor": null,
+    "pinp": 1,
+    "flyleaf_title": null,
+    "map_id": null,
+    "pina": 9,
+    "upper_elev": null,
+    "pinb": 101,
+    "last_edited_date": 1566571476000,
+    "survey_calc_footage": null,
+    "plan_number": null,
+    "SHAPE__Area": 3797.0425434257645,
+    "fly_id": null,
+    "lower_floor": null,
+    "parceltype": 1,
+    "created_user": "GIS",
+    "job_no": null,
+    "pinac": 0,
+    "cc_floordesignator": null,
+    "pin10": "0921101001",
+    "last_edited_user": "GIS",
+    "pinu": 0,
+    "name": "09211010010000",
+    "pinsa": 21,
+    "taxcode": null,
+    "created_date": 1566571476000,
+    "SHAPE__Length": 350.02782423789415,
+    "origoid": 1321373,
+    "objectid": 234808
+  },
+  "error": null
+}

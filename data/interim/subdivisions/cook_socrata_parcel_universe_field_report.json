@@ -1,0 +1,661 @@
+{
+  "source": "Cook County Assessor Parcel Universe",
+  "url": "https://datacatalog.cookcountyil.gov/resource/nj4t-kc8j.json",
+  "dataset_id": "nj4t-kc8j",
+  "status": "metadata_fetched",
+  "all_columns": [
+    {
+      "field_name": "pin",
+      "name": "pin",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "pin10",
+      "name": "pin10",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "year",
+      "name": "tax_year",
+      "data_type_name": "number"
+    },
+    {
+      "field_name": "class",
+      "name": "class",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "triad_name",
+      "name": "triad_name",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "triad_code",
+      "name": "triad_code",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "township_name",
+      "name": "township_name",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "township_code",
+      "name": "township_code",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "nbhd_code",
+      "name": "neighborhood_code",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "tax_code",
+      "name": "tax_district_code",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "zip_code",
+      "name": "zip_code",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "lon",
+      "name": "longitude",
+      "data_type_name": "number"
+    },
+    {
+      "field_name": "lat",
+      "name": "latitude",
+      "data_type_name": "number"
+    },
+    {
+      "field_name": "x_3435",
+      "name": "centroid_x_crs_3435",
+      "data_type_name": "number"
+    },
+    {
+      "field_name": "y_3435",
+      "name": "centroid_y_crs_3435",
+      "data_type_name": "number"
+    },
+    {
+      "field_name": "census_block_group_geoid",
+      "name": "census_block_group_geoid",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "census_block_geoid",
+      "name": "census_block_geoid",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "census_congressional_district_geoid",
+      "name": "census_congressional_district_geoid",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "census_congressional_district_num",
+      "name": "census_congressional_district_num",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "census_county_subdivision_geoid",
+      "name": "census_county_subdivision_geoid",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "census_place_geoid",
+      "name": "census_place_geoid",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "census_puma_geoid",
+      "name": "census_puma_geoid",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "census_school_district_elementary_geoid",
+      "name": "census_school_district_elementary_geoid",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "census_school_district_secondary_geoid",
+      "name": "census_school_district_secondary_geoid",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "census_school_district_unified_geoid",
+      "name": "census_school_district_unified_geoid",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "census_state_representative_geoid",
+      "name": "census_state_representative_geoid",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "census_state_representative_num",
+      "name": "census_state_representative_num",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "census_state_senate_geoid",
+      "name": "census_state_senate_geoid",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "census_state_senate_num",
+      "name": "census_state_senate_num",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "census_tract_geoid",
+      "name": "census_tract_geoid",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "census_zcta_geoid",
+      "name": "census_zcta_geoid",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "census_data_year",
+      "name": "census_data_year",
+      "data_type_name": "number"
+    },
+    {
+      "field_name": "census_acs5_congressional_district_geoid",
+      "name": "census_acs5_congressional_district_geoid",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "census_acs5_congressional_district_num",
+      "name": "census_acs5_congressional_district_num",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "census_acs5_county_subdivision_geoid",
+      "name": "census_acs5_county_subdivision_geoid",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "census_acs5_place_geoid",
+      "name": "census_acs5_place_geoid",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "census_acs5_puma_geoid",
+      "name": "census_acs5_puma_geoid",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "census_acs5_school_district_elementary_geoid",
+      "name": "census_acs5_school_district_elementary_geoid",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "census_acs5_school_district_secondary_geoid",
+      "name": "census_acs5_school_district_secondary_geoid",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "census_acs5_school_district_unified_geoid",
+      "name": "census_acs5_school_district_unified_geoid",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "census_acs5_state_representative_geoid",
+      "name": "census_acs5_state_representative_geoid",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "census_acs5_state_representative_num",
+      "name": "census_acs5_state_representative_num",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "census_acs5_state_senate_geoid",
+      "name": "census_acs5_state_senate_geoid",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "census_acs5_state_senate_num",
+      "name": "census_acs5_state_senate_num",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "census_acs5_tract_geoid",
+      "name": "census_acs5_tract_geoid",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "census_acs5_data_year",
+      "name": "census_acs5_data_year",
+      "data_type_name": "number"
+    },
+    {
+      "field_name": "cook_board_of_review_district_num",
+      "name": "board_of_review_district_num",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "cook_board_of_review_district_data_year",
+      "name": "board_of_review_district_data_year",
+      "data_type_name": "number"
+    },
+    {
+      "field_name": "cook_commissioner_district_num",
+      "name": "commissioner_district_num",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "cook_commissioner_district_data_year",
+      "name": "commissioner_district_data_year",
+      "data_type_name": "number"
+    },
+    {
+      "field_name": "cook_judicial_district_num",
+      "name": "judicial_district_num",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "cook_judicial_district_data_year",
+      "name": "judicial_district_data_year",
+      "data_type_name": "number"
+    },
+    {
+      "field_name": "cook_municipality_num",
+      "name": "municipality_num",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "cook_municipality_name",
+      "name": "municipality_name",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "cook_municipality_data_year",
+      "name": "municipality_data_year",
+      "data_type_name": "number"
+    },
+    {
+      "field_name": "ward_num",
+      "name": "ward_num",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "ward_chicago_data_year",
+      "name": "ward_chicago_data_year",
+      "data_type_name": "number"
+    },
+    {
+      "field_name": "ward_evanston_data_year",
+      "name": "ward_evanston_data_year",
+      "data_type_name": "number"
+    },
+    {
+      "field_name": "chicago_community_area_num",
+      "name": "chicago_community_area_num",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "chicago_community_area_name",
+      "name": "chicago_community_area_name",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "chicago_community_area_data_year",
+      "name": "chicago_community_area_data_year",
+      "data_type_name": "number"
+    },
+    {
+      "field_name": "chicago_industrial_corridor_num",
+      "name": "chicago_industrial_corridor_num",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "chicago_industrial_corridor_name",
+      "name": "chicago_industrial_corridor_name",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "chicago_industrial_corridor_data_year",
+      "name": "chicago_industrial_corridor_data_year",
+      "data_type_name": "number"
+    },
+    {
+      "field_name": "chicago_police_district_num",
+      "name": "chicago_police_district_num",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "chicago_police_district_data_year",
+      "name": "chicago_police_district_data_year",
+      "data_type_name": "number"
+    },
+    {
+      "field_name": "econ_coordinated_care_area_num",
+      "name": "coordinated_care_area_num",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "econ_coordinated_care_area_data_year",
+      "name": "coordinated_care_area_data_year",
+      "data_type_name": "number"
+    },
+    {
+      "field_name": "econ_enterprise_zone_num",
+      "name": "enterprise_zone_num",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "econ_enterprise_zone_data_year",
+      "name": "enterprise_zone_data_year",
+      "data_type_name": "number"
+    },
+    {
+      "field_name": "econ_industrial_growth_zone_num",
+      "name": "industrial_growth_zone_num",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "econ_industrial_growth_zone_data_year",
+      "name": "industrial_growth_zone_data_year",
+      "data_type_name": "number"
+    },
+    {
+      "field_name": "econ_qualified_opportunity_zone_num",
+      "name": "qualified_opportunity_zone_num",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "econ_qualified_opportunity_zone_data_year",
+      "name": "qualified_opportunity_zone_data_year",
+      "data_type_name": "number"
+    },
+    {
+      "field_name": "econ_central_business_district_num",
+      "name": "central_business_district_num",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "econ_central_business_district_data_year",
+      "name": "central_business_district_data_year",
+      "data_type_name": "number"
+    },
+    {
+      "field_name": "env_flood_fema_sfha",
+      "name": "flood_fema_sfha",
+      "data_type_name": "checkbox"
+    },
+    {
+      "field_name": "env_flood_fema_data_year",
+      "name": "flood_fema_data_year",
+      "data_type_name": "number"
+    },
+    {
+      "field_name": "env_flood_fs_factor",
+      "name": "flood_fs_factor",
+      "data_type_name": "number"
+    },
+    {
+      "field_name": "env_flood_fs_risk_direction",
+      "name": "flood_fs_risk_direction",
+      "data_type_name": "number"
+    },
+    {
+      "field_name": "env_flood_fs_data_year",
+      "name": "flood_fs_data_year",
+      "data_type_name": "number"
+    },
+    {
+      "field_name": "env_ohare_noise_contour_no_buffer_bool",
+      "name": "ohare_noise_contour_no_buffer_bool",
+      "data_type_name": "checkbox"
+    },
+    {
+      "field_name": "env_ohare_noise_contour_half_mile_buffer_bool",
+      "name": "ohare_noise_contour_half_mile_buffer_bool",
+      "data_type_name": "checkbox"
+    },
+    {
+      "field_name": "env_ohare_noise_contour_data_year",
+      "name": "ohare_noise_contour_data_year",
+      "data_type_name": "number"
+    },
+    {
+      "field_name": "env_airport_noise_dnl",
+      "name": "airport_noise_dnl",
+      "data_type_name": "number"
+    },
+    {
+      "field_name": "env_airport_noise_data_year",
+      "name": "airport_noise_data_year",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "school_elementary_district_geoid",
+      "name": "school_elementary_district_geoid",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "school_elementary_district_name",
+      "name": "school_elementary_district_name",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "school_secondary_district_geoid",
+      "name": "school_secondary_district_geoid",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "school_secondary_district_name",
+      "name": "school_secondary_district_name",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "school_unified_district_geoid",
+      "name": "school_unified_district_geoid",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "school_unified_district_name",
+      "name": "school_unified_district_name",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "school_school_year",
+      "name": "school_year",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "school_data_year",
+      "name": "school_data_year",
+      "data_type_name": "number"
+    },
+    {
+      "field_name": "tax_municipality_num",
+      "name": "tax_municipality_num",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "tax_municipality_name",
+      "name": "tax_municipality_name",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "tax_school_elementary_district_num",
+      "name": "tax_school_elementary_district_num",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "tax_school_elementary_district_name",
+      "name": "tax_school_elementary_district_name",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "tax_school_secondary_district_num",
+      "name": "tax_school_secondary_district_num",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "tax_school_secondary_district_name",
+      "name": "tax_school_secondary_district_name",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "tax_school_unified_district_num",
+      "name": "tax_school_unified_district_num",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "tax_school_unified_district_name",
+      "name": "tax_school_unified_district_name",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "tax_community_college_district_num",
+      "name": "tax_community_college_district_num",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "tax_community_college_district_name",
+      "name": "tax_community_college_district_name",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "tax_fire_protection_district_num",
+      "name": "tax_fire_protection_district_num",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "tax_fire_protection_district_name",
+      "name": "tax_fire_protection_district_name",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "tax_library_district_num",
+      "name": "tax_library_district_num",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "tax_library_district_name",
+      "name": "tax_library_district_name",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "tax_park_district_num",
+      "name": "tax_park_district_num",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "tax_park_district_name",
+      "name": "tax_park_district_name",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "tax_sanitation_district_num",
+      "name": "tax_sanitation_district_num",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "tax_sanitation_district_name",
+      "name": "tax_sanitation_district_name",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "tax_special_service_area_num",
+      "name": "tax_special_service_area_num",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "tax_special_service_area_name",
+      "name": "tax_special_service_area_name",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "tax_tif_district_num",
+      "name": "tax_tif_district_num",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "tax_tif_district_name",
+      "name": "tax_tif_district_name",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "tax_data_year",
+      "name": "tax_districts_data_year",
+      "data_type_name": "number"
+    },
+    {
+      "field_name": "access_cmap_walk_id",
+      "name": "cmap_walkability_grid_id",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "access_cmap_walk_nta_score",
+      "name": "cmap_walkability_no_transit_score",
+      "data_type_name": "number"
+    },
+    {
+      "field_name": "access_cmap_walk_total_score",
+      "name": "cmap_walkability_total_score",
+      "data_type_name": "number"
+    },
+    {
+      "field_name": "access_cmap_walk_data_year",
+      "name": "cmap_walkability_data_year",
+      "data_type_name": "number"
+    },
+    {
+      "field_name": "misc_subdivision_id",
+      "name": "subdivision_id",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "misc_subdivision_data_year",
+      "name": "subdivision_data_year",
+      "data_type_name": "number"
+    },
+    {
+      "field_name": "row_id",
+      "name": "row_id",
+      "data_type_name": "text"
+    }
+  ],
+  "subdivision_candidate_columns": [
+    {
+      "field_name": "census_block_group_geoid",
+      "name": "census_block_group_geoid",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "census_block_geoid",
+      "name": "census_block_geoid",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "census_county_subdivision_geoid",
+      "name": "census_county_subdivision_geoid",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "census_acs5_county_subdivision_geoid",
+      "name": "census_acs5_county_subdivision_geoid",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "misc_subdivision_id",
+      "name": "subdivision_id",
+      "data_type_name": "text"
+    },
+    {
+      "field_name": "misc_subdivision_data_year",
+      "name": "subdivision_data_year",
+      "data_type_name": "number"
+    }
+  ],
+  "error": null
+}

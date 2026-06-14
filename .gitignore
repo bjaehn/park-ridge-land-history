@@ -27,6 +27,8 @@ data/processed/*
 !data/raw/park_ridge_land_family.csv
 !data/interim/.gitkeep
 !data/processed/.gitkeep
+!data/interim/subdivisions/
+!data/interim/subdivisions/*
 !data/raw/historical/
 !data/raw/historical/.gitkeep
 !data/interim/historical/

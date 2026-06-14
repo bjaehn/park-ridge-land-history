@@ -11,6 +11,8 @@
  *   /blocks/:blockId         → BlockDetailPage
  *   /neighborhoods           → NeighborhoodsPage
  *   /neighborhoods/:id       → NeighborhoodDetailPage
+ *   /subdivisions            → SubdivisionsPage
+ *   /subdivisions/:id        → SubdivisionDetailPage
  *   /city                    → CityPage
  *   /maps                    → MapsPage
  *   /sources                 → SourcesPage
@@ -33,6 +35,8 @@ import { BlocksPage } from "../pages/blocks/BlocksPage";
 import { BlockDetailPage } from "../pages/blocks/BlockDetailPage";
 import { NeighborhoodsPage } from "../pages/neighborhoods/NeighborhoodsPage";
 import { NeighborhoodDetailPage } from "../pages/neighborhoods/NeighborhoodDetailPage";
+import { SubdivisionsPage } from "../pages/subdivisions/SubdivisionsPage";
+import { SubdivisionDetailPage } from "../pages/subdivisions/SubdivisionDetailPage";
 import { CityPage } from "../pages/city/CityPage";
 import { MapsPage } from "../pages/maps/MapsPage";
 import { SourcesPage } from "../pages/sources/SourcesPage";
@@ -58,6 +62,10 @@ export function AppRouter() {
         {/* Neighborhoods */}
         <Route path="neighborhoods" element={<NeighborhoodsPage />} />
         <Route path="neighborhoods/:neighborhoodId" element={<NeighborhoodDetailPage />} />
+
+        {/* Subdivisions */}
+        <Route path="subdivisions" element={<SubdivisionsPage />} />
+        <Route path="subdivisions/:id" element={<SubdivisionDetailPage />} />
 
         {/* City */}
         <Route path="city" element={<CityPage />} />
