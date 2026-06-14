@@ -85,6 +85,8 @@ const emptyAreas: AreaSummaryCollection = {
   features: []
 };
 
+const INTRO_KEY = "pr-explorer-intro-v1";
+
 export default function App() {
   const { parcels, boundary, wardBoundaries, historicalLayers, roadParcelHistory } = useParkRidgeContext();
   const [showOutlines, setShowOutlines] = useState(true);
@@ -122,6 +124,7 @@ export default function App() {
   const [selectedHistoryPeriod, setSelectedHistoryPeriod] = useState<HistoryPeriodId>("pre_1939");
   const [showRoadHistory, setShowRoadHistory] = useState(true);
   const [selectedRoadHistory, setSelectedRoadHistory] = useState<RoadSegmentHistoryFeature | null>(null);
+  const [isIntroActive, setIsIntroActive] = useState(false);
 
   const yearRange = useMemo(() => {
     const years = parcels?.features
@@ -137,6 +140,25 @@ export default function App() {
     setMaxBuiltYear(yearRange.max);
     setIsBuildoutPlaying(false);
   }, [yearRange.max]);
+
+  // First-visit intro: play buildout animation once so the city "grows" before the user
+  useEffect(() => {
+    if (!parcels) return;
+    if (localStorage.getItem(INTRO_KEY)) return;
+    localStorage.setItem(INTRO_KEY, "true");
+    setActiveAnalysisScale("city");
+    setShowPermitPressure(false);
+    setMaxBuiltYear(yearRange.min);
+    setIsBuildoutPlaying(true);
+    setIsIntroActive(true);
+  // yearRange.min is stable once parcels load; run only when parcels first arrives
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [parcels]);
+
+  // Clear intro flag when animation finishes or user stops it
+  useEffect(() => {
+    if (!isBuildoutPlaying) setIsIntroActive(false);
+  }, [isBuildoutPlaying]);
 
   useEffect(() => {
     if (!isBuildoutPlaying) return;
@@ -757,6 +779,18 @@ export default function App() {
             compact
           />
         </div>
+        {isIntroActive && (
+          <button
+            type="button"
+            className="intro-skip-btn"
+            onClick={() => {
+              setIsIntroActive(false);
+              handleSetMaxBuiltYear(yearRange.max);
+            }}
+          >
+            Skip intro
+          </button>
+        )}
       </div>
     </section>
   );
