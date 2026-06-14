@@ -35,6 +35,8 @@ export type AreaSummaryProperties = {
   parcelPins: string[];
   displayColor?: string | null;
   hotspotId?: string | null;
+  medianYearBuilt: number | null;
+  peakDecade: string | null;
 };
 
 export type AreaSummaryGeometry = GeoJSON.Polygon | GeoJSON.MultiPolygon | GeoJSON.Point;
@@ -276,6 +278,23 @@ function wardSummaryFeature(
 }
 
 function areaStats(features: ParcelFeature[]) {
+  const yearsSorted = features
+    .map((f) => f.properties.year_built)
+    .filter((y): y is number => typeof y === "number" && y > 1800 && y < 2026)
+    .sort((a, b) => a - b);
+  const medianYearBuilt = yearsSorted.length > 0 ? yearsSorted[Math.floor(yearsSorted.length / 2)] : null;
+  const decadeCounts = new Map<number, number>();
+  yearsSorted.forEach((year) => {
+    const d = Math.floor(year / 10) * 10;
+    decadeCounts.set(d, (decadeCounts.get(d) ?? 0) + 1);
+  });
+  let peakDecadeYear = 0;
+  let peakDecadeCount = 0;
+  decadeCounts.forEach((count, decade) => {
+    if (count > peakDecadeCount) { peakDecadeCount = count; peakDecadeYear = decade; }
+  });
+  const peakDecade = peakDecadeYear > 0 ? `${peakDecadeYear}s` : null;
+
   const parcelCount = features.length;
   const olderHomeCount = features.filter((feature) => {
     const year = feature.properties.year_built;
@@ -314,6 +333,8 @@ function areaStats(features: ParcelFeature[]) {
   };
   return {
     ...base,
+    medianYearBuilt,
+    peakDecade,
     healthLabel: areaHealthLabel(base),
     evaluation: areaEvaluation(base)
   };
@@ -403,7 +424,9 @@ function changeZoneFeature(hotspot: HotspotFeature): AreaSummaryFeature {
       changeStoryRead: changeStoryReadForSignal(signal),
       parcelPins: hotspot.properties.parcelPins,
       evaluation: hotspot.properties.description,
-      hotspotId: hotspot.properties.id
+      hotspotId: hotspot.properties.id,
+      medianYearBuilt: null,
+      peakDecade: null
     },
     geometry: hotspot.geometry
   };

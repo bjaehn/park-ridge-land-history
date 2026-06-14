@@ -22,3 +22,11 @@ export function formatFlags(value?: string[] | string | null): string {
   if (Array.isArray(value)) return value.length ? value.join(", ") : "None";
   return value.trim() || "None";
 }
+
+export function eraLabel(medianYear: number): string {
+  if (medianYear < 1920) return "Early Park Ridge";
+  if (medianYear < 1945) return "Pre-war era";
+  if (medianYear < 1962) return "Postwar boom";
+  if (medianYear < 1978) return "Mid-century";
+  return "Modern era";
+}

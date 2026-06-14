@@ -3,8 +3,10 @@ import { formatCurrency, formatFlags, formatNumber, formatYear } from "../lib/fo
 import type { PermitPressureWindow } from "../lib/permitPressure";
 import type { ParcelCollection, ParcelFeature } from "../lib/parcelTypes";
 import { HouseRelatives } from "./HouseRelatives";
+import { HouseStoryTimeline } from "./HouseStoryTimeline";
 import { NearbyActivitySummary } from "./NearbyActivitySummary";
-import { PropertyTimeline } from "./PropertyTimeline";
+import { WhatWeKnowCard } from "./cards/WhatWeKnowCard";
+import { ComparisonCard } from "./cards/ComparisonCard";
 
 export type PropertyView = "timeline" | "relatives";
 
@@ -14,6 +16,8 @@ type ParcelDetailPanelProps = {
   permitPressureWindow: PermitPressureWindow;
   isLoadingDetail?: boolean;
   activeView: PropertyView;
+  blockParcels?: ParcelFeature[];
+  neighborhoodParcels?: ParcelFeature[];
   onSetActiveView: (view: PropertyView) => void;
   onSelectRelatedParcel: (feature: ParcelFeature) => void;
   onClearSelection: () => void;
@@ -54,6 +58,8 @@ export function ParcelDetailPanel({
   permitPressureWindow,
   isLoadingDetail = false,
   activeView,
+  blockParcels = [],
+  neighborhoodParcels = [],
   onSetActiveView,
   onSelectRelatedParcel,
   onClearSelection
@@ -129,7 +135,14 @@ export function ParcelDetailPanel({
       {/* Story — the full unified scroll */}
       {activeView === "timeline" && (
         <div className="property-view-content">
-          <PropertyTimeline properties={properties} />
+          <WhatWeKnowCard properties={properties} />
+          <ComparisonCard
+            parcel={parcel!}
+            blockParcels={blockParcels}
+            neighborhoodParcels={neighborhoodParcels}
+            allParcels={parcels?.features ?? []}
+          />
+          <HouseStoryTimeline properties={properties} />
           <NearbyActivitySummary parcel={parcel} parcels={parcels} permitPressureWindow={permitPressureWindow} />
         </div>
       )}

@@ -9,6 +9,7 @@ import { ChangeStoryCard } from "./ChangeStoryCard";
 import { DecadeComparisonTable } from "./DecadeComparisonTable";
 import { PermitWorkComparisonTable } from "./PermitWorkComparisonTable";
 import { TimelineControl } from "./TimelineControl";
+import { DataCaveat } from "./cards/DataCaveat";
 
 type BlockPanelProps = {
   parcel: ParcelFeature | null;
@@ -97,6 +98,7 @@ export function BlockPanel({
             {physicalBlock?.capped && (
               <p>This block group was capped at 120 parcels, so it may include a larger connected parcel area.</p>
             )}
+            <DataCaveat caveatKey="census_block_proxy" />
           </div>
           <BlockBiographyCard
             parcels={physicalBlock?.allParcels ?? []}
@@ -107,6 +109,10 @@ export function BlockPanel({
             <strong>{blockRead.title}</strong>
             <p>{blockRead.body}</p>
           </div>
+          <BlockComparisonSection
+            blockParcels={physicalBlock?.allParcels ?? []}
+            allParcels={parcels?.features ?? []}
+          />
           <div className="preset-grid block-preset-grid" aria-label="Choose a block question">
             {blockViews.map((view) => (
               <button
@@ -249,4 +255,82 @@ function mostCommon(values: string[]): string | null {
   const counts = new Map<string, number>();
   values.forEach((value) => counts.set(value, (counts.get(value) ?? 0) + 1));
   return Array.from(counts.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+}
+
+function median(values: number[]): number {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+function average(values: number[]): number {
+  if (values.length === 0) return 0;
+  return values.reduce((a, b) => a + b, 0) / values.length;
+}
+
+function BlockComparisonSection({
+  blockParcels,
+  allParcels
+}: {
+  blockParcels: ParcelFeature[];
+  allParcels: ParcelFeature[];
+}) {
+  const blockYears = blockParcels
+    .map(f => f.properties.year_built)
+    .filter((y): y is number => typeof y === "number" && y > 1800 && y <= 2026);
+  const cityYears = allParcels
+    .map(f => f.properties.year_built)
+    .filter((y): y is number => typeof y === "number" && y > 1800 && y <= 2026);
+
+  if (blockYears.length < 3 || cityYears.length < 100) return null;
+
+  const blockMedian = Math.round(median(blockYears));
+  const cityMedian = Math.round(median(cityYears));
+  const diff = blockMedian - cityMedian;
+
+  let ageLabel: string;
+  if (Math.abs(diff) <= 4) {
+    ageLabel = `This block was built around the same time as Park Ridge overall (median year: ${blockMedian}).`;
+  } else if (diff <= -15) {
+    ageLabel = `This block is much older than Park Ridge overall. Median year built: ${blockMedian} vs. ${cityMedian} citywide.`;
+  } else if (diff < 0) {
+    ageLabel = `This block is older than Park Ridge overall. Median year built: ${blockMedian} vs. ${cityMedian} citywide.`;
+  } else if (diff >= 15) {
+    ageLabel = `This block is much newer than Park Ridge overall. Median year built: ${blockMedian} vs. ${cityMedian} citywide.`;
+  } else {
+    ageLabel = `This block is newer than Park Ridge overall. Median year built: ${blockMedian} vs. ${cityMedian} citywide.`;
+  }
+
+  const blockPermitAvg = average(blockParcels.map(f => f.properties.permit_count ?? 0));
+  const cityPermitAvg = average(allParcels.map(f => f.properties.permit_count ?? 0));
+  const permitRatio = cityPermitAvg === 0 ? 0 : (blockPermitAvg - cityPermitAvg) / cityPermitAvg;
+  let permitLabel: string;
+  if (Math.abs(permitRatio) < 0.2) {
+    permitLabel = `Permit activity on this block is similar to Park Ridge overall (avg: ${blockPermitAvg.toFixed(1)} vs. ${cityPermitAvg.toFixed(1)} citywide).`;
+  } else if (permitRatio > 0.5) {
+    permitLabel = `This block has more permit activity than Park Ridge overall (avg: ${blockPermitAvg.toFixed(1)} vs. ${cityPermitAvg.toFixed(1)} citywide).`;
+  } else if (permitRatio > 0) {
+    permitLabel = `This block has slightly more permit activity than Park Ridge overall (avg: ${blockPermitAvg.toFixed(1)} vs. ${cityPermitAvg.toFixed(1)} citywide).`;
+  } else if (permitRatio < -0.5) {
+    permitLabel = `This block has less permit activity than Park Ridge overall (avg: ${blockPermitAvg.toFixed(1)} vs. ${cityPermitAvg.toFixed(1)} citywide).`;
+  } else {
+    permitLabel = `This block has slightly less permit activity than Park Ridge overall (avg: ${blockPermitAvg.toFixed(1)} vs. ${cityPermitAvg.toFixed(1)} citywide).`;
+  }
+
+  return (
+    <div className="block-comparison-section">
+      <h3 className="block-comparison-title">How this block compares to Park Ridge</h3>
+      <ul className="block-comparison-list">
+        <li className="block-comparison-item">
+          <span className="bci-label">Age</span>
+          <span className="bci-value">{ageLabel}</span>
+        </li>
+        <li className="block-comparison-item">
+          <span className="bci-label">Permits</span>
+          <span className="bci-value">{permitLabel}</span>
+        </li>
+      </ul>
+    </div>
+  );
 }

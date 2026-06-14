@@ -7,6 +7,7 @@ import {
 import type { PermitPressureWindow } from "../lib/permitPressure";
 import type { HotspotCollection } from "../lib/hotspots";
 import type { ParcelCollection } from "../lib/parcelTypes";
+import { DataCaveat } from "./cards/DataCaveat";
 import { BlockChangeTable } from "./BlockChangeTable";
 import { BuildoutMilestonesTable } from "./BuildoutMilestonesTable";
 import { ChangeStoryCard } from "./ChangeStoryCard";
@@ -97,6 +98,12 @@ export function HotspotPanel({
       <div className="cluster-view-heading">
         <h3>{activeDefinition.shortLabel}</h3>
         <p>{activeDefinition.description}</p>
+        {activeGrouping === "neighborhoods" && (
+          <DataCaveat caveatKey="neighborhood_boundary" />
+        )}
+        {activeGrouping === "change_zones" && (
+          <DataCaveat caveatKey="census_block_proxy" />
+        )}
       </div>
 
       <AreaList
@@ -234,7 +241,34 @@ function AreaReadout({ area }: { area: AreaSummaryFeature }) {
           <dd>{area.properties.sourceLabel}</dd>
         </div>
       </dl>
+      <AreaStoryNote area={area} />
     </div>
+  );
+}
+
+function AreaStoryNote({ area }: { area: AreaSummaryFeature }) {
+  const p = area.properties;
+  const parts: string[] = [];
+
+  if (p.olderHomePercent >= 40) {
+    parts.push(`${p.olderHomePercent}% of homes here were built before 1960`);
+  }
+  if (p.remodelPercent >= 20) {
+    parts.push(`${p.remodelPercent}% show recent permit activity`);
+  }
+  if (p.teardownPressurePercent >= 5) {
+    parts.push(`${p.teardownPressurePercent}% show rebuild signals`);
+  }
+  if (p.soldLastThreeYearsPercent >= 10) {
+    parts.push(`${p.soldLastThreeYearsPercent}% changed hands in the last 3 years`);
+  }
+
+  if (parts.length === 0) return null;
+
+  return (
+    <p className="area-story-note">
+      {parts.join("; ")}.
+    </p>
   );
 }
 
