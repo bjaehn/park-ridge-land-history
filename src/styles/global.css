@@ -126,6 +126,21 @@ button, input { font: inherit; }
   75%       { transform: translate(2.5vw, -2vh) scale(0.94); }
 }
 
+/* ─── Explore page layout (shares TopNav with AppLayout) ── */
+
+.explore-page-shell {
+  height: 100vh;
+  overflow: hidden;
+}
+
+.explore-main {
+  min-height: 0;
+  overflow: hidden;
+  padding: 12px;
+  display: grid;
+}
+
+/* Legacy — keep to avoid breaking any stale references */
 .product-app-shell {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
@@ -425,7 +440,8 @@ button, input { font: inherit; }
   display: grid;
   grid-template-columns: minmax(460px, 0.92fr) minmax(460px, 1.08fr);
   gap: 0; min-height: 0;
-  height: calc(100vh - 116px);
+  /* 52px top-nav + 12px explore-main padding + 62px analysis-tabs = 126px */
+  height: calc(100vh - 126px);
 }
 
 .scale-analysis-column {
@@ -445,7 +461,8 @@ button, input { font: inherit; }
 
 .tab-map-workspace {
   position: sticky; top: 12px;
-  height: calc(100vh - 140px); min-height: 0;
+  /* 126px (scale-workspace) + 12px map-column padding + 12px sticky top = 150px */
+  height: calc(100vh - 150px); min-height: 0;
   overflow: hidden;
   border-radius: 10px;
   border: 1px solid rgba(255,255,255,0.08);
@@ -3333,6 +3350,8 @@ button, input { font: inherit; }
 
 @media (max-width: 1180px) {
   .app-shell { height: auto; min-height: 100vh; overflow: auto; }
+  .explore-page-shell { height: auto; overflow: auto; }
+  .explore-main { overflow: visible; }
   .product-app-shell { padding: 14px; }
   .analysis-workspace-card { overflow: visible; }
   .scale-workspace { grid-template-columns: 1fr; height: auto; }

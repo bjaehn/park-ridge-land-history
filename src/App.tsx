@@ -1,5 +1,6 @@
 import { startTransition, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
+import { TopNav } from "./components/TopNav";
 import { AnalysisNarrative } from "./components/AnalysisNarrative";
 import { AnalysisTabs, type AnalysisScale } from "./components/AnalysisTabs";
 import { BlockPanel, type BlockView } from "./components/BlockPanel";
@@ -845,19 +846,9 @@ export default function App() {
   );
 
   return (
-    <main className="app-shell product-app-shell">
-        <header className="app-header">
-          <div className="app-header-brand">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V10.5z" />
-              <polyline points="9 21 9 12 15 12 15 21" />
-            </svg>
-            <Link to="/" className="app-header-title-link">
-              <span className="app-header-title">Park Ridge Land History</span>
-            </Link>
-          </div>
-          <span className="app-header-tagline">Map Explorer · <Link to="/" className="app-header-home-link">← Back to site</Link></span>
-        </header>
+    <div className="page-shell explore-page-shell">
+      <TopNav />
+      <main className="explore-main">
         <div className="analysis-workspace-card">
           <AnalysisTabs activeScale={activeAnalysisScale} onSetScale={setAnalysisScale} />
 
@@ -1093,7 +1084,8 @@ export default function App() {
           {mapPanel}
           </div>
         </div>
-    </main>
+      </main>
+    </div>
   );
 }
 
