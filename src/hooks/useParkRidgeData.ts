@@ -48,7 +48,10 @@ const MAP_COLUMNS = [
   "geometry",
 ].join(",");
 
-const PAGE_SIZE = 2000;
+// Supabase hard-caps responses at 1000 rows regardless of Range requested.
+// We page in 1000-row chunks and stop when Content-Range tells us we've
+// reached the last row.
+const PAGE_SIZE = 1000;
 
 async function fetchParcelsFromSupabase(): Promise<ParcelCollection> {
   const { supabaseUrl, supabaseKey } = getSupabaseCredentials();
@@ -65,6 +68,7 @@ async function fetchParcelsFromSupabase(): Promise<ParcelCollection> {
           Accept: "application/geo+json",
           "Range-Unit": "items",
           Range: `${offset}-${offset + PAGE_SIZE - 1}`,
+          Prefer: "count=exact",
         },
       }
     );
@@ -74,6 +78,22 @@ async function fetchParcelsFromSupabase(): Promise<ParcelCollection> {
     const collection = (await resp.json()) as GeoJSON.FeatureCollection;
     allFeatures.push(...(collection.features as ParcelFeature[]));
 
+    // Content-Range: items 0-999/13381 — tells us the true total.
+    // Use it to decide whether another page exists.
+    const contentRange = resp.headers.get("Content-Range");
+    if (contentRange) {
+      const match = /(\d+)-(\d+)\/(\d+)/.exec(contentRange);
+      if (match) {
+        const end = parseInt(match[2], 10);
+        const total = parseInt(match[3], 10);
+        if (end + 1 >= total) break;
+        offset = end + 1;
+        continue;
+      }
+    }
+
+    // Fallback: if Supabase didn't send Content-Range, stop when the
+    // returned page is smaller than what we asked for.
     if (collection.features.length < PAGE_SIZE) break;
     offset += PAGE_SIZE;
   }
