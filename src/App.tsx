@@ -1,4 +1,5 @@
 import { startTransition, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { AnalysisNarrative } from "./components/AnalysisNarrative";
 import { AnalysisTabs, type AnalysisScale } from "./components/AnalysisTabs";
 import { BlockPanel, type BlockView } from "./components/BlockPanel";
@@ -17,6 +18,7 @@ import { ParcelDetailPanel, type PropertyView } from "./components/ParcelDetailP
 import { PermitWorkComparisonTable } from "./components/PermitWorkComparisonTable";
 import { ProductEvidencePanel } from "./components/ProductEvidencePanel";
 import { GrowthStoryPanel } from "./components/GrowthStoryPanel";
+import { RankedInsightSection } from "./components/RankedInsightSection";
 import { RoadParcelTimelinePanel } from "./components/RoadParcelTimelinePanel";
 import { SearchPanel } from "./components/SearchPanel";
 import { TimelineControl } from "./components/TimelineControl";
@@ -24,8 +26,13 @@ import { VisualizationPanel, type VisualizationPreset } from "./components/Visua
 import { DataCoverageNotice } from "./components/cards/DataCoverageNotice";
 import { StartHereSection } from "./components/layout/StartHereSection";
 import { computeDataCoverage } from "./lib/dataCoverage";
+import {
+  computeTopPermitted,
+  computeTopOldest,
+  computeTopAssessedChange
+} from "./lib/rankedInsights";
 import { useParcelDetail } from "./hooks/useParcelDetail";
-import { useParkRidgeData } from "./hooks/useParkRidgeData";
+import { useParkRidgeContext } from "./contexts/ParkRidgeDataContext";
 import { decadeOrder } from "./lib/colorScales";
 import { buildPhysicalBlock, parcelCollectionFromFeatures } from "./lib/physicalBlock";
 import { loadHistoricalLayerData } from "./lib/layerLoaders";
@@ -79,7 +86,7 @@ const emptyAreas: AreaSummaryCollection = {
 };
 
 export default function App() {
-  const { parcels, boundary, wardBoundaries, historicalLayers, roadParcelHistory } = useParkRidgeData();
+  const { parcels, boundary, wardBoundaries, historicalLayers, roadParcelHistory } = useParkRidgeContext();
   const [showOutlines, setShowOutlines] = useState(true);
   const [showBoundary, setShowBoundary] = useState(true);
   const [showPermitPressure, setShowPermitPressure] = useState(true);
@@ -213,6 +220,20 @@ export default function App() {
 
   // Data coverage stats for city scale
   const cityDataCoverage = useMemo(() => computeDataCoverage(parcels), [parcels]);
+
+  // Ranked insight lists for city tab
+  const rankedTopPermitted = useMemo(
+    () => computeTopPermitted(parcels?.features ?? []),
+    [parcels]
+  );
+  const rankedTopOldest = useMemo(
+    () => computeTopOldest(parcels?.features ?? []),
+    [parcels]
+  );
+  const rankedTopAssessedChange = useMemo(
+    () => computeTopAssessedChange(parcels?.features ?? []),
+    [parcels]
+  );
 
   const selectedAreaParcels = useMemo<ParcelCollection | null>(() => {
     if (!selectedArea || !pressureDecoratedParcels) return null;
@@ -519,6 +540,11 @@ export default function App() {
     setActiveAnalysisScale("home");
   }
 
+  function selectPropertyByPin(pin: string) {
+    setSelectedPin(pin || null);
+    setActiveAnalysisScale("home");
+  }
+
   function selectBlockParcel(feature: ParcelFeature) {
     setSelectedPin(feature.properties.pin_normalized || feature.properties.pin_original || null);
     setActiveAnalysisScale("block");
@@ -743,9 +769,11 @@ export default function App() {
               <path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V10.5z" />
               <polyline points="9 21 9 12 15 12 15 21" />
             </svg>
-            <span className="app-header-title">Park Ridge Land History</span>
+            <Link to="/" className="app-header-title-link">
+              <span className="app-header-title">Park Ridge Land History</span>
+            </Link>
           </div>
-          <span className="app-header-tagline">Property records, source-backed</span>
+          <span className="app-header-tagline">Map Explorer · <Link to="/" className="app-header-home-link">← Back to site</Link></span>
         </header>
         <div className="analysis-workspace-card">
           <AnalysisTabs activeScale={activeAnalysisScale} onSetScale={setAnalysisScale} />
@@ -895,6 +923,18 @@ export default function App() {
               />
               <ChangeStoryCard scope="city" parcels={pressureDecoratedParcels} />
               <GrowthStoryPanel parcels={parcels} />
+              <RankedInsightSection
+                insight={rankedTopOldest}
+                onSelectProperty={selectPropertyByPin}
+              />
+              <RankedInsightSection
+                insight={rankedTopPermitted}
+                onSelectProperty={selectPropertyByPin}
+              />
+              <RankedInsightSection
+                insight={rankedTopAssessedChange}
+                onSelectProperty={selectPropertyByPin}
+              />
               {activeVisualizationPreset === "age" && (
                 <>
                   <DecadeComparisonTable parcels={pressureDecoratedParcels} />
