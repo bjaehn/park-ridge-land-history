@@ -1,27 +1,34 @@
-"""Script 02: Download Cook County GIS parcel data with subdivision fields.
+"""Script 02: Download subdivision IDs for Park Ridge parcels from Cook County Assessor Socrata.
 
-Extends the existing parcel download to include all available subdivision-related
-fields from the Cook County ArcGIS FeatureServer.
+Cook County GIS FeatureServer has no subdivision fields (confirmed by script 01).
+The Cook County Assessor Parcel Universe (nj4t-kc8j) has:
+  misc_subdivision_id       — text, internal Assessor neighborhood/grid code (e.g. '0915F_F')
+  misc_subdivision_data_year — number, the tax year that assignment applies to
 
-Reads the field inspection report from script 01 to know which fields to request.
-If no subdivision fields are available, this script documents that gap and exits.
+IMPORTANT: misc_subdivision_id is a Cook County internal assessment area code (not a legal
+plat name). Format: <township><section><grid> e.g. '0915F_F' = Maine Twp, section 15, grid F_F.
+Parcels sharing a code were assessed together and likely share a common plat origin.
 
-Also checks for subdivision data in the Cook County Assessor Parcel Universe
-Socrata dataset if subdivision columns were found there by script 01.
+The dataset has one row per PIN per tax year. This script deduplicates to the most recent
+year with a non-null subdivision_id per PIN.
+
+Querying by municipality name causes a full table scan and times out. We query by PIN
+chunks instead, using our existing parcel_universe.csv as the PIN source.
 
 Outputs:
-  data/raw/cook_county_parcels_with_subdivisions.geojson
+  data/interim/subdivisions/socrata_parcel_subdivision_ids.json
   data/interim/subdivisions/download_report.json
 
 Usage:
   python -m scripts.data.subdivisions.02_download_cook_gis_parcels_subdivisions
-  python -m scripts.data.subdivisions.02_download_cook_gis_parcels_subdivisions --municipality "CITY OF PARK RIDGE"
+  python -m scripts.data.subdivisions.02_download_cook_gis_parcels_subdivisions --sample
   python -m scripts.data.subdivisions.02_download_cook_gis_parcels_subdivisions --force
 """
 
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import math
 import time
@@ -33,196 +40,166 @@ from typing import Any
 from dotenv import load_dotenv
 
 from scripts.data_sources import PROJECT_ROOT
-from scripts.pipeline_utils import normalize_pin
 
-PARCEL_FEATURE_SERVER = "https://gis.cookcountyil.gov/hosting/rest/services/Hosted/Parcel/FeatureServer/0/query"
 SOCRATA_UNIVERSE = "https://datacatalog.cookcountyil.gov/resource/nj4t-kc8j.json"
+MUNICIPALITY_VALUE = "CITY OF PARK RIDGE"
 
 INTERIM_DIR = PROJECT_ROOT / "data/interim/subdivisions"
 RAW_DIR = PROJECT_ROOT / "data/raw"
 
-KNOWN_SUBDIVISION_FIELD_ALIASES = {
-    "subdivisio", "subdivision", "subdiv", "plat", "platname",
-    "lot", "lotno", "lot_no", "lot_number",
-    "block", "blockno", "block_no", "block_number",
-}
+FIELDS = ["pin", "misc_subdivision_id", "misc_subdivision_data_year"]
+CHUNK_SIZE = 100  # PINs per Socrata IN-clause request
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Download Cook County GIS parcels with subdivision fields."
+        description="Download subdivision IDs for Park Ridge parcels from Socrata."
     )
-    parser.add_argument("--municipality", default="CITY OF PARK RIDGE")
-    parser.add_argument("--chunk-size", type=int, default=75)
-    parser.add_argument("--force", action="store_true")
+    parser.add_argument(
+        "--sample",
+        action="store_true",
+        help="Fetch data for the first 10 PINs and print results; do not write output files.",
+    )
+    parser.add_argument("--force", action="store_true", help="Overwrite existing output.")
     args = parser.parse_args()
 
     load_dotenv(PROJECT_ROOT / ".env")
     INTERIM_DIR.mkdir(parents=True, exist_ok=True)
-    RAW_DIR.mkdir(parents=True, exist_ok=True)
 
-    output_path = RAW_DIR / "cook_county_parcels_with_subdivisions.geojson"
+    output_path = INTERIM_DIR / "socrata_parcel_subdivision_ids.json"
     report_path = INTERIM_DIR / "download_report.json"
 
-    if output_path.exists() and not args.force:
+    if not args.sample and output_path.exists() and not args.force:
         print(f"Skip existing {output_path.relative_to(PROJECT_ROOT)}; pass --force to overwrite.")
         return
 
-    # Load field inspection report from script 01
-    field_report_path = INTERIM_DIR / "cook_gis_parcel_field_report.json"
-    if not field_report_path.exists():
-        print("Field report not found. Run 01_inspect_cook_gis_fields.py first.")
-        print(f"Expected: {field_report_path.relative_to(PROJECT_ROOT)}")
+    pins = load_park_ridge_pins()
+    print(f"Loaded {len(pins)} Park Ridge PINs from parcel_universe.csv.")
+
+    if args.sample:
+        sample_pins = pins[:10]
+        print(f"\n--- SAMPLE MODE: fetching data for {len(sample_pins)} PINs ---")
+        rows = fetch_pins_chunk(sample_pins)
+        print(f"Raw rows returned: {len(rows)}")
+        deduped = deduplicate_by_pin(rows)
+        print(f"After deduplication (most recent year per PIN): {len(deduped)} records\n")
+        for pin, rec in sorted(deduped.items()):
+            sub_id = rec.get("misc_subdivision_id", "<none>")
+            sub_year = rec.get("misc_subdivision_data_year", "<none>")
+            print(f"  pin={pin}  subdivision_id={sub_id!r}  year={sub_year}")
+        print()
+        print("Note: misc_subdivision_id is an internal Cook County Assessor area code,")
+        print("not a legal plat name. Format: <township><section><grid> e.g. '0915F_F'.")
         return
 
-    with field_report_path.open(encoding="utf-8") as f:
-        field_report = json.load(f)
+    all_rows = fetch_all_pins(pins)
+    deduped = deduplicate_by_pin(all_rows)
 
-    subdivision_fields = field_report.get("subdivision_candidate_fields", [])
-    all_fields = field_report.get("all_fields", [])
+    with_value = {pin: rec for pin, rec in deduped.items() if rec.get("misc_subdivision_id")}
+    unique_ids = sorted(set(rec["misc_subdivision_id"] for rec in with_value.values()))
 
-    # Build field list: always include PIN fields + any subdivision fields found
-    base_fields = ["name", "pin10", "parceltype", "taxcode"]
-    subdivision_field_names = [f["name"] for f in subdivision_fields]
-    out_fields = base_fields + [f for f in subdivision_field_names if f not in base_fields]
+    pct = round(len(with_value) / max(len(pins), 1) * 100, 1)
+    print(f"\n{len(with_value)} of {len(pins)} PINs ({pct}%) have a misc_subdivision_id.")
+    print(f"{len(unique_ids)} unique subdivision ID codes found.")
+
+    print(f"\n--- Unique misc_subdivision_id values (up to 40) ---")
+    for val in unique_ids[:40]:
+        count = sum(1 for rec in with_value.values() if rec.get("misc_subdivision_id") == val)
+        print(f"  {val!r:20s}  ({count} parcels)")
+    if len(unique_ids) > 40:
+        print(f"  ... and {len(unique_ids) - 40} more")
+
+    output = list(deduped.values())
+    output_path.write_text(json.dumps(output, indent=2), encoding="utf-8")
+    print(f"\nWrote {output_path.relative_to(PROJECT_ROOT)} ({len(output)} records)")
 
     report: dict[str, Any] = {
-        "municipality": args.municipality,
-        "fields_requested": out_fields,
-        "subdivision_fields_found": subdivision_fields,
-        "features_downloaded": 0,
-        "features_with_subdivision_value": 0,
-        "status": "pending",
-        "notes": [],
+        "source": SOCRATA_UNIVERSE,
+        "municipality": MUNICIPALITY_VALUE,
+        "query_method": "pin_chunks",
+        "chunk_size": CHUNK_SIZE,
+        "total_pins_queried": len(pins),
+        "total_raw_rows": len(all_rows),
+        "pins_with_subdivision_id": len(with_value),
+        "pins_without_subdivision_id": len(deduped) - len(with_value),
+        "unique_subdivision_ids": len(unique_ids),
+        "sample_subdivision_ids": unique_ids[:50],
+        "note": (
+            "misc_subdivision_id is an internal Cook County Assessor area code "
+            "(format: <township><section><grid>, e.g. '0915F_F'), not a legal plat name."
+        ),
+        "status": "complete",
     }
-
-    if not subdivision_fields:
-        msg = (
-            "No subdivision fields found in Cook County GIS parcel layer. "
-            "Downloading base parcel data only. "
-            "Subdivision data must come from manual research or the land family CSV."
-        )
-        print(f"\n{msg}")
-        report["notes"].append(msg)
-        report["status"] = "no_subdivision_fields_available"
-        report_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
-
-        # Still download with base fields in case this file is needed
-        print("Downloading base parcel data (no subdivision fields)...")
-    else:
-        print(f"\nFound {len(subdivision_fields)} subdivision field(s): {subdivision_field_names}")
-        print(f"Downloading parcels for {args.municipality} with fields: {out_fields}...")
-
-    # Get PIN list from existing parcel universe if available
-    universe_path = RAW_DIR / "parcel_universe.csv"
-    if universe_path.exists():
-        pins = load_pins_from_universe(universe_path, args.municipality)
-        print(f"Loaded {len(pins)} PINs from existing parcel universe.")
-    else:
-        print("Parcel universe not found. Run the main pipeline first.")
-        print("Downloading all parcels for municipality via GIS attribute filter instead...")
-        pins = None
-
-    features = download_parcel_features(pins, out_fields, args.chunk_size)
-    report["features_downloaded"] = len(features)
-
-    if subdivision_fields:
-        sub_field = subdivision_field_names[0]
-        with_value = sum(
-            1 for f in features
-            if f.get("properties", {}).get(sub_field) not in (None, "", "NULL", "N/A")
-        )
-        report["features_with_subdivision_value"] = with_value
-        pct = round((with_value / max(len(features), 1)) * 100, 1)
-        print(f"  {with_value} of {len(features)} parcels ({pct}%) have a {sub_field} value.")
-
-    geojson = {"type": "FeatureCollection", "name": "cook_county_park_ridge_parcels_subdivisions", "features": features}
-    output_path.write_text(json.dumps(geojson), encoding="utf-8")
-    print(f"Wrote {output_path.relative_to(PROJECT_ROOT)} ({len(features)} features)")
-
-    report["status"] = "complete"
     report_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
     print(f"Wrote {report_path.relative_to(PROJECT_ROOT)}")
-
-    if not subdivision_fields:
-        print("\nNEXT STEPS (no subdivision fields in GIS layer):")
-        print("  1. Check Cook County GIS Hub at cookcountyilgis.hub.arcgis.com for a complete parcel layer.")
-        print("  2. Research subdivision names via Cook County Recorder at ccrd.info.")
-        print("  3. Populate data/raw/park_ridge_land_family.csv with subdivision clues.")
-        print("  4. Then run script 03 to extract subdivision candidates from available data.")
-    else:
-        print("\nNEXT STEP: Run 03_extract_subdivision_candidates.py")
+    print("\nNEXT STEP: Run 03_extract_subdivision_candidates.py")
 
 
-def load_pins_from_universe(path: Path, municipality: str) -> list[str]:
-    import csv
+def load_park_ridge_pins() -> list[str]:
+    universe_path = RAW_DIR / "parcel_universe.csv"
+    if not universe_path.exists():
+        raise FileNotFoundError(
+            f"parcel_universe.csv not found at {universe_path}. "
+            "Run the main pipeline download first."
+        )
     pins = []
-    with path.open(encoding="utf-8") as f:
+    with universe_path.open(encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
             muni = row.get("cook_municipality_name", "").strip().upper()
-            if municipality.upper() in muni or muni in municipality.upper():
-                result = normalize_pin(row.get("pin"))
-                if result.get("pin_valid"):
-                    pins.append(result["pin_normalized"])
+            if MUNICIPALITY_VALUE in muni or "PARK RIDGE" in muni:
+                pin = row.get("pin", "").strip()
+                if pin:
+                    pins.append(pin)
     return sorted(set(pins))
 
 
-def download_parcel_features(
-    pins: list[str] | None,
-    out_fields: list[str],
-    chunk_size: int,
-) -> list[dict[str, Any]]:
-    features: list[dict[str, Any]] = []
-    seen: set[str] = set()
-
-    if pins:
-        total_chunks = math.ceil(len(pins) / chunk_size)
-        for index, chunk in enumerate(chunks(pins, chunk_size), start=1):
-            where = f"name in ({quoted_list(chunk)})"
-            batch = arcgis_query(where, out_fields)
-            for feature in batch:
-                pin = feature.get("properties", {}).get("name")
-                if pin and pin not in seen:
-                    seen.add(pin)
-                    features.append(feature)
-            print(f"  chunk {index}/{total_chunks}: {len(features)} features total")
-            time.sleep(0.05)
-    else:
-        # Fallback: query by parcel type without a PIN filter
-        print("  No PIN list available; downloading all parcel features...")
-        batch = arcgis_query("1=1", out_fields, result_record_count=5000)
-        features.extend(batch)
-        print(f"  Downloaded {len(features)} parcel features.")
-
-    return features
-
-
-def arcgis_query(where: str, out_fields: list[str], result_record_count: int | None = None) -> list[dict[str, Any]]:
-    params: dict[str, str] = {
-        "f": "geojson",
-        "outFields": ",".join(out_fields),
-        "returnGeometry": "true",
-        "outSR": "4326",
-        "where": where,
+def fetch_pins_chunk(pins: list[str]) -> list[dict[str, Any]]:
+    pin_list = ",".join(f"'{p}'" for p in pins)
+    params = {
+        "$select": ",".join(FIELDS),
+        "$where": f"pin in ({pin_list})",
+        "$limit": str(len(pins) * 20),  # up to 20 tax years per PIN
     }
-    if result_record_count:
-        params["resultRecordCount"] = str(result_record_count)
-    url = f"{PARCEL_FEATURE_SERVER}?{urllib.parse.urlencode(params, safe=',()*=')}"
-    with urllib.request.urlopen(url, timeout=90) as response:
-        payload = json.loads(response.read().decode("utf-8"))
-    if "error" in payload:
-        raise RuntimeError(f"ArcGIS error: {payload['error']}")
-    return payload.get("features", [])
+    safe_chars = "',()="
+    url = f"{SOCRATA_UNIVERSE}?{urllib.parse.urlencode(params, safe=safe_chars)}"
+    req = urllib.request.Request(url, headers={"Accept": "application/json"})
+    with urllib.request.urlopen(req, timeout=60) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+
+def fetch_all_pins(pins: list[str]) -> list[dict[str, Any]]:
+    all_rows: list[dict[str, Any]] = []
+    total_chunks = math.ceil(len(pins) / CHUNK_SIZE)
+    for i, chunk in enumerate(chunks(pins, CHUNK_SIZE), start=1):
+        rows = fetch_pins_chunk(chunk)
+        all_rows.extend(rows)
+        print(f"  chunk {i}/{total_chunks}: {len(all_rows)} rows total")
+        time.sleep(0.1)
+    return all_rows
+
+
+def deduplicate_by_pin(rows: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    """Keep the most recent row with a non-null misc_subdivision_id per PIN.
+    Falls back to the most recent row overall if no row has a subdivision_id.
+    """
+    by_pin: dict[str, list[dict[str, Any]]] = {}
+    for row in rows:
+        pin = row.get("pin", "")
+        by_pin.setdefault(pin, []).append(row)
+
+    result: dict[str, dict[str, Any]] = {}
+    for pin, pin_rows in by_pin.items():
+        with_id = [r for r in pin_rows if r.get("misc_subdivision_id")]
+        candidates = with_id if with_id else pin_rows
+        best = max(candidates, key=lambda r: int(r.get("misc_subdivision_data_year") or 0))
+        result[pin] = best
+    return result
 
 
 def chunks(values: list[str], size: int):
     for i in range(0, len(values), size):
         yield values[i: i + size]
-
-
-def quoted_list(values) -> str:
-    return ",".join(f"'{v}'" for v in values)
 
 
 if __name__ == "__main__":
