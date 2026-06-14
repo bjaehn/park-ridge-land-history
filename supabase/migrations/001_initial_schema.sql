@@ -1,0 +1,3 @@
+-- Stub: this migration was applied directly to the remote database before
+-- local migration tracking was set up. Kept here so the Supabase CLI does
+-- not report a version mismatch on db push.
