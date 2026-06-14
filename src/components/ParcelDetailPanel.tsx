@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { formatCurrency, formatFlags, formatNumber, formatYear } from "../lib/formatters";
+import { propertyPath } from "../routes/routeConfig";
 import type { PermitPressureWindow } from "../lib/permitPressure";
 import type { ParcelCollection, ParcelFeature } from "../lib/parcelTypes";
 import { HouseRelatives } from "./HouseRelatives";
@@ -99,6 +101,20 @@ export function ParcelDetailPanel({
           <div className="parcel-header-address">{properties.address || "Selected parcel"}</div>
           <div className="parcel-header-meta">
             {properties.hargis_record_count ? <span className="parcel-chip parcel-chip-green">Historic survey</span> : null}
+            {(properties.pin_normalized || properties.pin_original) && (
+              <Link
+                to={propertyPath(properties.pin_normalized ?? properties.pin_original ?? "")}
+                className="parcel-full-page-link"
+                title="Open the full property page"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+                </svg>
+                Full page
+              </Link>
+            )}
           </div>
         </div>
         <button className="parcel-clear-btn" type="button" onClick={onClearSelection} aria-label="Clear selection">

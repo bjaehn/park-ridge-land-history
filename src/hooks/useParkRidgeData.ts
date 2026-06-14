@@ -53,51 +53,48 @@ const MAP_COLUMNS = [
 // reached the last row.
 const PAGE_SIZE = 1000;
 
+async function fetchPage(
+  url: string,
+  headers: Record<string, string>,
+  from: number,
+  to: number
+): Promise<{ features: ParcelFeature[]; total: number | null }> {
+  const resp = await fetch(url, {
+    headers: { ...headers, Range: `${from}-${to}`, Prefer: "count=exact" },
+  });
+  if (!resp.ok) throw new Error(`Supabase parcels fetch failed: HTTP ${resp.status}`);
+  const collection = (await resp.json()) as GeoJSON.FeatureCollection;
+  const contentRange = resp.headers.get("Content-Range");
+  const match = contentRange ? /(\d+)-(\d+)\/(\d+)/.exec(contentRange) : null;
+  const total = match ? parseInt(match[3], 10) : null;
+  return { features: collection.features as ParcelFeature[], total };
+}
+
 async function fetchParcelsFromSupabase(): Promise<ParcelCollection> {
   const { supabaseUrl, supabaseKey } = getSupabaseCredentials();
-  const allFeatures: ParcelFeature[] = [];
-  let offset = 0;
+  const url = `${supabaseUrl}/rest/v1/parcels?select=${MAP_COLUMNS}`;
+  const headers: Record<string, string> = {
+    apikey: supabaseKey,
+    Authorization: `Bearer ${supabaseKey}`,
+    Accept: "application/geo+json",
+    "Range-Unit": "items",
+  };
 
-  while (true) {
-    const resp = await fetch(
-      `${supabaseUrl}/rest/v1/parcels?select=${MAP_COLUMNS}`,
-      {
-        headers: {
-          apikey: supabaseKey,
-          Authorization: `Bearer ${supabaseKey}`,
-          Accept: "application/geo+json",
-          "Range-Unit": "items",
-          Range: `${offset}-${offset + PAGE_SIZE - 1}`,
-          Prefer: "count=exact",
-        },
-      }
-    );
+  // First page tells us the total row count via Content-Range
+  const first = await fetchPage(url, headers, 0, PAGE_SIZE - 1);
 
-    if (!resp.ok) throw new Error(`Supabase parcels fetch failed: HTTP ${resp.status}`);
-
-    const collection = (await resp.json()) as GeoJSON.FeatureCollection;
-    allFeatures.push(...(collection.features as ParcelFeature[]));
-
-    // Content-Range: items 0-999/13381 — tells us the true total.
-    // Use it to decide whether another page exists.
-    const contentRange = resp.headers.get("Content-Range");
-    if (contentRange) {
-      const match = /(\d+)-(\d+)\/(\d+)/.exec(contentRange);
-      if (match) {
-        const end = parseInt(match[2], 10);
-        const total = parseInt(match[3], 10);
-        if (end + 1 >= total) break;
-        offset = end + 1;
-        continue;
-      }
-    }
-
-    // Fallback: if Supabase didn't send Content-Range, stop when the
-    // returned page is smaller than what we asked for.
-    if (collection.features.length < PAGE_SIZE) break;
-    offset += PAGE_SIZE;
+  if (!first.total || first.total <= PAGE_SIZE) {
+    return { type: "FeatureCollection", features: first.features };
   }
 
+  // Build all remaining page requests and fire them in parallel
+  const remainingPages: Promise<{ features: ParcelFeature[]; total: number | null }>[] = [];
+  for (let from = PAGE_SIZE; from < first.total; from += PAGE_SIZE) {
+    remainingPages.push(fetchPage(url, headers, from, from + PAGE_SIZE - 1));
+  }
+
+  const rest = await Promise.all(remainingPages);
+  const allFeatures = [first.features, ...rest.map((r) => r.features)].flat();
   return { type: "FeatureCollection", features: allFeatures };
 }
 
