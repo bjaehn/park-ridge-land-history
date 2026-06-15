@@ -67,11 +67,11 @@ export function CityContent() {
 
       <div className="two-col-layout">
         <div>
-          <p className="section-heading">Construction by decade</p>
+          <p className="section-heading">When Park Ridge was built, wave by wave</p>
           <ConstructionByDecadeChart rows={rows} />
         </div>
         <div>
-          <p className="section-heading">Decade breakdown</p>
+          <p className="section-heading">Homes by decade</p>
           <CoverageTable rows={rows} total={total} />
         </div>
       </div>

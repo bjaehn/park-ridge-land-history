@@ -68,11 +68,11 @@ export function NeighborhoodDetailContent({ neighborhoodId, label, slug }: Props
 
       <div className="two-col-layout">
         <div>
-          <p className="section-heading">Construction by decade in {label}</p>
+          <p className="section-heading">When {label} took shape</p>
           <ConstructionByDecadeChart rows={detail.decadeRows} />
         </div>
         <div>
-          <p className="section-heading">Decade breakdown</p>
+          <p className="section-heading">Homes by decade</p>
           <CoverageTable rows={detail.decadeRows} total={total} />
         </div>
       </div>

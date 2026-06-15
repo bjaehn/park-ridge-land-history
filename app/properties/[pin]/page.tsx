@@ -54,7 +54,14 @@ export default async function PropertyDetailPage({ params }: Props) {
 
       <div className="two-col-layout">
         <div>
-          <PropertyDetailContent pin={pin} />
+          <PropertyDetailContent
+            pin={pin}
+            streetDisplayName={
+              property.streetName
+                ? property.streetName.replace(/\b\w/g, (c) => c.toUpperCase())
+                : undefined
+            }
+          />
         </div>
         <div>
           <p className="section-heading">Property map</p>

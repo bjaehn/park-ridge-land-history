@@ -4,7 +4,16 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { formatAddress } from "@/lib/formatters";
 import { fetchHighlights } from "@/lib/data/highlights";
+import { YearBuiltIcon, PermitIcon, SaleIcon, HighlightIcon } from "@/lib/icons";
 import type { HighlightScope, HighlightCategory, HighlightParcel } from "@/lib/data/highlights";
+import type { LucideIcon } from "lucide-react";
+
+const CATEGORY_ICONS: Record<HighlightCategory, LucideIcon> = {
+  oldest:           YearBuiltIcon,
+  most_active:      PermitIcon,
+  newest:           HighlightIcon,
+  most_recent_sale: SaleIcon,
+};
 
 export type HighlightGroup = {
   heading: string;
@@ -72,26 +81,39 @@ export function HighlightReel({ scope, scopeId, groups, limit = 5 }: Props) {
           <div key={g.category}>
             <p className="section-heading">{g.heading}</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {g.items.map((item) => (
+              {g.items.map((item) => {
+                const CatIcon = CATEGORY_ICONS[g.category];
+                return (
                 <Link
                   key={item.pin}
                   href={`/properties/${encodeURIComponent(item.pin)}`}
                   className="bg-surface-card border border-surface-border rounded-lg p-4 hover:border-accent-purple/40 hover:bg-surface-raised transition-colors"
                 >
-                  <p className="text-sm font-medium text-text-primary leading-snug mb-1.5">
+                  <p className="text-sm font-medium text-text-primary leading-snug mb-2">
                     {formatAddress(item.address)}
                   </p>
-                  <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-text-secondary">
-                    {item.yearBuilt != null && <span>Built {item.yearBuilt}</span>}
+                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-text-secondary">
+                    {item.yearBuilt != null && (
+                      <span className="flex items-center gap-1">
+                        <YearBuiltIcon size={11} strokeWidth={2} aria-hidden="true" />
+                        Built {item.yearBuilt}
+                      </span>
+                    )}
                     {item.permitCount != null && item.permitCount > 0 && (
-                      <span>{item.permitCount} {item.permitCount === 1 ? "permit" : "permits"}</span>
+                      <span className="flex items-center gap-1">
+                        <PermitIcon size={11} strokeWidth={2} aria-hidden="true" />
+                        {item.permitCount} {item.permitCount === 1 ? "permit" : "permits"}
+                      </span>
                     )}
                     {item.latestSaleYear != null && (
-                      <span>Sold {item.latestSaleYear}</span>
+                      <span className="flex items-center gap-1">
+                        <SaleIcon size={11} strokeWidth={2} aria-hidden="true" />
+                        Sold {item.latestSaleYear}
+                      </span>
                     )}
                   </div>
                 </Link>
-              ))}
+              );})}
             </div>
           </div>
         );

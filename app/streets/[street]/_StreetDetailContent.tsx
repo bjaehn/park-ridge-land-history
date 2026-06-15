@@ -50,7 +50,7 @@ export function StreetDetailContent({ streetName, displayName }: Props) {
       />
 
       <div>
-        <p className="section-heading">Construction by decade on {displayName}</p>
+        <p className="section-heading">How {displayName} was built, decade by decade</p>
         <ConstructionByDecadeChart rows={detail.decadeRows} />
       </div>
 

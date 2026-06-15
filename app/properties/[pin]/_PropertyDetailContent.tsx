@@ -1,28 +1,63 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { StatGrid } from "@/components/ui/StatGrid";
+import Link from "next/link";
 import { ConfidenceBadge } from "@/components/ui/ConfidenceBadge";
 import { ComparisonList } from "@/components/ui/ComparisonList";
 import { EntityCard, UnresolvableEntityCard } from "@/components/ui/EntityCard";
 import { LoadingSkeleton } from "@/components/ui/EmptyState";
 import { InlineSourceNote } from "@/components/ui/SourceNote";
+import { PropertyTimeline, buildTimelineEvents } from "@/components/ui/PropertyTimeline";
+import {
+  YearBuiltIcon,
+  SizeIcon,
+  LotIcon,
+  AssessmentIcon,
+  PermitIcon,
+  SaleIcon,
+  SubdivisionIcon,
+  ComparisonIcon,
+  MissingIcon,
+  StreetIcon,
+} from "@/lib/icons";
 import {
   formatAddress,
   formatCurrency,
-  formatNumber,
   formatSqft,
   formatYear,
   formatCount,
   confidenceFor,
-  getChangeSignal,
-  SIGNAL_DESCRIPTION,
 } from "@/lib/formatters";
 import { getPropertyDetail } from "@/lib/data/properties";
+import type { LucideIcon } from "lucide-react";
 
-type Props = { pin: string };
+type Props = { pin: string; streetDisplayName?: string };
 
-export function PropertyDetailContent({ pin }: Props) {
+type IconRowItem = {
+  icon: LucideIcon;
+  label: string;
+  value: string | null;
+};
+
+function IconRow({ items }: { items: IconRowItem[] }) {
+  const filtered = items.filter((i) => i.value !== null && i.value !== "");
+  if (!filtered.length) return null;
+  return (
+    <dl className="grid grid-cols-2 gap-x-6 gap-y-4">
+      {filtered.map((item) => (
+        <div key={item.label} className="flex items-start gap-2.5">
+          <item.icon size={15} strokeWidth={1.8} className="text-text-muted mt-0.5 shrink-0" aria-hidden="true" />
+          <div className="min-w-0">
+            <dt className="text-xs text-text-muted">{item.label}</dt>
+            <dd className="text-sm font-medium text-text-primary">{item.value}</dd>
+          </div>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+export function PropertyDetailContent({ pin, streetDisplayName }: Props) {
   const [detail, setDetail] = useState<Awaited<ReturnType<typeof getPropertyDetail>> | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -43,84 +78,127 @@ export function PropertyDetailContent({ pin }: Props) {
     source_note: props.source_note,
     improvement_count: props.improvement_count,
   });
-  const signal = getChangeSignal({
-    permit_count: props.permit_count,
-    sale_count: props.sale_count,
-    recent_teardown_count: props.nearby_teardown_count,
-    recent_permit_count: props.recent_permit_count,
-  });
+
+  const permitCount = props.permit_count as number | null;
+  const saleCount = props.sale_count as number | null;
+  const latestPermitYear = props.latest_permit_year as number | null;
+  const latestSaleYear = props.latest_sale_year as number | null;
+  const latestSalePrice = props.latest_sale_price as number | null;
+
+  const timeline = buildTimelineEvents(props as Record<string, unknown>, detail.subdivision);
+
+  const vitals: IconRowItem[] = [
+    { icon: YearBuiltIcon, label: "Year built", value: formatYear(props.year_built) },
+    { icon: SizeIcon,      label: "Building size", value: formatSqft(props.building_sqft) },
+    { icon: LotIcon,       label: "Lot size", value: formatSqft(props.land_sqft) },
+    { icon: AssessmentIcon, label: "Latest assessed value", value: formatCurrency(props.latest_assessed_total) },
+  ];
+
+  const missingGaps: string[] = [];
+  if (!props.year_built) missingGaps.push("Build year not in assessor records");
+  if (!detail.subdivision) missingGaps.push("Recorded plat not yet identified");
+  if (!permitCount || permitCount === 0) missingGaps.push("No permit history in dataset");
+  if (!saleCount || saleCount === 0) missingGaps.push("No recorded sales in dataset");
 
   return (
-    <div className="space-y-8">
-      {/* What we know */}
+    <div className="space-y-10">
+      {/* Confidence + vitals */}
       <section>
-        <p className="section-heading">What we know</p>
-        <div className="flex items-start justify-between mb-3">
+        <div className="mb-4">
           <ConfidenceBadge level={confidence} showDescription />
         </div>
-        <StatGrid
-          columns={2}
-          stats={[
-            { value: formatYear(props.year_built), label: "Year built" },
-            { value: formatSqft(props.building_sqft), label: "Building size" },
-            { value: formatSqft(props.land_sqft), label: "Lot size" },
-            { value: formatCurrency(props.latest_assessed_total), label: "Latest assessed value" },
-          ]}
-        />
+        <IconRow items={vitals} />
       </section>
 
-      {/* Change signal */}
-      <section>
-        <p className="section-heading">Change activity</p>
-        <div className="bg-surface-card border border-surface-border rounded-lg p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-base font-semibold text-text-primary">{signal}</span>
-          </div>
-          <p className="text-sm text-text-secondary mb-3">{SIGNAL_DESCRIPTION[signal]}</p>
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            <div>
-              <span className="text-text-muted">Permits: </span>
-              <span className="text-text-primary">{formatCount(props.permit_count ?? 0, "permit", "permits")}</span>
-            </div>
-            <div>
-              <span className="text-text-muted">Sales: </span>
-              <span className="text-text-primary">{formatCount(props.sale_count ?? 0, "sale", "sales")}</span>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Evidence timeline */}
+      {timeline.length > 0 && (
+        <section>
+          <p className="section-heading">Evidence trail</p>
+          <PropertyTimeline events={timeline} />
+        </section>
+      )}
 
-      {/* Subdivision cross-link */}
+      {/* Permit and sale activity */}
+      {((permitCount && permitCount > 0) || (saleCount && saleCount > 0)) && (
+        <section>
+          <p className="section-heading">Activity record</p>
+          <div className="grid grid-cols-2 gap-4">
+            {permitCount != null && permitCount > 0 && (
+              <div className="bg-surface-card border border-surface-border rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <PermitIcon size={14} strokeWidth={1.8} className="text-confidence-medium" aria-hidden="true" />
+                  <span className="text-xs font-semibold text-text-secondary uppercase tracking-wide">Permits</span>
+                </div>
+                <p className="text-2xl font-bold text-text-primary leading-none mb-1">{permitCount}</p>
+                <p className="text-xs text-text-muted">
+                  {latestPermitYear ? `Most recent: ${latestPermitYear}` : "on record"}
+                </p>
+              </div>
+            )}
+            {saleCount != null && saleCount > 0 && (
+              <div className="bg-surface-card border border-surface-border rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <SaleIcon size={14} strokeWidth={1.8} className="text-confidence-high" aria-hidden="true" />
+                  <span className="text-xs font-semibold text-text-secondary uppercase tracking-wide">Sales</span>
+                </div>
+                <p className="text-2xl font-bold text-text-primary leading-none mb-1">{saleCount}</p>
+                <p className="text-xs text-text-muted">
+                  {latestSaleYear
+                    ? latestSalePrice
+                      ? `Last sold ${latestSaleYear} for $${latestSalePrice.toLocaleString("en-US", { maximumFractionDigits: 0 })}`
+                      : `Most recent: ${latestSaleYear}`
+                    : "on record"}
+                </p>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* Recorded plat */}
       {detail.subdivision && (
         <section>
           <p className="section-heading">Recorded plat</p>
-          <EntityCard
-            href={`/subdivisions/${encodeURIComponent(detail.subdivision.id)}`}
-            eyebrow="This lot was created by"
-            title={detail.subdivision.name}
-            subtitle={
-              detail.subdivision.recorded_year
-                ? `Recorded ${detail.subdivision.recorded_year}${detail.subdivision.original_owner ? `. Developer: ${detail.subdivision.original_owner}` : ""}`
-                : "Recording date uncertain"
-            }
-          />
+          <div className="flex items-start gap-3 bg-surface-card border border-surface-border rounded-lg p-4">
+            <SubdivisionIcon size={16} strokeWidth={1.8} className="text-text-muted shrink-0 mt-0.5" aria-hidden="true" />
+            <div className="min-w-0">
+              <Link
+                href={`/subdivisions/${encodeURIComponent(detail.subdivision.id)}`}
+                className="text-sm font-semibold text-text-primary hover:text-accent-purple transition-colors"
+              >
+                {detail.subdivision.name}
+              </Link>
+              <p className="text-xs text-text-secondary mt-0.5">
+                {detail.subdivision.recorded_year
+                  ? `Recorded ${detail.subdivision.recorded_year}${detail.subdivision.original_owner ? `. Developer: ${detail.subdivision.original_owner}` : ""}`
+                  : "Recording date uncertain"}
+              </p>
+              <p className="text-xs text-text-muted mt-0.5">Cook County Recorder of Deeds</p>
+            </div>
+          </div>
         </section>
       )}
 
-      {/* Comparisons */}
-      {detail.comparisons && (
+      {/* How this property compares */}
+      {detail.comparisons && detail.comparisons.length > 0 && (
         <section>
-          <p className="section-heading">How this property compares</p>
-          <ComparisonList
-            rows={detail.comparisons}
-          />
+          <div className="flex items-center gap-2 mb-3">
+            <ComparisonIcon size={14} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />
+            <p className="section-heading !mb-0">How this property compares</p>
+          </div>
+          <ComparisonList rows={detail.comparisons} />
         </section>
       )}
 
-      {/* Related homes */}
+      {/* Other homes on this street */}
       {detail.relatedHomes && detail.relatedHomes.length > 0 && (
         <section>
-          <p className="section-heading">Other homes on this street</p>
+          <div className="flex items-center gap-2 mb-3">
+            <StreetIcon size={14} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />
+            <p className="section-heading !mb-0">
+              {streetDisplayName ? `Other homes on ${streetDisplayName}` : "Other homes on this street"}
+            </p>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {detail.relatedHomes.slice(0, 4).map((h) => {
               if (!h.address) return <UnresolvableEntityCard key={h.pin} pin={h.pin} />;
@@ -137,22 +215,40 @@ export function PropertyDetailContent({ pin }: Props) {
         </section>
       )}
 
-      {/* Raw data disclosure */}
+      {/* What we don't know yet */}
+      {missingGaps.length > 0 && (
+        <section>
+          <p className="section-heading">What we don't know yet</p>
+          <ul className="space-y-2">
+            {missingGaps.map((gap) => (
+              <li key={gap} className="flex items-start gap-2.5 text-sm text-text-muted">
+                <MissingIcon size={14} strokeWidth={1.8} className="shrink-0 mt-0.5" aria-hidden="true" />
+                {gap}
+              </li>
+            ))}
+          </ul>
+          <InlineSourceNote className="mt-3">
+            Missing records may be added as research progresses. If you know something about this property, contact us.
+          </InlineSourceNote>
+        </section>
+      )}
+
+      {/* Raw assessor data */}
       <details className="border border-surface-border rounded-lg overflow-hidden">
         <summary className="px-4 py-3 text-sm text-text-secondary cursor-pointer hover:text-text-primary hover:bg-surface-raised transition-colors">
-          Raw assessor data
+          Raw assessor record
         </summary>
         <div className="px-4 pb-4 pt-2">
           <InlineSourceNote>
             Raw fields from the Cook County assessor dataset. Owner names are omitted.
           </InlineSourceNote>
           <dl className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs">
-            <div><dt className="text-text-muted">PIN</dt><dd className="font-mono text-text-secondary">{props.pin_normalized ?? props.pin_original ?? "Unknown"}</dd></div>
+            <div><dt className="text-text-muted">PIN</dt><dd className="font-mono text-text-secondary">{props.pin_normalized ?? props.pin_original}</dd></div>
             <div><dt className="text-text-muted">Year built</dt><dd className="text-text-secondary">{formatYear(props.year_built)}</dd></div>
-            <div><dt className="text-text-muted">Municipality</dt><dd className="text-text-secondary">{props.municipality ?? "Unknown"}</dd></div>
-            <div><dt className="text-text-muted">Property class</dt><dd className="text-text-secondary">{props.property_class ?? "Unknown"}</dd></div>
-            <div><dt className="text-text-muted">Improvement count</dt><dd className="text-text-secondary">{formatNumber(props.improvement_count)}</dd></div>
-            <div><dt className="text-text-muted">Source note</dt><dd className="text-text-secondary">{props.source_note ?? "None"}</dd></div>
+            <div><dt className="text-text-muted">Municipality</dt><dd className="text-text-secondary">{(props.municipality as string | null) ?? "Not recorded"}</dd></div>
+            <div><dt className="text-text-muted">Property class</dt><dd className="text-text-secondary">{(props.property_class as string | null) ?? "Not recorded"}</dd></div>
+            <div><dt className="text-text-muted">Improvement count</dt><dd className="text-text-secondary">{formatCount(props.improvement_count as number | null ?? 0, "improvement", "improvements")}</dd></div>
+            <div><dt className="text-text-muted">Source note</dt><dd className="text-text-secondary">{(props.source_note as string | null) ?? "None"}</dd></div>
           </dl>
         </div>
       </details>

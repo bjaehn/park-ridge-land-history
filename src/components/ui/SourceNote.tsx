@@ -36,10 +36,11 @@ export function SourceNote({ sources, note }: Props) {
 
 type InlineProps = {
   children: string;
+  className?: string;
 };
 
-export function InlineSourceNote({ children }: InlineProps) {
+export function InlineSourceNote({ children, className }: InlineProps) {
   return (
-    <p className="text-xs text-text-muted italic mt-1">{children}</p>
+    <p className={`text-xs text-text-muted italic mt-1 ${className ?? ""}`}>{children}</p>
   );
 }
