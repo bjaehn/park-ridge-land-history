@@ -6,12 +6,21 @@ import { ConstructionByDecadeChart } from "@/components/ui/ConstructionByDecadeC
 import { CoverageTable } from "@/components/ui/CoverageTable";
 import { EntityCard } from "@/components/ui/EntityCard";
 import { LoadingSkeleton } from "@/components/ui/EmptyState";
+import { HighlightReel } from "@/components/ui/HighlightReel";
 import { getChangeSignal, formatNumber, formatCount } from "@/lib/formatters";
 import { getNeighborhoodDetail } from "@/lib/data/neighborhoods";
+import { NEIGHBORHOOD_NARRATIVES } from "@/lib/content";
+import type { HighlightGroup } from "@/components/ui/HighlightReel";
 
-type Props = { neighborhoodId: string; label: string };
+const NEIGHBORHOOD_HIGHLIGHTS: readonly HighlightGroup[] = [
+  { heading: "Oldest homes in this neighborhood", category: "oldest" },
+  { heading: "Most active properties", category: "most_active" },
+  { heading: "Most recently sold", category: "most_recent_sale" },
+];
 
-export function NeighborhoodDetailContent({ neighborhoodId, label }: Props) {
+type Props = { neighborhoodId: string; label: string; slug: string };
+
+export function NeighborhoodDetailContent({ neighborhoodId, label, slug }: Props) {
   const [detail, setDetail] = useState<Awaited<ReturnType<typeof getNeighborhoodDetail>> | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -33,16 +42,28 @@ export function NeighborhoodDetailContent({ neighborhoodId, label }: Props) {
 
   const total = detail.decadeRows.reduce((s, r) => s + r.count, 0);
 
+  const statItems = [
+    { value: formatNumber(detail.parcelCount), label: "Properties" },
+    detail.medianYear ? { value: String(detail.medianYear), label: "Typical build year" } : null,
+    detail.totalPermits ? { value: formatCount(detail.totalPermits, "permit", "permits"), label: "Permits on record" } : null,
+    signal !== "Dormant" ? { value: signal, label: "Activity signal" } : null,
+  ].filter((s): s is { value: string; label: string } => s !== null);
+
+  const narrative = NEIGHBORHOOD_NARRATIVES[slug];
+
   return (
-    <div className="space-y-8">
-      <StatGrid
-        columns={4}
-        stats={[
-          { value: formatNumber(detail.parcelCount), label: "Properties" },
-          { value: detail.medianYear ? String(detail.medianYear) : "Unknown", label: "Typical build year" },
-          { value: formatCount(detail.totalPermits ?? 0, "permit", "permits"), label: "Total permits on record" },
-          { value: signal, label: "Change signal" },
-        ]}
+    <div className="space-y-10">
+      {narrative && (
+        <p className="text-text-secondary leading-relaxed max-w-prose">{narrative}</p>
+      )}
+
+      <StatGrid columns={(Math.max(2, Math.min(statItems.length, 4))) as 2 | 3 | 4} stats={statItems.slice(0, 4)} />
+
+      <HighlightReel
+        scope="neighborhood"
+        scopeId={neighborhoodId}
+        groups={NEIGHBORHOOD_HIGHLIGHTS}
+        limit={5}
       />
 
       <div className="two-col-layout">
@@ -51,7 +72,7 @@ export function NeighborhoodDetailContent({ neighborhoodId, label }: Props) {
           <ConstructionByDecadeChart rows={detail.decadeRows} />
         </div>
         <div>
-          <p className="section-heading">Breakdown</p>
+          <p className="section-heading">Decade breakdown</p>
           <CoverageTable rows={detail.decadeRows} total={total} />
         </div>
       </div>

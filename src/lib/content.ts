@@ -2,8 +2,6 @@
  * Single source of truth for all reusable UI copy strings.
  *
  * Import from here. Never duplicate these strings in page files.
- * The deleted /explore page was a clone of Home; these exports
- * prevent that from happening again.
  */
 
 // ---------------------------------------------------------------------------
@@ -22,42 +20,56 @@ export const HOME_HERO_SUBHEAD =
   "Park Ridge Land History traces 13,381 properties from recorded plat to today, " +
   "using Cook County assessor records, permit data, and the Hargis historic architecture survey.";
 
-export const HOW_IT_WORKS_STEPS: Array<{ heading: string; body: string }> = [
-  {
-    heading: "Search an address or PIN",
-    body: "Type any Park Ridge street address or Cook County PIN to pull up the full property record.",
-  },
-  {
-    heading: "See when and how it was built",
-    body: "Year built, building size, permit history, and how this property compares to its street and neighborhood.",
-  },
-  {
-    heading: "Trace the recorded plat",
-    body: "Every property links to the subdivision plat that created its lot, with the recording date and original developer.",
-  },
-  {
-    heading: "Explore by street or neighborhood",
-    body: "Browse whole streets and neighborhoods to see development patterns, eras, and how Park Ridge grew decade by decade.",
-  },
-];
+// ---------------------------------------------------------------------------
+// City narrative
+// ---------------------------------------------------------------------------
 
-export const EXPLORE_CARDS: Array<{ heading: string; body: string; href: string }> = [
-  {
-    heading: "Neighborhoods",
-    body: "Five approximate areas, from the early Uptown core to the postwar south side. See how each developed.",
-    href: "/neighborhoods",
-  },
-  {
-    heading: "Subdivisions",
-    body: "The recorded plats that created Park Ridge's lots. Each plat names the developer and recording date.",
-    href: "/subdivisions",
-  },
-  {
-    heading: "City history",
-    body: "Citywide development by decade, from the first recorded lots to today.",
-    href: "/city",
-  },
-];
+export const CITY_NARRATIVE =
+  "Park Ridge grew in three distinct waves. The first settlers arrived in the 1870s and 1880s, " +
+  "clustering near the railroad depot in what is now Uptown. A second wave of bungalows and two-flats " +
+  "filled the central and northeast sections through the 1920s and 1930s. After World War II, the postwar " +
+  "housing boom extended the city to its northwest and south edges, adding thousands of Cape Cods and " +
+  "ranches that define the character of those neighborhoods today.";
+
+// ---------------------------------------------------------------------------
+// Neighborhood narratives and era labels (keyed by neighborhood slug)
+// ---------------------------------------------------------------------------
+
+export const NEIGHBORHOOD_ERA_LABELS: Record<string, string> = {
+  uptown:    "Railroad-era core, 1870s to 1930s",
+  northeast: "Bungalow-era expansion, 1910s to 1940s",
+  central:   "Mixed-era crossroads, 1920s to 1960s",
+  northwest: "Postwar ranch country, 1940s to 1970s",
+  south:     "The city's last great build-out, 1950s to 1980s",
+};
+
+export const NEIGHBORHOOD_NARRATIVES: Record<string, string> = {
+  uptown:
+    "Uptown is the oldest part of Park Ridge, built around the commuter rail stop that sparked " +
+    "the city's first settlement in the 1870s. The streets closest to the depot still hold some of " +
+    "the earliest surviving homes in Cook County. Development here peaked in the 1920s and slowed " +
+    "to a near stop by 1940.",
+  northeast:
+    "The Northeast filled in quickly after Uptown, as bungalow builders pushed outward from the " +
+    "railroad core through the 1910s and 1920s. The area reflects the working-class and middle-class " +
+    "optimism of Chicago's interwar years, with dense blocks of brick and frame bungalows interspersed " +
+    "with larger two-flats from the same era.",
+  central:
+    "Central Park Ridge bridges the prewar and postwar eras. Older Craftsman and Colonial Revival homes " +
+    "from the 1920s sit alongside Cape Cods built just after World War II. The neighborhood saw " +
+    "sustained construction across five decades, giving it a more mixed architectural character than " +
+    "any other part of the city.",
+  northwest:
+    "The Northwest is Park Ridge's ranch country. Nearly all of its homes were built in the fifteen " +
+    "years after World War II, when returning veterans and growing families pushed the city's footprint " +
+    "toward Des Plaines. Streets of nearly identical 1950s ranches and split-levels reflect how quickly " +
+    "this section was built and sold.",
+  south:
+    "South Park Ridge was the last area to develop, with most of its construction occurring from the " +
+    "1950s through the 1970s. It shares the postwar character of the Northwest but extends into a " +
+    "slightly later period, with split-levels and colonial revivals standing alongside the ranches " +
+    "that came first.",
+};
 
 // ---------------------------------------------------------------------------
 // Coverage and disclaimers

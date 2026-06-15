@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import { EntityCard } from "@/components/ui/EntityCard";
 import { LoadingSkeleton } from "@/components/ui/EmptyState";
-import { getChangeSignal, eraLabel } from "@/lib/formatters";
+import { getChangeSignal } from "@/lib/formatters";
 import { fetchNeighborhoodSummaries } from "@/lib/data/neighborhoods";
+import { NEIGHBORHOOD_ERA_LABELS } from "@/lib/content";
 
 export function NeighborhoodsGrid() {
   const [neighborhoods, setNeighborhoods] = useState<Awaited<ReturnType<typeof fetchNeighborhoodSummaries>>>([]);
@@ -35,13 +36,12 @@ export function NeighborhoodsGrid() {
           href={`/neighborhoods/${encodeURIComponent(n.slug)}`}
           eyebrow={`${n.parcelCount} properties`}
           title={n.label}
-          subtitle={n.medianYear ? `Typical build year: ${n.medianYear}` : undefined}
+          subtitle={NEIGHBORHOOD_ERA_LABELS[n.slug] ?? (n.medianYear ? `Typical build year: ${n.medianYear}` : undefined)}
           signal={getChangeSignal({
             permit_count: n.totalPermits,
             sale_count: n.totalSales,
             recent_teardown_count: n.recentTeardowns,
           })}
-          meta={n.medianYear ? eraLabel(n.medianYear) : undefined}
         />
       ))}
     </div>

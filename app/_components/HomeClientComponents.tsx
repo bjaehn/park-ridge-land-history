@@ -3,9 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { StatGrid } from "@/components/ui/StatGrid";
-import { ConstructionByDecadeChart } from "@/components/ui/ConstructionByDecadeChart";
 import { formatNumber } from "@/lib/formatters";
-import type { DecadeRow } from "@/components/ui/ConstructionByDecadeChart";
 import type { HomeStats as HomeStatsType, SearchResult } from "@/lib/supabase/homeQueries";
 
 const EXAMPLE_CHIPS = [
@@ -48,8 +46,18 @@ export function HomeSearch() {
       <div className="relative">
         <label htmlFor="hero-search" className="sr-only">Search an address or PIN</label>
         <div className="relative">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true">
-            <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+          <svg
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            aria-hidden="true"
+          >
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
           <input
             ref={inputRef}
@@ -69,7 +77,10 @@ export function HomeSearch() {
           />
         </div>
         {showDropdown && (
-          <ul className="absolute top-full left-0 right-0 mt-1 bg-surface-card border border-surface-border rounded-lg shadow-xl overflow-hidden z-50" role="listbox">
+          <ul
+            className="absolute top-full left-0 right-0 mt-1 bg-surface-card border border-surface-border rounded-lg shadow-xl overflow-hidden z-50"
+            role="listbox"
+          >
             {results.map((r) => (
               <li key={r.pin} role="option" aria-selected="false">
                 <button
@@ -101,10 +112,6 @@ export function HomeSearch() {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Stats section
-// ---------------------------------------------------------------------------
-
 export function HomeStats() {
   const [stats, setStats] = useState<HomeStatsType | null>(null);
 
@@ -117,38 +124,15 @@ export function HomeStats() {
 
   if (!stats) return null;
 
-  const total = stats.totalProperties ?? 0;
-  const yearBuiltKnown = stats.yearBuiltKnown ?? 0;
-  const withPermits = stats.withPermits ?? 0;
+  const statItems = [
+    { value: formatNumber(stats.totalProperties), label: "Properties indexed" },
+    stats.pre1945Count > 0
+      ? { value: formatNumber(stats.pre1945Count), label: "Built before 1945", note: `${stats.pre1945Pct}% of all properties` }
+      : null,
+    stats.oldestYear != null
+      ? { value: String(stats.oldestYear), label: "Oldest recorded build year" }
+      : null,
+  ].filter((s): s is { value: string; label: string; note?: string } => s !== null);
 
-  return (
-    <StatGrid
-      columns={4}
-      stats={[
-        { value: formatNumber(total), label: "Properties indexed" },
-        { value: formatNumber(yearBuiltKnown), label: "With build year on record", note: `${stats.yearBuiltPct ?? 0}% coverage` },
-        { value: formatNumber(withPermits), label: "With permit records", note: `${stats.permitsPct ?? 0}% coverage` },
-        { value: stats.oldestYear ? String(stats.oldestYear) : "Unknown", label: "Oldest recorded" },
-      ]}
-    />
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Decade chart
-// ---------------------------------------------------------------------------
-
-export function HomeDecadeChart() {
-  const [rows, setRows] = useState<DecadeRow[]>([]);
-
-  useEffect(() => {
-    import("@/lib/supabase/homeQueries")
-      .then((m) => m.fetchDecadeDistribution())
-      .then((data) => setRows(data.map((r) => ({ decade: r.decade, count: r.count }))))
-      .catch(() => null);
-  }, []);
-
-  if (!rows.length) return null;
-
-  return <ConstructionByDecadeChart rows={rows} />;
+  return <StatGrid columns={3} stats={statItems} />;
 }

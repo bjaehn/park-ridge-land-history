@@ -4,8 +4,16 @@ import { useState, useEffect } from "react";
 import { StatGrid } from "@/components/ui/StatGrid";
 import { EntityCard, UnresolvableEntityCard } from "@/components/ui/EntityCard";
 import { LoadingSkeleton } from "@/components/ui/EmptyState";
-import { formatNumber, formatCount, formatAddress } from "@/lib/formatters";
+import { HighlightReel } from "@/components/ui/HighlightReel";
+import { formatCount, formatAddress } from "@/lib/formatters";
 import { fetchSubdivisionParcels } from "@/lib/supabase/subdivisionQueries";
+import type { HighlightGroup } from "@/components/ui/HighlightReel";
+
+const SUBDIVISION_HIGHLIGHTS: readonly HighlightGroup[] = [
+  { heading: "Oldest surviving lots", category: "oldest" },
+  { heading: "Most renovated", category: "most_active" },
+  { heading: "Most recently sold", category: "most_recent_sale" },
+];
 
 type Props = { subdivisionId: string };
 
@@ -22,19 +30,32 @@ export function SubdivisionDetailContent({ subdivisionId }: Props) {
 
   if (loading) return <LoadingSkeleton rows={3} />;
 
+  const addressedCount = parcels.filter((p) => p.address).length;
+  const unresolvableCount = parcels.length - addressedCount;
+
+  const statItems = [
+    { value: formatCount(parcels.length, "lot", "lots"), label: "Lots in this plat" },
+    unresolvableCount > 0
+      ? { value: String(unresolvableCount), label: "Without a street address on record" }
+      : null,
+  ].filter((s): s is { value: string; label: string } => s !== null);
+
   return (
-    <div className="space-y-6">
-      <StatGrid
-        columns={2}
-        stats={[
-          { value: formatCount(parcels.length, "lot", "lots"), label: "Lots in this plat" },
-          { value: parcels.filter((p) => !p.address).length > 0 ? String(parcels.filter((p) => !p.address).length) : "None", label: "Address not on record" },
-        ]}
-      />
+    <div className="space-y-10">
+      <StatGrid columns={2} stats={statItems} />
+
+      {parcels.length > 0 && (
+        <HighlightReel
+          scope="subdivision"
+          scopeId={subdivisionId}
+          groups={SUBDIVISION_HIGHLIGHTS}
+          limit={5}
+        />
+      )}
 
       {parcels.length > 0 && (
         <div>
-          <p className="section-heading">Lots in this subdivision</p>
+          <p className="section-heading">All lots in this subdivision</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {parcels.map((p) => {
               if (!p.address) {
