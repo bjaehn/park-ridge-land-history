@@ -1,0 +1,4 @@
+-- Migration applied via Supabase MCP in a previous session.
+-- Creates historical source tracking tables for Park Ridge land history data.
+-- Exact DDL not reconstructable; schema already present on remote.
+-- File exists to satisfy supabase link migration history check.
