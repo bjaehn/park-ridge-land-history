@@ -58,7 +58,7 @@ export default async function SubdivisionDetailPage({ params }: Props) {
         <p className="text-text-secondary leading-relaxed mb-8 max-w-prose">{sub.notes}</p>
       )}
 
-      <SubdivisionDetailContent subdivisionId={id} />
+      <SubdivisionDetailContent subdivisionId={id} recordedYear={sub.recorded_year ?? null} />
 
       <div className="mt-8">
         <p className="section-heading">Subdivision map</p>
