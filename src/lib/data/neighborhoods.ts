@@ -14,7 +14,7 @@ export type NeighborhoodSummary = {
 
 export type NeighborhoodDetail = NeighborhoodSummary & {
   decadeRows: DecadeRow[];
-  streets?: Array<{ name: string; parcelCount: number }>;
+  streets?: Array<{ name: string; displayName: string; parcelCount: number }>;
 };
 
 const NEIGHBORHOOD_DEFINITIONS = [
@@ -77,7 +77,7 @@ export async function getNeighborhoodDetail(id: string): Promise<NeighborhoodDet
   };
 
   let decadeRows: DecadeRow[] = [];
-  let streets: Array<{ name: string; parcelCount: number }> = [];
+  let streets: Array<{ name: string; displayName: string; parcelCount: number }> = [];
 
   if (supabase) {
     let decadeData: unknown = null;
@@ -87,11 +87,7 @@ export async function getNeighborhoodDetail(id: string): Promise<NeighborhoodDet
       if (!r.error) decadeData = r.data;
     } catch { /* use empty fallback */ }
     try {
-      const r = await supabase
-        .from("parcels")
-        .select("street_name_normalized")
-        .eq("neighborhood_id", id)
-        .not("street_name_normalized", "is", null);
+      const r = await supabase.rpc("neighborhood_streets", { p_neighborhood_id: id });
       if (!r.error) streetData = r.data;
     } catch { /* use empty fallback */ }
 
@@ -102,13 +98,12 @@ export async function getNeighborhoodDetail(id: string): Promise<NeighborhoodDet
       }));
     }
     if (streetData) {
-      const counts: Record<string, number> = {};
-      (streetData as Array<{ street_name_normalized: string }>).forEach((r) => {
-        if (r.street_name_normalized) counts[r.street_name_normalized] = (counts[r.street_name_normalized] ?? 0) + 1;
-      });
-      streets = Object.entries(counts)
-        .map(([name, parcelCount]) => ({ name, parcelCount }))
-        .sort((a, b) => a.name.localeCompare(b.name));
+      streets = (streetData as Array<{ street_name: string; display_name: string; parcel_count: number }>)
+        .map((r) => ({
+          name: r.street_name,
+          displayName: r.display_name,
+          parcelCount: Number(r.parcel_count),
+        }));
     }
   }
 

@@ -1,5 +1,6 @@
 import { supabase } from "../supabase/client";
 import type { ComparisonRow } from "../../components/ui/ComparisonList";
+import type { ComparisonScope } from "../formatters";
 
 export type ParcelProperties = {
   [key: string]: unknown;
@@ -94,6 +95,30 @@ export async function getPropertyDetail(pin: string): Promise<PropertyDetailData
     } catch { /* subdivision cross-link optional */ }
   }
 
+  let comparisons: ComparisonRow[] = [];
+  if (supabase && props.year_built) {
+    try {
+      const { data: cmpData } = await supabase.rpc("parcel_year_comparisons", { p_pin: pin });
+      if (cmpData) {
+        const SCOPE_LABELS: Record<string, string> = {
+          street: "On this street",
+          neighborhood: "In this neighborhood",
+          city: "Across Park Ridge",
+        };
+        comparisons = (cmpData as Array<Record<string, unknown>>)
+          .filter((r) => r.median_year != null)
+          .map((r) => ({
+            scope: String(r.scope) as ComparisonScope,
+            scopeLabel: SCOPE_LABELS[String(r.scope)] ?? String(r.scope),
+            propertyValue: Number(r.property_year),
+            referenceValue: Math.round(Number(r.median_year)),
+            referenceLabel: `Median ${Math.round(Number(r.median_year))}`,
+            metric: "year_built" as const,
+          }));
+      }
+    } catch { /* comparisons optional */ }
+  }
+
   let relatedHomes: PropertyDetailData["relatedHomes"] = [];
   if (supabase) {
     const streetNorm = props.street_name_normalized as string | undefined;
@@ -116,7 +141,7 @@ export async function getPropertyDetail(pin: string): Promise<PropertyDetailData
     }
   }
 
-  return { properties: props, subdivision, relatedHomes };
+  return { properties: props, subdivision, comparisons: comparisons.length ? comparisons : undefined, relatedHomes };
 }
 
 async function loadPropertyProps(pin: string): Promise<ParcelProperties | null> {

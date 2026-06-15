@@ -83,7 +83,7 @@ export function TopNav() {
 
   return (
     <header className="sticky top-0 z-50 bg-surface-base/95 backdrop-blur border-b border-surface-border">
-      <div className="max-w-content mx-auto px-page-x h-14 flex items-center gap-6">
+      <div className="max-w-content mx-auto px-page-x h-14 flex items-center gap-2 md:gap-6">
         {/* Brand */}
         <Link
           href="/"

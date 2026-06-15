@@ -64,7 +64,7 @@ export function NeighborhoodDetailContent({ neighborhoodId, label }: Props) {
               <EntityCard
                 key={street.name}
                 href={`/streets/${encodeURIComponent(street.name)}`}
-                title={street.name}
+                title={street.displayName}
                 meta={street.parcelCount ? formatCount(street.parcelCount, "property", "properties") : undefined}
               />
             ))}

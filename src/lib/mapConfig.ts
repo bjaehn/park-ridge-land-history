@@ -30,7 +30,9 @@ export const MAP_ZOOM_CITY = 12;
 // Falls back to full GeoJSON if PMTiles not present.
 // ---------------------------------------------------------------------------
 
-export const PMTILES_URL = "/tiles/parcels.pmtiles";
+// Set to a real URL once a PMTiles file has been generated and uploaded.
+// Empty string disables PMTiles and falls back to GeoJSON.
+export const PMTILES_URL = "";
 export const GEOJSON_FALLBACK_URL = "/data/park_ridge_parcels_map.geojson";
 export const BOUNDARY_URL = "/data/park_ridge_boundary.geojson";
 

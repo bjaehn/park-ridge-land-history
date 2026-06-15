@@ -14,6 +14,7 @@ import {
   PARCEL_FILL_COLOR_MUTED,
   PARCEL_FILL_OPACITY_MUTED,
   PMTILES_URL,
+  GEOJSON_FALLBACK_URL,
   MAP_CENTER,
   MAP_ZOOM_DEFAULT,
   MAP_ZOOM_PROPERTY,
@@ -78,13 +79,15 @@ export function MapView({ scope, height = "400px", showExpand = false }: Props) 
     const maplibregl = (await import("maplibre-gl")).default;
 
     let usePmtiles = false;
-    try {
-      const { Protocol } = await import("pmtiles");
-      const protocol = new Protocol();
-      maplibregl.addProtocol("pmtiles", protocol.tile.bind(protocol));
-      usePmtiles = true;
-    } catch {
-      // PMTiles not available; fall back to GeoJSON
+    if (PMTILES_URL) {
+      try {
+        const { Protocol } = await import("pmtiles");
+        const protocol = new Protocol();
+        maplibregl.addProtocol("pmtiles", protocol.tile.bind(protocol));
+        usePmtiles = true;
+      } catch {
+        // pmtiles package unavailable; fall back to GeoJSON
+      }
     }
 
     const style = buildMapStyle();
@@ -108,7 +111,7 @@ export function MapView({ scope, height = "400px", showExpand = false }: Props) 
       } else {
         map.addSource(SOURCE_ID, {
           type: "geojson",
-          data: "/data/park_ridge_parcels_map.geojson",
+          data: GEOJSON_FALLBACK_URL,
         });
       }
 
