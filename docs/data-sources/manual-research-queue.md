@@ -2,7 +2,7 @@
 
 Park Ridge Land History — Subdivision History Feature
 
-Last updated: 2026-06-14
+Last updated: 2026-06-15
 
 This file tracks items that require manual research to complete the subdivision history
 data for Park Ridge, Illinois. Items are grouped by research type and priority.
@@ -42,12 +42,34 @@ Then re-run the pipeline starting at script 03.
 
 ### Priority subdivisions to research
 
-*(This list will be populated after running the data pipeline and identifying the most
-common subdivision names in the Cook County GIS data.)*
+These are the largest app-ready parcel clusters from the Cook County Assessor
+`misc_subdivision_id` data. They are not legal plat names. Use each code to identify
+sample PINs, then search the Cook County Recorder index for the recorded plat name,
+recording date, plat book/page, document number, and original owner/developer.
 
-- [ ] Top 5 subdivisions by parcel count — verify recording dates
-- [ ] Any subdivision where `recorded_year` is null
-- [ ] Subdivisions with conflicting or ambiguous names
+- [ ] Assessor subdivision area 0925E_A (191 linked parcels; source code 0925E_A) - find recorded plat name/date/owner
+- [ ] Assessor subdivision area 0935E_B (188 linked parcels; source code 0935E_B) - find recorded plat name/date/owner
+- [ ] Assessor subdivision area 0926E_H (162 linked parcels; source code 0926E_H) - find recorded plat name/date/owner
+- [ ] Assessor subdivision area 0936E_C (161 linked parcels; source code 0936E_C) - find recorded plat name/date/owner
+- [ ] Assessor subdivision area 1202A_B (150 linked parcels; source code 1202A_B) - find recorded plat name/date/owner
+- [ ] Assessor subdivision area 1202H_A (143 linked parcels; source code 1202H_A) - find recorded plat name/date/owner
+- [ ] Assessor subdivision area 0922E_A (136 linked parcels; source code 0922E_A) - find recorded plat name/date/owner
+- [ ] Assessor subdivision area 0922G_G (123 linked parcels; source code 0922G_G) - find recorded plat name/date/owner
+- [ ] Assessor subdivision area 0922C_C (120 linked parcels; source code 0922C_C) - find recorded plat name/date/owner
+- [ ] Assessor subdivision area 0934H_D (119 linked parcels; source code 0934H_D) - find recorded plat name/date/owner
+- [ ] Assessor subdivision area 0925D_A (118 linked parcels; source code 0925D_A) - find recorded plat name/date/owner
+- [ ] Assessor subdivision area 0925D_B (116 linked parcels; source code 0925D_B) - find recorded plat name/date/owner
+- [ ] Assessor subdivision area 0927G_A (115 linked parcels; source code 0927G_A) - find recorded plat name/date/owner
+- [ ] Assessor subdivision area 1202A_D (113 linked parcels; source code 1202A_D) - find recorded plat name/date/owner
+- [ ] Assessor subdivision area 0926F_M (111 linked parcels; source code 0926F_M) - find recorded plat name/date/owner
+- [ ] Assessor subdivision area 0935D_B (106 linked parcels; source code 0935D_B) - find recorded plat name/date/owner
+- [ ] Assessor subdivision area 1202B_B (102 linked parcels; source code 1202B_B) - find recorded plat name/date/owner
+- [ ] Assessor subdivision area 0935D_A (99 linked parcels; source code 0935D_A) - find recorded plat name/date/owner
+- [ ] Assessor subdivision area 0935E_A (98 linked parcels; source code 0935E_A) - find recorded plat name/date/owner
+- [ ] Assessor subdivision area 0935H_A (98 linked parcels; source code 0935H_A) - find recorded plat name/date/owner
+
+- [ ] Any candidate where `recorded_year` is null
+- [ ] Candidate clusters with conflicting or ambiguous recorded plat names
 
 ---
 

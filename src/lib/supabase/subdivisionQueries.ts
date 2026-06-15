@@ -1,8 +1,8 @@
-/**
+﻿/**
  * Supabase queries for the Subdivision History feature.
  *
  * All functions return null or empty arrays gracefully when Supabase is
- * unavailable or when no data exists — the UI handles those states explicitly.
+ * unavailable or when no data exists : the UI handles those states explicitly.
  */
 
 import { supabase } from "./client";
@@ -150,36 +150,6 @@ export async function fetchParcelsInSubdivision(
   });
 }
 
-// ─── Subdivision for a property (DNA) ────────────────────────────────────────
-
-export async function fetchSubdivisionForPin(
-  pin: string
-): Promise<{ subdivision: Subdivision | null; link: PropertySubdivisionLink | null }> {
-  if (!supabase || !pin) return { subdivision: null, link: null };
-
-  const { data: linkData, error: linkError } = await supabase
-    .from("property_subdivision_links")
-    .select("*")
-    .eq("pin", pin)
-    .order("confidence_level", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (linkError || !linkData) return { subdivision: null, link: null };
-
-  const link = linkData as PropertySubdivisionLink;
-  if (!link.subdivision_id) return { subdivision: null, link };
-
-  const { data: subData, error: subError } = await supabase
-    .from("subdivisions")
-    .select("*")
-    .eq("id", link.subdivision_id)
-    .single();
-
-  if (subError || !subData) return { subdivision: null, link };
-  return { subdivision: subData as Subdivision, link };
-}
-
 // ─── Subdivisions by decade ───────────────────────────────────────────────────
 
 export async function fetchSubdivisionDecadeDistribution(): Promise<
@@ -221,4 +191,55 @@ export async function fetchSubdivisionsByDecade(
 
   if (error || !data) return [];
   return data as unknown as SubdivisionSummary[];
+}
+
+// ---------------------------------------------------------------------------
+// Aliases for Next.js pages
+// ---------------------------------------------------------------------------
+
+/** Alias for fetchSubdivisionIndex -- used by the Next.js SubdivisionsContent component. */
+export const fetchSubdivisions = fetchSubdivisionIndex;
+
+/** Parcels belonging to a specific subdivision, for the detail page. */
+export async function fetchSubdivisionParcels(
+  subdivisionId: string
+): Promise<Array<{ pin: string; address?: string | null; year_built?: number | null }>> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("property_subdivision_links")
+    .select("pin, parcels(address, year_built)")
+    .eq("subdivision_id", subdivisionId)
+    .limit(500);
+
+  if (error || !data) return [];
+
+  return (data as unknown as Array<{
+    pin: string;
+    parcels: { address: string | null; year_built: number | null } | null;
+  }>).map((row) => ({
+    pin: row.pin,
+    address: row.parcels?.address ?? null,
+    year_built: row.parcels?.year_built ?? null,
+  }));
+}
+
+/** Fetch a subdivision for property page cross-links. */
+export async function fetchSubdivisionForPin(
+  pin: string
+): Promise<{ id: string; name: string; recorded_year?: number | null } | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from("property_subdivision_links")
+    .select("subdivision_id, subdivisions(id, name, recorded_year)")
+    .eq("pin", pin)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  const sub = (data as unknown as { subdivisions: Record<string, unknown> | null }).subdivisions;
+  if (!sub) return null;
+  return {
+    id: String(sub.id ?? ""),
+    name: String(sub.name ?? ""),
+    recorded_year: sub.recorded_year as number | null,
+  };
 }

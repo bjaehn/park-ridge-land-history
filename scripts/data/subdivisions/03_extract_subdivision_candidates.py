@@ -2,8 +2,9 @@
 
 Reads from:
   1. Cook County GIS parcel download with subdivision fields (if available)
-  2. data/raw/park_ridge_land_family.csv (manually researched clues)
-  3. Park Ridge boundary for spatial filtering
+  2. Cook County Assessor Parcel Universe misc_subdivision_id clusters
+  3. data/raw/park_ridge_land_family.csv (manually researched clues)
+  4. Park Ridge boundary for spatial filtering
 
 Normalizes subdivision names, deduplicates, and produces a candidate list.
 
@@ -32,6 +33,8 @@ RAW_DIR = PROJECT_ROOT / "data/raw"
 SUBDIVISION_GIS_PATH = RAW_DIR / "cook_county_parcels_with_subdivisions.geojson"
 LAND_FAMILY_CSV_PATH = RAW_DIR / "park_ridge_land_family.csv"
 DOWNLOAD_REPORT_PATH = INTERIM_DIR / "download_report.json"
+SOCRATA_SUBDIVISION_IDS_PATH = INTERIM_DIR / "socrata_parcel_subdivision_ids.json"
+SOCRATA_SOURCE_URL = "https://datacatalog.cookcountyil.gov/resource/nj4t-kc8j.json"
 
 # GIS field name candidates for subdivision info
 SUBDIVISION_GIS_FIELD_CANDIDATES = [
@@ -62,10 +65,13 @@ def main() -> None:
     gis_candidates = extract_from_gis(gis_sub_field, gis_lot_field, gis_block_field)
     print(f"\nGIS parcel source: {len(gis_candidates)} subdivision attribute records")
 
+    socrata_candidates = extract_from_socrata_subdivision_ids()
+    print(f"Assessor subdivision-area codes: {len(socrata_candidates)} parcel cluster records")
+
     lf_candidates = extract_from_land_family()
     print(f"Land family CSV: {len(lf_candidates)} subdivision reference records")
 
-    all_candidates = gis_candidates + lf_candidates
+    all_candidates = gis_candidates + socrata_candidates + lf_candidates
     print(f"\nTotal raw candidates: {len(all_candidates)}")
 
     # Build unique subdivision name index
@@ -163,6 +169,53 @@ def extract_from_gis(
     return candidates
 
 
+def extract_from_socrata_subdivision_ids() -> list[dict[str, Any]]:
+    """Extract low-confidence parcel clusters from Assessor misc_subdivision_id.
+
+    misc_subdivision_id is not a legal recorded subdivision name. It is still useful
+    as a parcel grouping that can drive browsing and prioritize manual plat research.
+    """
+    if not SOCRATA_SUBDIVISION_IDS_PATH.exists():
+        return []
+
+    with SOCRATA_SUBDIVISION_IDS_PATH.open(encoding="utf-8") as f:
+        rows: list[dict[str, Any]] = json.load(f)
+
+    candidates: list[dict[str, Any]] = []
+    for row in rows:
+        raw_code = (row.get("misc_subdivision_id") or "").strip()
+        pin = (row.get("pin") or "").strip()
+        if not raw_code or not pin:
+            continue
+
+        raw_name = f"Assessor subdivision area {raw_code}"
+        normalized = normalize_subdivision_name(raw_name)
+        if not normalized:
+            continue
+
+        data_year = row.get("misc_subdivision_data_year")
+        candidates.append({
+            "pin": pin,
+            "raw_subdivision_name": raw_name,
+            "normalized_name": normalized,
+            "display_name": raw_name,
+            "lot_number": None,
+            "block_number": None,
+            "source": "Cook County Assessor Parcel Universe",
+            "source_url": SOCRATA_SOURCE_URL,
+            "source_reference": raw_code,
+            "confidence_level": "low",
+            "match_method": "assessor_subdivision_id",
+            "notes": (
+                "Cook County Assessor internal subdivision-area code; "
+                "not a recorded plat name or recording date."
+            ),
+            "data_year": int(data_year) if str(data_year).isdigit() else None,
+        })
+
+    return candidates
+
+
 def extract_from_land_family() -> list[dict[str, Any]]:
     """Extract subdivision references from the land family CSV."""
     if not LAND_FAMILY_CSV_PATH.exists():
@@ -204,7 +257,7 @@ def extract_from_land_family() -> list[dict[str, Any]]:
                 "source_url": row.get("source_url") or None,
                 "source_reference": row.get("case_number") or None,
                 "confidence_level": "medium",
-                "match_method": "parcel_gis_attribute",
+                "match_method": "land_family_research",
                 "notes": description if description != title else None,
             })
 
@@ -255,6 +308,9 @@ def build_name_index(candidates: list[dict[str, Any]]) -> dict[str, Any]:
                 "sources": [],
                 "lot_numbers": [],
                 "block_numbers": [],
+                "source_references": [],
+                "source_urls": [],
+                "notes": [],
                 "confidence_level": candidate.get("confidence_level", "unknown"),
                 "best_match_method": candidate.get("match_method", "unknown"),
             }
@@ -269,6 +325,18 @@ def build_name_index(candidates: list[dict[str, Any]]) -> dict[str, Any]:
         source = candidate.get("source")
         if source and source not in entry["sources"]:
             entry["sources"].append(source)
+
+        source_reference = candidate.get("source_reference")
+        if source_reference and source_reference not in entry["source_references"]:
+            entry["source_references"].append(source_reference)
+
+        source_url = candidate.get("source_url")
+        if source_url and source_url not in entry["source_urls"]:
+            entry["source_urls"].append(source_url)
+
+        notes = candidate.get("notes")
+        if notes and notes not in entry["notes"]:
+            entry["notes"].append(notes)
 
         lot = candidate.get("lot_number")
         if lot and lot not in entry["lot_numbers"]:

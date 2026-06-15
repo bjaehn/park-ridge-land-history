@@ -46,14 +46,6 @@ def main() -> None:
 
     load_dotenv(PROJECT_ROOT / ".env")
 
-    supabase_url = os.getenv("VITE_SUPABASE_URL") or os.getenv("SUPABASE_URL")
-    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("VITE_SUPABASE_ANON_KEY")
-
-    if not supabase_url or not supabase_key:
-        print("ERROR: Supabase credentials not found.")
-        print("Set SUPABASE_SERVICE_ROLE_KEY (or VITE_SUPABASE_ANON_KEY) and VITE_SUPABASE_URL in .env")
-        return
-
     if not RECORDS_PATH.exists():
         print(f"Subdivision records not found at {RECORDS_PATH.relative_to(PROJECT_ROOT)}.")
         print("Run script 04 first.")
@@ -70,6 +62,8 @@ def main() -> None:
     with LINKS_PATH.open(encoding="utf-8") as f:
         links: list[dict[str, Any]] = json.load(f)
 
+    records_by_id = {record.get("id"): record for record in records if record.get("id")}
+
     print(f"=== Loading {len(records)} subdivision records and {len(links)} parcel links ===\n")
 
     if args.dry_run:
@@ -80,6 +74,14 @@ def main() -> None:
             print(f"\nSample subdivision record: {json.dumps(records[0], indent=2)}")
         if links:
             print(f"\nSample parcel link: {json.dumps(links[0], indent=2)}")
+        return
+
+    supabase_url = os.getenv("VITE_SUPABASE_URL") or os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("VITE_SUPABASE_ANON_KEY")
+
+    if not supabase_url or not supabase_key:
+        print("ERROR: Supabase credentials not found.")
+        print("Set SUPABASE_SERVICE_ROLE_KEY (or VITE_SUPABASE_ANON_KEY) and VITE_SUPABASE_URL in .env")
         return
 
     # Import supabase client (requires supabase-py or httpx)
@@ -136,7 +138,9 @@ def main() -> None:
             continue
         update_payload = {
             "subdivision_id": link.get("subdivision_id"),
-            "subdivision_name": None,  # Will be set by joining to subdivisions below
+            "subdivision_name": (
+                records_by_id.get(link.get("subdivision_id"), {}).get("name")
+            ),
             "subdivision_lot": link.get("lot_number"),
             "subdivision_block": link.get("block_number"),
             "subdivision_match_method": link.get("match_method"),

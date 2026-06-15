@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  em-dash-check:
+    name: No em dashes or en-dash separators
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fail if em dash found in src/ or app/
+        run: |
+          set +e
+          # Check for em dash (U+2014) and en-dash used as separator (U+2013)
+          FOUND=$(grep -rn $'—\|–' src/ app/ --include='*.ts' --include='*.tsx' --include='*.js' --include='*.jsx' 2>/dev/null)
+          if [ -n "$FOUND" ]; then
+            echo "ERROR: Em dash or en-dash-as-separator found in source files."
+            echo "$FOUND"
+            exit 1
+          fi
+          echo "OK: No em dashes or en-dash separators found."
+
+  formatter-tests:
+    name: Formatter unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - name: Run formatter tests
+        run: npx vitest run src/lib/formatters.test.ts --reporter=verbose
+
+  link-integrity:
+    name: No dead Unknown address links
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - name: Check for Unknown address as link text
+        run: |
+          FOUND=$(grep -rn 'href.*Unknown\|>Unknown address<' src/ app/ --include='*.tsx' --include='*.ts' 2>/dev/null)
+          if [ -n "$FOUND" ]; then
+            echo "ERROR: 'Unknown address' appears as clickable link text. Use UnresolvableEntityCard instead."
+            echo "$FOUND"
+            exit 1
+          fi
+          echo "OK: No Unknown address links found."
+
+  typecheck:
+    name: TypeScript
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npx tsc --noEmit

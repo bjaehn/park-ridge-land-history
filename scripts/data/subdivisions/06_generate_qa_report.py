@@ -42,10 +42,11 @@ def main() -> None:
     links = load_json(LINKS_PATH) or []
     unmatched = load_json(UNMATCHED_PATH) or []
     name_index = load_json(NAME_INDEX_PATH) or {}
+    candidates = load_json(CANDIDATES_PATH) or []
     gis_report = load_json(GIS_REPORT_PATH) or {}
     download_report = load_json(DOWNLOAD_REPORT_PATH) or {}
 
-    report_lines = build_report(records, links, unmatched, name_index, gis_report, download_report)
+    report_lines = build_report(records, links, unmatched, name_index, candidates, gis_report, download_report)
     OUTPUT_PATH.write_text("\n".join(report_lines), encoding="utf-8")
     print(f"Wrote {OUTPUT_PATH.relative_to(PROJECT_ROOT)}")
 
@@ -65,6 +66,7 @@ def build_report(
     links: list[dict[str, Any]],
     unmatched: list[dict[str, Any]],
     name_index: dict[str, Any],
+    candidates: list[dict[str, Any]],
     gis_report: dict[str, Any],
     download_report: dict[str, Any],
 ) -> list[str]:
@@ -87,6 +89,16 @@ def build_report(
     # GIS field status
     gis_sub_fields = gis_report.get("subdivision_candidate_fields", [])
     gis_status = "Found" if gis_sub_fields else "Not found"
+    assessor_candidate_count = sum(
+        1 for candidate in candidates
+        if candidate.get("match_method") == "assessor_subdivision_id"
+    )
+    assessor_code_count = len({
+        candidate.get("source_reference")
+        for candidate in candidates
+        if candidate.get("match_method") == "assessor_subdivision_id"
+        and candidate.get("source_reference")
+    })
 
     lines = [
         "# Subdivision Matching Report",
@@ -110,6 +122,7 @@ def build_report(
         f"| Medium-confidence links | {by_confidence['medium']} |",
         f"| Low-confidence links | {by_confidence['low']} |",
         f"| Unknown-confidence links | {by_confidence['unknown']} |",
+        f"| Assessor subdivision-area codes | {assessor_code_count} |",
         "",
         "---",
         "",
@@ -121,6 +134,8 @@ def build_report(
         f"| GIS fields available | {', '.join(f['name'] for f in gis_sub_fields) if gis_sub_fields else 'None'} |",
         f"| GIS features downloaded | {download_report.get('features_downloaded', 'N/A')} |",
         f"| Features with subdivision value | {download_report.get('features_with_subdivision_value', 'N/A')} |",
+        f"| Cook County Assessor misc_subdivision_id records | {assessor_candidate_count} parcel candidates |",
+        f"| Cook County Assessor misc_subdivision_id unique codes | {assessor_code_count} codes |",
         "",
         "---",
         "",
@@ -134,9 +149,9 @@ def build_report(
         "",
         "---",
         "",
-        "## Top 20 Subdivisions by Parcel Count",
+        "## Top 20 Subdivision Candidates by Parcel Count",
         "",
-        "| Rank | Subdivision Name | Parcels | Confidence | Source |",
+        "| Rank | Candidate Name | Parcels | Confidence | Source |",
         "|------|-----------------|---------|------------|--------|",
     ]
 
@@ -172,7 +187,10 @@ def build_report(
         "",
         "1. Cook County GIS parcel attribute field (`subdivisio` or equivalent)",
         "2. Park Ridge land family CSV (manually researched clues)",
-        "3. Fuzzy name matching against known subdivision names",
+        "3. Cook County Assessor `misc_subdivision_id` parcel clusters",
+        "4. Fuzzy name matching against known subdivision names",
+        "",
+        "`misc_subdivision_id` is an internal Cook County Assessor subdivision-area code. It is useful for grouping parcels and prioritizing recorded-plat research, but it is not a legal subdivision name or recording date.",
         "",
         "For full methodology, see `docs/methodology/subdivision-history-methodology.md`.",
         "",
@@ -182,6 +200,8 @@ def build_report(
         "",
         "- Recorded subdivision dates are NOT available in the Cook County GIS parcel layer.",
         "  Recording dates require research in the Cook County Recorder plat database.",
+        "- Assessor subdivision-area codes are NOT recorded plat names.",
+        "  They should be shown as low-confidence candidate clusters until Recorder evidence is added.",
         "- Original owners and developers are NOT available programmatically.",
         "  These require research in recorded plat documents or historical directories.",
         "- Subdivision boundaries have NOT been georeferenced.",

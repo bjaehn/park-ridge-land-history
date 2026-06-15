@@ -31,6 +31,8 @@ MATCH_CONFIDENCE: dict[str, str] = {
     "parcel_gis_attribute":        "medium",
     "parcel_within_geometry":      "medium",
     "parcel_centroid_in_geometry": "medium",
+    "land_family_research":        "medium",
+    "assessor_subdivision_id":      "low",
     "address_street_match":        "low",
     "fuzzy_name_match":            "low",
     "manual_review":               "high",
@@ -43,6 +45,8 @@ MATCH_REASONS: dict[str, str] = {
     "parcel_gis_attribute":        "Subdivision name taken from the Cook County GIS parcel subdivision attribute field.",
     "parcel_within_geometry":      "Current parcel polygon falls within a known subdivision boundary.",
     "parcel_centroid_in_geometry": "Parcel centroid falls within a known subdivision boundary.",
+    "land_family_research":        "Subdivision reference came from the Park Ridge land family research intake file. Confirm against recorded plats before treating it as verified.",
+    "assessor_subdivision_id":      "Parcel grouped by Cook County Assessor internal subdivision-area code. This is useful for clustering parcels, but it is not a recorded plat name or plat date.",
     "address_street_match":        "Subdivision inferred from address or street segment overlap with known subdivision.",
     "fuzzy_name_match":            "Subdivision name matched using normalized fuzzy comparison; manual review recommended.",
     "manual_review":               "Assigned by a researcher after manual review of plat records or other sources.",
@@ -51,6 +55,7 @@ MATCH_REASONS: dict[str, str] = {
 
 SUBDIVISION_SOURCE_CONFIDENCE: dict[str, str] = {
     "Cook County GIS parcel attribute": "medium",
+    "Cook County Assessor Parcel Universe": "low",
     "Cook County GIS lots layer": "high",
     "Recorded plat legal description": "high",
     "Park Ridge land family CSV": "medium",

@@ -1,104 +1,136 @@
-/**
- * Data access layer — properties.
- *
- * Single source of truth for loading individual property records.
- * Wraps both the Supabase-backed path and the flat-file fallback.
- *
- * TODO: Once Supabase coverage is complete, remove the flat-file
- * fallback (loadDetailFromChunk) and the detailChunkCache.
- */
-
 import { supabase } from "../supabase/client";
-import { fetchJson } from "../jsonData";
-import type { ParcelProperties, ParcelFeature } from "../parcelTypes";
+import type { ComparisonRow } from "../../components/ui/ComparisonList";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-
-type ParcelDetailChunk = {
-  prefix: string;
-  record_count: number;
-  records: Record<string, ParcelProperties>;
+export type ParcelProperties = {
+  [key: string]: unknown;
+  address?: string | null;
+  year_built?: number | null;
+  pin_normalized?: string | null;
+  pin_original?: string | null;
+  building_sqft?: number | null;
+  land_sqft?: number | null;
+  latest_assessed_total?: number | null;
+  permit_count?: number | null;
+  sale_count?: number | null;
+  recent_permit_count?: number | null;
+  nearby_teardown_count?: number | null;
+  improvement_count?: number | null;
+  data_quality_flags?: string[] | null;
+  source_note?: string | null;
+  municipality?: string | null;
+  property_class?: string | null;
+  neighborhood_id?: string | null;
+  neighborhood_label?: string | null;
+  street_name_normalized?: string | null;
+  lat?: number | null;
+  lng?: number | null;
+  decade_built?: string | null;
 };
 
-// ─── Cache ───────────────────────────────────────────────────────────────────
+export type PropertyPageData = {
+  address?: string | null;
+  lat?: number;
+  lng?: number;
+  yearBuilt?: number | null;
+  neighborhoodLabel?: string | null;
+  neighborhoodSlug?: string | null;
+  streetName?: string | null;
+};
 
-const detailChunkCache = new Map<string, Promise<ParcelDetailChunk | null>>();
+export type PropertyDetailData = {
+  properties: ParcelProperties;
+  subdivision?: {
+    id: string;
+    name: string;
+    recorded_year?: number | null;
+    original_owner?: string | null;
+    source_reference?: string | null;
+  } | null;
+  comparisons?: ComparisonRow[];
+  relatedHomes?: Array<{ pin: string; address?: string | null; yearBuilt?: number | null }>;
+};
 
-// ─── Public API ──────────────────────────────────────────────────────────────
+export async function getPropertyByPin(pin: string): Promise<PropertyPageData> {
+  const props = await loadPropertyProps(pin);
+  if (!props) throw new Error(`Property not found: ${pin}`);
 
-/**
- * Load full detail for a single property by PIN.
- * Prefers Supabase; falls back to local flat-file chunks if Supabase
- * is unavailable.
- *
- * Returns null when the property is not found or data is unavailable.
- *
- * TODO: Remove flat-file fallback once Supabase is the sole source.
- */
-export async function getPropertyByPin(pin: string): Promise<ParcelProperties | null> {
-  if (supabase) {
-    try {
-      const result = await loadFromSupabase(pin);
-      if (result) return result;
-    } catch {
-      // Fall through to flat-file fallback
-    }
-  }
-  // FALLBACK: static chunk files — temporary technical debt
-  // TODO: Migrate remaining properties to Supabase and remove this path
-  return loadFromChunk(pin);
-}
+  const lat = props.lat as number | undefined;
+  const lng = props.lng as number | undefined;
+  const neighborhoodId = props.neighborhood_id as string | undefined;
 
-/**
- * Merge full detail properties onto a base ParcelFeature.
- * Useful when you already have the geometry from the parcel index
- * and just need to overlay the rich detail fields.
- */
-export function mergeDetailOntoParcel(
-  base: ParcelFeature,
-  detail: ParcelProperties
-): ParcelFeature {
   return {
-    ...base,
-    properties: {
-      ...base.properties,
-      ...detail,
-    },
+    address: props.address,
+    lat,
+    lng,
+    yearBuilt: props.year_built,
+    neighborhoodLabel: (props.neighborhood_label as string | undefined) ?? null,
+    neighborhoodSlug: neighborhoodId?.replace("neighborhood:", "") ?? null,
+    streetName: (props.street_name_normalized as string | undefined) ?? null,
   };
 }
 
-// ─── Internal ────────────────────────────────────────────────────────────────
+export async function getPropertyDetail(pin: string): Promise<PropertyDetailData | null> {
+  const props = await loadPropertyProps(pin);
+  if (!props) return null;
 
-async function loadFromSupabase(pin: string): Promise<ParcelProperties | null> {
-  const { data, error } = await supabase!
-    .from("parcels")
-    .select("*")
-    .eq("pin_normalized", pin)
-    .single();
+  let subdivision: PropertyDetailData["subdivision"] = null;
+  if (supabase) {
+    try {
+      const { data } = await supabase
+        .from("property_subdivision_links")
+        .select("subdivision_id, subdivisions(id, name, recorded_year, original_owner, source_reference)")
+        .eq("pin", pin)
+        .maybeSingle();
+      if (data?.subdivisions) {
+        const sub = data.subdivisions as unknown as Record<string, unknown>;
+        subdivision = {
+          id: String(sub.id ?? ""),
+          name: String(sub.name ?? ""),
+          recorded_year: sub.recorded_year as number | null,
+          original_owner: sub.original_owner as string | null,
+          source_reference: sub.source_reference as string | null,
+        };
+      }
+    } catch { /* subdivision cross-link optional */ }
+  }
 
-  if (error || !data) return null;
+  let relatedHomes: PropertyDetailData["relatedHomes"] = [];
+  if (supabase) {
+    const streetNorm = props.street_name_normalized as string | undefined;
+    if (streetNorm) {
+      try {
+        const { data } = await supabase
+          .from("parcels")
+          .select("pin_normalized, pin_original, address, year_built")
+          .ilike("street_name_normalized", streetNorm)
+          .neq("pin_normalized", pin)
+          .limit(6);
+        if (data) {
+          relatedHomes = data.map((r) => ({
+            pin: String(r.pin_normalized ?? r.pin_original ?? ""),
+            address: r.address as string | null,
+            yearBuilt: r.year_built as number | null,
+          }));
+        }
+      } catch { /* related homes optional */ }
+    }
+  }
 
-  const { geometry, imported_at, ...properties } = data as Record<string, unknown>;
-  void geometry;
-  void imported_at;
-  return properties as ParcelProperties;
+  return { properties: props, subdivision, relatedHomes };
 }
 
-async function loadFromChunk(pin: string): Promise<ParcelProperties | null> {
-  const prefix = detailPrefix(pin);
-  const chunk = await loadDetailChunk(prefix);
-  return chunk?.records[pin] ?? null;
-}
-
-function loadDetailChunk(prefix: string): Promise<ParcelDetailChunk | null> {
-  const existing = detailChunkCache.get(prefix);
-  if (existing) return existing;
-  const request = fetchJson<ParcelDetailChunk>(`/data/parcel_details/${prefix}.json`);
-  detailChunkCache.set(prefix, request);
-  return request;
-}
-
-function detailPrefix(pin: string): string {
-  const normalized = pin.replace(/\D/g, "");
-  return normalized.length >= 4 ? normalized.slice(0, 4) : "unknown";
+async function loadPropertyProps(pin: string): Promise<ParcelProperties | null> {
+  if (!supabase) return null;
+  try {
+    const { data, error } = await supabase
+      .from("parcels")
+      .select("*")
+      .eq("pin_normalized", pin)
+      .single();
+    if (error || !data) return null;
+    const { geometry: _geom, imported_at: _ts, ...rest } = data as Record<string, unknown>;
+    return rest as ParcelProperties;
+  } catch {
+    return null;
+  }
 }

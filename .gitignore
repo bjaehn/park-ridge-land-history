@@ -1,8 +1,11 @@
 node_modules/
+.next/
 .venv/
 .claude/
 .env
 .env.local
+tsconfig.tsbuildinfo
+screenshot.png
 .pytest_cache/
 .pytest-tmp/
 .pytest-artifacts/

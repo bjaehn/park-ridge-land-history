@@ -44,6 +44,12 @@ class TestConfidenceForMethod:
     def test_parcel_centroid_in_geometry_is_medium(self):
         assert confidence_for_method("parcel_centroid_in_geometry") == "medium"
 
+    def test_land_family_research_is_medium(self):
+        assert confidence_for_method("land_family_research") == "medium"
+
+    def test_assessor_subdivision_id_is_low(self):
+        assert confidence_for_method("assessor_subdivision_id") == "low"
+
     def test_address_street_match_is_low(self):
         assert confidence_for_method("address_street_match") == "low"
 
@@ -76,6 +82,10 @@ class TestReasonForMethod:
     def test_fuzzy_name_match_reason_mentions_manual_review(self):
         reason = reason_for_method("fuzzy_name_match")
         assert "manual" in reason.lower() or "fuzzy" in reason.lower()
+
+    def test_assessor_subdivision_id_reason_mentions_not_recorded_plat(self):
+        reason = reason_for_method("assessor_subdivision_id")
+        assert "not a recorded plat" in reason.lower()
 
 
 class TestConfidenceLabel:

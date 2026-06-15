@@ -1,109 +1,195 @@
-import { Link, NavLink, useNavigate } from "react-router-dom";
-import { useState } from "react";
-import { primaryNav, referenceNav, ROUTES, propertyPath } from "../routes/routeConfig";
-import { useParkRidgeContext } from "../contexts/ParkRidgeDataContext";
+"use client";
+
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { SITE_NAME } from "@/lib/content";
+import type { SearchResult } from "@/lib/supabase/homeQueries";
+
+const NAV_LINKS = [
+  { href: "/neighborhoods", label: "Neighborhoods" },
+  { href: "/subdivisions", label: "Subdivisions" },
+  { href: "/city", label: "City history" },
+] as const;
+
+const REFERENCE_LINKS = [
+  { href: "/sources", label: "Data sources" },
+  { href: "/about", label: "About" },
+] as const;
+
 
 export function TopNav() {
-  const { parcels } = useParkRidgeContext();
-  const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<
-    Array<{ pin: string; address: string; yearBuilt?: number; permitCount?: number }>
-  >([]);
+  const pathname = usePathname();
+  const router = useRouter();
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<SearchResult[]>([]);
   const [showResults, setShowResults] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  function handleSearch(q: string) {
-    setSearchQuery(q);
-    if (q.length < 2 || !parcels) {
-      setSearchResults([]);
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
+  // Close search dropdown when clicking outside
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowResults(false);
+      }
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const handleSearch = useCallback((q: string) => {
+    setQuery(q);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (q.trim().length < 2) {
+      setResults([]);
       setShowResults(false);
       return;
     }
-    const normalized = q.toLowerCase();
-    const matches = parcels.features
-      .filter((f) => {
-        const addr = (f.properties.address ?? "").toLowerCase();
-        const pin = (f.properties.pin_normalized ?? "").toLowerCase();
-        return addr.includes(normalized) || pin.includes(normalized);
-      })
-      .slice(0, 6)
-      .map((f) => ({
-        pin: f.properties.pin_normalized ?? f.properties.pin_original ?? "",
-        address: f.properties.address ?? "Unknown address",
-        yearBuilt: f.properties.year_built ?? undefined,
-        permitCount: f.properties.permit_count ?? undefined,
-      }));
-    setSearchResults(matches);
-    setShowResults(matches.length > 0);
-  }
+    timerRef.current = setTimeout(async () => {
+      try {
+        const { searchParcels } = await import("@/lib/supabase/homeQueries");
+        const found = await searchParcels(q, 6);
+        setResults(found);
+        setShowResults(found.length > 0);
+      } catch {
+        setResults([]);
+        setShowResults(false);
+      }
+    }, 180);
+  }, []);
 
   function selectResult(pin: string) {
-    setSearchQuery("");
+    setQuery("");
+    setResults([]);
     setShowResults(false);
-    navigate(propertyPath(pin));
+    router.push(`/properties/${encodeURIComponent(pin)}`);
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter" && results.length > 0) {
+      selectResult(results[0].pin);
+    }
+    if (e.key === "Escape") {
+      setShowResults(false);
+    }
   }
 
   return (
-    <header className="top-nav" role="banner">
-      <div className="top-nav-inner">
-        <Link to="/" className="top-nav-brand" aria-label="Park Ridge Land History home">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <header className="sticky top-0 z-50 bg-surface-base/95 backdrop-blur border-b border-surface-border">
+      <div className="max-w-content mx-auto px-page-x h-14 flex items-center gap-6">
+        {/* Brand */}
+        <Link
+          href="/"
+          className="flex items-center gap-2 text-text-primary font-semibold text-sm shrink-0 hover:text-accent-purple transition-colors"
+          aria-label={`${SITE_NAME} home`}
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
             <path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V10.5z" />
             <polyline points="9 21 9 12 15 12 15 21" />
           </svg>
           <span>Park Ridge</span>
         </Link>
 
-        <nav className="top-nav-links" aria-label="Main navigation">
-          {primaryNav.map((route) => (
-            <NavLink
-              key={route.path}
-              to={route.path}
-              className={({ isActive }) =>
-                `top-nav-link${isActive ? " is-active" : ""}${route.experimental ? " is-experimental" : ""}`
-              }
+        {/* Desktop nav */}
+        <nav className="hidden md:flex items-center gap-1 flex-1" aria-label="Main navigation">
+          {NAV_LINKS.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={`px-3 py-1.5 rounded text-sm transition-colors ${
+                pathname.startsWith(link.href)
+                  ? "bg-accent-purple/15 text-accent-purple font-medium"
+                  : "text-text-secondary hover:text-text-primary hover:bg-surface-raised"
+              }`}
             >
-              {route.label}
-              {route.experimental && <span className="nav-badge">Preview</span>}
-            </NavLink>
+              {link.label}
+            </Link>
+          ))}
+          <div className="flex-1" />
+          {REFERENCE_LINKS.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={`px-3 py-1.5 rounded text-sm transition-colors ${
+                pathname === link.href
+                  ? "text-text-primary font-medium"
+                  : "text-text-muted hover:text-text-secondary"
+              }`}
+            >
+              {link.label}
+            </Link>
           ))}
         </nav>
 
-        <div className="top-nav-search" role="search">
-          <label htmlFor="top-nav-search-input" className="sr-only">Search an address</label>
-          <div className="tns-input-wrap">
-            <svg className="tns-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+        {/* Search */}
+        <div ref={searchRef} className="relative flex-1 md:flex-none md:w-56" role="search">
+          <label htmlFor="topnav-search" className="sr-only">
+            Search an address or PIN
+          </label>
+          <div className="relative">
+            <svg
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none"
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              aria-hidden="true"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
             <input
-              id="top-nav-search-input"
-              className="tns-input"
+              id="topnav-search"
               type="search"
-              placeholder="Search an address…"
-              value={searchQuery}
               autoComplete="off"
+              value={query}
               onChange={(e) => handleSearch(e.target.value)}
-              onFocus={() => searchResults.length > 0 && setShowResults(true)}
-              onBlur={() => setTimeout(() => setShowResults(false), 180)}
-              aria-expanded={showResults}
-              aria-autocomplete="list"
-              aria-controls="tns-results"
+              onFocus={() => query.length >= 2 && setShowResults(results.length > 0)}
+              onKeyDown={handleKeyDown}
+              placeholder="Search address or PIN"
+              className="w-full pl-8 pr-3 py-1.5 text-sm bg-surface-raised border border-surface-border rounded text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-purple/60 transition-colors"
             />
           </div>
           {showResults && (
-            <ul className="tns-results" id="tns-results" role="listbox">
-              {searchResults.map((r) => (
-                <li key={r.pin} role="option" aria-selected={false}>
+            <ul
+              className="absolute top-full left-0 right-0 mt-1 bg-surface-card border border-surface-border rounded-lg shadow-xl overflow-hidden z-50"
+              role="listbox"
+            >
+              {results.map((r) => (
+                <li key={r.pin} role="option" aria-selected="false">
                   <button
                     type="button"
-                    className="tns-result-btn"
-                    onMouseDown={() => selectResult(r.pin)}
+                    className="w-full text-left px-3 py-2.5 text-sm hover:bg-surface-raised transition-colors"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      selectResult(r.pin);
+                    }}
                   >
-                    <span className="tns-result-address">{r.address}</span>
-                    <span className="tns-result-meta">
-                      {r.yearBuilt ? `Built ${r.yearBuilt}` : "Year unknown"}
-                      {r.permitCount ? ` · ${r.permitCount} permits` : ""}
+                    <span className="text-text-primary block leading-snug">
+                      {r.address}
                     </span>
+                    {r.yearBuilt && (
+                      <span className="text-xs text-text-muted">Built {r.yearBuilt}</span>
+                    )}
                   </button>
                 </li>
               ))}
@@ -111,27 +197,53 @@ export function TopNav() {
           )}
         </div>
 
-        <div className="top-nav-right">
-          {referenceNav.map((route) => (
-            <NavLink
-              key={route.path}
-              to={route.path}
-              className={({ isActive }) => `top-nav-link top-nav-link--quiet${isActive ? " is-active" : ""}`}
-            >
-              {route.label}
-            </NavLink>
-          ))}
-          <NavLink
-            to={ROUTES.explore.path}
-            className={({ isActive }) => `top-nav-explore-btn${isActive ? " is-active" : ""}`}
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+        {/* Mobile hamburger */}
+        <button
+          type="button"
+          className="md:hidden flex items-center justify-center w-8 h-8 text-text-secondary hover:text-text-primary transition-colors"
+          aria-label={mobileOpen ? "Close menu" : "Open menu"}
+          aria-expanded={mobileOpen}
+          onClick={() => setMobileOpen((o) => !o)}
+        >
+          {mobileOpen ? (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
-            Map Explorer
-          </NavLink>
-        </div>
+          ) : (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          )}
+        </button>
       </div>
+
+      {/* Mobile menu */}
+      {mobileOpen && (
+        <nav
+          className="md:hidden bg-surface-raised border-b border-surface-border"
+          aria-label="Mobile navigation"
+        >
+          <ul className="max-w-content mx-auto px-page-x py-3 flex flex-col gap-1">
+            {[...NAV_LINKS, ...REFERENCE_LINKS].map((link) => (
+              <li key={link.href}>
+                <Link
+                  href={link.href}
+                  className={`block px-3 py-2.5 rounded text-sm transition-colors ${
+                    pathname.startsWith(link.href)
+                      ? "bg-accent-purple/15 text-accent-purple font-medium"
+                      : "text-text-secondary hover:text-text-primary hover:bg-surface-card"
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )}
     </header>
   );
 }
