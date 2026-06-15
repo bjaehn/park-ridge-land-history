@@ -1,0 +1,58 @@
+name: Generate PMTiles
+
+on:
+  push:
+    paths:
+      - 'public/data/park_ridge_parcels_map.geojson'
+  workflow_dispatch:
+
+jobs:
+  build-and-upload:
+    name: tippecanoe + Supabase Storage upload
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tippecanoe
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y tippecanoe
+
+      - name: Generate PMTiles
+        run: |
+          tippecanoe \
+            --output=park_ridge_parcels.pmtiles \
+            --name="Park Ridge Parcels" \
+            --description="13,381 parcels for Park Ridge Land History" \
+            --layer=parcels \
+            --minimum-zoom=12 \
+            --maximum-zoom=16 \
+            --no-tile-stats \
+            --force \
+            public/data/park_ridge_parcels_map.geojson
+
+          echo "PMTiles size: $(du -sh park_ridge_parcels.pmtiles | cut -f1)"
+
+      - name: Upload to Supabase Storage
+        env:
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X POST \
+            "${SUPABASE_URL}/storage/v1/object/map-tiles/park_ridge_parcels.pmtiles" \
+            -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
+            -H "Content-Type: application/octet-stream" \
+            -H "x-upsert: true" \
+            --data-binary @park_ridge_parcels.pmtiles)
+
+          echo "Storage API responded: $HTTP_STATUS"
+          if [ "$HTTP_STATUS" -ge 400 ]; then
+            echo "Upload failed with status $HTTP_STATUS"
+            exit 1
+          fi
+
+          PMTILES_URL="${SUPABASE_URL}/storage/v1/object/public/map-tiles/park_ridge_parcels.pmtiles"
+          echo "Uploaded successfully."
+          echo "Set NEXT_PUBLIC_PMTILES_URL in Railway to: $PMTILES_URL"
