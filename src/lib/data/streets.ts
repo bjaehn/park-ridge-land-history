@@ -1,27 +1,15 @@
-/**
- * Data access layer -- streets.
- *
- * Streets replace TIGER census blocks as the mid-tier place in the
- * City > Neighborhood > Street > Property hierarchy. Parcels are grouped
- * by normalized street name (e.g. "N PROSPECT AVE").
- *
- * No TIGER block IDs, block pages, or block URLs are created here.
- */
-
 import { supabase } from "../supabase/client";
 import type { DecadeRow } from "../../components/ui/ConstructionByDecadeChart";
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
 
 export type StreetSummary = {
   name: string;
   normalizedName: string;
   parcelCount: number;
+  medianYear?: number;
   oldestYear?: number;
   newestYear?: number;
   eraSpan?: string;
+  neighborhoodId?: string;
   neighborhoodLabel?: string;
   neighborhoodSlug?: string;
 };
@@ -34,74 +22,71 @@ export type StreetParcelRow = {
 };
 
 export type StreetDetail = StreetSummary & {
-  medianYear?: number;
   decadeRows: DecadeRow[];
   parcels: StreetParcelRow[];
 };
 
-// ---------------------------------------------------------------------------
-// Public API
-// ---------------------------------------------------------------------------
+const NEIGHBORHOOD_LABELS: Record<string, string> = {
+  "neighborhood:uptown":    "Uptown",
+  "neighborhood:central":   "Central",
+  "neighborhood:northwest": "Northwest",
+  "neighborhood:northeast": "Northeast",
+  "neighborhood:south":     "South Park Ridge",
+};
 
 export async function getStreetByName(rawName: string): Promise<StreetSummary> {
-  const normalized = rawName.toUpperCase().trim();
+  const normalized = rawName.toLowerCase().trim();
+  const displayName = formatStreetDisplayName(normalized);
 
-  if (supabase) {
-    const { data, error } = await supabase
-      .from("parcels")
-      .select("address, year_built, neighborhood_id, neighborhood_label")
-      .ilike("street_name_normalized", normalized)
-      .limit(500);
+  if (!supabase) return { name: displayName, normalizedName: normalized, parcelCount: 0 };
 
-    if (!error && data && data.length > 0) {
-      const years = data
-        .map((r) => r.year_built)
-        .filter((y): y is number => typeof y === "number" && y > 1800);
-      const oldestYear = years.length ? Math.min(...years) : undefined;
-      const newestYear = years.length ? Math.max(...years) : undefined;
+  try {
+    const { data, error } = await supabase.rpc("street_summary", { p_street_name: normalized });
+    if (error || !data || !data.length) return { name: displayName, normalizedName: normalized, parcelCount: 0 };
 
-      const neighborhoodLabel = (data[0] as Record<string, unknown>).neighborhood_label as string | undefined;
-      const neighborhoodId = (data[0] as Record<string, unknown>).neighborhood_id as string | undefined;
-      const neighborhoodSlug = neighborhoodId?.replace("neighborhood:", "");
+    const row = data[0] as Record<string, unknown>;
+    const oldestYear = row.oldest_year as number | null;
+    const newestYear = row.newest_year as number | null;
+    const neighborhoodId = row.neighborhood_id as string | undefined;
 
-      const eraSpan =
-        oldestYear && newestYear && oldestYear !== newestYear
-          ? `${Math.floor(oldestYear / 10) * 10}s to ${Math.floor(newestYear / 10) * 10}s`
-          : oldestYear
-          ? `${Math.floor(oldestYear / 10) * 10}s`
-          : undefined;
+    const eraSpan =
+      oldestYear && newestYear && oldestYear !== newestYear
+        ? `${Math.floor(oldestYear / 10) * 10}s to ${Math.floor(newestYear / 10) * 10}s`
+        : oldestYear
+        ? `${Math.floor(oldestYear / 10) * 10}s`
+        : undefined;
 
-      return {
-        name: formatStreetDisplayName(rawName),
-        normalizedName: normalized,
-        parcelCount: data.length,
-        oldestYear,
-        newestYear,
-        eraSpan,
-        neighborhoodLabel,
-        neighborhoodSlug,
-      };
-    }
+    return {
+      name: displayName,
+      normalizedName: normalized,
+      parcelCount: Number(row.parcel_count ?? 0),
+      medianYear: row.median_year ? Number(row.median_year) : undefined,
+      oldestYear: oldestYear ?? undefined,
+      newestYear: newestYear ?? undefined,
+      eraSpan,
+      neighborhoodId,
+      neighborhoodLabel: neighborhoodId ? NEIGHBORHOOD_LABELS[neighborhoodId] : undefined,
+      neighborhoodSlug: neighborhoodId?.replace("neighborhood:", ""),
+    };
+  } catch {
+    return { name: displayName, normalizedName: normalized, parcelCount: 0 };
   }
-
-  return {
-    name: formatStreetDisplayName(rawName),
-    normalizedName: normalized,
-    parcelCount: 0,
-  };
 }
 
 export async function getStreetDetail(normalizedName: string): Promise<StreetDetail> {
-  const summary = await getStreetByName(normalizedName);
+  const normalized = normalizedName.toLowerCase().trim();
+  const summary = await getStreetByName(normalized);
   let decadeRows: DecadeRow[] = [];
   let parcels: StreetParcelRow[] = [];
 
-  if (supabase) {
+  if (!supabase) return { ...summary, decadeRows, parcels };
+
+  try {
     const { data, error } = await supabase
       .from("parcels")
       .select("pin_normalized, pin_original, address, year_built, decade_built, permit_count")
-      .ilike("street_name_normalized", normalizedName.toUpperCase())
-      .order("year_built", { ascending: true, nullsFirst: false });
+      .eq("street_name_normalized", normalized)
+      .order("address", { ascending: true });
 
     if (!error && data) {
       parcels = data.map((r) => ({
@@ -113,33 +98,24 @@ export async function getStreetDetail(normalizedName: string): Promise<StreetDet
 
       const countsByDecade: Record<string, number> = {};
       data.forEach((r) => {
-        const d = String(r.decade_built ?? "Unknown");
-        countsByDecade[d] = (countsByDecade[d] ?? 0) + 1;
+        const d = String(r.decade_built ?? "");
+        if (d && d !== "Unknown" && d !== "Suspicious") {
+          countsByDecade[d] = (countsByDecade[d] ?? 0) + 1;
+        }
       });
-      decadeRows = Object.entries(countsByDecade).map(([decade, count]) => ({ decade, count }));
+      decadeRows = Object.entries(countsByDecade)
+        .map(([decade, count]) => ({ decade, count }))
+        .sort((a, b) => a.decade.localeCompare(b.decade));
     }
-  }
+  } catch { /* return empty */ }
 
-  const years = parcels.map((p) => p.yearBuilt).filter((y): y is number => typeof y === "number");
-  const medianYear = years.length ? median(years) : undefined;
-
-  return { ...summary, medianYear, decadeRows, parcels };
+  return { ...summary, decadeRows, parcels };
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function median(values: number[]): number {
-  const sorted = [...values].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 !== 0 ? sorted[mid] : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
-}
-
-function formatStreetDisplayName(raw: string): string {
-  return raw
+function formatStreetDisplayName(normalized: string): string {
+  return normalized
     .trim()
     .split(/\s+/)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(" ");
 }

@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   webpack(config) {
     // MapLibre GL and PMTiles require these webpack aliases
     config.resolve.alias = {
