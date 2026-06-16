@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { StatGrid } from "@/components/ui/StatGrid";
+import { PropertyIcon, YearBuiltIcon, SaleIcon, PermitIcon } from "@/lib/icons";
 import { formatNumber } from "@/lib/formatters";
 import type { HomeStats as HomeStatsType, SearchResult } from "@/lib/supabase/homeQueries";
 
@@ -125,14 +126,17 @@ export function HomeStats() {
   if (!stats) return null;
 
   const statItems = [
-    { value: formatNumber(stats.totalProperties), label: "Properties indexed" },
+    { icon: PropertyIcon, value: formatNumber(stats.totalProperties), label: "Properties indexed" },
     stats.pre1945Count > 0
-      ? { value: formatNumber(stats.pre1945Count), label: "Built before 1945", note: `${stats.pre1945Pct}% of all properties` }
+      ? { icon: YearBuiltIcon, value: formatNumber(stats.pre1945Count), label: "Built before 1945", note: `${stats.pre1945Pct}% of all properties` }
       : null,
-    stats.oldestYear != null
-      ? { value: String(stats.oldestYear), label: "Oldest recorded build year" }
+    stats.withSales > 0
+      ? { icon: SaleIcon, value: formatNumber(stats.withSales), label: "With sale records", note: `${stats.salesPct}% of all properties` }
       : null,
-  ].filter((s): s is { value: string; label: string; note?: string } => s !== null);
+    stats.withPermits > 0
+      ? { icon: PermitIcon, value: formatNumber(stats.withPermits), label: "With permit records", note: `${stats.permitsPct}% of all properties` }
+      : null,
+  ].filter((s): s is { icon: typeof PropertyIcon; value: string; label: string; note?: string } => s !== null);
 
-  return <StatGrid columns={3} stats={statItems} />;
+  return <StatGrid columns={4} stats={statItems} />;
 }

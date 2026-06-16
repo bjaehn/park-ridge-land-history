@@ -4,6 +4,7 @@ import { InlineSourceNote } from "@/components/ui/SourceNote";
 import { HighlightReel } from "@/components/ui/HighlightReel";
 import { HomeSearch, HomeStats } from "./_components/HomeClientComponents";
 import { NeighborhoodsGrid } from "./neighborhoods/_NeighborhoodsGrid";
+import { NeighborhoodIcon, HighlightIcon } from "@/lib/icons";
 import type { HighlightGroup } from "@/components/ui/HighlightReel";
 
 export const metadata: Metadata = {
@@ -40,12 +41,19 @@ export default function HomePage() {
 
       {/* City-level highlights */}
       <section className="mb-12">
+        <div className="flex items-center gap-2 mb-4">
+          <HighlightIcon size={14} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />
+          <p className="section-heading !mb-0">Notable properties</p>
+        </div>
         <HighlightReel scope="city" scopeId="" groups={CITY_HIGHLIGHTS} limit={6} />
       </section>
 
       {/* Neighborhoods */}
       <section className="mb-10">
-        <p className="section-heading">Explore by neighborhood</p>
+        <div className="flex items-center gap-2 mb-4">
+          <NeighborhoodIcon size={14} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />
+          <p className="section-heading !mb-0">Explore by neighborhood</p>
+        </div>
         <NeighborhoodsGrid />
       </section>
     </div>

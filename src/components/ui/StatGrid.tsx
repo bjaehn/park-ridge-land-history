@@ -1,7 +1,10 @@
+import type { LucideIcon } from "lucide-react";
+
 type StatItem = {
   value: string | number;
   label: string;
   note?: string;
+  icon?: LucideIcon;
 };
 
 type Props = {
@@ -9,11 +12,6 @@ type Props = {
   columns?: 2 | 3 | 4;
 };
 
-/**
- * Shared metric tile grid used on Home, City, Neighborhood, Street, and
- * Subdivision pages. All stat grids look identical; differentiation is
- * only in the data passed in.
- */
 export function StatGrid({ stats, columns = 4 }: Props) {
   const colClass = {
     2: "grid-cols-1 sm:grid-cols-2",
@@ -28,6 +26,9 @@ export function StatGrid({ stats, columns = 4 }: Props) {
           key={i}
           className="bg-surface-card border border-surface-border rounded-lg px-5 py-4"
         >
+          {stat.icon && (
+            <stat.icon size={14} strokeWidth={1.8} className="text-text-muted mb-2" aria-hidden="true" />
+          )}
           <div className="text-2xl font-bold text-text-primary leading-none mb-1">
             {stat.value}
           </div>
