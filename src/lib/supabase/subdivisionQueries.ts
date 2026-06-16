@@ -404,6 +404,36 @@ export async function fetchSubdivisionFullDetail(
   } as SubdivisionFullDetail;
 }
 
+/** Fetch PINs and bbox for the subdivision map. */
+export async function fetchSubdivisionMapData(
+  subdivisionId: string
+): Promise<{ pins: string[]; bbox: [number, number, number, number] | null }> {
+  if (!supabase) return { pins: [], bbox: null };
+
+  const [pinsResult, bboxResult] = await Promise.all([
+    supabase
+      .from("property_subdivision_links")
+      .select("pin")
+      .eq("subdivision_id", subdivisionId),
+    supabase
+      .from("subdivision_geometries")
+      .select("bbox")
+      .eq("subdivision_id", subdivisionId)
+      .single(),
+  ]);
+
+  const pins = ((pinsResult.data ?? []) as Array<{ pin: string }>)
+    .map((r) => r.pin)
+    .filter(Boolean);
+
+  const bboxData = (bboxResult.data?.bbox ?? null) as Record<string, number> | null;
+  const bbox: [number, number, number, number] | null = bboxData
+    ? [bboxData.minLng, bboxData.minLat, bboxData.maxLng, bboxData.maxLat]
+    : null;
+
+  return { pins, bbox };
+}
+
 /** Fetch a subdivision for property page cross-links. */
 export async function fetchSubdivisionForPin(
   pin: string

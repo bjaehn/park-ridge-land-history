@@ -7,7 +7,7 @@ import { SourceNote } from "@/components/ui/SourceNote";
 import { MapView } from "@/components/MapView";
 import { SubdivisionDetailContent } from "./_SubdivisionDetailContent";
 import { SubdivisionHistoryPanel } from "@/components/ui/SubdivisionHistoryPanel";
-import { fetchSubdivisionFullDetail } from "@/lib/supabase/subdivisionQueries";
+import { fetchSubdivisionFullDetail, fetchSubdivisionMapData } from "@/lib/supabase/subdivisionQueries";
 import type { ConfidenceLevel } from "@/lib/formatters";
 
 type Props = { params: { id: string } };
@@ -23,7 +23,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function SubdivisionDetailPage({ params }: Props) {
   const id = decodeURIComponent(params.id);
-  const subOrNull = await fetchSubdivisionFullDetail(id).catch(() => null);
+  const [subOrNull, mapData] = await Promise.all([
+    fetchSubdivisionFullDetail(id).catch(() => null),
+    fetchSubdivisionMapData(id).catch(() => ({ pins: [], bbox: null })),
+  ]);
 
   if (!subOrNull) notFound();
 
@@ -86,7 +89,12 @@ export default async function SubdivisionDetailPage({ params }: Props) {
       <div className="mt-8">
         <p className="section-heading">Subdivision map</p>
         <MapView
-          scope={{ kind: "subdivision", subdivisionId: id }}
+          scope={{
+            kind: "subdivision",
+            subdivisionId: id,
+            pins: mapData.pins.length > 0 ? mapData.pins : undefined,
+            bbox: mapData.bbox ?? undefined,
+          }}
           height="400px"
           showExpand
         />

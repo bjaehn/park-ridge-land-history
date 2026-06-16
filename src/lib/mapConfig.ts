@@ -195,5 +195,5 @@ export type MapScope =
   | { kind: "property"; pin: string; lat: number; lng: number }
   | { kind: "street"; streetName: string }
   | { kind: "neighborhood"; neighborhoodId: string }
-  | { kind: "subdivision"; subdivisionId: string }
+  | { kind: "subdivision"; subdivisionId: string; pins?: string[]; bbox?: [number, number, number, number] }
   | { kind: "city" };

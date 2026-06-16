@@ -340,7 +340,11 @@ function buildScopeFilter(scope: MapScope): unknown[] {
     case "property":    return ["all"];
     case "street":      return ["==", ["get", "street_name_normalized"], scope.streetName];
     case "neighborhood": return ["==", ["get", "neighborhood_id"], scope.neighborhoodId];
-    case "subdivision": return ["==", ["get", "subdivision_id"], scope.subdivisionId];
+    case "subdivision":
+      if (scope.pins && scope.pins.length > 0) {
+        return ["in", ["get", "pin_normalized"], ["literal", scope.pins]];
+      }
+      return ["==", ["get", "subdivision_id"], scope.subdivisionId];
     case "city":        return ["all"];
   }
 }
@@ -350,7 +354,16 @@ function flyToScope(map: MaplibreMap, scope: MapScope) {
     case "property":    map.flyTo({ center: [scope.lng, scope.lat], zoom: MAP_ZOOM_PROPERTY, animate: false }); break;
     case "street":      map.flyTo({ center: MAP_CENTER, zoom: MAP_ZOOM_STREET, animate: false }); break;
     case "neighborhood": map.flyTo({ center: MAP_CENTER, zoom: MAP_ZOOM_NEIGHBORHOOD, animate: false }); break;
-    case "subdivision": map.flyTo({ center: MAP_CENTER, zoom: MAP_ZOOM_SUBDIVISION, animate: false }); break;
+    case "subdivision":
+      if (scope.bbox) {
+        map.fitBounds(
+          [[scope.bbox[0], scope.bbox[1]], [scope.bbox[2], scope.bbox[3]]],
+          { padding: 48, animate: false }
+        );
+      } else {
+        map.flyTo({ center: MAP_CENTER, zoom: MAP_ZOOM_SUBDIVISION, animate: false });
+      }
+      break;
     case "city":        map.flyTo({ center: MAP_CENTER, zoom: MAP_ZOOM_CITY, animate: false }); break;
   }
 }
