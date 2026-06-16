@@ -141,7 +141,7 @@ function PermitHistorySection({ permits }: { permits: PropertyPermit[] }) {
           {expanded ? "Show fewer" : `Show all ${permits.length} permits`}
         </button>
       )}
-      <InlineSourceNote className="mt-2">City of Park Ridge via Cook County Assessor</InlineSourceNote>
+      <InlineSourceNote className="mt-2">{"City of Park Ridge via Cook County Assessor · Permit records from 2018–present only; earlier history may exist but is not in this dataset"}</InlineSourceNote>
     </section>
   );
 }
@@ -174,8 +174,13 @@ function HargisSurveySection({ records }: { records: HargisRecord[] }) {
               )}
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-text-primary">
-                  {r.record_name ?? r.location_text ?? `HARGIS #${r.refnum}`}
+                  {r.record_name ?? `HARGIS #${r.refnum}`}
                 </p>
+                {r.location_text && (
+                  <p className="text-xs text-text-secondary mt-0.5">
+                    Surveyed at: {r.location_text}
+                  </p>
+                )}
                 {r.arch_class && (
                   <p className="text-xs text-text-secondary mt-0.5">{r.arch_class}</p>
                 )}
@@ -208,9 +213,7 @@ function HargisSurveySection({ records }: { records: HargisRecord[] }) {
           </div>
         ))}
       </div>
-      <InlineSourceNote className="mt-2">
-        Illinois Historic Architectural Resources Geographic Information System (HARGIS), Illinois SHPO
-      </InlineSourceNote>
+      <InlineSourceNote className="mt-2">{"Illinois Historic Architectural Resources Geographic Information System (HARGIS), Illinois SHPO · Survey locations are approximate spatial matches; the surveyed structure may be adjacent to this parcel"}</InlineSourceNote>
     </section>
   );
 }
@@ -238,16 +241,26 @@ export function PropertyDetailContent({ pin, streetDisplayName }: Props) {
   });
 
   const permitCount = props.permit_count as number | null;
-  const saleCount = props.sale_count as number | null;
-  const latestPermitYear = props.latest_permit_year as number | null;
-  const latestSaleYear = props.latest_sale_year as number | null;
-  const latestSalePrice = props.latest_sale_price as number | null;
-
   const sales = detail.sales ?? [];
   const permits = detail.permits ?? [];
   const hargisRecords = detail.hargisRecords ?? [];
 
-  const timeline = buildTimelineEvents(props as Record<string, unknown>, detail.subdivision);
+  // Use actual event table counts and most-recent values — more complete than parcel aggregates
+  const actualSaleCount = sales.length;
+  const latestPermitYear = props.latest_permit_year as number | null;
+  const mostRecentSale = sales[0] ?? null;
+  const latestSaleYear = mostRecentSale?.sale_date
+    ? new Date(mostRecentSale.sale_date).getFullYear()
+    : (props.latest_sale_year as number | null);
+  const latestSalePrice = mostRecentSale?.sale_price ?? (props.latest_sale_price as number | null);
+
+  // Feed timeline the corrected most-recent-sale values
+  const propsForTimeline = {
+    ...(props as Record<string, unknown>),
+    latest_sale_year: latestSaleYear,
+    latest_sale_price: latestSalePrice,
+  };
+  const timeline = buildTimelineEvents(propsForTimeline, detail.subdivision);
 
   const vitals: IconRowItem[] = [
     { icon: YearBuiltIcon, label: "Year built", value: formatYear(props.year_built) },
@@ -260,7 +273,7 @@ export function PropertyDetailContent({ pin, streetDisplayName }: Props) {
   if (!props.year_built) missingGaps.push("Build year not in assessor records");
   if (!detail.subdivision) missingGaps.push("Recorded plat not yet identified");
   if (!permitCount || permitCount === 0) missingGaps.push("No permit history in dataset");
-  if (!saleCount || saleCount === 0) missingGaps.push("No recorded sales in dataset");
+  if (actualSaleCount === 0) missingGaps.push("No recorded sales in dataset");
 
   return (
     <div className="space-y-10">
@@ -281,7 +294,7 @@ export function PropertyDetailContent({ pin, streetDisplayName }: Props) {
       )}
 
       {/* Permit and sale activity summary */}
-      {((permitCount && permitCount > 0) || (saleCount && saleCount > 0)) && (
+      {((permitCount && permitCount > 0) || actualSaleCount > 0) && (
         <section>
           <p className="section-heading">Activity record</p>
           <div className="grid grid-cols-2 gap-4">
@@ -297,13 +310,13 @@ export function PropertyDetailContent({ pin, streetDisplayName }: Props) {
                 </p>
               </div>
             )}
-            {saleCount != null && saleCount > 0 && (
+            {actualSaleCount > 0 && (
               <div className="bg-surface-card border border-surface-border rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <SaleIcon size={14} strokeWidth={1.8} className="text-confidence-high" aria-hidden="true" />
                   <span className="text-xs font-semibold text-text-secondary uppercase tracking-wide">Sales</span>
                 </div>
-                <p className="text-2xl font-bold text-text-primary leading-none mb-1">{saleCount}</p>
+                <p className="text-2xl font-bold text-text-primary leading-none mb-1">{actualSaleCount}</p>
                 <p className="text-xs text-text-muted">
                   {latestSaleYear
                     ? latestSalePrice
