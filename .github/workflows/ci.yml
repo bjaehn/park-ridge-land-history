@@ -49,7 +49,7 @@ jobs:
       - run: npm ci
       - name: Check for Unknown address as link text
         run: |
-          FOUND=$(grep -rn 'href.*Unknown\|>Unknown address<' src/ app/ --include='*.tsx' --include='*.ts' 2>/dev/null)
+          FOUND=$(grep -rn 'href.*Unknown\|>Unknown address<' src/ app/ --include='*.tsx' --include='*.ts' 2>/dev/null || true)
           if [ -n "$FOUND" ]; then
             echo "ERROR: 'Unknown address' appears as clickable link text. Use UnresolvableEntityCard instead."
             echo "$FOUND"
