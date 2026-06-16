@@ -1,118 +1,57 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { EntityCard } from "@/components/ui/EntityCard";
-import { ConfidenceBadge } from "@/components/ui/ConfidenceBadge";
-import { LoadingSkeleton, EmptyState } from "@/components/ui/EmptyState";
-import { formatCount, confidenceFor } from "@/lib/formatters";
-import type { ConfidenceLevel } from "@/lib/formatters";
+import { LoadingSkeleton } from "@/components/ui/EmptyState";
 import { fetchSubdivisions } from "@/lib/supabase/subdivisionQueries";
-
-type FilterEra = "all" | "pre1920" | "1920s" | "1930s" | "1940s" | "1950s" | "post1960";
-type FilterConfidence = "all" | "high" | "medium" | "low";
+import { SubdivisionTree } from "./_SubdivisionTree";
+import type { TreeSubdivision } from "./_SubdivisionTree";
 
 export function SubdivisionsContent() {
-  const [subdivisions, setSubdivisions] = useState<Awaited<ReturnType<typeof fetchSubdivisions>>>([]);
+  const [subdivisions, setSubdivisions] = useState<TreeSubdivision[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filterEra, setFilterEra] = useState<FilterEra>("all");
-  const [filterConfidence, setFilterConfidence] = useState<FilterConfidence>("all");
 
   useEffect(() => {
     fetchSubdivisions()
-      .then(setSubdivisions)
+      .then((data) =>
+        setSubdivisions(
+          data.map((s) => ({
+            id: s.id,
+            name: s.name,
+            recorded_year: s.recorded_year ?? null,
+            parcel_count: s.parcel_count ?? null,
+            confidence_level: s.confidence_level ?? null,
+            parent_subdivision_id: s.parent_subdivision_id ?? null,
+          }))
+        )
+      )
       .catch(() => null)
       .finally(() => setLoading(false));
   }, []);
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {Array.from({ length: 9 }).map((_, i) => <LoadingSkeleton key={i} rows={1} className="h-32" />)}
+      <div className="flex flex-col items-center gap-0 py-8">
+        <LoadingSkeleton rows={1} className="h-14 w-40 mb-8" />
+        <div className="flex gap-5">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <LoadingSkeleton key={i} rows={3} className="w-44 h-28" />
+          ))}
+        </div>
       </div>
     );
   }
 
-  const filtered = subdivisions.filter((s) => {
-    if (filterConfidence !== "all" && s.confidence_level !== filterConfidence) return false;
-    if (filterEra !== "all") {
-      const y = s.recorded_year;
-      if (!y) return false;
-      if (filterEra === "pre1920" && y >= 1920) return false;
-      if (filterEra === "1920s" && (y < 1920 || y >= 1930)) return false;
-      if (filterEra === "1930s" && (y < 1930 || y >= 1940)) return false;
-      if (filterEra === "1940s" && (y < 1940 || y >= 1950)) return false;
-      if (filterEra === "1950s" && (y < 1950 || y >= 1960)) return false;
-      if (filterEra === "post1960" && y < 1960) return false;
-    }
-    return true;
-  });
+  if (subdivisions.length === 0) {
+    return (
+      <p className="text-text-muted text-sm text-center py-12">No subdivisions on record yet.</p>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      {/* Filters */}
-      <div className="flex flex-wrap gap-3">
-        <div className="flex gap-1 flex-wrap">
-          {(["all", "pre1920", "1920s", "1930s", "1940s", "1950s", "post1960"] as FilterEra[]).map((era) => (
-            <button
-              key={era}
-              type="button"
-              onClick={() => setFilterEra(era)}
-              className={`text-xs px-3 py-1 rounded-full border transition-colors ${filterEra === era ? "bg-accent-purple/20 border-accent-purple/40 text-accent-purple font-medium" : "border-surface-border text-text-secondary hover:text-text-primary"}`}
-            >
-              {era === "all" ? "All eras" : era === "pre1920" ? "Before 1920" : era === "post1960" ? "1960 and later" : `${era}s`}
-            </button>
-          ))}
-        </div>
-        <div className="flex gap-1 flex-wrap">
-          {(["all", "high", "medium", "low"] as FilterConfidence[]).map((c) => (
-            <button
-              key={c}
-              type="button"
-              onClick={() => setFilterConfidence(c)}
-              className={`text-xs px-3 py-1 rounded-full border transition-colors ${filterConfidence === c ? "bg-accent-purple/20 border-accent-purple/40 text-accent-purple font-medium" : "border-surface-border text-text-secondary hover:text-text-primary"}`}
-            >
-              {c === "all" ? "Any confidence" : `${c.charAt(0).toUpperCase() + c.slice(1)} confidence`}
-            </button>
-          ))}
-        </div>
+    <div className="overflow-x-auto pb-6">
+      <div className="min-w-max mx-auto py-4">
+        <SubdivisionTree subdivisions={subdivisions} />
       </div>
-
-      {filtered.length === 0 ? (
-        <EmptyState
-          heading="No subdivisions match these filters"
-          body="Try removing a filter to see more plats."
-        />
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((s) => {
-            const confidence = s.confidence_level as ConfidenceLevel;
-            const subtitle = [
-              s.recorded_year ? `Recorded ${s.recorded_year}` : "Recording date uncertain",
-              s.original_owner ? `Developer: ${s.original_owner}` : null,
-              s.parcel_count ? formatCount(s.parcel_count, "lot", "lots") : null,
-            ]
-              .filter(Boolean)
-              .join(". ");
-            return (
-              <div key={s.id} className="relative">
-                <EntityCard
-                  href={`/subdivisions/${encodeURIComponent(s.id)}`}
-                  eyebrow={s.recorded_year ? `Recorded ${s.recorded_year}` : "Date uncertain"}
-                  title={s.name}
-                  subtitle={subtitle}
-                />
-                <div className="absolute top-3 right-3">
-                  <ConfidenceBadge level={confidence} />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      <p className="text-xs text-text-muted">
-        Showing {formatCount(filtered.length, "plat", "plats")} of {formatCount(subdivisions.length, "total", "total")}.
-      </p>
     </div>
   );
 }

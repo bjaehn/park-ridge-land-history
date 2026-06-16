@@ -27,6 +27,7 @@ export type Subdivision = {
   confidence_reason?: string | null;
   notes?: string | null;
   parcel_count?: number | null;
+  parent_subdivision_id?: string | null;
   created_at?: string;
   updated_at?: string;
 };
@@ -89,6 +90,7 @@ export type SubdivisionSummary = Pick<
   | "developer"
   | "parcel_count"
   | "notes"
+  | "parent_subdivision_id"
 >;
 
 /** Result of looking up subdivision for a property. */
