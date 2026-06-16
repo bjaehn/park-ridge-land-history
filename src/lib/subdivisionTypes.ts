@@ -28,8 +28,43 @@ export type Subdivision = {
   notes?: string | null;
   parcel_count?: number | null;
   parent_subdivision_id?: string | null;
+  entity_type?: "subdivision" | "estate" | "parent_plat" | "plat" | "unknown" | null;
+  geometry_status?: "not_started" | "needs_source" | "in_progress" | "complete" | "approximate" | null;
   created_at?: string;
   updated_at?: string;
+};
+
+// ─── Land lineage types ───────────────────────────────────────────────────────
+
+/** One historical lot row sourced from a deed or legal description. */
+export type LandLot = {
+  id: string;
+  subdivision_id: string;
+  lot_number: string | null;
+  block_number: string | null;
+  document_date: string | null;
+  source_type: string | null;
+  notes: string | null;
+  confidence_level: string;
+  data_quality_flags: string[] | null;
+};
+
+/** Full lineage entry for one subdivision associated with a modern parcel. */
+export type LandLineageEntry = {
+  subdivision: {
+    id: string;
+    name: string;
+    entity_type: string | null;
+    recorded_year: number | null;
+    confidence_level: string;
+    geometry_status: string | null;
+  };
+  parent_subdivision: {
+    id: string;
+    name: string;
+    entity_type: string | null;
+  } | null;
+  lots: LandLot[];
 };
 
 export type SubdivisionSource = {

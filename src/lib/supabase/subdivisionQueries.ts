@@ -204,44 +204,87 @@ export async function fetchSubdivisionsByDecade(
 /** Alias for fetchSubdivisionIndex -- used by the Next.js SubdivisionsContent component. */
 export const fetchSubdivisions = fetchSubdivisionIndex;
 
-/** Parcels belonging to a specific subdivision, for the detail page. */
+/** Parcels belonging to a specific subdivision, with historical lot detail. */
 export async function fetchSubdivisionParcels(
   subdivisionId: string
-): Promise<Array<{ pin: string; address?: string | null; year_built?: number | null }>> {
+): Promise<Array<{ pin: string; address?: string | null; year_built?: number | null; lot_number?: string | null; block_number?: string | null; lot_count?: number }>> {
   if (!supabase) return [];
 
   const { data: links, error: linksError } = await supabase
     .from("property_subdivision_links")
-    .select("pin")
+    .select("pin, lot_number, block_number")
     .eq("subdivision_id", subdivisionId)
     .limit(500);
 
   if (linksError || !links || links.length === 0) return [];
 
-  const pins = (links as Array<{ pin: string }>).map((r) => r.pin).filter(Boolean);
+  const pins = (links as Array<{ pin: string; lot_number: string | null; block_number: string | null }>)
+    .map((r) => r.pin)
+    .filter(Boolean);
   if (!pins.length) return [];
+
+  // Fetch lot-level detail from subdivision_lots
+  const { data: lots } = await supabase
+    .from("subdivision_lots")
+    .select("current_pin, lot_number, block_number")
+    .eq("subdivision_id", subdivisionId)
+    .in("current_pin", pins);
+
+  const lotsMap = new Map<string, Array<{ lot_number: string | null; block_number: string | null }>>();
+  (lots ?? []).forEach((l: Record<string, unknown>) => {
+    const p = String(l.current_pin ?? "");
+    if (!lotsMap.has(p)) lotsMap.set(p, []);
+    lotsMap.get(p)!.push({ lot_number: l.lot_number as string | null, block_number: l.block_number as string | null });
+  });
 
   const { data: parcels, error: parcelsError } = await supabase
     .from("parcels")
     .select("pin_normalized, address, year_built")
     .in("pin_normalized", pins);
 
-  if (parcelsError || !parcels) {
-    return pins.map((pin) => ({ pin, address: null, year_built: null }));
-  }
-
   const parcelMap = new Map(
-    (parcels as Array<{ pin_normalized: string; address: string | null; year_built: number | null }>)
-      .map((p) => [p.pin_normalized, p])
+    (!parcelsError && parcels
+      ? (parcels as Array<{ pin_normalized: string; address: string | null; year_built: number | null }>)
+      : []
+    ).map((p) => [p.pin_normalized, p])
   );
-  return pins.map((pin) => {
-    const parcel = parcelMap.get(pin);
+
+  return (links as Array<{ pin: string; lot_number: string | null; block_number: string | null }>).map((link) => {
+    const parcel = parcelMap.get(link.pin);
+    const pinLots = lotsMap.get(link.pin) ?? [];
+    // Use first lot from subdivision_lots if available, else fall back to link
+    const firstLot = pinLots[0] ?? link;
     return {
-      pin,
+      pin: link.pin,
       address: parcel?.address ?? null,
       year_built: parcel?.year_built ?? null,
+      lot_number: firstLot.lot_number,
+      block_number: firstLot.block_number,
+      lot_count: pinLots.length > 1 ? pinLots.length : undefined,
     };
   });
+}
+
+/** Parent subdivision for a given subdivision, if set. */
+export async function fetchParentSubdivision(
+  subdivisionId: string
+): Promise<{ id: string; name: string; entity_type: string | null } | null> {
+  if (!supabase) return null;
+  const { data } = await supabase
+    .from("subdivisions")
+    .select("parent_subdivision_id")
+    .eq("id", subdivisionId)
+    .single();
+  const parentId = (data as Record<string, unknown> | null)?.parent_subdivision_id as string | null;
+  if (!parentId) return null;
+  const { data: parent } = await supabase
+    .from("subdivisions")
+    .select("id, name, entity_type")
+    .eq("id", parentId)
+    .single();
+  if (!parent) return null;
+  const p = parent as Record<string, unknown>;
+  return { id: String(p.id), name: String(p.name), entity_type: (p.entity_type as string | null) ?? null };
 }
 
 // ─── Plat-by-decade chart ─────────────────────────────────────────────────────

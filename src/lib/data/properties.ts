@@ -1,6 +1,7 @@
 import { supabase } from "../supabase/client";
 import type { ComparisonRow } from "../../components/ui/ComparisonList";
 import type { ComparisonScope } from "../formatters";
+import type { LandLineageEntry, LandLot } from "../subdivisionTypes";
 
 export type ParcelProperties = {
   [key: string]: unknown;
@@ -84,12 +85,15 @@ export type PropertyDetailData = {
     original_owner?: string | null;
     source_reference?: string | null;
   } | null;
+  landLineage?: LandLineageEntry[];
   comparisons?: ComparisonRow[];
   relatedHomes?: Array<{ pin: string; address?: string | null; yearBuilt?: number | null }>;
   sales?: PropertySale[];
   permits?: PropertyPermit[];
   hargisRecords?: HargisRecord[];
 };
+
+export type { LandLineageEntry, LandLot };
 
 export async function getPropertyByPin(pin: string): Promise<PropertyPageData> {
   const props = await loadPropertyProps(pin);
@@ -117,6 +121,7 @@ export async function getPropertyDetail(pin: string): Promise<PropertyDetailData
   // All supplemental queries run in parallel
   const [
     subdivisionResult,
+    landLineageResult,
     comparisonsResult,
     relatedHomesResult,
     salesResult,
@@ -124,6 +129,7 @@ export async function getPropertyDetail(pin: string): Promise<PropertyDetailData
     hargisResult,
   ] = await Promise.allSettled([
     loadSubdivision(pin),
+    loadLandLineage(pin),
     loadComparisons(pin, props.year_built as number | null),
     loadRelatedHomes(pin, props.street_name_normalized as string | undefined),
     loadSales(pin),
@@ -134,6 +140,7 @@ export async function getPropertyDetail(pin: string): Promise<PropertyDetailData
   return {
     properties: props,
     subdivision: subdivisionResult.status === "fulfilled" ? subdivisionResult.value : null,
+    landLineage: landLineageResult.status === "fulfilled" ? landLineageResult.value : [],
     comparisons: comparisonsResult.status === "fulfilled" ? comparisonsResult.value : undefined,
     relatedHomes: relatedHomesResult.status === "fulfilled" ? relatedHomesResult.value : [],
     sales: salesResult.status === "fulfilled" ? salesResult.value : [],
@@ -244,6 +251,93 @@ async function loadHargisRecords(pin: string): Promise<HargisRecord[]> {
     .order("refnum");
   if (!data) return [];
   return data as HargisRecord[];
+}
+
+async function loadLandLineage(pin: string): Promise<LandLineageEntry[]> {
+  if (!supabase) return [];
+
+  // All subdivision links for this PIN, with subdivision details
+  const { data: links } = await supabase
+    .from("property_subdivision_links")
+    .select("subdivision_id, lot_number, block_number, confidence_level, subdivisions(id, name, entity_type, recorded_year, confidence_level, geometry_status, parent_subdivision_id)")
+    .eq("pin", pin);
+
+  if (!links?.length) return [];
+
+  // Collect parent subdivision IDs to fetch in one query
+  const parentIds = links
+    .map((l) => (l.subdivisions as unknown as Record<string, unknown> | null)?.parent_subdivision_id as string | undefined)
+    .filter((id): id is string => Boolean(id));
+
+  const parentMap = new Map<string, { id: string; name: string; entity_type: string | null }>();
+  if (parentIds.length > 0) {
+    const { data: parents } = await supabase
+      .from("subdivisions")
+      .select("id, name, entity_type")
+      .in("id", parentIds);
+    (parents ?? []).forEach((p: Record<string, unknown>) =>
+      parentMap.set(String(p.id), { id: String(p.id), name: String(p.name), entity_type: (p.entity_type as string | null) ?? null })
+    );
+  }
+
+  // Historical lot rows for this PIN from subdivision_lots
+  const { data: lots } = await supabase
+    .from("subdivision_lots")
+    .select("id, subdivision_id, lot_number, block_number, document_date, source_type, notes, confidence_level, data_quality_flags")
+    .eq("current_pin", pin);
+
+  return links.map((link) => {
+    const sub = (link.subdivisions as unknown as Record<string, unknown> | null) ?? {};
+    const subId = String(sub.id ?? link.subdivision_id ?? "");
+    const parentId = sub.parent_subdivision_id as string | null;
+
+    const subLots: LandLot[] = (lots ?? [])
+      .filter((l: Record<string, unknown>) => l.subdivision_id === link.subdivision_id)
+      .map((l: Record<string, unknown>) => ({
+        id: String(l.id),
+        subdivision_id: String(l.subdivision_id),
+        lot_number: (l.lot_number as string | null) ?? null,
+        block_number: (l.block_number as string | null) ?? null,
+        document_date: (l.document_date as string | null) ?? null,
+        source_type: (l.source_type as string | null) ?? null,
+        notes: (l.notes as string | null) ?? null,
+        confidence_level: String(l.confidence_level ?? "unknown"),
+        data_quality_flags: (l.data_quality_flags as string[] | null) ?? null,
+      }));
+
+    // Fall back to the link-level lot/block when subdivision_lots has no rows yet
+    const displayLots: LandLot[] =
+      subLots.length > 0
+        ? subLots
+        : link.lot_number
+        ? [
+            {
+              id: `link-${link.subdivision_id}`,
+              subdivision_id: String(link.subdivision_id),
+              lot_number: link.lot_number as string | null,
+              block_number: link.block_number as string | null,
+              document_date: null,
+              source_type: null,
+              notes: null,
+              confidence_level: String(link.confidence_level ?? "unknown"),
+              data_quality_flags: null,
+            },
+          ]
+        : [];
+
+    return {
+      subdivision: {
+        id: subId,
+        name: String(sub.name ?? ""),
+        entity_type: (sub.entity_type as string | null) ?? null,
+        recorded_year: (sub.recorded_year as number | null) ?? null,
+        confidence_level: String(sub.confidence_level ?? "unknown"),
+        geometry_status: (sub.geometry_status as string | null) ?? null,
+      },
+      parent_subdivision: parentId ? (parentMap.get(parentId) ?? null) : null,
+      lots: displayLots,
+    };
+  });
 }
 
 async function loadPropertyProps(pin: string): Promise<ParcelProperties | null> {

@@ -29,7 +29,7 @@ import {
   confidenceFor,
 } from "@/lib/formatters";
 import { getPropertyDetail } from "@/lib/data/properties";
-import type { PropertySale, PropertyPermit, HargisRecord } from "@/lib/data/properties";
+import type { PropertySale, PropertyPermit, HargisRecord, LandLineageEntry } from "@/lib/data/properties";
 import type { LucideIcon } from "lucide-react";
 
 type Props = { pin: string; streetDisplayName?: string };
@@ -146,6 +146,110 @@ function PermitHistorySection({ permits }: { permits: PropertyPermit[] }) {
   );
 }
 
+function LandLineageSection({ lineage }: { lineage: LandLineageEntry[] }) {
+  if (!lineage.length) return null;
+  return (
+    <section>
+      <p className="section-heading">Land lineage</p>
+      <div className="space-y-3">
+        {lineage.map((entry) => {
+          const hasLotBlock = entry.lots.some((l) => l.lot_number || l.block_number);
+          const hasMissingLotBlock = entry.lots.some((l) =>
+            l.data_quality_flags?.includes("missing_lot_block")
+          );
+          const isMultiLot = entry.lots.filter((l) => l.lot_number).length > 1;
+
+          return (
+            <div
+              key={entry.subdivision.id}
+              className="bg-surface-card border border-surface-border rounded-lg p-4 space-y-2"
+            >
+              {/* Parent subdivision / estate */}
+              {entry.parent_subdivision && (
+                <div className="flex items-center gap-2 text-xs text-text-muted">
+                  <span className="uppercase tracking-wider">
+                    {entry.parent_subdivision.entity_type === "estate" ? "Estate" : "Parent plat"}
+                  </span>
+                  <span>·</span>
+                  <Link
+                    href={`/subdivisions/${encodeURIComponent(entry.parent_subdivision.id)}`}
+                    className="text-accent-purple hover:underline"
+                  >
+                    {entry.parent_subdivision.name}
+                  </Link>
+                </div>
+              )}
+
+              {/* Subdivision name */}
+              <Link
+                href={`/subdivisions/${encodeURIComponent(entry.subdivision.id)}`}
+                className="block text-sm font-semibold text-text-primary hover:text-accent-purple transition-colors"
+              >
+                {entry.subdivision.name}
+              </Link>
+
+              {/* Historical lots */}
+              {entry.lots.length > 0 && (
+                <div className="space-y-1 pl-0">
+                  {entry.lots.map((lot, i) => (
+                    <div key={lot.id + i} className="flex flex-wrap items-baseline gap-x-3 text-xs">
+                      <span className="text-text-secondary">
+                        {lot.lot_number && lot.block_number
+                          ? `Lot ${lot.lot_number}, Block ${lot.block_number}`
+                          : lot.lot_number
+                          ? `Lot ${lot.lot_number}`
+                          : lot.block_number
+                          ? `Block ${lot.block_number}`
+                          : "Lot / block: needs verification"}
+                      </span>
+                      {lot.document_date && (
+                        <span className="text-text-muted">Doc recorded {lot.document_date}</span>
+                      )}
+                    </div>
+                  ))}
+                  {isMultiLot && (
+                    <p className="text-xs text-text-muted italic mt-1">
+                      Multiple historical lots combined into this modern parcel.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Source + confidence row */}
+              <div className="flex flex-wrap gap-x-4 text-xs text-text-muted pt-0.5 border-t border-surface-border">
+                {entry.lots[0]?.source_type && (
+                  <span>Source: {entry.lots[0].source_type}</span>
+                )}
+                <span>Confidence: {entry.subdivision.confidence_level}</span>
+              </div>
+
+              {/* Quality warnings */}
+              {hasMissingLotBlock && (
+                <p className="text-xs text-amber-400/80">
+                  Lot and block number not yet captured — needs verification.
+                </p>
+              )}
+              {entry.subdivision.geometry_status === "not_started" && (
+                <p className="text-xs text-text-muted italic">
+                  Subdivision boundary not yet mapped.
+                </p>
+              )}
+              {!entry.subdivision.recorded_year && (
+                <p className="text-xs text-text-muted italic">
+                  Plat recording date: needs verification.
+                </p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <InlineSourceNote className="mt-2">
+        Legal descriptions sourced from deed records. Historic lot numbers reflect original subdivision plats; modern parcel boundaries may differ.
+      </InlineSourceNote>
+    </section>
+  );
+}
+
 function HargisSurveySection({ records }: { records: HargisRecord[] }) {
   if (!records.length) return null;
   return (
@@ -244,6 +348,7 @@ export function PropertyDetailContent({ pin, streetDisplayName }: Props) {
   const sales = detail.sales ?? [];
   const permits = detail.permits ?? [];
   const hargisRecords = detail.hargisRecords ?? [];
+  const landLineage = detail.landLineage ?? [];
 
   // Use actual event table counts and most-recent values \u2014 more complete than parcel aggregates
   const actualSaleCount = sales.length;
@@ -271,7 +376,7 @@ export function PropertyDetailContent({ pin, streetDisplayName }: Props) {
 
   const missingGaps: string[] = [];
   if (!props.year_built) missingGaps.push("Build year not in assessor records");
-  if (!detail.subdivision) missingGaps.push("Recorded plat not yet identified");
+  if (!detail.subdivision && !landLineage.length) missingGaps.push("Recorded plat not yet identified");
   if (!permitCount || permitCount === 0) missingGaps.push("No permit history in dataset");
   if (actualSaleCount === 0) missingGaps.push("No recorded sales in dataset");
 
@@ -339,8 +444,11 @@ export function PropertyDetailContent({ pin, streetDisplayName }: Props) {
       {/* HARGIS historic survey records */}
       <HargisSurveySection records={hargisRecords} />
 
-      {/* Recorded plat */}
-      {detail.subdivision && (
+      {/* Land lineage (deed-sourced lot/block/subdivision data) */}
+      {landLineage.length > 0 ? (
+        <LandLineageSection lineage={landLineage} />
+      ) : detail.subdivision ? (
+        /* Fallback: simple recorded plat block when no lineage data yet */
         <section>
           <p className="section-heading">Recorded plat</p>
           <div className="flex items-start gap-3 bg-surface-card border border-surface-border rounded-lg p-4">
@@ -361,7 +469,7 @@ export function PropertyDetailContent({ pin, streetDisplayName }: Props) {
             </div>
           </div>
         </section>
-      )}
+      ) : null}
 
       {/* How this property compares */}
       {detail.comparisons && detail.comparisons.length > 0 && (

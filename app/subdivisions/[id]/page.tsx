@@ -7,7 +7,7 @@ import { SourceNote } from "@/components/ui/SourceNote";
 import { MapView } from "@/components/MapView";
 import { SubdivisionDetailContent } from "./_SubdivisionDetailContent";
 import { SubdivisionHistoryPanel } from "@/components/ui/SubdivisionHistoryPanel";
-import { fetchSubdivisionFullDetail, fetchSubdivisionMapData } from "@/lib/supabase/subdivisionQueries";
+import { fetchSubdivisionFullDetail, fetchSubdivisionMapData, fetchParentSubdivision } from "@/lib/supabase/subdivisionQueries";
 import type { ConfidenceLevel } from "@/lib/formatters";
 
 type Props = { params: { id: string } };
@@ -23,9 +23,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function SubdivisionDetailPage({ params }: Props) {
   const id = decodeURIComponent(params.id);
-  const [subOrNull, mapData] = await Promise.all([
+  const [subOrNull, mapData, parentSub] = await Promise.all([
     fetchSubdivisionFullDetail(id).catch(() => null),
     fetchSubdivisionMapData(id).catch(() => ({ pins: [], bbox: null })),
+    fetchParentSubdivision(id).catch(() => null),
   ]);
 
   if (!subOrNull) notFound();
@@ -87,6 +88,9 @@ export default async function SubdivisionDetailPage({ params }: Props) {
       <SubdivisionDetailContent
         subdivisionId={id}
         recordedYear={sub.recorded_year ?? null}
+        entityType={(sub.entity_type as string | null) ?? null}
+        geometryStatus={(sub.geometry_status as string | null) ?? null}
+        parentSubdivision={parentSub}
         mapSlot={
           <MapView
             scope={{
