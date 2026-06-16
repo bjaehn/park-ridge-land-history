@@ -70,7 +70,7 @@ function SaleHistorySection({ sales }: { sales: PropertySale[] }) {
           <div key={s.id} className="flex items-start justify-between gap-3 bg-surface-card border border-surface-border rounded-lg px-4 py-3">
             <div className="min-w-0">
               <p className="text-sm font-medium text-text-primary">
-                {s.sale_date ? new Date(s.sale_date).getFullYear() : s.sale_year ?? "—"}
+                {s.sale_date ? new Date(s.sale_date).getFullYear() : s.sale_year ?? "\u2014"}
                 {s.deed_type ? <span className="font-normal text-text-secondary"> · {s.deed_type}</span> : null}
               </p>
               {s.document_number && (
@@ -116,7 +116,7 @@ function PermitHistorySection({ permits }: { permits: PropertyPermit[] }) {
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-sm font-medium text-text-primary">
-                  {p.date_issued ? new Date(p.date_issued).getFullYear() : "—"}
+                  {p.date_issued ? new Date(p.date_issued).getFullYear() : "\u2014"}
                   {p.status ? <span className="font-normal text-text-secondary"> · {p.status}</span> : null}
                 </p>
                 {p.description && (
@@ -141,7 +141,7 @@ function PermitHistorySection({ permits }: { permits: PropertyPermit[] }) {
           {expanded ? "Show fewer" : `Show all ${permits.length} permits`}
         </button>
       )}
-      <InlineSourceNote className="mt-2">{"City of Park Ridge via Cook County Assessor · Permit records from 2018–present only; earlier history may exist but is not in this dataset"}</InlineSourceNote>
+      <InlineSourceNote className="mt-2">{"City of Park Ridge via Cook County Assessor · Permit records from 2018-present only; earlier history may exist but is not in this dataset"}</InlineSourceNote>
     </section>
   );
 }
@@ -245,7 +245,7 @@ export function PropertyDetailContent({ pin, streetDisplayName }: Props) {
   const permits = detail.permits ?? [];
   const hargisRecords = detail.hargisRecords ?? [];
 
-  // Use actual event table counts and most-recent values — more complete than parcel aggregates
+  // Use actual event table counts and most-recent values \u2014 more complete than parcel aggregates
   const actualSaleCount = sales.length;
   const latestPermitYear = props.latest_permit_year as number | null;
   const mostRecentSale = sales[0] ?? null;
