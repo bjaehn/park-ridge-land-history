@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { SourceNote } from "@/components/ui/SourceNote";
 import { SubdivisionsContent } from "./_SubdivisionsContent";
+import { SubdivisionCharts } from "./_SubdivisionCharts";
 
 export const metadata: Metadata = {
   title: "Subdivisions",
@@ -23,6 +24,8 @@ export default function SubdivisionsPage() {
         title="Subdivisions"
         subtitle="The recorded subdivision plats that created Park Ridge's lots. Each plat is a legal instrument on file at the Cook County Recorder of Deeds."
       />
+
+      <SubdivisionCharts />
 
       <SubdivisionsContent />
 

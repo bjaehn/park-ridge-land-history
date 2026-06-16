@@ -240,6 +240,51 @@ export async function fetchSubdivisionParcels(
   });
 }
 
+// ─── Plat-by-decade chart ─────────────────────────────────────────────────────
+
+export async function fetchSubdivisionPlatByDecade(): Promise<
+  Array<{ decade: number; platCount: number }>
+> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc("subdivision_plat_by_decade");
+  if (error || !data) return [];
+  return (data as Array<{ decade: number; plat_count: number }>).map((r) => ({
+    decade: r.decade,
+    platCount: r.plat_count,
+  }));
+}
+
+// ─── Build-gap chart ──────────────────────────────────────────────────────────
+
+export async function fetchSubdivisionBuildGap(): Promise<
+  Array<{
+    name: string;
+    recordedYear: number;
+    earliestBuilt: number;
+    gapYears: number;
+    lotCount: number;
+  }>
+> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc("subdivision_build_gap");
+  if (error || !data) return [];
+  return (
+    data as Array<{
+      name: string;
+      recorded_year: number;
+      earliest_built: number;
+      gap_years: number;
+      lot_count: number;
+    }>
+  ).map((r) => ({
+    name: r.name,
+    recordedYear: r.recorded_year,
+    earliestBuilt: r.earliest_built,
+    gapYears: r.gap_years,
+    lotCount: r.lot_count,
+  }));
+}
+
 /** Fetch a subdivision for property page cross-links. */
 export async function fetchSubdivisionForPin(
   pin: string
