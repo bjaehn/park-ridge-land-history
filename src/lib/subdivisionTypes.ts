@@ -147,3 +147,150 @@ export function recordedYearDisplay(year: number | null | undefined): string {
   if (!year) return "Recording date unknown";
   return `Recorded ${year}`;
 }
+
+// ─── Historical context types ─────────────────────────────────────────────────
+
+export type SubdivisionStatus =
+  | "verified"
+  | "partially_verified"
+  | "research_candidate"
+  | "needs_manual_review";
+
+export type SourceReliabilityTier =
+  | "primary"
+  | "official"
+  | "secondary"
+  | "tertiary"
+  | "research_lead";
+
+/** Extended subdivision source with full ledger fields. */
+export type SubdivisionSourceLedger = SubdivisionSource & {
+  source_key?: string | null;
+  title?: string | null;
+  author_or_publisher?: string | null;
+  publication_name?: string | null;
+  publication_date?: string | null;
+  page_ref?: string | null;
+  column_ref?: string | null;
+  archive_location?: string | null;
+  access_notes?: string | null;
+  reliability_tier?: SourceReliabilityTier | null;
+};
+
+export type SubdivisionAlias = {
+  id: string;
+  subdivision_id: string;
+  alias: string;
+  alias_type?: string | null;
+  source_id?: string | null;
+  confidence: SubdivisionConfidenceLevel;
+  created_at?: string;
+};
+
+export type SubdivisionResearchTask = {
+  id: string;
+  subdivision_id?: string | null;
+  search_query: string;
+  target_archive?: string | null;
+  reason?: string | null;
+  expected_source_type?: string | null;
+  status: "pending" | "in_progress" | "completed" | "abandoned";
+  priority: "high" | "medium" | "low";
+  notes?: string | null;
+  created_at?: string;
+  completed_at?: string | null;
+};
+
+/** Timeline event extended with historical fact fields and optional embedded source. */
+export type SubdivisionHistoricalFact = SubdivisionTimelineEvent & {
+  fact_type?: string | null;
+  direct_quote?: string | null;
+  source_id?: string | null;
+  source_page?: string | null;
+  source_column?: string | null;
+  addresses_mentioned?: string[] | null;
+  streets_mentioned?: string[] | null;
+  lot_block_references?: string | null;
+  pin_references?: string[] | null;
+  confidence_reason?: string | null;
+  display_priority?: number | null;
+  /** Embedded join result when queried with source:subdivision_sources(...) */
+  source?: SubdivisionSourceLedger | null;
+};
+
+/** Full subdivision detail with all historical context. Extends SubdivisionWithDetail. */
+export type SubdivisionFullDetail = SubdivisionWithDetail & {
+  display_name?: string | null;
+  slug?: string | null;
+  development_era_start_year?: number | null;
+  development_era_end_year?: number | null;
+  historical_summary?: string | null;
+  status?: SubdivisionStatus | null;
+  facts?: SubdivisionHistoricalFact[];
+  aliases?: SubdivisionAlias[];
+  research_tasks?: SubdivisionResearchTask[];
+};
+
+// ─── Helper functions ─────────────────────────────────────────────────────────
+
+export function statusLabel(status: SubdivisionStatus): string {
+  const labels: Record<SubdivisionStatus, string> = {
+    verified: "Verified",
+    partially_verified: "Partially verified",
+    research_candidate: "Research candidate",
+    needs_manual_review: "Needs review",
+  };
+  return labels[status] ?? status;
+}
+
+export function statusDescription(status: SubdivisionStatus): string {
+  const descriptions: Record<SubdivisionStatus, string> = {
+    verified:
+      "Recording date, plat boundary, and key facts have been confirmed from official primary sources.",
+    partially_verified:
+      "Some facts are confirmed by official records, but plat boundary, recording date, or other details remain unverified.",
+    research_candidate:
+      "This subdivision name has appeared in at least one source, but core details have not yet been verified.",
+    needs_manual_review:
+      "Source data contains inconsistencies or ambiguities that require manual review before public display.",
+  };
+  return descriptions[status];
+}
+
+export function reliabilityTierLabel(tier: SourceReliabilityTier): string {
+  const labels: Record<SourceReliabilityTier, string> = {
+    primary: "Primary source",
+    official: "Official record",
+    secondary: "Secondary source",
+    tertiary: "Tertiary reference",
+    research_lead: "Research lead",
+  };
+  return labels[tier] ?? tier;
+}
+
+export function factTypeIcon(factType: string): string {
+  const map: Record<string, string> = {
+    plat_recorded: "plat",
+    legal_description: "plat",
+    lots_for_sale: "sale",
+    subdivision_advertised: "sale",
+    infrastructure_petition: "infrastructure",
+    annexation: "annexation",
+    church_or_institutional_land: "institutional",
+    farm: "farm",
+    historic_survey: "survey",
+    research_lead: "research",
+    newspaper: "newspaper",
+  };
+  return map[factType] ?? "research";
+}
+
+export function confidencePlainText(level: SubdivisionConfidenceLevel): string {
+  const labels: Record<SubdivisionConfidenceLevel, string> = {
+    high: "Verified by official record",
+    medium: "Supported by cited source",
+    low: "Research lead, not yet verified",
+    unknown: "Unknown",
+  };
+  return labels[level] ?? "Unknown";
+}

@@ -1,0 +1,723 @@
+{
+  "subdivisions": [
+    {
+      "canonical_name": "Dale, Gustin and Wallace Addition to Park Ridge",
+      "display_name": "Dale, Gustin and Wallace Addition to Park Ridge",
+      "slug": "dale-gustin-and-wallace-addition",
+      "alternate_names": [
+        "Dale, Gustin & Wallace Addition",
+        "Dale Gustin Wallace Addition"
+      ],
+      "status": "partially_verified",
+      "confidence_level": "medium",
+      "development_era_start_year": 1873,
+      "development_era_end_year": null,
+      "historical_summary": "Dale, Gustin and Wallace Addition is one of the earliest documented Park Ridge additions identified so far. A City of Park Ridge legal memorandum places the plat recording at October 1, 1873 (Document No. 128686 in Cook County), and ties Block 1 lots to addresses in the South Prospect, Courtland, Stewart, and Crescent area.",
+      "facts": [
+        {
+          "fact_type": "plat_recorded",
+          "event_year": 1873,
+          "title": "Plat recorded with Cook County",
+          "description": "Lots 7–17 and 18–23, Block 1, Dale, Gustin and Wallace Addition to Park Ridge, recorded October 1, 1873 as Document No. 128686 in Cook County. Located in part of the Northeast Quarter of Section 35, Township 41 North, Range 12 East of the Third Principal Meridian.",
+          "direct_quote": null,
+          "source_key": "S3",
+          "source_page": null,
+          "confidence_level": "high"
+        },
+        {
+          "fact_type": "legal_description",
+          "event_year": null,
+          "title": "Block 1 lots tied to Stewart and Crescent area",
+          "description": "City memorandum for Special Service Area No. 22-104 identifies lots in Block 1 of Dale, Gustin and Wallace Addition at addresses near South Prospect, Courtland, Stewart, and Crescent.",
+          "direct_quote": null,
+          "source_key": "S3",
+          "source_page": null,
+          "confidence_level": "high"
+        }
+      ],
+      "aliases": [
+        {
+          "alias": "Dale, Gustin & Wallace Addition",
+          "alias_type": "historical_variant",
+          "source_key": "S3",
+          "confidence_level": "high"
+        },
+        {
+          "alias": "Dale Gustin Wallace Addition",
+          "alias_type": "common_shorthand",
+          "source_key": null,
+          "confidence_level": "medium"
+        }
+      ],
+      "research_tasks": [
+        {
+          "search_query": "Dale, Gustin and Wallace",
+          "target_archive": "Park Ridge Public Library newspaper archive",
+          "reason": "Locate newspaper advertisements, legal notices, or lot sales for Dale, Gustin and Wallace Addition",
+          "expected_source_type": "newspaper_ad",
+          "priority": "high"
+        },
+        {
+          "search_query": "Dale, Gustin & Wallace",
+          "target_archive": "Cook County Recorder of Deeds plat index",
+          "reason": "Verify Document No. 128686 and obtain plat boundary from official Cook County plat book",
+          "expected_source_type": "plat_record",
+          "priority": "high"
+        }
+      ]
+    },
+    {
+      "canonical_name": "L. Hodge's Addition to Park Ridge",
+      "display_name": "L. Hodge's Addition to Park Ridge",
+      "slug": "l-hodges-addition",
+      "alternate_names": [
+        "L. Hodge's Addition",
+        "L. Hodges Addition",
+        "Hodge's Addition",
+        "The Pretzel"
+      ],
+      "status": "partially_verified",
+      "confidence_level": "medium",
+      "development_era_start_year": null,
+      "development_era_end_year": null,
+      "historical_summary": "L. Hodge's Addition, locally known as 'The Pretzel' for its curving streets, is one of the most historically significant subdivisions in Park Ridge. Multiple City of Park Ridge legal memoranda identify specific lots within the addition, and the city has commissioned an intensive historic survey of the area under an IHPA grant.",
+      "facts": [
+        {
+          "fact_type": "legal_description",
+          "event_year": null,
+          "title": "36 Main Street identified in Block 5",
+          "description": "City of Park Ridge memorandum for a special use at 36 Main Street identifies the property as Lot 2, Block 5 in L. Hodge's Addition to Park Ridge, East Half of Section 35, Township 41 North, Range 12 East.",
+          "direct_quote": null,
+          "source_key": "S4",
+          "source_page": null,
+          "confidence_level": "high"
+        },
+        {
+          "fact_type": "legal_description",
+          "event_year": null,
+          "title": "110 South Prospect in Block 1",
+          "description": "City memorandum for 110 South Prospect Avenue identifies the property as Lots 1 and 2, Block 1 in L. Hodge's Addition to Park Ridge.",
+          "direct_quote": null,
+          "source_key": "S5",
+          "source_page": null,
+          "confidence_level": "high"
+        },
+        {
+          "fact_type": "historic_survey",
+          "event_year": 2025,
+          "title": "City approves intensive historic survey",
+          "description": "The City of Park Ridge approved a historical survey for 'The Pretzel' neighborhood, described as approximately 250 lots in the L. Hodges Addition. The area is locally known for curving streets.",
+          "direct_quote": null,
+          "source_key": "S6",
+          "source_page": null,
+          "confidence_level": "high"
+        },
+        {
+          "fact_type": "historic_survey",
+          "event_year": null,
+          "title": "City procures technical support for IHPA intensive survey",
+          "description": "City of Park Ridge engaged technical architectural support for an Intensive Historic Survey of L. Hodges Addition, locally known as 'The Pretzel,' in connection with the city's historic preservation program.",
+          "direct_quote": null,
+          "source_key": "S7",
+          "source_page": null,
+          "confidence_level": "high"
+        }
+      ],
+      "aliases": [
+        {
+          "alias": "L. Hodge's Addition",
+          "alias_type": "historical_variant",
+          "source_key": "S4",
+          "confidence_level": "high"
+        },
+        {
+          "alias": "L. Hodges Addition",
+          "alias_type": "spelling_variant",
+          "source_key": "S7",
+          "confidence_level": "high"
+        },
+        {
+          "alias": "Hodge's Addition",
+          "alias_type": "common_shorthand",
+          "source_key": null,
+          "confidence_level": "medium"
+        },
+        {
+          "alias": "The Pretzel",
+          "alias_type": "local_nickname",
+          "source_key": "S6",
+          "confidence_level": "high"
+        }
+      ],
+      "research_tasks": [
+        {
+          "search_query": "Hodge's Addition",
+          "target_archive": "Park Ridge Public Library newspaper archive",
+          "reason": "Locate newspaper advertisements or legal notices establishing when L. Hodge's Addition was platted and initially sold",
+          "expected_source_type": "newspaper_ad",
+          "priority": "high"
+        },
+        {
+          "search_query": "L. Hodge",
+          "target_archive": "Park Ridge Public Library newspaper archive",
+          "reason": "Identify L. Hodge as a historical figure in Park Ridge development",
+          "expected_source_type": "newspaper",
+          "priority": "high"
+        },
+        {
+          "search_query": "The Pretzel",
+          "target_archive": "Park Ridge Public Library newspaper archive",
+          "reason": "Find earliest documented use of 'The Pretzel' as a neighborhood name",
+          "expected_source_type": "newspaper",
+          "priority": "medium"
+        },
+        {
+          "search_query": "IHPA survey L. Hodges Addition RFP deliverables",
+          "target_archive": "City of Park Ridge records",
+          "reason": "Locate final survey report and boundary map from the intensive historic survey",
+          "expected_source_type": "city_record",
+          "priority": "high"
+        }
+      ]
+    },
+    {
+      "canonical_name": "Union Addition to Park Ridge",
+      "display_name": "Union Addition to Park Ridge",
+      "slug": "union-addition",
+      "alternate_names": [
+        "Union Addition"
+      ],
+      "status": "research_candidate",
+      "confidence_level": "low",
+      "development_era_start_year": null,
+      "development_era_end_year": null,
+      "historical_summary": null,
+      "facts": [
+        {
+          "fact_type": "infrastructure_petition",
+          "event_year": 1891,
+          "title": "Property owners petition for sidewalks and ditches",
+          "description": "A newspaper reference from approximately March 7, 1891 indicates that Union Addition property owners petitioned the village board for sidewalks and ditches. This source has not yet been fully verified with an exact page and column citation.",
+          "direct_quote": null,
+          "source_key": "S1",
+          "source_page": null,
+          "confidence_level": "low"
+        }
+      ],
+      "aliases": [
+        {
+          "alias": "Union Addition",
+          "alias_type": "historical_variant",
+          "source_key": null,
+          "confidence_level": "low"
+        }
+      ],
+      "research_tasks": [
+        {
+          "search_query": "Union Addition",
+          "target_archive": "Park Ridge Public Library newspaper archive",
+          "reason": "Locate and confirm 1891 village board petition for sidewalks and ditches. Capture exact page and column before using in public UI.",
+          "expected_source_type": "legal_notice",
+          "priority": "high"
+        },
+        {
+          "search_query": "Union Addition Park Ridge",
+          "target_archive": "Cook County Recorder of Deeds plat index",
+          "reason": "Find original plat recording date and document number for Union Addition",
+          "expected_source_type": "plat_record",
+          "priority": "high"
+        },
+        {
+          "search_query": "Garden Prairie Crescent Clifton Cumberland sidewalks ditches village board",
+          "target_archive": "Park Ridge Public Library newspaper archive",
+          "reason": "Identify streets named in or adjacent to Union Addition from the 1891 petition context",
+          "expected_source_type": "legal_notice",
+          "priority": "medium"
+        }
+      ]
+    },
+    {
+      "canonical_name": "Root Subdivision",
+      "display_name": "Root Subdivision",
+      "slug": "root-subdivision",
+      "alternate_names": [
+        "Root's Subdivision"
+      ],
+      "status": "research_candidate",
+      "confidence_level": "low",
+      "development_era_start_year": null,
+      "development_era_end_year": null,
+      "historical_summary": null,
+      "facts": [
+        {
+          "fact_type": "church_or_institutional_land",
+          "event_year": null,
+          "title": "Catholic church site on Park Avenue in Root Subdivision",
+          "description": "'The History of Park Ridge, 1841-1926' references a 66 by 150 foot lot on Park Avenue in the Root Subdivision selected as a Catholic church site, associated with Anthony Susen. Exact page number not yet extracted.",
+          "direct_quote": null,
+          "source_key": "S8",
+          "source_page": null,
+          "confidence_level": "medium"
+        }
+      ],
+      "aliases": [
+        {
+          "alias": "Root's Subdivision",
+          "alias_type": "historical_variant",
+          "source_key": null,
+          "confidence_level": "low"
+        }
+      ],
+      "research_tasks": [
+        {
+          "search_query": "Root Subdivision Park Ridge",
+          "target_archive": "The History of Park Ridge 1841-1926 (digitized)",
+          "reason": "Extract exact page and quote for Root Subdivision church lot reference. Required before this fact can be shown publicly.",
+          "expected_source_type": "book",
+          "priority": "high"
+        },
+        {
+          "search_query": "Root Subdivision Park Avenue",
+          "target_archive": "Cook County Recorder of Deeds plat index",
+          "reason": "Find original plat and document number for Root Subdivision",
+          "expected_source_type": "plat_record",
+          "priority": "medium"
+        },
+        {
+          "search_query": "Anthony Susen Park Avenue Catholic church Park Ridge",
+          "target_archive": "Park Ridge Public Library newspaper archive",
+          "reason": "Corroborate or expand the book reference to Susen and the Root Subdivision church site",
+          "expected_source_type": "newspaper",
+          "priority": "medium"
+        }
+      ]
+    },
+    {
+      "canonical_name": "Zelowsky's Park Ridge Subdivision",
+      "display_name": "Zelowsky's Park Ridge Subdivision",
+      "slug": "zelowskys-park-ridge-subdivision",
+      "alternate_names": [
+        "Zelowsky Park Ridge Subdivision",
+        "Zelowsky's Subdivision"
+      ],
+      "status": "research_candidate",
+      "confidence_level": "low",
+      "development_era_start_year": null,
+      "development_era_end_year": 1953,
+      "historical_summary": null,
+      "facts": [
+        {
+          "fact_type": "annexation",
+          "event_year": 1953,
+          "title": "Referenced in 1953 annexation to City of Park Ridge",
+          "description": "Cook County Municipal Incorporation and Annexation Index document 15725727 references Zelowsky's Park Ridge Subdivision in connection with territory annexed to the City of Park Ridge by ordinance adopted September 8, 1953. Document requires full review to confirm exact boundaries and subdivision description.",
+          "direct_quote": null,
+          "source_key": "S9",
+          "source_page": null,
+          "confidence_level": "medium"
+        }
+      ],
+      "aliases": [
+        {
+          "alias": "Zelowsky Park Ridge Subdivision",
+          "alias_type": "spelling_variant",
+          "source_key": null,
+          "confidence_level": "medium"
+        },
+        {
+          "alias": "Zelowsky's Subdivision",
+          "alias_type": "common_shorthand",
+          "source_key": null,
+          "confidence_level": "low"
+        }
+      ],
+      "research_tasks": [
+        {
+          "search_query": "Zelowsky Park Ridge",
+          "target_archive": "Cook County Recorder of Deeds plat index",
+          "reason": "Find original plat recording date and document number for Zelowsky's Park Ridge Subdivision",
+          "expected_source_type": "plat_record",
+          "priority": "high"
+        },
+        {
+          "search_query": "Zelowsky",
+          "target_archive": "Park Ridge Public Library newspaper archive",
+          "reason": "Locate newspaper advertisements or legal notices for Zelowsky's Park Ridge Subdivision",
+          "expected_source_type": "newspaper_ad",
+          "priority": "medium"
+        }
+      ]
+    },
+    {
+      "canonical_name": "Feuerborn and Klode's Center Street Addition",
+      "display_name": "Feuerborn and Klode's Center Street Addition",
+      "slug": "feuerborn-and-klodes-center-street-addition",
+      "alternate_names": [
+        "Feuerborn & Klode's Center Street Addition",
+        "Feuerborn and Klode Center Street Addition"
+      ],
+      "status": "research_candidate",
+      "confidence_level": "low",
+      "development_era_start_year": null,
+      "development_era_end_year": 1953,
+      "historical_summary": null,
+      "facts": [
+        {
+          "fact_type": "annexation",
+          "event_year": 1953,
+          "title": "Referenced in 1953 annexation to City of Park Ridge",
+          "description": "Cook County Municipal Incorporation and Annexation Index document 15725727 references Feuerborn and Klode's Center Street Addition in connection with territory annexed to the City of Park Ridge by ordinance adopted September 8, 1953. Document requires full review for boundary confirmation.",
+          "direct_quote": null,
+          "source_key": "S9",
+          "source_page": null,
+          "confidence_level": "medium"
+        }
+      ],
+      "aliases": [
+        {
+          "alias": "Feuerborn & Klode's Center Street Addition",
+          "alias_type": "historical_variant",
+          "source_key": "S9",
+          "confidence_level": "medium"
+        }
+      ],
+      "research_tasks": [
+        {
+          "search_query": "Feuerborn Klode Center Street Addition",
+          "target_archive": "Cook County Recorder of Deeds plat index",
+          "reason": "Find plat recording date and document number",
+          "expected_source_type": "plat_record",
+          "priority": "high"
+        },
+        {
+          "search_query": "Center Street Addition Park Ridge Feuerborn",
+          "target_archive": "Park Ridge Public Library newspaper archive",
+          "reason": "Locate advertisements or legal notices for Center Street Addition",
+          "expected_source_type": "newspaper_ad",
+          "priority": "medium"
+        }
+      ]
+    },
+    {
+      "canonical_name": "Feuerborn and Klode's Ridgewood Park Subdivision",
+      "display_name": "Feuerborn and Klode's Ridgewood Park Subdivision",
+      "slug": "feuerborn-and-klodes-ridgewood-park-subdivision",
+      "alternate_names": [
+        "Feuerborn & Klode's Ridgewood Park Subdivision",
+        "Feuerborn and Klode Ridgewood Park"
+      ],
+      "status": "partially_verified",
+      "confidence_level": "medium",
+      "development_era_start_year": 1925,
+      "development_era_end_year": null,
+      "historical_summary": null,
+      "facts": [
+        {
+          "fact_type": "plat_recorded",
+          "event_year": 1925,
+          "title": "Plat recorded January 13, 1925",
+          "description": "City of Park Ridge memorandum references Feuerborn and Klode's Ridgewood Park Subdivision as recorded January 13, 1925. The document number in the source reads approximately '8737h25' but requires manual verification of the exact Cook County document number before public display.",
+          "direct_quote": null,
+          "source_key": "S10",
+          "source_page": null,
+          "confidence_level": "medium"
+        }
+      ],
+      "aliases": [
+        {
+          "alias": "Feuerborn & Klode's Ridgewood Park Subdivision",
+          "alias_type": "historical_variant",
+          "source_key": "S10",
+          "confidence_level": "medium"
+        }
+      ],
+      "research_tasks": [
+        {
+          "search_query": "Feuerborn Klode Ridgewood Park",
+          "target_archive": "Cook County Recorder of Deeds plat index",
+          "reason": "Verify document number and obtain official plat boundary for Feuerborn and Klode's Ridgewood Park Subdivision",
+          "expected_source_type": "plat_record",
+          "priority": "high"
+        },
+        {
+          "search_query": "Ridgewood Park Subdivision Park Ridge 1925",
+          "target_archive": "Park Ridge Public Library newspaper archive",
+          "reason": "Locate 1920s-era newspaper advertisements for Ridgewood Park lots",
+          "expected_source_type": "newspaper_ad",
+          "priority": "medium"
+        }
+      ]
+    },
+    {
+      "canonical_name": "Charles A. Scott's Park Ridge Villa",
+      "display_name": "Charles A. Scott's Park Ridge Villa",
+      "slug": "charles-a-scotts-park-ridge-villa",
+      "alternate_names": [
+        "Scott's Park Ridge Villa",
+        "First Addition to Charles A. Scott's Park Ridge Villa",
+        "Park Ridge Villa"
+      ],
+      "status": "research_candidate",
+      "confidence_level": "low",
+      "development_era_start_year": null,
+      "development_era_end_year": null,
+      "historical_summary": null,
+      "facts": [],
+      "aliases": [
+        {
+          "alias": "Scott's Park Ridge Villa",
+          "alias_type": "common_shorthand",
+          "source_key": null,
+          "confidence_level": "low"
+        },
+        {
+          "alias": "Park Ridge Villa",
+          "alias_type": "common_shorthand",
+          "source_key": null,
+          "confidence_level": "low"
+        }
+      ],
+      "research_tasks": [
+        {
+          "search_query": "Charles A. Scott Park Ridge Villa",
+          "target_archive": "Park Ridge Public Library newspaper archive",
+          "reason": "Find advertisements or legal notices for Charles A. Scott's Park Ridge Villa around Fortuna and Vernon",
+          "expected_source_type": "newspaper_ad",
+          "priority": "medium"
+        },
+        {
+          "search_query": "Scott's Park Ridge Villa Fortuna Vernon lots for sale",
+          "target_archive": "Park Ridge Public Library newspaper archive",
+          "reason": "Locate lot sale advertising with legal description",
+          "expected_source_type": "newspaper_ad",
+          "priority": "medium"
+        },
+        {
+          "search_query": "Charles A. Scott Park Ridge Villa",
+          "target_archive": "Cook County Recorder of Deeds plat index",
+          "reason": "Find original plat recording",
+          "expected_source_type": "plat_record",
+          "priority": "medium"
+        }
+      ]
+    },
+    {
+      "canonical_name": "Arthur T. McIntosh & Co.'s Second Addition to Park Ridge",
+      "display_name": "Arthur T. McIntosh & Co.'s Second Addition to Park Ridge",
+      "slug": "arthur-t-mcintosh-second-addition",
+      "alternate_names": [
+        "McIntosh Second Addition",
+        "Arthur T. McIntosh Second Addition"
+      ],
+      "status": "research_candidate",
+      "confidence_level": "low",
+      "development_era_start_year": null,
+      "development_era_end_year": null,
+      "historical_summary": null,
+      "facts": [],
+      "aliases": [
+        {
+          "alias": "McIntosh Second Addition",
+          "alias_type": "common_shorthand",
+          "source_key": null,
+          "confidence_level": "low"
+        }
+      ],
+      "research_tasks": [
+        {
+          "search_query": "Arthur T. McIntosh Park Ridge",
+          "target_archive": "Park Ridge Public Library newspaper archive",
+          "reason": "Arthur T. McIntosh & Co. was a major Chicago-area real estate firm. Find advertisements for Park Ridge subdivisions.",
+          "expected_source_type": "newspaper_ad",
+          "priority": "medium"
+        },
+        {
+          "search_query": "McIntosh Second Addition Merrill Street",
+          "target_archive": "Park Ridge Public Library newspaper archive",
+          "reason": "Locate legal description or advertisement tying McIntosh Second Addition to Merrill Street area",
+          "expected_source_type": "newspaper_ad",
+          "priority": "medium"
+        },
+        {
+          "search_query": "Arthur T. McIntosh Second Addition Park Ridge",
+          "target_archive": "Cook County Recorder of Deeds plat index",
+          "reason": "Find original plat recording",
+          "expected_source_type": "plat_record",
+          "priority": "medium"
+        }
+      ]
+    },
+    {
+      "canonical_name": "Smith Hills Unit 2",
+      "display_name": "Smith Hills Unit 2",
+      "slug": "smith-hills-unit-2",
+      "alternate_names": [
+        "Smith Hills",
+        "Smith Hills Unit Two"
+      ],
+      "status": "research_candidate",
+      "confidence_level": "low",
+      "development_era_start_year": null,
+      "development_era_end_year": null,
+      "historical_summary": null,
+      "facts": [],
+      "aliases": [
+        {
+          "alias": "Smith Hills",
+          "alias_type": "common_shorthand",
+          "source_key": null,
+          "confidence_level": "low"
+        }
+      ],
+      "research_tasks": [
+        {
+          "search_query": "Smith Hills Park Ridge De Cook Avenue",
+          "target_archive": "Cook County Recorder of Deeds plat index",
+          "reason": "Find plat recording date and boundary for Smith Hills Unit 2",
+          "expected_source_type": "plat_record",
+          "priority": "medium"
+        },
+        {
+          "search_query": "Smith Hills subdivision lots Park Ridge",
+          "target_archive": "Park Ridge Public Library newspaper archive",
+          "reason": "Locate advertisements or notices for Smith Hills",
+          "expected_source_type": "newspaper_ad",
+          "priority": "low"
+        }
+      ]
+    },
+    {
+      "canonical_name": "Greater Park Ridge Subdivision First Addition",
+      "display_name": "Greater Park Ridge Subdivision First Addition",
+      "slug": "greater-park-ridge-subdivision-first-addition",
+      "alternate_names": [
+        "Greater Park Ridge",
+        "First Addition to Greater Park Ridge"
+      ],
+      "status": "research_candidate",
+      "confidence_level": "low",
+      "development_era_start_year": null,
+      "development_era_end_year": null,
+      "historical_summary": null,
+      "facts": [],
+      "aliases": [
+        {
+          "alias": "Greater Park Ridge",
+          "alias_type": "common_shorthand",
+          "source_key": null,
+          "confidence_level": "low"
+        }
+      ],
+      "research_tasks": [
+        {
+          "search_query": "Greater Park Ridge Subdivision De Cook Avenue",
+          "target_archive": "Cook County Recorder of Deeds plat index",
+          "reason": "Find plat recording date and boundary",
+          "expected_source_type": "plat_record",
+          "priority": "medium"
+        }
+      ]
+    },
+    {
+      "canonical_name": "First Hoffman's Ridge",
+      "display_name": "First Hoffman's Ridge",
+      "slug": "first-hoffmans-ridge",
+      "alternate_names": [
+        "Hoffman's Ridge",
+        "Hoffmans Ridge"
+      ],
+      "status": "research_candidate",
+      "confidence_level": "low",
+      "development_era_start_year": null,
+      "development_era_end_year": null,
+      "historical_summary": null,
+      "facts": [],
+      "aliases": [
+        {
+          "alias": "Hoffman's Ridge",
+          "alias_type": "historical_variant",
+          "source_key": null,
+          "confidence_level": "low"
+        }
+      ],
+      "research_tasks": [
+        {
+          "search_query": "Hoffman's Ridge Park Ridge De Cook Avenue",
+          "target_archive": "Cook County Recorder of Deeds plat index",
+          "reason": "Find plat recording date and boundary",
+          "expected_source_type": "plat_record",
+          "priority": "medium"
+        }
+      ]
+    },
+    {
+      "canonical_name": "Whitaker's Park Ridge",
+      "display_name": "Whitaker's Park Ridge",
+      "slug": "whitakers-park-ridge",
+      "alternate_names": [
+        "Whitakers Park Ridge"
+      ],
+      "status": "research_candidate",
+      "confidence_level": "low",
+      "development_era_start_year": null,
+      "development_era_end_year": null,
+      "historical_summary": null,
+      "facts": [],
+      "aliases": [
+        {
+          "alias": "Whitakers Park Ridge",
+          "alias_type": "spelling_variant",
+          "source_key": null,
+          "confidence_level": "low"
+        }
+      ],
+      "research_tasks": [
+        {
+          "search_query": "Whitaker's Park Ridge South Lincoln Avenue",
+          "target_archive": "Cook County Recorder of Deeds plat index",
+          "reason": "Find plat recording date and boundary",
+          "expected_source_type": "plat_record",
+          "priority": "medium"
+        },
+        {
+          "search_query": "Whitaker Park Ridge lots for sale",
+          "target_archive": "Park Ridge Public Library newspaper archive",
+          "reason": "Locate advertisements for Whitaker's Park Ridge",
+          "expected_source_type": "newspaper_ad",
+          "priority": "low"
+        }
+      ]
+    },
+    {
+      "canonical_name": "Park Ridge Plaza",
+      "display_name": "Park Ridge Plaza",
+      "slug": "park-ridge-plaza",
+      "alternate_names": [
+        "Park Ridge Plaza Subdivision"
+      ],
+      "status": "research_candidate",
+      "confidence_level": "low",
+      "development_era_start_year": null,
+      "development_era_end_year": null,
+      "historical_summary": null,
+      "facts": [],
+      "aliases": [
+        {
+          "alias": "Park Ridge Plaza Subdivision",
+          "alias_type": "historical_variant",
+          "source_key": null,
+          "confidence_level": "low"
+        }
+      ],
+      "research_tasks": [
+        {
+          "search_query": "Park Ridge Plaza North Cumberland Avenue",
+          "target_archive": "Cook County Recorder of Deeds plat index",
+          "reason": "Find plat recording date and boundary",
+          "expected_source_type": "plat_record",
+          "priority": "medium"
+        }
+      ]
+    }
+  ]
+}

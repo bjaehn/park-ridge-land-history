@@ -14,6 +14,10 @@ import type {
   SubdivisionTimelineEvent,
   SubdivisionSource,
   SubdivisionQAStats,
+  SubdivisionHistoricalFact,
+  SubdivisionAlias,
+  SubdivisionResearchTask,
+  SubdivisionFullDetail,
 } from "../subdivisionTypes";
 
 // ─── Subdivision index ────────────────────────────────────────────────────────
@@ -283,6 +287,121 @@ export async function fetchSubdivisionBuildGap(): Promise<
     gapYears: r.gap_years,
     lotCount: r.lot_count,
   }));
+}
+
+// ─── Historical context queries ───────────────────────────────────────────────
+
+/**
+ * Fetch historical facts for a subdivision with embedded source details.
+ * Ordered by display_priority ascending, then event_year ascending (nulls last).
+ */
+export async function fetchSubdivisionHistoricalFacts(
+  subdivisionId: string
+): Promise<SubdivisionHistoricalFact[]> {
+  if (!supabase || !subdivisionId) return [];
+  const { data, error } = await supabase
+    .from("subdivision_timeline_events")
+    .select(
+      "*, source:subdivision_sources(" +
+      "id, source_key, title, source_name, source_url, author_or_publisher, " +
+      "publication_name, publication_date, page_ref, column_ref, " +
+      "archive_location, access_notes, reliability_tier" +
+      ")"
+    )
+    .eq("subdivision_id", subdivisionId)
+    .order("display_priority", { ascending: true })
+    .order("event_year", { ascending: true, nullsFirst: false });
+
+  if (error || !data) return [];
+  return data as unknown as SubdivisionHistoricalFact[];
+}
+
+/**
+ * Fetch aliases for a subdivision, ordered by confidence descending then alias ascending.
+ */
+export async function fetchSubdivisionAliases(
+  subdivisionId: string
+): Promise<SubdivisionAlias[]> {
+  if (!supabase || !subdivisionId) return [];
+  const { data, error } = await supabase
+    .from("subdivision_aliases")
+    .select("*")
+    .eq("subdivision_id", subdivisionId)
+    .order("confidence", { ascending: false })
+    .order("alias", { ascending: true });
+
+  if (error || !data) return [];
+  return data as unknown as SubdivisionAlias[];
+}
+
+/**
+ * Fetch research tasks for a subdivision.
+ * If onlyPending is true (default), only returns tasks with status = 'pending'.
+ * Priority ordering: high, medium, low.
+ */
+export async function fetchSubdivisionResearchTasks(
+  subdivisionId: string,
+  onlyPending = true
+): Promise<SubdivisionResearchTask[]> {
+  if (!supabase || !subdivisionId) return [];
+  let query = supabase
+    .from("subdivision_research_tasks")
+    .select("*")
+    .eq("subdivision_id", subdivisionId);
+
+  if (onlyPending) {
+    query = query.eq("status", "pending");
+  }
+
+  const { data, error } = await query.order("created_at", { ascending: true });
+
+  if (error || !data) return [];
+
+  // Sort in-memory by priority: high → medium → low
+  const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
+  return (data as unknown as SubdivisionResearchTask[]).sort(
+    (a, b) =>
+      (priorityOrder[a.priority] ?? 1) - (priorityOrder[b.priority] ?? 1)
+  );
+}
+
+/**
+ * Fetch full subdivision detail including historical facts, aliases, and research tasks.
+ * Extends SubdivisionWithDetail with all historical context fields.
+ */
+export async function fetchSubdivisionFullDetail(
+  id: string
+): Promise<SubdivisionFullDetail | null> {
+  if (!supabase || !id) return null;
+
+  const [subdivisionResult, eventsResult, sourcesResult, factsResult, aliasesResult, tasksResult] =
+    await Promise.all([
+      supabase.from("subdivisions").select("*").eq("id", id).single(),
+      supabase
+        .from("subdivision_timeline_events")
+        .select("*")
+        .eq("subdivision_id", id)
+        .order("event_year", { ascending: true, nullsFirst: false }),
+      supabase.from("subdivision_sources").select("*").eq("subdivision_id", id),
+      fetchSubdivisionHistoricalFacts(id),
+      fetchSubdivisionAliases(id),
+      fetchSubdivisionResearchTasks(id),
+    ]);
+
+  if (subdivisionResult.error || !subdivisionResult.data) return null;
+
+  const subdivision = subdivisionResult.data as Subdivision;
+  const events = (eventsResult.data ?? []) as SubdivisionTimelineEvent[];
+  const sources = (sourcesResult.data ?? []) as SubdivisionSource[];
+
+  return {
+    ...subdivision,
+    timeline_events: events,
+    sources,
+    facts: factsResult,
+    aliases: aliasesResult,
+    research_tasks: tasksResult,
+  } as SubdivisionFullDetail;
 }
 
 /** Fetch a subdivision for property page cross-links. */

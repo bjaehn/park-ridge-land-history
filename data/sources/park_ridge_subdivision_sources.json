@@ -1,0 +1,114 @@
+{
+  "sources": [
+    {
+      "source_key": "S1",
+      "title": "Park Ridge Public Library Local History",
+      "source_type": "library_research_lead",
+      "author_or_publisher": "Park Ridge Public Library",
+      "url": "https://www.parkridgelibrary.org/research-learn/local-history/",
+      "reliability_tier": "official",
+      "access_notes": "Full-text Park Ridge newspapers searchable in-library only. Coverage: Park Ridge Advocate, Park Ridge Herald, Park Ridge Herald-Advocate, 1929-1935 and 1937-2023, scraps of Park Ridge Herald 1889-1923. Also holds microfilm for Herald, Times Herald, Advocate, Herald-Advocate."
+    },
+    {
+      "source_key": "S2",
+      "title": "Comprehensive Plan, City of Park Ridge",
+      "source_type": "comprehensive_plan",
+      "author_or_publisher": "City of Park Ridge",
+      "url": "https://cms9files.revize.com/parkridgeil/ComprehensivePlan1996.pdf",
+      "reliability_tier": "official",
+      "access_notes": "1996 document. References 1920s building boom, farm-to-subdivision transitions, nursery/greenhouse origins of subdivisions, postwar housing demand."
+    },
+    {
+      "source_key": "S3",
+      "title": "Agenda Cover Memorandum, Special Service Area No. 22-104 Stewart/Crescent",
+      "source_type": "city_record",
+      "author_or_publisher": "City of Park Ridge",
+      "url": "https://parkridge.granicus.com/MetaViewer.php?clip_id=2202&meta_id=100293&view_id=1",
+      "reliability_tier": "official",
+      "access_notes": "References Lots 7-17 and 18-23, Block 1, Dale, Gustin and Wallace Addition to Park Ridge. Plat recorded October 1, 1873, Document No. 128686. Located in NE 1/4 Section 35, Township 41 North, Range 12 East. Related addresses: South Prospect, Courtland, Stewart, Crescent area."
+    },
+    {
+      "source_key": "S4",
+      "title": "Agenda Cover Memo, 36 Main Street Special Use",
+      "source_type": "city_record",
+      "author_or_publisher": "City of Park Ridge",
+      "url": "https://parkridge.granicus.com/MetaViewer.php?clip_id=1829&meta_id=81974&view_id=1",
+      "reliability_tier": "official",
+      "access_notes": "36 Main Street is Lot 2, Block 5, L. Hodge's Addition to Park Ridge. East Half of Section 35, Township 41 North, Range 12 East."
+    },
+    {
+      "source_key": "S5",
+      "title": "Agenda Cover Memorandum, 110 South Prospect Avenue",
+      "source_type": "city_record",
+      "author_or_publisher": "City of Park Ridge",
+      "url": "https://parkridge.granicus.com/MetaViewer.php?clip_id=2008&meta_id=90996&view_id=1",
+      "reliability_tier": "official",
+      "access_notes": "110 South Prospect Avenue is Lot 1 and Lot 2, Block 1, L. Hodge's Addition to Park Ridge."
+    },
+    {
+      "source_key": "S6",
+      "title": "Park Ridge Approves Historical Survey For 'The Pretzel' Neighborhood",
+      "source_type": "newspaper",
+      "author_or_publisher": "Journal & Topics",
+      "publication_name": "Journal & Topics",
+      "publication_date": "2025-08-19",
+      "url": "https://www.journal-topics.com/articles/park-ridge-approves-historical-survey-for-the-pretzel-neighborhood/",
+      "reliability_tier": "secondary",
+      "access_notes": "Reports city approval of historical survey for 'The Pretzel' neighborhood, described as about 250 lots in the L. Hodges Addition neighborhood. Known for curving streets."
+    },
+    {
+      "source_key": "S7",
+      "title": "Agenda Cover Memorandum, L. Hodges Addition Intensive Historic Survey",
+      "source_type": "city_record",
+      "author_or_publisher": "City of Park Ridge",
+      "url": "https://parkridge.granicus.com/MetaViewer.php?clip_id=3356&meta_id=164928&view_id=28",
+      "reliability_tier": "official",
+      "access_notes": "City procured technical architectural support for Intensive Historic Survey of L. Hodges Addition. Neighborhood locally known as 'The Pretzel.'"
+    },
+    {
+      "source_key": "S8",
+      "title": "The History of Park Ridge, 1841-1926",
+      "source_type": "book",
+      "author_or_publisher": "Digitized University of Illinois copy",
+      "url": "https://libsysdigi.library.illinois.edu/OCA/Books2012-06/historyofparkrid00park/historyofparkrid00park.pdf",
+      "reliability_tier": "secondary",
+      "access_notes": "Describes early Park Ridge as formerly Pennyville and Brickton. References 66x150 foot lot on Park Avenue in Root Subdivision for Catholic church. Early infrastructure: wells, plank sidewalks, limited sewer/water. Extract exact page numbers before public use."
+    },
+    {
+      "source_key": "S9",
+      "title": "Cook County Municipal Incorporation and Annexation Index Document 15725727",
+      "source_type": "annexation_record",
+      "author_or_publisher": "Cook County",
+      "url": "https://maps.cookcountyil.gov/files/mii/15725727.pdf",
+      "reliability_tier": "official",
+      "access_notes": "References territory annexed to City of Park Ridge by ordinance adopted September 8, 1953. Names Zelowsky's Park Ridge Subdivision and Feuerborn and Klode's Center Street Addition."
+    },
+    {
+      "source_key": "S10",
+      "title": "Agenda Cover Memorandum, Feuerborn and Klode's Ridgewood Park Subdivision",
+      "source_type": "city_record",
+      "author_or_publisher": "City of Park Ridge",
+      "url": "https://parkridge.granicus.com/MetaViewer.php?clip_id=2411&meta_id=110370&view_id=1",
+      "reliability_tier": "official",
+      "access_notes": "References Feuerborn and Klode's Ridgewood Park Subdivision, recorded January 13, 1925. Document number in source OCR text appears as '8737h25' - needs manual verification before public display."
+    },
+    {
+      "source_key": "S11",
+      "title": "Cook Central Open Data Portal",
+      "source_type": "gis_dataset",
+      "author_or_publisher": "Cook County",
+      "url": "https://hub-cookcountyil.opendata.arcgis.com/",
+      "reliability_tier": "official",
+      "access_notes": "Source for GIS data discovery. Use for parcel, boundary, municipal, or historical datasets."
+    },
+    {
+      "source_key": "S12",
+      "title": "ccgisdata - Parcel 2021",
+      "source_type": "gis_dataset",
+      "author_or_publisher": "Cook County",
+      "url": "https://datacatalog.cookcountyil.gov/Boundaries-Districts/ccgisdata-Parcel-2021/77tz-riq7",
+      "reliability_tier": "official",
+      "access_notes": "Tax parcel polygons for 2021 property tax assessment. Potential input for parcel dissolve and subdivision polygon derivation."
+    }
+  ]
+}
