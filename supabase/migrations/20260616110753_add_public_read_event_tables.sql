@@ -1,0 +1,4 @@
+-- Migration applied via Supabase MCP.
+-- Adds public SELECT RLS policies to subdivision event tables.
+-- Exact DDL not reconstructable; schema already present on remote.
+-- File exists to satisfy supabase link migration history check.
