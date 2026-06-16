@@ -201,30 +201,40 @@ def sb_get_all(url: str, key: str, table: str, select: str) -> list[dict]:
 
 
 def sb_rpc(url: str, key: str, fn_name: str) -> list[dict]:
-    """Call a Supabase RPC function and return all rows (paginated)."""
-    rows: list[dict] = []
-    page_size = 1000
-    offset = 0
+    """Call a Supabase RPC function and return all rows via pagination."""
+    import time
     endpoint = f"{url}/rest/v1/rpc/{fn_name}"
+    page_size = 1000
+    all_rows: list[dict] = []
+    page = 0
     while True:
+        lo = page * page_size
+        hi = lo + page_size - 1
         headers = {
             "apikey": key,
             "Authorization": f"Bearer {key}",
             "Accept": "application/json",
             "Content-Type": "application/json",
-            "Range": f"{offset}-{offset + page_size - 1}",
+            "Range": f"{lo}-{hi}",
             "Prefer": "count=none",
         }
-        req = urllib.request.Request(endpoint, data=b"{}", headers=headers, method="POST")
-        with urllib.request.urlopen(req, timeout=120) as resp:
-            page = json.loads(resp.read().decode())
-        if not page:
+        for attempt in range(4):
+            try:
+                req = urllib.request.Request(endpoint, data=b"{}", headers=headers, method="POST")
+                with urllib.request.urlopen(req, timeout=180) as resp:
+                    batch = json.loads(resp.read().decode())
+                break
+            except Exception as exc:
+                if attempt == 3:
+                    raise
+                wait = 2 ** attempt
+                print(f"    [retry {attempt + 1}/3 after {wait}s: {exc}]")
+                time.sleep(wait)
+        all_rows.extend(batch)
+        if len(batch) < page_size:
             break
-        rows.extend(page)
-        if len(page) < page_size:
-            break
-        offset += page_size
-    return rows
+        page += 1
+    return all_rows
 
 
 def sb_delete_all(url: str, key: str, table: str, dry_run: bool) -> None:
