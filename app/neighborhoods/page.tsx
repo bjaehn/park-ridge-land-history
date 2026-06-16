@@ -4,6 +4,7 @@ import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { InlineSourceNote } from "@/components/ui/SourceNote";
 import { NEIGHBORHOOD_BOUNDARY_DISCLAIMER } from "@/lib/content";
 import { NeighborhoodsGrid } from "./_NeighborhoodsGrid";
+import { NeighborhoodCharts } from "./_NeighborhoodCharts";
 
 export const metadata: Metadata = {
   title: "Neighborhoods",
@@ -24,6 +25,9 @@ export default function NeighborhoodsPage() {
         title="Neighborhoods"
         subtitle="Five approximate areas, derived from Census tract groupings. Each developed in a distinct era."
       />
+      <div className="mb-10">
+        <NeighborhoodCharts />
+      </div>
       <NeighborhoodsGrid />
       <InlineSourceNote>{NEIGHBORHOOD_BOUNDARY_DISCLAIMER}</InlineSourceNote>
     </div>

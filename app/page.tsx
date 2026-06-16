@@ -4,6 +4,8 @@ import { InlineSourceNote } from "@/components/ui/SourceNote";
 import { HighlightReel } from "@/components/ui/HighlightReel";
 import { HomeSearch, HomeStats } from "./_components/HomeClientComponents";
 import { NeighborhoodsGrid } from "./neighborhoods/_NeighborhoodsGrid";
+import { SparklinePriceCard } from "@/components/ui/SparklinePriceCard";
+import { ArchiveInventory } from "@/components/ui/ArchiveInventory";
 import { NeighborhoodIcon, HighlightIcon } from "@/lib/icons";
 import type { HighlightGroup } from "@/components/ui/HighlightReel";
 
@@ -37,6 +39,17 @@ export default function HomePage() {
       <section className="mb-10">
         <HomeStats />
         <InlineSourceNote>{COVERAGE_DISCLAIMER}</InlineSourceNote>
+      </section>
+
+      {/* Market + archive */}
+      <section className="mb-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <SparklinePriceCard />
+          <div className="space-y-2">
+            <p className="text-xs text-text-muted">What&apos;s in the archive</p>
+            <ArchiveInventory />
+          </div>
+        </div>
       </section>
 
       {/* City-level highlights */}
