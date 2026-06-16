@@ -205,22 +205,39 @@ export async function fetchSubdivisionParcels(
   subdivisionId: string
 ): Promise<Array<{ pin: string; address?: string | null; year_built?: number | null }>> {
   if (!supabase) return [];
-  const { data, error } = await supabase
+
+  const { data: links, error: linksError } = await supabase
     .from("property_subdivision_links")
-    .select("pin, parcels(address, year_built)")
+    .select("pin")
     .eq("subdivision_id", subdivisionId)
     .limit(500);
 
-  if (error || !data) return [];
+  if (linksError || !links || links.length === 0) return [];
 
-  return (data as unknown as Array<{
-    pin: string;
-    parcels: { address: string | null; year_built: number | null } | null;
-  }>).map((row) => ({
-    pin: row.pin,
-    address: row.parcels?.address ?? null,
-    year_built: row.parcels?.year_built ?? null,
-  }));
+  const pins = (links as Array<{ pin: string }>).map((r) => r.pin).filter(Boolean);
+  if (!pins.length) return [];
+
+  const { data: parcels, error: parcelsError } = await supabase
+    .from("parcels")
+    .select("pin_normalized, address, year_built")
+    .in("pin_normalized", pins);
+
+  if (parcelsError || !parcels) {
+    return pins.map((pin) => ({ pin, address: null, year_built: null }));
+  }
+
+  const parcelMap = new Map(
+    (parcels as Array<{ pin_normalized: string; address: string | null; year_built: number | null }>)
+      .map((p) => [p.pin_normalized, p])
+  );
+  return pins.map((pin) => {
+    const parcel = parcelMap.get(pin);
+    return {
+      pin,
+      address: parcel?.address ?? null,
+      year_built: parcel?.year_built ?? null,
+    };
+  });
 }
 
 /** Fetch a subdivision for property page cross-links. */
