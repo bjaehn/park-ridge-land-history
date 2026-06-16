@@ -25,7 +25,7 @@ export function PageHeader({ eyebrow, title, subtitle, action }: Props) {
           {title}
         </h1>
         {subtitle && (
-          <p className="mt-2 text-base text-text-secondary leading-relaxed max-w-prose">
+          <p className="mt-2 text-base text-text-secondary leading-relaxed">
             {subtitle}
           </p>
         )}

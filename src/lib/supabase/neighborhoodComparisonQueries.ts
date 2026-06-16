@@ -14,7 +14,10 @@ export type NeighborhoodEraRow = {
   pre1920: number;
   boom: number;
   postwar: number;
-  modern: number;
+  eighties: number;
+  aughts: number;
+  teens: number;
+  recent: number;
   total: number;
 };
 
@@ -61,7 +64,10 @@ export async function fetchNeighborhoodEraDistribution(): Promise<NeighborhoodEr
         pre1920: 0,
         boom: 0,
         postwar: 0,
-        modern: 0,
+        eighties: 0,
+        aughts: 0,
+        teens: 0,
+        recent: 0,
         total: 0,
       });
     }
@@ -70,7 +76,10 @@ export async function fetchNeighborhoodEraDistribution(): Promise<NeighborhoodEr
     if (r.era === "pre1920") row.pre1920 += count;
     else if (r.era === "boom") row.boom += count;
     else if (r.era === "postwar") row.postwar += count;
-    else if (r.era === "modern") row.modern += count;
+    else if (r.era === "eighties") row.eighties += count;
+    else if (r.era === "aughts") row.aughts += count;
+    else if (r.era === "teens") row.teens += count;
+    else if (r.era === "recent") row.recent += count;
     row.total += count;
   }
 

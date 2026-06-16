@@ -25,7 +25,7 @@ export default function HomePage() {
   return (
     <div className="page-shell">
       {/* Hero */}
-      <section className="py-12 md:py-16 max-w-2xl">
+      <section className="py-12 md:py-16">
         <h1 className="text-3xl md:text-4xl font-bold text-text-primary leading-tight mb-4">
           {HOME_HERO_HEADLINE}
         </h1>
@@ -41,8 +41,10 @@ export default function HomePage() {
         <InlineSourceNote>{COVERAGE_DISCLAIMER}</InlineSourceNote>
       </section>
 
+      <hr className="border-surface-border" />
+
       {/* Market + archive */}
-      <section className="mb-10">
+      <section className="mt-10 mb-10">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <SparklinePriceCard />
           <div className="space-y-2">
@@ -52,8 +54,10 @@ export default function HomePage() {
         </div>
       </section>
 
+      <hr className="border-surface-border" />
+
       {/* City-level highlights */}
-      <section className="mb-12">
+      <section className="mt-10 mb-12">
         <div className="flex items-center gap-2 mb-4">
           <HighlightIcon size={14} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />
           <p className="section-heading !mb-0">Notable properties</p>
@@ -61,8 +65,10 @@ export default function HomePage() {
         <HighlightReel scope="city" scopeId="" groups={CITY_HIGHLIGHTS} limit={6} />
       </section>
 
+      <hr className="border-surface-border" />
+
       {/* Neighborhoods */}
-      <section className="mb-10">
+      <section className="mt-10 mb-10">
         <div className="flex items-center gap-2 mb-4">
           <NeighborhoodIcon size={14} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />
           <p className="section-heading !mb-0">Explore by neighborhood</p>

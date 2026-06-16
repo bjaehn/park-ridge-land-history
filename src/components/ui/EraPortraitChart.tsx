@@ -3,17 +3,23 @@ type EraPortraitRow = {
   pre1920: number;
   boom: number;
   postwar: number;
-  modern: number;
+  eighties: number;
+  aughts: number;
+  teens: number;
+  recent: number;
   total: number;
 };
 
 type Props = { data: EraPortraitRow[] };
 
 const ERA_SEGMENTS = [
-  { key: "pre1920" as const, label: "Pre-1920", color: "#4c1d95" },
-  { key: "boom" as const, label: "1920-1945", color: "#7c3aed" },
-  { key: "postwar" as const, label: "1946-1979", color: "#0f766e" },
-  { key: "modern" as const, label: "1980+", color: "#334155" },
+  { key: "pre1920"  as const, label: "Pre-1920",  color: "#4c1d95" },
+  { key: "boom"     as const, label: "1920-1945",  color: "#7c3aed" },
+  { key: "postwar"  as const, label: "1946-1979",  color: "#0f766e" },
+  { key: "eighties" as const, label: "1980-1999",  color: "#e6a64a" },
+  { key: "aughts"   as const, label: "2000-2009",  color: "#c96a70" },
+  { key: "teens"    as const, label: "2010-2019",  color: "#a85f84" },
+  { key: "recent"   as const, label: "2020+",      color: "#6d617c" },
 ];
 
 export function EraPortraitChart({ data }: Props) {

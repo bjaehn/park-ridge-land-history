@@ -15,6 +15,13 @@ const CATEGORY_ICONS: Record<HighlightCategory, LucideIcon> = {
   most_recent_sale: SaleIcon,
 };
 
+const CATEGORY_ACCENT: Record<HighlightCategory, { border: string; heading: string }> = {
+  oldest:           { border: "#e6a64a", heading: "#e6a64a" },
+  most_active:      { border: "#4fb6a8", heading: "#4fb6a8" },
+  newest:           { border: "#8b7ff0", heading: "#8b7ff0" },
+  most_recent_sale: { border: "#c96a70", heading: "#c96a70" },
+};
+
 export type HighlightGroup = {
   heading: string;
   category: HighlightCategory;
@@ -79,15 +86,17 @@ export function HighlightReel({ scope, scopeId, groups, limit = 5 }: Props) {
         if (!g.items.length) return null;
         return (
           <div key={g.category}>
-            <p className="section-heading">{g.heading}</p>
+            <p className="section-heading" style={{ color: CATEGORY_ACCENT[g.category].heading }}>{g.heading}</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {g.items.map((item) => {
                 const CatIcon = CATEGORY_ICONS[g.category];
+                const accent = CATEGORY_ACCENT[g.category];
                 return (
                 <Link
                   key={item.pin}
                   href={`/properties/${encodeURIComponent(item.pin)}`}
-                  className="bg-surface-card border border-surface-border rounded-lg p-4 hover:border-accent-purple/40 hover:bg-surface-raised transition-colors"
+                  className="bg-surface-card border border-surface-border rounded-lg p-4 hover:bg-surface-raised transition-colors border-l-2"
+                  style={{ borderLeftColor: accent.border }}
                 >
                   <p className="text-sm font-medium text-text-primary leading-snug mb-2">
                     {formatAddress(item.address)}
