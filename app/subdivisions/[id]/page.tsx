@@ -84,21 +84,22 @@ export default async function SubdivisionDetailPage({ params }: Props) {
         <SubdivisionHistoryPanel subdivision={sub} />
       </div>
 
-      <SubdivisionDetailContent subdivisionId={id} recordedYear={sub.recorded_year ?? null} />
-
-      <div className="mt-8">
-        <p className="section-heading">Subdivision map</p>
-        <MapView
-          scope={{
-            kind: "subdivision",
-            subdivisionId: id,
-            pins: mapData.pins.length > 0 ? mapData.pins : undefined,
-            bbox: mapData.bbox ?? undefined,
-          }}
-          height="400px"
-          showExpand
-        />
-      </div>
+      <SubdivisionDetailContent
+        subdivisionId={id}
+        recordedYear={sub.recorded_year ?? null}
+        mapSlot={
+          <MapView
+            scope={{
+              kind: "subdivision",
+              subdivisionId: id,
+              pins: mapData.pins.length > 0 ? mapData.pins : undefined,
+              bbox: mapData.bbox ?? undefined,
+            }}
+            height="400px"
+            showExpand
+          />
+        }
+      />
 
       <SourceNote
         sources={["recorder", "cookGis", "assessor"]}

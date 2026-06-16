@@ -18,9 +18,9 @@ const SUBDIVISION_HIGHLIGHTS: readonly HighlightGroup[] = [
   { heading: "Most recently sold", category: "most_recent_sale" },
 ];
 
-type Props = { subdivisionId: string; recordedYear?: number | null };
+type Props = { subdivisionId: string; recordedYear?: number | null; mapSlot?: React.ReactNode };
 
-export function SubdivisionDetailContent({ subdivisionId, recordedYear }: Props) {
+export function SubdivisionDetailContent({ subdivisionId, recordedYear, mapSlot }: Props) {
   const [parcels, setParcels] = useState<Awaited<ReturnType<typeof fetchSubdivisionParcels>>>([]);
   const [loading, setLoading] = useState(true);
 
@@ -102,6 +102,13 @@ export function SubdivisionDetailContent({ subdivisionId, recordedYear }: Props)
         <div>
           <p className="section-heading">When this subdivision was built out</p>
           <ConstructionByDecadeChart rows={decadeRows} />
+        </div>
+      )}
+
+      {mapSlot && (
+        <div>
+          <p className="section-heading">Subdivision map</p>
+          {mapSlot}
         </div>
       )}
 
