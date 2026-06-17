@@ -65,6 +65,46 @@ export type LandLineageEntry = {
     entity_type: string | null;
   } | null;
   lots: LandLot[];
+  lineage_records?: HistoricalSubdivisionLineage[];
+};
+
+export type HistoricalSubdivisionLineage = {
+  id: string;
+  lineage_key: string;
+  address: string | null;
+  pin: string | null;
+  child_subdivision_id: string | null;
+  parent_subdivision_id: string | null;
+  child_subdivision: string;
+  child_lot: string | null;
+  child_block: string | null;
+  parent_subdivision: string | null;
+  parent_lot: string | null;
+  parent_block: string | null;
+  parent_portion: string | null;
+  section: string | null;
+  township: string | null;
+  range: string | null;
+  meridian: string | null;
+  county: string | null;
+  state: string | null;
+  relationship_type: string;
+  development_chain: string[] | null;
+  plain_english_summary: string | null;
+  development_interpretation: string | null;
+  source_type: string;
+  source_text: string;
+  source_publication: string | null;
+  source_document_number: string | null;
+  source_recorded_date: string | null;
+  source_page: string | null;
+  source_url: string | null;
+  confidence: SubdivisionConfidenceLevel;
+  confidence_reason: string | null;
+  needs_verification: boolean;
+  verification_notes: string | null;
+  created_at?: string;
+  updated_at?: string;
 };
 
 export type SubdivisionSource = {

@@ -109,3 +109,18 @@ export async function getNeighborhoodDetail(id: string): Promise<NeighborhoodDet
 
   return { ...base, decadeRows, streets };
 }
+
+export async function fetchNeighborhoodBbox(
+  neighborhoodId: string
+): Promise<[number, number, number, number] | null> {
+  if (!supabase) return null;
+  try {
+    const { data, error } = await supabase.rpc("neighborhood_bbox", { p_neighborhood_id: neighborhoodId });
+    if (error || !data) return null;
+    const b = data as Record<string, number>;
+    if (b.minLng == null) return null;
+    return [b.minLng, b.minLat, b.maxLng, b.maxLat];
+  } catch {
+    return null;
+  }
+}

@@ -20,7 +20,7 @@ function formatPrice(v: number) {
 export function MarketHistoryChart({ data }: Props) {
   if (!data.length) return null;
   return (
-    <ResponsiveContainer width="100%" height={280}>
+    <ResponsiveContainer width="100%" height={400}>
       <ComposedChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: 8 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
         <XAxis

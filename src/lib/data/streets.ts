@@ -112,6 +112,21 @@ export async function getStreetDetail(normalizedName: string): Promise<StreetDet
   return { ...summary, decadeRows, parcels };
 }
 
+export async function fetchStreetBbox(
+  streetName: string
+): Promise<[number, number, number, number] | null> {
+  if (!supabase) return null;
+  try {
+    const { data, error } = await supabase.rpc("street_bbox", { p_street_name: streetName });
+    if (error || !data) return null;
+    const b = data as Record<string, number>;
+    if (b.minLng == null) return null;
+    return [b.minLng, b.minLat, b.maxLng, b.maxLat];
+  } catch {
+    return null;
+  }
+}
+
 function formatStreetDisplayName(normalized: string): string {
   return normalized
     .trim()

@@ -7,6 +7,7 @@ import { ComparisonList } from "@/components/ui/ComparisonList";
 import { LoadingSkeleton } from "@/components/ui/EmptyState";
 import { InlineSourceNote } from "@/components/ui/SourceNote";
 import { PropertyTimeline, buildTimelineEvents } from "@/components/ui/PropertyTimeline";
+import { SubdivisionLineageCard } from "@/components/ui/SubdivisionLineageCard";
 import {
   YearBuiltIcon,
   SizeIcon,
@@ -213,11 +214,17 @@ function PermitHistorySection({ permits }: { permits: PropertyPermit[] }) {
 
 function LandLineageSection({ lineage }: { lineage: LandLineageEntry[] }) {
   if (!lineage.length) return null;
+  const richLineage = lineage.flatMap((entry) => entry.lineage_records ?? []);
+  const legacyLineage = lineage.filter((entry) => !(entry.lineage_records?.length));
   return (
     <section>
-      <p className="section-heading">Land lineage</p>
+      <p className="section-heading">Subdivision Ancestry</p>
       <div className="space-y-3">
-        {lineage.map((entry) => {
+        {richLineage.map((record) => (
+          <SubdivisionLineageCard key={record.lineage_key} lineage={record} showAddress />
+        ))}
+
+        {legacyLineage.map((entry) => {
           const hasLotBlock = entry.lots.some((l) => l.lot_number || l.block_number);
           const hasMissingLotBlock = entry.lots.some((l) =>
             l.data_quality_flags?.includes("missing_lot_block")

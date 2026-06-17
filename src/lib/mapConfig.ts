@@ -193,7 +193,7 @@ export const PARCEL_FILL_OPACITY_MUTED = 0.3;
 
 export type MapScope =
   | { kind: "property"; pin: string; lat: number; lng: number }
-  | { kind: "street"; streetName: string }
-  | { kind: "neighborhood"; neighborhoodId: string }
+  | { kind: "street"; streetName: string; bbox?: [number, number, number, number] }
+  | { kind: "neighborhood"; neighborhoodId: string; bbox?: [number, number, number, number] }
   | { kind: "subdivision"; subdivisionId: string; pins?: string[]; bbox?: [number, number, number, number] }
   | { kind: "city" };

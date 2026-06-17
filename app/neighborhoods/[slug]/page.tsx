@@ -5,7 +5,7 @@ import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { SourceNote } from "@/components/ui/SourceNote";
 import { MapView } from "@/components/MapView";
 import { NeighborhoodDetailContent } from "./_NeighborhoodDetailContent";
-import { getNeighborhoodBySlug } from "@/lib/data/neighborhoods";
+import { getNeighborhoodBySlug, fetchNeighborhoodBbox } from "@/lib/data/neighborhoods";
 import { NEIGHBORHOOD_BOUNDARY_DISCLAIMER } from "@/lib/content";
 
 type Props = { params: { slug: string } };
@@ -22,8 +22,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function NeighborhoodDetailPage({ params }: Props) {
   const slug = decodeURIComponent(params.slug);
   const neighborhood = await getNeighborhoodBySlug(slug).catch(() => null);
-
   if (!neighborhood) notFound();
+
+  const neighborhoodBbox = await fetchNeighborhoodBbox(neighborhood.id).catch(() => null);
 
   return (
     <div className="page-shell">
@@ -45,7 +46,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
       <div className="mt-8">
         <p className="section-heading">Neighborhood map</p>
         <MapView
-          scope={{ kind: "neighborhood", neighborhoodId: neighborhood.id }}
+          scope={{ kind: "neighborhood", neighborhoodId: neighborhood.id, bbox: neighborhoodBbox ?? undefined }}
           height="420px"
           showExpand
         />

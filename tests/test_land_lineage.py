@@ -53,7 +53,7 @@ needs_creds = pytest.mark.skipif(
 # ─── Subdivision entities ──────────────────────────────────────────────────
 
 @needs_creds
-def test_six_subdivision_entities_exist():
+def test_core_subdivision_entities_exist():
     expected_names = {
         "Kinsey's Park Ridge Subdivision",
         "Arthur Dunas Subdivision",
@@ -61,6 +61,10 @@ def test_six_subdivision_entities_exist():
         "Shannon and Canfields Subdivision",
         "H. Roy Berry Co's Devon Avenue Highlands",
         "John Battcher Estate",
+        "Kulas' Subdivision",
+        "Hodges and Murison's Subdivision",
+        "Black's Addition to Park Ridge",
+        "Peeny and Meachem's Subdivision",
     }
     rows = _get("subdivisions", "select=name")
     names = {r["name"] for r in rows}
@@ -96,13 +100,31 @@ def test_parent_relationships():
     parent = (rows[0].get("parent_sub") or {}).get("name")
     assert parent == "John Battcher Estate", f"Expected John Battcher Estate, got {parent}"
 
+    # Kulas' Subdivision -> Hodges and Murison's Subdivision
+    rows = _get(
+        "subdivisions",
+        "select=name,parent_sub:parent_subdivision_id(name)&name=eq.Kulas' Subdivision",
+    )
+    assert rows, "Kulas' Subdivision not found"
+    parent = (rows[0].get("parent_sub") or {}).get("name")
+    assert parent == "Hodges and Murison's Subdivision", f"Expected Hodges and Murison's Subdivision, got {parent}"
+
+    # Black's Addition to Park Ridge -> Peeny and Meachem's Subdivision
+    rows = _get(
+        "subdivisions",
+        "select=name,parent_sub:parent_subdivision_id(name)&name=eq.Black's Addition to Park Ridge",
+    )
+    assert rows, "Black's Addition to Park Ridge not found"
+    parent = (rows[0].get("parent_sub") or {}).get("name")
+    assert parent == "Peeny and Meachem's Subdivision", f"Expected Peeny and Meachem's Subdivision, got {parent}"
+
 
 # ─── property_subdivision_links ────────────────────────────────────────────
 
 @needs_creds
 def test_ten_property_links_exist():
     rows = _get("property_subdivision_links", "select=pin")
-    assert len(rows) == 10, f"Expected 10 links, found {len(rows)}"
+    assert len(rows) >= 11, f"Expected at least 11 links, found {len(rows)}"
 
 
 @needs_creds
@@ -149,7 +171,7 @@ def test_kinsey_has_five_properties():
 @needs_creds
 def test_twelve_lots_exist():
     rows = _get("subdivision_lots", "select=id")
-    assert len(rows) == 12, f"Expected 12 lots, found {len(rows)}"
+    assert len(rows) >= 14, f"Expected at least 14 lots, found {len(rows)}"
 
 
 @needs_creds
@@ -234,3 +256,48 @@ def test_parcel_counts():
     assert by_name.get("h_roy_berry_cos_devon_avenue_highlands") == 2
     assert by_name.get("park_ridge_manor") is None
     assert by_name.get("john_battcher_estate") is None
+
+
+@needs_creds
+def test_deed_subdivision_lineage_records_preserve_source_text():
+    rows = _get(
+        "historical_subdivision_lineage",
+        "select=lineage_key,source_text,confidence,needs_verification,parent_portion"
+        "&lineage_key=in.(kulas-subdivision-from-hodges-and-murison-lot-6,blacks-addition-from-peeny-and-meachem-block-1-526-n-washington)",
+    )
+    by_key = {r["lineage_key"]: r for r in rows}
+    assert "kulas-subdivision-from-hodges-and-murison-lot-6" in by_key
+    assert "blacks-addition-from-peeny-and-meachem-block-1-526-n-washington" in by_key
+
+    kulas = by_key["kulas-subdivision-from-hodges-and-murison-lot-6"]
+    assert kulas["source_text"] == (
+        "lot 1 in kulas' subdivision, being a subdivision of lot 6 (except the west 1/2 thereof) "
+        "in block 1 in hodges and murison's subdivision of part of the south 1/2 of section 26, "
+        "township 41 north, range 12 east of the third principal meridian in cook county il"
+    )
+    assert kulas["confidence"] == "medium"
+    assert kulas["needs_verification"] is True
+
+    blacks = by_key["blacks-addition-from-peeny-and-meachem-block-1-526-n-washington"]
+    assert blacks["source_text"] == (
+        "lot 2 in black's addition to park ridge, being a subdivision of the north 468.6 feet "
+        "of block 1 of peeny and meachem's sub division"
+    )
+    assert blacks["parent_portion"] == "North 468.6 feet of Block 1"
+    assert blacks["confidence"] == "medium"
+    assert blacks["needs_verification"] is True
+
+
+@needs_creds
+def test_526_n_washington_black_addition_link():
+    rows = _get(
+        "property_subdivision_links",
+        "select=pin,lot_number,confidence_level,subdivisions(name)&pin=eq.09264090090000",
+    )
+    matches = [
+        r for r in rows
+        if (r.get("subdivisions") or {}).get("name") == "Black's Addition to Park Ridge"
+    ]
+    assert matches, "526 N Washington Ave Black's Addition link missing"
+    assert matches[0]["lot_number"] == "2"
+    assert matches[0]["confidence_level"] == "medium"

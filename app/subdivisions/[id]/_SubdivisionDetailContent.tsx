@@ -8,11 +8,13 @@ import { EntityCard, UnresolvableEntityCard } from "@/components/ui/EntityCard";
 import { LoadingSkeleton } from "@/components/ui/EmptyState";
 import { HighlightReel } from "@/components/ui/HighlightReel";
 import { InlineSourceNote } from "@/components/ui/SourceNote";
+import { SubdivisionLineageCard } from "@/components/ui/SubdivisionLineageCard";
 import { YearBuiltIcon } from "@/lib/icons";
 import { formatCount, formatAddress } from "@/lib/formatters";
-import { fetchSubdivisionParcels } from "@/lib/supabase/subdivisionQueries";
+import { fetchSubdivisionLineage, fetchSubdivisionParcels } from "@/lib/supabase/subdivisionQueries";
 import type { HighlightGroup } from "@/components/ui/HighlightReel";
 import type { DecadeRow } from "@/components/ui/ConstructionByDecadeChart";
+import type { HistoricalSubdivisionLineage } from "@/lib/subdivisionTypes";
 
 const SUBDIVISION_HIGHLIGHTS: readonly HighlightGroup[] = [
   { heading: "Oldest surviving lots", category: "oldest" },
@@ -31,11 +33,18 @@ type Props = {
 
 export function SubdivisionDetailContent({ subdivisionId, recordedYear, entityType, geometryStatus, parentSubdivision, mapSlot }: Props) {
   const [parcels, setParcels] = useState<Awaited<ReturnType<typeof fetchSubdivisionParcels>>>([]);
+  const [lineage, setLineage] = useState<HistoricalSubdivisionLineage[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchSubdivisionParcels(subdivisionId)
-      .then(setParcels)
+    Promise.all([
+      fetchSubdivisionParcels(subdivisionId),
+      fetchSubdivisionLineage(subdivisionId),
+    ])
+      .then(([parcelRows, lineageRows]) => {
+        setParcels(parcelRows);
+        setLineage(lineageRows);
+      })
       .catch(() => null)
       .finally(() => setLoading(false));
   }, [subdivisionId]);
@@ -133,6 +142,21 @@ export function SubdivisionDetailContent({ subdivisionId, recordedYear, entityTy
           This is a historical land entity (estate or parent plat), not a directly recorded subdivision.
           It appears in deed descriptions as a parent of other subdivisions.
         </div>
+      )}
+
+      {lineage.length > 0 && (
+        <section>
+          <p className="section-heading">Subdivision ancestry</p>
+          <div className="space-y-3">
+            {lineage.map((record) => (
+              <SubdivisionLineageCard
+                key={record.lineage_key}
+                lineage={record}
+                showAddress={Boolean(record.address)}
+              />
+            ))}
+          </div>
+        </section>
       )}
 
       <StatGrid columns={columns} stats={statItems} />

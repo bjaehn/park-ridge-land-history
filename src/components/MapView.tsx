@@ -368,9 +368,23 @@ function buildScopeFilter(scope: MapScope): unknown[] {
 
 function flyToScope(map: MaplibreMap, scope: MapScope) {
   switch (scope.kind) {
-    case "property":    map.flyTo({ center: [scope.lng, scope.lat], zoom: MAP_ZOOM_PROPERTY, animate: false }); break;
-    case "street":      map.flyTo({ center: MAP_CENTER, zoom: MAP_ZOOM_STREET, animate: false }); break;
-    case "neighborhood": map.flyTo({ center: MAP_CENTER, zoom: MAP_ZOOM_NEIGHBORHOOD, animate: false }); break;
+    case "property":
+      map.flyTo({ center: [scope.lng, scope.lat], zoom: MAP_ZOOM_PROPERTY, animate: false });
+      break;
+    case "street":
+      if (scope.bbox) {
+        map.fitBounds([[scope.bbox[0], scope.bbox[1]], [scope.bbox[2], scope.bbox[3]]], { padding: 48, animate: false });
+      } else {
+        map.flyTo({ center: MAP_CENTER, zoom: MAP_ZOOM_STREET, animate: false });
+      }
+      break;
+    case "neighborhood":
+      if (scope.bbox) {
+        map.fitBounds([[scope.bbox[0], scope.bbox[1]], [scope.bbox[2], scope.bbox[3]]], { padding: 48, animate: false });
+      } else {
+        map.flyTo({ center: MAP_CENTER, zoom: MAP_ZOOM_NEIGHBORHOOD, animate: false });
+      }
+      break;
     case "subdivision":
       if (scope.bbox) {
         map.fitBounds(
@@ -381,6 +395,8 @@ function flyToScope(map: MaplibreMap, scope: MapScope) {
         map.flyTo({ center: MAP_CENTER, zoom: MAP_ZOOM_SUBDIVISION, animate: false });
       }
       break;
-    case "city":        map.flyTo({ center: MAP_CENTER, zoom: MAP_ZOOM_CITY, animate: false }); break;
+    case "city":
+      map.flyTo({ center: MAP_CENTER, zoom: MAP_ZOOM_CITY, animate: false });
+      break;
   }
 }

@@ -18,6 +18,7 @@ import type {
   SubdivisionAlias,
   SubdivisionResearchTask,
   SubdivisionFullDetail,
+  HistoricalSubdivisionLineage,
 } from "../subdivisionTypes";
 
 // ─── Subdivision index ────────────────────────────────────────────────────────
@@ -285,6 +286,59 @@ export async function fetchParentSubdivision(
   if (!parent) return null;
   const p = parent as Record<string, unknown>;
   return { id: String(p.id), name: String(p.name), entity_type: (p.entity_type as string | null) ?? null };
+}
+
+function normalizeLineageRows(data: unknown): HistoricalSubdivisionLineage[] {
+  return (Array.isArray(data) ? data : []) as HistoricalSubdivisionLineage[];
+}
+
+/** Deed-derived subdivision lineage rows for one property PIN. */
+export async function fetchLineageForPin(
+  pin: string
+): Promise<HistoricalSubdivisionLineage[]> {
+  if (!supabase || !pin) return [];
+  const { data, error } = await supabase
+    .from("historical_subdivision_lineage")
+    .select("*")
+    .eq("pin", pin)
+    .order("child_subdivision", { ascending: true });
+
+  if (error || !data) return [];
+  return normalizeLineageRows(data);
+}
+
+/** Deed-derived parent/child lineage rows for one subdivision. */
+export async function fetchSubdivisionLineage(
+  subdivisionId: string
+): Promise<HistoricalSubdivisionLineage[]> {
+  if (!supabase || !subdivisionId) return [];
+  const { data, error } = await supabase
+    .from("historical_subdivision_lineage")
+    .select("*")
+    .or(`child_subdivision_id.eq.${subdivisionId},parent_subdivision_id.eq.${subdivisionId}`)
+    .order("child_subdivision", { ascending: true });
+
+  if (error || !data) return [];
+  return normalizeLineageRows(data);
+}
+
+/** Featured examples for the city development-pattern view. */
+export async function fetchCityResubdivisionExamples(): Promise<HistoricalSubdivisionLineage[]> {
+  if (!supabase) return [];
+  const keys = [
+    "kulas-subdivision-from-hodges-and-murison-lot-6",
+    "blacks-addition-from-peeny-and-meachem-block-1-526-n-washington",
+  ];
+  const { data, error } = await supabase
+    .from("historical_subdivision_lineage")
+    .select("*")
+    .in("lineage_key", keys);
+
+  if (error || !data) return [];
+  const rows = normalizeLineageRows(data);
+  return keys
+    .map((key) => rows.find((row) => row.lineage_key === key))
+    .filter((row): row is HistoricalSubdivisionLineage => Boolean(row));
 }
 
 // ─── Plat-by-decade chart ─────────────────────────────────────────────────────

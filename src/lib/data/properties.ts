@@ -2,6 +2,7 @@ import { supabase } from "../supabase/client";
 import type { ComparisonRow } from "../../components/ui/ComparisonList";
 import type { ComparisonScope } from "../formatters";
 import type { LandLineageEntry, LandLot } from "../subdivisionTypes";
+import { fetchLineageForPin } from "../supabase/subdivisionQueries";
 
 export type AssessmentPoint = { year: number; value: number };
 
@@ -295,10 +296,13 @@ async function loadLandLineage(pin: string): Promise<LandLineageEntry[]> {
   }
 
   // Historical lot rows for this PIN from subdivision_lots
-  const { data: lots } = await supabase
-    .from("subdivision_lots")
-    .select("id, subdivision_id, lot_number, block_number, document_date, source_type, notes, confidence_level, data_quality_flags")
-    .eq("current_pin", pin);
+  const [{ data: lots }, lineageRows] = await Promise.all([
+    supabase
+      .from("subdivision_lots")
+      .select("id, subdivision_id, lot_number, block_number, document_date, source_type, notes, confidence_level, data_quality_flags")
+      .eq("current_pin", pin),
+    fetchLineageForPin(pin),
+  ]);
 
   return links.map((link) => {
     const sub = (link.subdivisions as unknown as Record<string, unknown> | null) ?? {};
@@ -350,6 +354,11 @@ async function loadLandLineage(pin: string): Promise<LandLineageEntry[]> {
       },
       parent_subdivision: parentId ? (parentMap.get(parentId) ?? null) : null,
       lots: displayLots,
+      lineage_records: lineageRows.filter(
+        (row) =>
+          row.child_subdivision_id === subId ||
+          row.child_subdivision === String(sub.name ?? "")
+      ),
     };
   });
 }

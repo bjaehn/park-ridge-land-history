@@ -8,9 +8,11 @@ import { AssessmentTrendChart } from "@/components/ui/AssessmentTrendChart";
 import { AppealsChart } from "@/components/ui/AppealsChart";
 import { PermitActivityChart } from "@/components/ui/PermitActivityChart";
 import { LoadingSkeleton } from "@/components/ui/EmptyState";
+import { SubdivisionLineageCard } from "@/components/ui/SubdivisionLineageCard";
 import { formatNumber } from "@/lib/formatters";
 import { CITY_NARRATIVE } from "@/lib/content";
 import { SaleIcon, AssessmentIcon, ComparisonIcon, PermitIcon } from "@/lib/icons";
+import type { HistoricalSubdivisionLineage } from "@/lib/subdivisionTypes";
 import type { DecadeRow } from "@/components/ui/ConstructionByDecadeChart";
 import type { NeighborhoodSummary } from "@/lib/data/neighborhoods";
 import type {
@@ -38,6 +40,7 @@ export function CityContent() {
   const [assessmentTrend, setAssessmentTrend] = useState<AssessmentTrendRow[]>([]);
   const [appealsByYear, setAppealsByYear] = useState<AppealsRow[]>([]);
   const [permitActivity, setPermitActivity] = useState<PermitActivityRow[]>([]);
+  const [resubdivisionExamples, setResubdivisionExamples] = useState<HistoricalSubdivisionLineage[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -49,8 +52,9 @@ export function CityContent() {
       import("@/lib/supabase/cityQueries").then((m) => m.fetchAssessmentTrend()),
       import("@/lib/supabase/cityQueries").then((m) => m.fetchAppealsByYear()),
       import("@/lib/supabase/cityQueries").then((m) => m.fetchPermitActivity()),
+      import("@/lib/supabase/subdivisionQueries").then((m) => m.fetchCityResubdivisionExamples()),
     ])
-      .then(([s, d, n, mh, at, ay, pa]) => {
+      .then(([s, d, n, mh, at, ay, pa, lineageExamples]) => {
         if (s) setStats(s as unknown as HomeStatsSnapshot);
         setRows(d.map((r) => ({ decade: r.decade, count: r.count })));
         setNeighborhoods(
@@ -60,6 +64,7 @@ export function CityContent() {
         setAssessmentTrend(at);
         setAppealsByYear(ay);
         setPermitActivity(pa);
+        setResubdivisionExamples(lineageExamples);
       })
       .catch(() => null)
       .finally(() => setLoading(false));
@@ -142,6 +147,28 @@ export function CityContent() {
         </div>
       )}
 
+      {resubdivisionExamples.length > 0 && (
+        <section>
+          <p className="section-heading">Resubdivision over time</p>
+          <p className="text-sm text-text-muted mb-4 max-w-prose">
+            Park Ridge developed not only through original plats, but also through later
+            additions, partial-lot resubdivisions, and replatting of older subdivision
+            blocks. These deed-derived examples show an older plat, a parent block or lot,
+            a carved-out portion, a later subdivision/addition, and a current lot or property.
+          </p>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            {resubdivisionExamples.map((record) => (
+              <SubdivisionLineageCard
+                key={record.lineage_key}
+                lineage={record}
+                showAddress={Boolean(record.address)}
+                compact
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Market history */}
       <section>
         <div className="flex items-center gap-2 mb-3">
@@ -151,7 +178,9 @@ export function CityContent() {
         <p className="text-sm text-text-muted mb-4">
           Bars show annual sales volume. Line shows median sale price. Market sales only, $50K to $5M.
         </p>
-        <MarketHistoryChart data={marketHistory} />
+        <div className="-mx-[clamp(1rem,4vw,3rem)]">
+          <MarketHistoryChart data={marketHistory} />
+        </div>
       </section>
 
       {/* Assessment trend */}
@@ -163,7 +192,9 @@ export function CityContent() {
         <p className="text-sm text-text-muted mb-4">
           Certified totals from Cook County. Dashed lines mark triennial reassessment years.
         </p>
-        <AssessmentTrendChart data={assessmentTrend} />
+        <div className="-mx-[clamp(1rem,4vw,3rem)]">
+          <AssessmentTrendChart data={assessmentTrend} />
+        </div>
       </section>
 
       {/* Appeals */}

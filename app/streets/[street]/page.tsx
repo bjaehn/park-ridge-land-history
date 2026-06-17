@@ -5,7 +5,7 @@ import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { SourceNote } from "@/components/ui/SourceNote";
 import { MapView } from "@/components/MapView";
 import { StreetDetailContent } from "./_StreetDetailContent";
-import { getStreetByName } from "@/lib/data/streets";
+import { getStreetByName, fetchStreetBbox } from "@/lib/data/streets";
 
 type Props = { params: { street: string } };
 
@@ -19,7 +19,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function StreetDetailPage({ params }: Props) {
   const streetName = decodeURIComponent(params.street);
-  const street = await getStreetByName(streetName).catch(() => null);
+  const [street, streetBbox] = await Promise.all([
+    getStreetByName(streetName).catch(() => null),
+    fetchStreetBbox(streetName.toLowerCase().trim()).catch(() => null),
+  ]);
 
   if (!street) notFound();
 
@@ -43,7 +46,7 @@ export default async function StreetDetailPage({ params }: Props) {
       <div className="mt-8">
         <p className="section-heading">Street map</p>
         <MapView
-          scope={{ kind: "street", streetName: street.normalizedName }}
+          scope={{ kind: "street", streetName: street.normalizedName, bbox: streetBbox ?? undefined }}
           height="380px"
           showExpand
         />
