@@ -49,7 +49,7 @@ export function ParcelForm({ parcel }: { parcel: Parcel }) {
       {/* PIN Decomposition */}
       <div className={SECTION}>
         <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">PIN Decomposition</h3>
-        <p className="text-xs text-text-muted mb-4">Cook County 14-digit PIN: chars 1–2 = township, 3–4 = section, 5–7 = block, 8–10 = parcel, 11–14 = unit.</p>
+        <p className="text-xs text-text-muted mb-4">Cook County 14-digit PIN: chars 1-2 = township, 3-4 = section, 5-7 = block, 8-10 = parcel, 11-14 = unit.</p>
         <div className="mb-3">
           <label className={LABEL}>Full PIN (read-only)</label>
           <input

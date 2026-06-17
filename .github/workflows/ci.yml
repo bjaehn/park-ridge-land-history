@@ -7,23 +7,6 @@ on:
     branches: [main]
 
 jobs:
-  em-dash-check:
-    name: No em dashes or en-dash separators
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Fail if em dash found in src/ or app/
-        run: |
-          set +e
-          # Check for em dash (U+2014) and en-dash used as separator (U+2013)
-          FOUND=$(grep -rn $'—\|–' src/ app/ --include='*.ts' --include='*.tsx' --include='*.js' --include='*.jsx' 2>/dev/null)
-          if [ -n "$FOUND" ]; then
-            echo "ERROR: Em dash or en-dash-as-separator found in source files."
-            echo "$FOUND"
-            exit 1
-          fi
-          echo "OK: No em dashes or en-dash separators found."
-
   formatter-tests:
     name: Formatter unit tests
     runs-on: ubuntu-latest

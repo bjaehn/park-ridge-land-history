@@ -83,11 +83,11 @@ export function LotEditor({ lots, subdivisionId }: { lots: Lot[]; subdivisionId:
                   </tr>
                 ) : (
                   <tr key={lot.id} className="hover:bg-surface-card transition-colors">
-                    <td className="px-2 py-2 text-text-secondary">{lot.block_number ?? "—"}</td>
-                    <td className="px-2 py-2 text-text-secondary">{lot.lot_number ?? "—"}</td>
-                    <td className="px-2 py-2 font-mono text-text-muted">{lot.current_pin ?? "—"}</td>
-                    <td className="px-2 py-2 text-text-secondary max-w-xs truncate">{lot.current_address ?? "—"}</td>
-                    <td className="px-2 py-2 text-text-muted">{lot.lot_status ?? "—"}</td>
+                    <td className="px-2 py-2 text-text-secondary">{lot.block_number ?? "-"}</td>
+                    <td className="px-2 py-2 text-text-secondary">{lot.lot_number ?? "-"}</td>
+                    <td className="px-2 py-2 font-mono text-text-muted">{lot.current_pin ?? "-"}</td>
+                    <td className="px-2 py-2 text-text-secondary max-w-xs truncate">{lot.current_address ?? "-"}</td>
+                    <td className="px-2 py-2 text-text-muted">{lot.lot_status ?? "-"}</td>
                     <td className="px-2 py-2 text-text-muted capitalize">{lot.confidence_level}</td>
                     <td className="px-2 py-2 text-right">
                       <button onClick={() => { setEditId(lot.id); setShowAdd(false); }}

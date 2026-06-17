@@ -226,7 +226,7 @@ function LandLineageSection({ lineage }: { lineage: LandLineageEntry[] }) {
               {/* Quality warnings */}
               {hasMissingLotBlock && (
                 <p className="text-xs text-amber-400/80">
-                  Lot and block number not yet captured — needs verification.
+                  Lot and block number not yet captured - needs verification.
                 </p>
               )}
               {entry.subdivision.geometry_status === "not_started" && (

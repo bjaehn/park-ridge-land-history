@@ -55,10 +55,10 @@ export default async function NeighborhoodsListPage() {
                 <td className="px-4 py-3 font-mono text-xs text-text-muted">{n.id}</td>
                 <td className="px-4 py-3 font-medium text-text-primary">{n.label}</td>
                 <td className="px-4 py-3 text-text-secondary">
-                  {n.slug ?? <span className="text-text-muted">—</span>}
+                  {n.slug ?? <span className="text-text-muted">-</span>}
                 </td>
                 <td className="px-4 py-3 text-text-secondary tabular-nums">
-                  {n.established_year ?? <span className="text-text-muted">—</span>}
+                  {n.established_year ?? <span className="text-text-muted">-</span>}
                 </td>
                 <td className="px-4 py-3 text-right">
                   <Link

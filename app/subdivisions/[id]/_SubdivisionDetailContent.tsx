@@ -87,7 +87,7 @@ export function SubdivisionDetailContent({ subdivisionId, recordedYear, entityTy
 
   // Quality warnings for the header area
   const qualityWarnings: string[] = [];
-  if (!recordedYear) qualityWarnings.push("Plat recording date not yet verified — needs source document.");
+  if (!recordedYear) qualityWarnings.push("Plat recording date not yet verified - needs source document.");
   if (geometryStatus === "not_started" || geometryStatus === "needs_source")
     qualityWarnings.push("Subdivision boundary not yet mapped.");
 

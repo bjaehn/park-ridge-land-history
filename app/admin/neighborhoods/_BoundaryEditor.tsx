@@ -26,7 +26,7 @@ export function BoundaryEditor({
       try {
         JSON.parse(geojson);
       } catch {
-        setError("Invalid JSON — paste a valid GeoJSON Geometry object (e.g. {\"type\":\"Polygon\",\"coordinates\":[...]}).");
+        setError("Invalid JSON - paste a valid GeoJSON Geometry object (e.g. {\"type\":\"Polygon\",\"coordinates\":[...]}).");
         return;
       }
     }

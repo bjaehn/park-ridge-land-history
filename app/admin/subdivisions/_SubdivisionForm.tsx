@@ -121,7 +121,7 @@ export function SubdivisionForm({
           <div>
             <label className={LABEL}>Entity Type</label>
             <select name="entity_type" defaultValue={subdivision?.entity_type ?? ""} className={SELECT}>
-              <option value="">— select —</option>
+              <option value="">-- select --</option>
               <option value="subdivision">Subdivision</option>
               <option value="estate">Estate</option>
               <option value="parent_plat">Parent Plat</option>
@@ -249,7 +249,7 @@ export function SubdivisionForm({
           <div>
             <label className={LABEL}>Research Status</label>
             <select name="status" defaultValue={subdivision?.status ?? ""} className={SELECT}>
-              <option value="">— select —</option>
+              <option value="">-- select --</option>
               <option value="verified">Verified</option>
               <option value="partially_verified">Partially Verified</option>
               <option value="research_candidate">Research Candidate</option>
@@ -263,7 +263,7 @@ export function SubdivisionForm({
           <div>
             <label className={LABEL}>Geometry Status</label>
             <select name="geometry_status" defaultValue={subdivision?.geometry_status ?? ""} className={SELECT}>
-              <option value="">— select —</option>
+              <option value="">-- select --</option>
               <option value="not_started">Not Started</option>
               <option value="needs_source">Needs Source</option>
               <option value="in_progress">In Progress</option>
@@ -314,7 +314,7 @@ export function SubdivisionForm({
         <div>
           <label className={LABEL}>Parent Subdivision</label>
           <select name="parent_subdivision_id" defaultValue={subdivision?.parent_subdivision_id ?? ""} className={SELECT}>
-            <option value="">— none —</option>
+            <option value="">-- none --</option>
             {others.map((s) => (
               <option key={s.id} value={s.id}>{s.name}</option>
             ))}

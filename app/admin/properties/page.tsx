@@ -85,10 +85,10 @@ export default async function PropertiesListPage({
                     {p.pin_normalized}
                   </td>
                   <td className="px-4 py-3 text-text-primary max-w-xs truncate">
-                    {p.address ?? <span className="text-text-muted">—</span>}
+                    {p.address ?? <span className="text-text-muted">-</span>}
                   </td>
                   <td className="px-4 py-3 text-text-secondary tabular-nums">
-                    {p.year_built ?? <span className="text-text-muted">—</span>}
+                    {p.year_built ?? <span className="text-text-muted">-</span>}
                   </td>
                   <td className="px-4 py-3 text-text-secondary max-w-xs truncate">
                     {p.subdivision_name ?? <span className="text-text-muted">none</span>}

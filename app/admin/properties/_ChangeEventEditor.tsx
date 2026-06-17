@@ -168,12 +168,13 @@ function ChangeEventForm({
         <div>
           <label className={LABEL}>Event Type <span className="text-accent-red">*</span></label>
           <select name="event_type" defaultValue={item?.event_type ?? "boundary_adj"} className={SELECT}>
-            <option value="split">Split</option>
+            <option value="subdivision">Subdivision (split)</option>
             <option value="consolidation">Consolidation</option>
             <option value="boundary_adj">Boundary Adjustment</option>
             <option value="resubdivision">Resubdivision</option>
-            <option value="vacation">Vacation</option>
-            <option value="other">Other</option>
+            <option value="creation">Creation</option>
+            <option value="annexation">Annexation</option>
+            <option value="acquisition">Acquisition</option>
           </select>
         </div>
         <div>

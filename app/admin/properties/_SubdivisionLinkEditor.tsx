@@ -92,7 +92,7 @@ export function SubdivisionLinkEditor({
             <div key={link.id} className="py-2.5 flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-sm font-medium text-text-primary">
-                  {link.subdivision_name ?? link.subdivision_id ?? "—"}
+                  {link.subdivision_name ?? link.subdivision_id ?? "-"}
                 </p>
                 <p className="text-xs text-text-muted mt-0.5">
                   {[
@@ -151,7 +151,7 @@ function LinkForm({
       <div>
         <label className={LABEL}>Subdivision <span className="text-accent-red">*</span></label>
         <select name="subdivision_id" defaultValue={item?.subdivision_id ?? ""} required className={SELECT}>
-          <option value="">— select —</option>
+          <option value="">-- select --</option>
           {allSubdivisions.map((s) => (
             <option key={s.id} value={s.id}>{s.name}</option>
           ))}
