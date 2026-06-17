@@ -84,10 +84,10 @@ export default async function SubdivisionsListPage({
                   {s.name}
                 </td>
                 <td className="px-4 py-3 text-text-secondary">
-                  {s.entity_type ?? <span className="text-text-muted">—</span>}
+                  {s.entity_type ?? <span className="text-text-muted">-</span>}
                 </td>
                 <td className="px-4 py-3 text-text-secondary tabular-nums">
-                  {s.recorded_year ?? <span className="text-text-muted">—</span>}
+                  {s.recorded_year ?? <span className="text-text-muted">-</span>}
                 </td>
                 <td className="px-4 py-3">
                   <span
@@ -102,7 +102,7 @@ export default async function SubdivisionsListPage({
                   {s.parcel_count ?? 0}
                 </td>
                 <td className="px-4 py-3 text-text-secondary">
-                  {s.status ?? <span className="text-text-muted">—</span>}
+                  {s.status ?? <span className="text-text-muted">-</span>}
                 </td>
                 <td className="px-4 py-3 text-right">
                   <Link

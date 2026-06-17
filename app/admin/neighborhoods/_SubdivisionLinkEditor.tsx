@@ -92,7 +92,7 @@ export function NeighborhoodSubdivisionLinkEditor({
             <div key={link.id} className="py-2.5 flex items-start justify-between gap-3">
               <div>
                 <p className="text-sm text-text-primary font-medium">
-                  {link.subdivision_name ?? link.subdivision_id ?? "—"}
+                  {link.subdivision_name ?? link.subdivision_id ?? "-"}
                 </p>
                 {link.relationship_type && (
                   <p className="text-xs text-text-muted">{link.relationship_type}</p>
@@ -149,7 +149,7 @@ function LinkForm({
       <div>
         <label className={LABEL}>Subdivision <span className="text-accent-red">*</span></label>
         <select name="subdivision_id" defaultValue={item?.subdivision_id ?? ""} required className={SELECT}>
-          <option value="">— select —</option>
+          <option value="">-- select --</option>
           {allSubdivisions.map((s) => (
             <option key={s.id} value={s.id}>{s.name}</option>
           ))}

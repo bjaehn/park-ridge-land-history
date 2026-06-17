@@ -14,7 +14,7 @@ export type TreeSubdivision = {
 
 type TreeNode = TreeSubdivision & { children: TreeNode[] };
 
-// Card dimensions — fixed width so we can calculate connector bar exactly
+// Card dimensions - fixed width so we can calculate connector bar exactly
 const NODE_W = 172; // px
 const NODE_HALF_W = NODE_W / 2;
 const GAP = 20; // px gap between sibling nodes

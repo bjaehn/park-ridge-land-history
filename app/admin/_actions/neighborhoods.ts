@@ -70,7 +70,7 @@ export async function updateNeighborhoodGeometry(id: string, formData: FormData)
 
   let parsed: unknown;
   try { parsed = JSON.parse(geojsonStr); } catch {
-    return { error: "Invalid JSON — paste a valid GeoJSON geometry object." };
+    return { error: "Invalid JSON - paste a valid GeoJSON geometry object." };
   }
 
   // Use ST_GeomFromGeoJSON via rpc or pass GeoJSON directly
