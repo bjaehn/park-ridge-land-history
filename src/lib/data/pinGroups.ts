@@ -93,7 +93,8 @@ export async function getPinGroupDetail(prefix: string): Promise<PinGroupDetail 
     .from("parcels")
     .select("pin_normalized, pin_original, address, year_built, decade_built, building_sqft, latest_assessed_total")
     .ilike("pin_normalized", `${prefix}%`)
-    .order("address", { ascending: true });
+    .order("address", { ascending: true })
+    .limit(5000);
 
   if (error || !data) return { ...summary, parcels: [] };
 

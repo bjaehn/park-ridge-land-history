@@ -7,7 +7,7 @@ import { EraPortraitChart } from "@/components/ui/EraPortraitChart";
 import { NeighborhoodPriceChart } from "@/components/ui/NeighborhoodPriceChart";
 import { LoadingSkeleton, EmptyState } from "@/components/ui/EmptyState";
 import { InlineSourceNote } from "@/components/ui/SourceNote";
-import { CityTrendCharts } from "@/components/ui/CityTrendCharts";
+import { PinScopedCharts } from "@/components/ui/PinScopedCharts";
 import { SaleIcon, YearBuiltIcon } from "@/lib/icons";
 import { formatAddress, formatNumber, formatCurrency } from "@/lib/formatters";
 import { getEraColor } from "@/lib/mapConfig";
@@ -287,7 +287,7 @@ export function PinGroupContent({ prefix, initialDetail, mapSlot }: Props) {
         </div>
       </div>
 
-      <CityTrendCharts />
+      <PinScopedCharts prefix={prefix} levelLabel={detail.levelLabel} />
     </div>
   );
 }
