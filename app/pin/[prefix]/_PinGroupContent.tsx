@@ -3,16 +3,18 @@
 import { useState, useEffect } from "react";
 import { StatGrid } from "@/components/ui/StatGrid";
 import { EntityCard, UnresolvableEntityCard } from "@/components/ui/EntityCard";
+import { EraPortraitChart } from "@/components/ui/EraPortraitChart";
+import { NeighborhoodPriceChart } from "@/components/ui/NeighborhoodPriceChart";
 import { LoadingSkeleton, EmptyState } from "@/components/ui/EmptyState";
 import { InlineSourceNote } from "@/components/ui/SourceNote";
-import { NeighborhoodCharts } from "@/components/ui/NeighborhoodCharts";
 import { CityTrendCharts } from "@/components/ui/CityTrendCharts";
+import { SaleIcon, YearBuiltIcon } from "@/lib/icons";
 import { formatAddress, formatNumber, formatCurrency } from "@/lib/formatters";
 import { getEraColor } from "@/lib/mapConfig";
 import { getPinGroupDetail } from "@/lib/data/pinGroups";
-import { fetchBlockSalesStats, fetchBlockPermitStats } from "@/lib/supabase/blockQueries";
+import { fetchBlockSalesStats, fetchBlockPermitStats, fetchBlockSalesByYear } from "@/lib/supabase/blockQueries";
 import type { PinGroupDetail } from "@/lib/data/pinGroups";
-import type { BlockSalesStats, BlockPermitStats } from "@/lib/supabase/blockQueries";
+import type { BlockSalesStats, BlockPermitStats, BlockSalesByYear } from "@/lib/supabase/blockQueries";
 
 type Props = {
   prefix: string;
@@ -24,6 +26,7 @@ export function PinGroupContent({ prefix, initialDetail, mapSlot }: Props) {
   const [detail, setDetail] = useState<PinGroupDetail | null>(initialDetail ?? null);
   const [salesStats, setSalesStats] = useState<BlockSalesStats | null>(null);
   const [permitStats, setPermitStats] = useState<BlockPermitStats | null>(null);
+  const [salesByYear, setSalesByYear] = useState<BlockSalesByYear | null>(null);
   const [loading, setLoading] = useState(!initialDetail);
 
   useEffect(() => {
@@ -38,13 +41,15 @@ export function PinGroupContent({ prefix, initialDetail, mapSlot }: Props) {
         return Promise.all([
           fetchBlockSalesStats(pins),
           fetchBlockPermitStats(pins),
+          fetchBlockSalesByYear(pins),
         ]);
       })
       .then((results) => {
         if (!results) return;
-        const [sales, permits] = results;
+        const [sales, permits, salesYr] = results;
         setSalesStats(sales);
         setPermitStats(permits);
+        setSalesByYear(salesYr);
       })
       .catch(() => null)
       .finally(() => setLoading(false));
@@ -101,7 +106,47 @@ export function PinGroupContent({ prefix, initialDetail, mapSlot }: Props) {
         </div>
       )}
 
-      <NeighborhoodCharts />
+      {(() => {
+        const eraRow = {
+          label: detail.levelLabel,
+          pre1920: parcels.filter((p) => p.yearBuilt && p.yearBuilt < 1920).length,
+          boom:    parcels.filter((p) => p.yearBuilt && p.yearBuilt >= 1920 && p.yearBuilt < 1946).length,
+          postwar: parcels.filter((p) => p.yearBuilt && p.yearBuilt >= 1946 && p.yearBuilt < 1980).length,
+          eighties:parcels.filter((p) => p.yearBuilt && p.yearBuilt >= 1980 && p.yearBuilt < 2000).length,
+          aughts:  parcels.filter((p) => p.yearBuilt && p.yearBuilt >= 2000 && p.yearBuilt < 2010).length,
+          teens:   parcels.filter((p) => p.yearBuilt && p.yearBuilt >= 2010 && p.yearBuilt < 2020).length,
+          recent:  parcels.filter((p) => p.yearBuilt && p.yearBuilt >= 2020).length,
+          total:   parcels.filter((p) => p.yearBuilt).length,
+        };
+        const priceRow = salesByYear && (salesByYear.year2015 || salesByYear.year2024)
+          ? [{ label: detail.levelLabel, ...salesByYear }]
+          : [];
+        return (
+          <div className="space-y-10">
+            {priceRow.length > 0 && (
+              <section>
+                <div className="flex items-center gap-2 mb-3">
+                  <SaleIcon size={14} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />
+                  <p className="section-heading !mb-0">Median sale price, 2015 vs. 2024</p>
+                </div>
+                <NeighborhoodPriceChart data={priceRow} />
+              </section>
+            )}
+            {eraRow.total > 0 && (
+              <section>
+                <div className="flex items-center gap-2 mb-3">
+                  <YearBuiltIcon size={14} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />
+                  <p className="section-heading !mb-0">Era portrait: when these properties were built</p>
+                </div>
+                <p className="text-sm text-text-muted mb-3">
+                  Each bar shows 100% of properties with known build years, divided by era.
+                </p>
+                <EraPortraitChart data={[eraRow]} />
+              </section>
+            )}
+          </div>
+        );
+      })()}
 
       {salesStats && salesStats.totalSales > 0 && (
         <section>

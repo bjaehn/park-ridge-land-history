@@ -136,6 +136,46 @@ export async function fetchBlockParcelsWithAssessment(blockId: string): Promise<
   return { parcels, assessmentStats };
 }
 
+export type BlockSalesByYear = {
+  year2015: number | null;
+  year2024: number | null;
+  pctChange: number | null;
+};
+
+export async function fetchBlockSalesByYear(pins: string[]): Promise<BlockSalesByYear> {
+  if (!supabase || !pins.length) return { year2015: null, year2024: null, pctChange: null };
+  const { data, error } = await supabase
+    .from("sales")
+    .select("sale_year, sale_price")
+    .in("pin", pins)
+    .in("sale_year", [2015, 2024])
+    .eq("is_market_sale", true);
+  if (error || !data || !data.length) return { year2015: null, year2024: null, pctChange: null };
+
+  const rows = data as Array<{ sale_year: number; sale_price: number | null }>;
+  const byYear = new Map<number, number[]>();
+  rows.forEach((r) => {
+    if (!r.sale_price) return;
+    const arr = byYear.get(r.sale_year) ?? [];
+    arr.push(r.sale_price);
+    byYear.set(r.sale_year, arr);
+  });
+
+  const median = (prices: number[]): number | null => {
+    if (!prices.length) return null;
+    const sorted = [...prices].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+  };
+
+  const year2015 = median(byYear.get(2015) ?? []);
+  const year2024 = median(byYear.get(2024) ?? []);
+  const pctChange =
+    year2015 && year2024 ? Math.round(((year2024 - year2015) / year2015) * 100) : null;
+
+  return { year2015, year2024, pctChange };
+}
+
 export async function fetchBlockBbox(blockId: string): Promise<[number, number, number, number] | null> {
   if (!supabase || !blockId) return null;
   try {
