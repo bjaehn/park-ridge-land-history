@@ -3,8 +3,9 @@ import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { SourceNote } from "@/components/ui/SourceNote";
+import { MapView } from "@/components/MapView";
 import { PinGroupContent } from "./_PinGroupContent";
-import { getPinGroupSummary } from "@/lib/data/pinGroups";
+import { getPinGroupSummary, getPinGroupDetail, fetchPinPrefixBbox } from "@/lib/data/pinGroups";
 import { formatCount } from "@/lib/formatters";
 
 type Props = { params: { prefix: string } };
@@ -21,21 +22,43 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function PinGroupPage({ params }: Props) {
   const prefix = decodeURIComponent(params.prefix);
-  const summary = await getPinGroupSummary(prefix).catch(() => null);
+
+  const [summary, detail, bbox] = await Promise.all([
+    getPinGroupSummary(prefix).catch(() => null),
+    getPinGroupDetail(prefix).catch(() => null),
+    fetchPinPrefixBbox(prefix).catch(() => null),
+  ]);
 
   if (!summary) notFound();
+
+  const pins = detail?.parcels.map((p) => p.pin).filter(Boolean) ?? [];
 
   return (
     <div className="page-shell">
       <Breadcrumb items={summary.breadcrumbParts} />
 
       <PageHeader
-        eyebrow="PIN segment"
+        eyebrow={summary.level}
         title={summary.levelLabel}
         subtitle={`${formatCount(summary.parcelCount, "property", "properties")} share this PIN prefix.`}
       />
 
-      <PinGroupContent prefix={prefix} />
+      <PinGroupContent
+        prefix={prefix}
+        initialDetail={detail}
+        mapSlot={
+          <MapView
+            scope={{
+              kind: "subdivision",
+              subdivisionId: prefix,
+              pins: pins.length > 0 ? pins : undefined,
+              bbox: bbox ?? undefined,
+            }}
+            height="400px"
+            showExpand
+          />
+        }
+      />
 
       <SourceNote sources={["assessor"]} />
     </div>

@@ -7,6 +7,9 @@ export type PinGroupParcel = {
   pin: string;
   address: string | null;
   yearBuilt: number | null;
+  decadeBuilt: string | null;
+  buildingSqft: number | null;
+  latestAssessedTotal: number | null;
 };
 
 export type PinGroupSummary = {
@@ -88,17 +91,33 @@ export async function getPinGroupDetail(prefix: string): Promise<PinGroupDetail 
 
   const { data, error } = await supabase
     .from("parcels")
-    .select("pin_normalized, pin_original, address, year_built")
+    .select("pin_normalized, pin_original, address, year_built, decade_built, building_sqft, latest_assessed_total")
     .ilike("pin_normalized", `${prefix}%`)
     .order("address", { ascending: true });
 
   if (error || !data) return { ...summary, parcels: [] };
 
-  const parcels: PinGroupParcel[] = data.map((r) => ({
+  const parcels: PinGroupParcel[] = (data as Array<Record<string, unknown>>).map((r) => ({
     pin: String(r.pin_normalized ?? r.pin_original ?? ""),
-    address: r.address as string | null,
-    yearBuilt: r.year_built as number | null,
+    address: (r.address as string | null) ?? null,
+    yearBuilt: (r.year_built as number | null) ?? null,
+    decadeBuilt: (r.decade_built as string | null) ?? null,
+    buildingSqft: (r.building_sqft as number | null) ?? null,
+    latestAssessedTotal: (r.latest_assessed_total as number | null) ?? null,
   }));
 
   return { ...summary, parcels };
+}
+
+export async function fetchPinPrefixBbox(prefix: string): Promise<[number, number, number, number] | null> {
+  if (!supabase || !prefix) return null;
+  try {
+    const { data, error } = await supabase.rpc("pin_prefix_bbox", { p_prefix: prefix });
+    if (error || !data) return null;
+    const b = data as Record<string, number>;
+    if (b.minLng == null) return null;
+    return [b.minLng, b.minLat, b.maxLng, b.maxLat];
+  } catch {
+    return null;
+  }
 }
