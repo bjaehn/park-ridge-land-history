@@ -4,7 +4,7 @@ import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { InlineSourceNote } from "@/components/ui/SourceNote";
 import { NEIGHBORHOOD_BOUNDARY_DISCLAIMER } from "@/lib/content";
 import { NeighborhoodsGrid } from "./_NeighborhoodsGrid";
-import { NeighborhoodCharts } from "./_NeighborhoodCharts";
+import { NeighborhoodCharts } from "@/components/ui/NeighborhoodCharts";
 
 export const metadata: Metadata = {
   title: "Neighborhoods",

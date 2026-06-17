@@ -7,7 +7,7 @@ import { NeighborhoodsGrid } from "./neighborhoods/_NeighborhoodsGrid";
 import { SparklinePriceCard } from "@/components/ui/SparklinePriceCard";
 import { ArchiveInventory } from "@/components/ui/ArchiveInventory";
 import { NeighborhoodIcon, HighlightIcon } from "@/lib/icons";
-import { EraPortrait } from "@/components/ui/EraPortrait";
+import { NeighborhoodCharts } from "@/components/ui/NeighborhoodCharts";
 import type { HighlightGroup } from "@/components/ui/HighlightReel";
 
 export const metadata: Metadata = {
@@ -68,9 +68,9 @@ export default function HomePage() {
 
       <hr className="border-surface-border" />
 
-      {/* Era portrait */}
+      {/* Neighborhood charts */}
       <section className="mt-10 mb-10">
-        <EraPortrait />
+        <NeighborhoodCharts />
       </section>
 
       <hr className="border-surface-border" />
