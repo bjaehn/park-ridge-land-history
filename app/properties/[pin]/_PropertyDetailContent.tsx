@@ -76,21 +76,32 @@ function parsePinParts(props: { pin_normalized?: string | null; pin_township?: s
 function PinBreakdown({ props }: { props: Record<string, unknown> }) {
   const parts = parsePinParts(props as Parameters<typeof parsePinParts>[0]);
   if (!parts) return null;
+  const raw = (props.pin_normalized as string | null | undefined) ?? "";
+
   const items = [
-    { label: "Township", value: parts.township },
-    { label: "Section",  value: parts.section },
-    { label: "Block",    value: parts.block },
-    { label: "Parcel",   value: parts.parcel },
-    { label: "Unit",     value: parts.unit },
+    { label: "Township", value: parts.township, href: raw.length >= 2  ? `/pin/${raw.slice(0, 2)}`  : null },
+    { label: "Section",  value: parts.section,  href: raw.length >= 4  ? `/pin/${raw.slice(0, 4)}`  : null },
+    { label: "Block",    value: parts.block,    href: raw.length >= 7  ? `/pin/${raw.slice(0, 7)}`  : null },
+    { label: "Parcel",   value: parts.parcel,   href: raw.length >= 10 ? `/pin/${raw.slice(0, 10)}` : null },
+    { label: "Unit",     value: parts.unit,     href: null },
   ];
+
   return (
     <div className="flex flex-wrap gap-2">
-      {items.map(({ label, value }) => (
-        <div key={label} className="bg-surface-card border border-surface-border rounded px-3 py-1.5 text-center min-w-[60px]">
-          <p className="text-[10px] text-text-muted uppercase tracking-wider mb-0.5">{label}</p>
-          <p className="font-mono text-sm font-semibold text-text-primary">{value || "-"}</p>
-        </div>
-      ))}
+      {items.map(({ label, value, href }) => {
+        const chip = (
+          <div className={[
+            "bg-surface-card border border-surface-border rounded px-3 py-1.5 text-center min-w-[60px]",
+            href ? "hover:border-accent-purple/40 transition-colors" : "",
+          ].join(" ")}>
+            <p className="text-[10px] text-text-muted uppercase tracking-wider mb-0.5">{label}</p>
+            <p className="font-mono text-sm font-semibold text-text-primary">{value || "-"}</p>
+          </div>
+        );
+        return href
+          ? <Link key={label} href={href}>{chip}</Link>
+          : <div key={label}>{chip}</div>;
+      })}
     </div>
   );
 }
