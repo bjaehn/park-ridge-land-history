@@ -218,6 +218,54 @@ export function PinGroupContent({ prefix, initialDetail, mapSlot }: Props) {
         </section>
       )}
 
+      {detail.level === "Township" && (() => {
+        const sectionMap = new Map<string, { count: number; years: number[] }>();
+        parcels.forEach((p) => {
+          const sectionPrefix = p.pin.slice(0, 4);
+          if (!sectionPrefix || sectionPrefix.length < 4) return;
+          const existing = sectionMap.get(sectionPrefix) ?? { count: 0, years: [] };
+          existing.count += 1;
+          if (p.yearBuilt) existing.years.push(p.yearBuilt);
+          sectionMap.set(sectionPrefix, existing);
+        });
+        const sections = Array.from(sectionMap.entries())
+          .map(([sectionPrefix, { count, years }]) => ({
+            sectionPrefix,
+            sectionSegment: sectionPrefix.slice(2, 4),
+            count,
+            oldestYear: years.length ? Math.min(...years) : null,
+            newestYear: years.length ? Math.max(...years) : null,
+          }))
+          .sort((a, b) => a.sectionPrefix.localeCompare(b.sectionPrefix));
+
+        if (!sections.length) return null;
+        return (
+          <div>
+            <p className="section-heading">Sections in this township</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {sections.map((s) => {
+                const yr = s.oldestYear && s.newestYear && s.oldestYear !== s.newestYear
+                  ? `${s.oldestYear}–${s.newestYear}`
+                  : s.oldestYear ? String(s.oldestYear) : null;
+                return (
+                  <EntityCard
+                    key={s.sectionPrefix}
+                    href={`/pin/${encodeURIComponent(s.sectionPrefix)}`}
+                    eyebrow="Section"
+                    title={`Section ${s.sectionSegment}`}
+                    meta={[
+                      `${formatNumber(s.count)} ${s.count === 1 ? "property" : "properties"}`,
+                      yr ? `Built ${yr}` : undefined,
+                    ].filter(Boolean).join(" · ") || undefined}
+                    eraSwatch={getEraColor(s.oldestYear)}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
+
       {detail.level === "Section" && (() => {
         const blockMap = new Map<string, { count: number; years: number[] }>();
         parcels.forEach((p) => {
@@ -266,28 +314,30 @@ export function PinGroupContent({ prefix, initialDetail, mapSlot }: Props) {
         );
       })()}
 
-      <div>
-        <p className="section-heading">Properties</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {parcels.map((p) => {
-            if (!p.address) return <UnresolvableEntityCard key={p.pin} pin={p.pin} />;
-            return (
-              <EntityCard
-                key={p.pin}
-                href={`/properties/${encodeURIComponent(p.pin)}`}
-                title={formatAddress(p.address)}
-                meta={[
-                  p.yearBuilt ? `Built ${p.yearBuilt}` : undefined,
-                  p.buildingSqft ? `${formatNumber(p.buildingSqft)} sqft` : undefined,
-                ].filter(Boolean).join(" · ") || undefined}
-                eraSwatch={getEraColor(p.yearBuilt)}
-              />
-            );
-          })}
-        </div>
-      </div>
-
       <PinScopedCharts prefix={prefix} levelLabel={detail.levelLabel} />
+
+      {detail.level !== "Township" && (
+        <div>
+          <p className="section-heading">Properties</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {parcels.map((p) => {
+              if (!p.address) return <UnresolvableEntityCard key={p.pin} pin={p.pin} />;
+              return (
+                <EntityCard
+                  key={p.pin}
+                  href={`/properties/${encodeURIComponent(p.pin)}`}
+                  title={formatAddress(p.address)}
+                  meta={[
+                    p.yearBuilt ? `Built ${p.yearBuilt}` : undefined,
+                    p.buildingSqft ? `${formatNumber(p.buildingSqft)} sqft` : undefined,
+                  ].filter(Boolean).join(" · ") || undefined}
+                  eraSwatch={getEraColor(p.yearBuilt)}
+                />
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
