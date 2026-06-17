@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { StatGrid } from "@/components/ui/StatGrid";
-import { ConstructionByDecadeChart } from "@/components/ui/ConstructionByDecadeChart";
 import { EntityCard, UnresolvableEntityCard } from "@/components/ui/EntityCard";
 import { LoadingSkeleton, EmptyState } from "@/components/ui/EmptyState";
 import { InlineSourceNote } from "@/components/ui/SourceNote";
@@ -12,7 +11,6 @@ import { formatAddress, formatNumber, formatCurrency } from "@/lib/formatters";
 import { getEraColor } from "@/lib/mapConfig";
 import { getPinGroupDetail } from "@/lib/data/pinGroups";
 import { fetchBlockSalesStats, fetchBlockPermitStats } from "@/lib/supabase/blockQueries";
-import type { DecadeRow } from "@/components/ui/ConstructionByDecadeChart";
 import type { PinGroupDetail } from "@/lib/data/pinGroups";
 import type { BlockSalesStats, BlockPermitStats } from "@/lib/supabase/blockQueries";
 
@@ -59,18 +57,6 @@ export function PinGroupContent({ prefix, initialDetail, mapSlot }: Props) {
 
   const { parcels } = detail;
 
-  // Decade distribution
-  const decadeMap = new Map<number, number>();
-  parcels.forEach((p) => {
-    if (p.yearBuilt) {
-      const d = Math.floor(p.yearBuilt / 10) * 10;
-      decadeMap.set(d, (decadeMap.get(d) ?? 0) + 1);
-    }
-  });
-  const decadeRows: DecadeRow[] = Array.from(decadeMap.entries())
-    .sort(([a], [b]) => a - b)
-    .map(([decade, count]) => ({ decade: String(decade), count }));
-
   // Year range
   const years = parcels.map((p) => p.yearBuilt).filter((y): y is number => y != null);
   const oldestYear = years.length ? Math.min(...years) : null;
@@ -115,12 +101,7 @@ export function PinGroupContent({ prefix, initialDetail, mapSlot }: Props) {
         </div>
       )}
 
-      {decadeRows.length > 0 && (
-        <div>
-          <p className="section-heading">When these properties were built</p>
-          <ConstructionByDecadeChart rows={decadeRows} />
-        </div>
-      )}
+      <NeighborhoodCharts />
 
       {salesStats && salesStats.totalSales > 0 && (
         <section>
@@ -260,8 +241,6 @@ export function PinGroupContent({ prefix, initialDetail, mapSlot }: Props) {
           })}
         </div>
       </div>
-
-      <NeighborhoodCharts />
 
       <CityTrendCharts />
     </div>
