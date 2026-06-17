@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { StatGrid } from "@/components/ui/StatGrid";
-import { ConstructionByDecadeChart } from "@/components/ui/ConstructionByDecadeChart";
 import { EntityCard, UnresolvableEntityCard } from "@/components/ui/EntityCard";
 import { LoadingSkeleton, EmptyState } from "@/components/ui/EmptyState";
 import { InlineSourceNote } from "@/components/ui/SourceNote";
@@ -10,6 +9,8 @@ import { formatAddress, formatNumber, formatCurrency } from "@/lib/formatters";
 import { getEraColor } from "@/lib/mapConfig";
 import { getPinGroupDetail } from "@/lib/data/pinGroups";
 import { fetchBlockSalesStats, fetchBlockPermitStats } from "@/lib/supabase/blockQueries";
+import { EraPortrait } from "@/components/ui/EraPortrait";
+import { CityTrendCharts } from "@/components/ui/CityTrendCharts";
 import type { DecadeRow } from "@/components/ui/ConstructionByDecadeChart";
 import type { PinGroupDetail } from "@/lib/data/pinGroups";
 import type { BlockSalesStats, BlockPermitStats } from "@/lib/supabase/blockQueries";
@@ -114,10 +115,7 @@ export function PinGroupContent({ prefix, initialDetail, mapSlot }: Props) {
       )}
 
       {decadeRows.length > 0 && (
-        <div>
-          <p className="section-heading">When these properties were built</p>
-          <ConstructionByDecadeChart rows={decadeRows} />
-        </div>
+        <EraPortrait rows={decadeRows} heading="When these properties were built" />
       )}
 
       {salesStats && salesStats.totalSales > 0 && (
@@ -258,6 +256,8 @@ export function PinGroupContent({ prefix, initialDetail, mapSlot }: Props) {
           })}
         </div>
       </div>
+
+      <CityTrendCharts />
     </div>
   );
 }

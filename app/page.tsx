@@ -7,6 +7,7 @@ import { NeighborhoodsGrid } from "./neighborhoods/_NeighborhoodsGrid";
 import { SparklinePriceCard } from "@/components/ui/SparklinePriceCard";
 import { ArchiveInventory } from "@/components/ui/ArchiveInventory";
 import { NeighborhoodIcon, HighlightIcon } from "@/lib/icons";
+import { EraPortrait } from "@/components/ui/EraPortrait";
 import type { HighlightGroup } from "@/components/ui/HighlightReel";
 
 export const metadata: Metadata = {
@@ -63,6 +64,13 @@ export default function HomePage() {
           <p className="section-heading !mb-0">Notable properties</p>
         </div>
         <HighlightReel scope="city" scopeId="" groups={CITY_HIGHLIGHTS} limit={6} />
+      </section>
+
+      <hr className="border-surface-border" />
+
+      {/* Era portrait */}
+      <section className="mt-10 mb-10">
+        <EraPortrait />
       </section>
 
       <hr className="border-surface-border" />
