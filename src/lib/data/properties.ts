@@ -3,15 +3,29 @@ import type { ComparisonRow } from "../../components/ui/ComparisonList";
 import type { ComparisonScope } from "../formatters";
 import type { LandLineageEntry, LandLot } from "../subdivisionTypes";
 
+export type AssessmentPoint = { year: number; value: number };
+
 export type ParcelProperties = {
   [key: string]: unknown;
   address?: string | null;
   year_built?: number | null;
   pin_normalized?: string | null;
   pin_original?: string | null;
+  pin_township?: string | null;
+  pin_section?: string | null;
+  pin_block?: string | null;
+  pin_parcel?: string | null;
+  pin_unit?: string | null;
   building_sqft?: number | null;
   land_sqft?: number | null;
   latest_assessed_total?: number | null;
+  latest_assessed_year?: number | null;
+  first_assessed_total?: number | null;
+  first_assessed_year?: number | null;
+  assessed_value_timeline?: AssessmentPoint[] | string | null;
+  appeal_count?: number | null;
+  latest_appeal_year?: number | null;
+  total_assessment_reduction?: number | null;
   permit_count?: number | null;
   sale_count?: number | null;
   recent_permit_count?: number | null;
@@ -87,10 +101,10 @@ export type PropertyDetailData = {
   } | null;
   landLineage?: LandLineageEntry[];
   comparisons?: ComparisonRow[];
-  relatedHomes?: Array<{ pin: string; address?: string | null; yearBuilt?: number | null }>;
   sales?: PropertySale[];
   permits?: PropertyPermit[];
   hargisRecords?: HargisRecord[];
+  appealYears?: number[];
 };
 
 export type { LandLineageEntry, LandLot };
@@ -123,18 +137,18 @@ export async function getPropertyDetail(pin: string): Promise<PropertyDetailData
     subdivisionResult,
     landLineageResult,
     comparisonsResult,
-    relatedHomesResult,
     salesResult,
     permitsResult,
     hargisResult,
+    appealYearsResult,
   ] = await Promise.allSettled([
     loadSubdivision(pin),
     loadLandLineage(pin),
     loadComparisons(pin, props.year_built as number | null),
-    loadRelatedHomes(pin, props.street_name_normalized as string | undefined),
     loadSales(pin),
     loadPermits(pin),
     loadHargisRecords(pin),
+    loadAppealYears(pin, props.latest_appeal_year as number | null),
   ]);
 
   return {
@@ -142,10 +156,10 @@ export async function getPropertyDetail(pin: string): Promise<PropertyDetailData
     subdivision: subdivisionResult.status === "fulfilled" ? subdivisionResult.value : null,
     landLineage: landLineageResult.status === "fulfilled" ? landLineageResult.value : [],
     comparisons: comparisonsResult.status === "fulfilled" ? comparisonsResult.value : undefined,
-    relatedHomes: relatedHomesResult.status === "fulfilled" ? relatedHomesResult.value : [],
     sales: salesResult.status === "fulfilled" ? salesResult.value : [],
     permits: permitsResult.status === "fulfilled" ? permitsResult.value : [],
     hargisRecords: hargisResult.status === "fulfilled" ? hargisResult.value : [],
+    appealYears: appealYearsResult.status === "fulfilled" ? appealYearsResult.value : [],
   };
 }
 
@@ -188,23 +202,23 @@ async function loadComparisons(pin: string, yearBuilt: number | null): Promise<C
     }));
 }
 
-async function loadRelatedHomes(
-  pin: string,
-  streetNorm: string | undefined
-): Promise<Array<{ pin: string; address?: string | null; yearBuilt?: number | null }>> {
-  if (!supabase || !streetNorm) return [];
-  const { data } = await supabase
-    .from("parcels")
-    .select("pin_normalized, pin_original, address, year_built")
-    .ilike("street_name_normalized", streetNorm)
-    .neq("pin_normalized", pin)
-    .limit(6);
-  if (!data) return [];
-  return (data as Array<Record<string, unknown>>).map((r) => ({
-    pin: String(r.pin_normalized ?? r.pin_original ?? ""),
-    address: r.address as string | null,
-    yearBuilt: r.year_built as number | null,
-  }));
+async function loadAppealYears(pin: string, latestAppealYear: number | null): Promise<number[]> {
+  if (!supabase) return latestAppealYear ? [latestAppealYear] : [];
+  try {
+    const { data } = await supabase
+      .from("appeals")
+      .select("appeal_year")
+      .eq("pin_normalized", pin)
+      .order("appeal_year");
+    if (data && data.length > 0) {
+      return (data as Array<{ appeal_year: number | null }>)
+        .map((r) => r.appeal_year)
+        .filter((y): y is number => y != null);
+    }
+  } catch {
+    // appeals table may not be accessible via public client
+  }
+  return latestAppealYear ? [latestAppealYear] : [];
 }
 
 async function loadSales(pin: string): Promise<PropertySale[]> {

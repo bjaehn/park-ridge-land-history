@@ -44,6 +44,8 @@ type Props = {
   scope: MapScope;
   height?: string;
   showExpand?: boolean;
+  compactLegend?: boolean;
+  hideLensSelector?: boolean;
 };
 
 const SOURCE_ID = "parcels";
@@ -62,7 +64,7 @@ const SELECTED_STROKE_LAYER = "parcel-stroke-selected";
  * This is the ONLY place MapLibre is instantiated in this codebase.
  * grep for "new maplibregl.Map" should return exactly one result here.
  */
-export function MapView({ scope, height = "400px", showExpand = false }: Props) {
+export function MapView({ scope, height = "400px", showExpand = false, compactLegend = false, hideLensSelector = false }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MaplibreMap | null>(null);
   const [lens, setLens] = useState<MapLens>(DEFAULT_LENS);
@@ -246,7 +248,7 @@ export function MapView({ scope, height = "400px", showExpand = false }: Props) 
 
       <div ref={containerRef} className="w-full h-full" />
 
-      {isLoaded && (
+      {isLoaded && !hideLensSelector && (
         <div className="absolute top-3 left-3 z-10">
           <div className="bg-surface-card/95 border border-surface-border rounded-lg p-1 shadow-lg">
             {MAP_LENSES.map((l) => (
@@ -268,7 +270,7 @@ export function MapView({ scope, height = "400px", showExpand = false }: Props) 
         </div>
       )}
 
-      {isLoaded && lens === "era" && <MapLegend />}
+      {isLoaded && lens === "era" && <MapLegend compact={compactLegend} />}
 
       {tooltip && (
         <MapTooltip
@@ -304,9 +306,24 @@ export function MapView({ scope, height = "400px", showExpand = false }: Props) 
   );
 }
 
-function MapLegend() {
+function MapLegend({ compact = false }: { compact?: boolean }) {
+  if (compact) {
+    return (
+      <div className="absolute bottom-3 right-3 z-10 bg-surface-card/95 border border-surface-border rounded-lg p-2 shadow-lg">
+        <p className="text-[10px] font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Built era</p>
+        <ul className="grid grid-cols-2 gap-x-3 gap-y-0.5">
+          {ERA_ORDER.map((decade) => (
+            <li key={decade} className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: ERA_PALETTE[decade] }} aria-hidden="true" />
+              <span className="text-[10px] text-text-muted">{formatDecade(decade)}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
   return (
-    <div className="absolute bottom-6 right-3 z-10 bg-surface-card/95 border border-surface-border rounded-lg p-3 shadow-lg max-h-48 overflow-y-auto">
+    <div className="absolute bottom-6 right-3 z-10 bg-surface-card/95 border border-surface-border rounded-lg p-3 shadow-lg">
       <p className="text-xs font-semibold text-text-secondary mb-2 uppercase tracking-wide">
         When it was built
       </p>

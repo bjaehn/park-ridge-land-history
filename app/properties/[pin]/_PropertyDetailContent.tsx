@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ConfidenceBadge } from "@/components/ui/ConfidenceBadge";
 import { ComparisonList } from "@/components/ui/ComparisonList";
-import { EntityCard, UnresolvableEntityCard } from "@/components/ui/EntityCard";
 import { LoadingSkeleton } from "@/components/ui/EmptyState";
 import { InlineSourceNote } from "@/components/ui/SourceNote";
 import { PropertyTimeline, buildTimelineEvents } from "@/components/ui/PropertyTimeline";
@@ -29,10 +28,12 @@ import {
   confidenceFor,
 } from "@/lib/formatters";
 import { getPropertyDetail } from "@/lib/data/properties";
-import type { PropertySale, PropertyPermit, HargisRecord, LandLineageEntry } from "@/lib/data/properties";
+import type { PropertySale, PropertyPermit, HargisRecord, LandLineageEntry, AssessmentPoint } from "@/lib/data/properties";
+import { SalesPriceChart } from "./_SalesPriceChart";
+import { AssessmentChart } from "./_AssessmentChart";
 import type { LucideIcon } from "lucide-react";
 
-type Props = { pin: string; streetDisplayName?: string };
+type Props = { pin: string };
 
 type IconRowItem = {
   icon: LucideIcon;
@@ -55,6 +56,59 @@ function IconRow({ items }: { items: IconRowItem[] }) {
         </div>
       ))}
     </dl>
+  );
+}
+
+type PinParts = { township: string; section: string; block: string; parcel: string; unit: string };
+
+function parsePinParts(props: { pin_normalized?: string | null; pin_township?: string | null; pin_section?: string | null; pin_block?: string | null; pin_parcel?: string | null; pin_unit?: string | null }): PinParts | null {
+  const raw = props.pin_normalized ?? "";
+  if (!raw && !props.pin_township) return null;
+  return {
+    township: props.pin_township ?? raw.slice(0, 2),
+    section:  props.pin_section  ?? raw.slice(2, 4),
+    block:    props.pin_block    ?? raw.slice(4, 7),
+    parcel:   props.pin_parcel   ?? raw.slice(7, 10),
+    unit:     props.pin_unit     ?? raw.slice(10, 14),
+  };
+}
+
+function PinBreakdown({ props }: { props: Record<string, unknown> }) {
+  const parts = parsePinParts(props as Parameters<typeof parsePinParts>[0]);
+  if (!parts) return null;
+  const items = [
+    { label: "Township", value: parts.township },
+    { label: "Section",  value: parts.section },
+    { label: "Block",    value: parts.block },
+    { label: "Parcel",   value: parts.parcel },
+    { label: "Unit",     value: parts.unit },
+  ];
+  return (
+    <div className="flex flex-wrap gap-2">
+      {items.map(({ label, value }) => (
+        <div key={label} className="bg-surface-card border border-surface-border rounded px-3 py-1.5 text-center min-w-[60px]">
+          <p className="text-[10px] text-text-muted uppercase tracking-wider mb-0.5">{label}</p>
+          <p className="font-mono text-sm font-semibold text-text-primary">{value || "-"}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function NeighborhoodCard({ neighborhoodId, neighborhoodLabel }: { neighborhoodId: string; neighborhoodLabel: string | null }) {
+  const slug = neighborhoodId.replace("neighborhood:", "");
+  return (
+    <Link
+      href={`/neighborhoods/${encodeURIComponent(slug)}`}
+      className="flex items-center gap-3 bg-surface-card border border-surface-border rounded-lg px-4 py-3 hover:border-accent-purple/40 transition-colors group"
+    >
+      <StreetIcon size={15} strokeWidth={1.8} className="text-text-muted shrink-0 group-hover:text-accent-purple transition-colors" aria-hidden="true" />
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-text-primary">{neighborhoodLabel ?? slug} neighborhood</p>
+        <p className="text-xs text-text-muted mt-0.5">View all properties in this neighborhood</p>
+      </div>
+      <span className="text-text-muted text-xs ml-auto shrink-0">→</span>
+    </Link>
   );
 }
 
@@ -322,7 +376,7 @@ function HargisSurveySection({ records }: { records: HargisRecord[] }) {
   );
 }
 
-export function PropertyDetailContent({ pin, streetDisplayName }: Props) {
+export function PropertyDetailContent({ pin }: Props) {
   const [detail, setDetail] = useState<Awaited<ReturnType<typeof getPropertyDetail>> | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -349,6 +403,17 @@ export function PropertyDetailContent({ pin, streetDisplayName }: Props) {
   const permits = detail.permits ?? [];
   const hargisRecords = detail.hargisRecords ?? [];
   const landLineage = detail.landLineage ?? [];
+  const appealYears = detail.appealYears ?? [];
+
+  // Parse assessed_value_timeline JSONB (may be pre-parsed object or string)
+  let assessmentTimeline: AssessmentPoint[] = [];
+  const rawTimeline = props.assessed_value_timeline;
+  if (rawTimeline) {
+    try {
+      const parsed = typeof rawTimeline === "string" ? JSON.parse(rawTimeline) : rawTimeline;
+      if (Array.isArray(parsed)) assessmentTimeline = parsed as AssessmentPoint[];
+    } catch { /* ignore parse errors */ }
+  }
 
   // Use actual event table counts and most-recent values \u2014 more complete than parcel aggregates
   const actualSaleCount = sales.length;
@@ -389,6 +454,23 @@ export function PropertyDetailContent({ pin, streetDisplayName }: Props) {
         </div>
         <IconRow items={vitals} />
       </section>
+
+      {/* PIN decomposition */}
+      <section>
+        <p className="section-heading">Parcel ID (PIN)</p>
+        <PinBreakdown props={props as Record<string, unknown>} />
+        <p className="text-xs text-text-muted mt-2">Cook County 14-digit PIN: township · section · block · parcel · unit</p>
+      </section>
+
+      {/* Neighborhood */}
+      {props.neighborhood_id && (
+        <section>
+          <NeighborhoodCard
+            neighborhoodId={props.neighborhood_id as string}
+            neighborhoodLabel={props.neighborhood_label as string | null}
+          />
+        </section>
+      )}
 
       {/* Evidence timeline */}
       {timeline.length > 0 && (
@@ -435,8 +517,29 @@ export function PropertyDetailContent({ pin, streetDisplayName }: Props) {
         </section>
       )}
 
+      {/* Sale price chart */}
+      {sales.some((s) => s.sale_price != null && s.sale_price > 0) && (
+        <section>
+          <p className="section-heading">Sale price history</p>
+          <SalesPriceChart sales={sales} />
+        </section>
+      )}
+
       {/* Individual sale events */}
       <SaleHistorySection sales={sales} />
+
+      {/* Assessment value chart */}
+      {assessmentTimeline.length >= 2 && (
+        <section>
+          <p className="section-heading">Assessed value history</p>
+          <AssessmentChart
+            timeline={assessmentTimeline}
+            appealYears={appealYears}
+            totalReduction={props.total_assessment_reduction as number | null}
+          />
+          <InlineSourceNote className="mt-2">Cook County Assessor certified totals by assessment year</InlineSourceNote>
+        </section>
+      )}
 
       {/* Individual permit events */}
       <PermitHistorySection permits={permits} />
@@ -479,31 +582,6 @@ export function PropertyDetailContent({ pin, streetDisplayName }: Props) {
             <p className="section-heading !mb-0">How this property compares</p>
           </div>
           <ComparisonList rows={detail.comparisons} />
-        </section>
-      )}
-
-      {/* Other homes on this street */}
-      {detail.relatedHomes && detail.relatedHomes.length > 0 && (
-        <section>
-          <div className="flex items-center gap-2 mb-3">
-            <StreetIcon size={14} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />
-            <p className="section-heading !mb-0">
-              {streetDisplayName ? `Other homes on ${streetDisplayName}` : "Other homes on this street"}
-            </p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {detail.relatedHomes.slice(0, 4).map((h) => {
-              if (!h.address) return <UnresolvableEntityCard key={h.pin} pin={h.pin} />;
-              return (
-                <EntityCard
-                  key={h.pin}
-                  href={`/properties/${encodeURIComponent(h.pin)}`}
-                  title={formatAddress(h.address)}
-                  meta={h.yearBuilt ? `Built ${h.yearBuilt}` : undefined}
-                />
-              );
-            })}
-          </div>
         </section>
       )}
 

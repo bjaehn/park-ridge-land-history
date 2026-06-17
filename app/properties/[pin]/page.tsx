@@ -52,26 +52,17 @@ export default async function PropertyDetailPage({ params }: Props) {
         subtitle={property.yearBuilt ? `Built ${property.yearBuilt}` : undefined}
       />
 
-      <div className="two-col-layout">
-        <div>
-          <PropertyDetailContent
-            pin={pin}
-            streetDisplayName={
-              property.streetName
-                ? property.streetName.replace(/\b\w/g, (c) => c.toUpperCase())
-                : undefined
-            }
-          />
-        </div>
-        <div>
-          <p className="section-heading">Property map</p>
-          <MapView
-            scope={{ kind: "property", pin, lat, lng }}
-            height="320px"
-            showExpand
-          />
-        </div>
+      <div className="mb-8">
+        <MapView
+          scope={{ kind: "property", pin, lat, lng }}
+          height="260px"
+          showExpand
+          compactLegend
+          hideLensSelector
+        />
       </div>
+
+      <PropertyDetailContent pin={pin} />
 
       <SourceNote
         sources={["assessor", "permits", "hargis", "recorder"]}
