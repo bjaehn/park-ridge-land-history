@@ -59,6 +59,12 @@ export const ERA_PALETTE: Record<string, string> = {
   "Unknown":  "#9ca3af",
 };
 
+export function getEraColor(year: number | null | undefined): string | undefined {
+  if (!year) return undefined;
+  const decade = year < 1900 ? "Pre-1900" : `${Math.floor(year / 10) * 10}s`;
+  return ERA_PALETTE[decade] ?? ERA_PALETTE["Unknown"];
+}
+
 // Ordered for legend display (matches construction timeline left-to-right)
 export const ERA_ORDER = [
   "Pre-1900", "1900s", "1910s", "1920s", "1930s", "1940s", "1950s",

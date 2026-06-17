@@ -11,6 +11,7 @@ import { InlineSourceNote } from "@/components/ui/SourceNote";
 import { SubdivisionLineageCard } from "@/components/ui/SubdivisionLineageCard";
 import { YearBuiltIcon } from "@/lib/icons";
 import { formatCount, formatAddress } from "@/lib/formatters";
+import { getEraColor } from "@/lib/mapConfig";
 import { fetchSubdivisionLineage, fetchSubdivisionParcels } from "@/lib/supabase/subdivisionQueries";
 import type { HighlightGroup } from "@/components/ui/HighlightReel";
 import type { DecadeRow } from "@/components/ui/ConstructionByDecadeChart";
@@ -226,6 +227,7 @@ export function SubdivisionDetailContent({ subdivisionId, recordedYear, entityTy
                     lotLabel ? `${lotLabel}${multiLotSuffix}` : undefined,
                     p.year_built ? `Built ${p.year_built}` : undefined,
                   ].filter(Boolean).join(" · ") || undefined}
+                  eraSwatch={getEraColor(p.year_built)}
                 />
               );
             })}

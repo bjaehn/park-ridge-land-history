@@ -7,6 +7,7 @@ import { EntityCard, UnresolvableEntityCard } from "@/components/ui/EntityCard";
 import { LoadingSkeleton, EmptyState } from "@/components/ui/EmptyState";
 import { InlineSourceNote } from "@/components/ui/SourceNote";
 import { formatAddress, formatNumber, formatCurrency } from "@/lib/formatters";
+import { getEraColor } from "@/lib/mapConfig";
 import { getPinGroupDetail } from "@/lib/data/pinGroups";
 import { fetchBlockSalesStats, fetchBlockPermitStats } from "@/lib/supabase/blockQueries";
 import type { DecadeRow } from "@/components/ui/ConstructionByDecadeChart";
@@ -228,6 +229,7 @@ export function PinGroupContent({ prefix, initialDetail, mapSlot }: Props) {
                       `${formatNumber(b.count)} ${b.count === 1 ? "property" : "properties"}`,
                       yearRange ? `Built ${yearRange}` : undefined,
                     ].filter(Boolean).join(" · ") || undefined}
+                    eraSwatch={getEraColor(b.oldestYear)}
                   />
                 );
               })}
@@ -250,6 +252,7 @@ export function PinGroupContent({ prefix, initialDetail, mapSlot }: Props) {
                   p.yearBuilt ? `Built ${p.yearBuilt}` : undefined,
                   p.buildingSqft ? `${formatNumber(p.buildingSqft)} sqft` : undefined,
                 ].filter(Boolean).join(" · ") || undefined}
+                eraSwatch={getEraColor(p.yearBuilt)}
               />
             );
           })}

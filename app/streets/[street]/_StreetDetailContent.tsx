@@ -7,6 +7,7 @@ import { EntityCard, UnresolvableEntityCard } from "@/components/ui/EntityCard";
 import { LoadingSkeleton } from "@/components/ui/EmptyState";
 import { HighlightReel } from "@/components/ui/HighlightReel";
 import { formatNumber, formatCount, formatAddress } from "@/lib/formatters";
+import { getEraColor } from "@/lib/mapConfig";
 import { getStreetDetail } from "@/lib/data/streets";
 import type { HighlightGroup } from "@/components/ui/HighlightReel";
 
@@ -67,6 +68,7 @@ export function StreetDetailContent({ streetName, displayName }: Props) {
                 href={`/properties/${encodeURIComponent(p.pin)}`}
                 title={formatAddress(p.address)}
                 meta={p.yearBuilt ? `Built ${p.yearBuilt}` : undefined}
+                eraSwatch={getEraColor(p.yearBuilt)}
               />
             );
           })}
