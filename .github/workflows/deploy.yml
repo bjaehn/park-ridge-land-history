@@ -18,7 +18,24 @@ jobs:
       - name: Push migrations to Supabase
         run: |
           supabase link --project-ref ${{ vars.SUPABASE_PROJECT_REF }}
-          supabase db push
+          # If the remote has migrations applied out-of-band (e.g. via MCP tools),
+          # those versions won't have matching local files and db push will fail.
+          # Auto-repair: remove orphan remote versions from migration history, then push.
+          set +e
+          PUSH_OUT=$(supabase db push 2>&1)
+          EXIT=$?
+          set -e
+          if [ $EXIT -ne 0 ]; then
+            ORPHANS=$(echo "$PUSH_OUT" | grep -oP '(?<=reverted )\d[\d ]+' | head -1 | xargs)
+            if [ -n "$ORPHANS" ]; then
+              echo "Repairing orphan remote migration versions: $ORPHANS"
+              supabase migration repair --status reverted $ORPHANS
+              supabase db push
+            else
+              echo "$PUSH_OUT"
+              exit $EXIT
+            fi
+          fi
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
