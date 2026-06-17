@@ -189,6 +189,53 @@ export function PinGroupContent({ prefix, initialDetail, mapSlot }: Props) {
         </section>
       )}
 
+      {detail.level === "Section" && (() => {
+        const blockMap = new Map<string, { count: number; years: number[] }>();
+        parcels.forEach((p) => {
+          const blockPrefix = p.pin.slice(0, 7);
+          if (!blockPrefix || blockPrefix.length < 7) return;
+          const existing = blockMap.get(blockPrefix) ?? { count: 0, years: [] };
+          existing.count += 1;
+          if (p.yearBuilt) existing.years.push(p.yearBuilt);
+          blockMap.set(blockPrefix, existing);
+        });
+        const blocks = Array.from(blockMap.entries())
+          .map(([blockPrefix, { count, years }]) => ({
+            blockPrefix,
+            blockSegment: blockPrefix.slice(4, 7),
+            count,
+            oldestYear: years.length ? Math.min(...years) : null,
+            newestYear: years.length ? Math.max(...years) : null,
+          }))
+          .sort((a, b) => a.blockPrefix.localeCompare(b.blockPrefix));
+
+        if (!blocks.length) return null;
+        return (
+          <div>
+            <p className="section-heading">Blocks in this section</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {blocks.map((b) => {
+                const yearRange = b.oldestYear && b.newestYear && b.oldestYear !== b.newestYear
+                  ? `${b.oldestYear}–${b.newestYear}`
+                  : b.oldestYear ? String(b.oldestYear) : null;
+                return (
+                  <EntityCard
+                    key={b.blockPrefix}
+                    href={`/pin/${encodeURIComponent(b.blockPrefix)}`}
+                    eyebrow="Block"
+                    title={`Block ${b.blockSegment}`}
+                    meta={[
+                      `${formatNumber(b.count)} ${b.count === 1 ? "property" : "properties"}`,
+                      yearRange ? `Built ${yearRange}` : undefined,
+                    ].filter(Boolean).join(" · ") || undefined}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
+
       <div>
         <p className="section-heading">Properties</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
