@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { TopNav } from "@/components/TopNav";
+import { ConditionalTopNav } from "./_components/ConditionalTopNav";
 import "./globals.css";
 import { SITE_NAME, SITE_TAGLINE } from "@/lib/content";
 
@@ -23,7 +23,7 @@ export default function RootLayout({
         <link rel="stylesheet" href="/maplibre-gl.css" />
       </head>
       <body>
-        <TopNav />
+        <ConditionalTopNav />
         <main>{children}</main>
       </body>
     </html>
