@@ -19,6 +19,7 @@ type SubdivisionLink = {
   confidence_reason: string | null;
   source_name: string | null;
   source_reference: string | null;
+  year: number | null;
 };
 
 type Subdivision = { id: string; name: string };
@@ -98,6 +99,7 @@ export function SubdivisionLinkEditor({
                   {[
                     link.block_number && `Block ${link.block_number}`,
                     link.lot_number && `Lot ${link.lot_number}`,
+                    link.year && `${link.year}`,
                     link.match_method && `(${link.match_method})`,
                     link.confidence_level && `[${link.confidence_level}]`,
                   ].filter(Boolean).join(" · ")}
@@ -157,7 +159,7 @@ function LinkForm({
           ))}
         </select>
       </div>
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-4">
         <div>
           <label className={LABEL}>Block</label>
           <input name="block_number" defaultValue={item?.block_number ?? ""} className={INPUT} />
@@ -165,6 +167,10 @@ function LinkForm({
         <div>
           <label className={LABEL}>Lot</label>
           <input name="lot_number" defaultValue={item?.lot_number ?? ""} className={INPUT} />
+        </div>
+        <div>
+          <label className={LABEL}>Year</label>
+          <input name="year" type="number" min={1800} max={2100} defaultValue={item?.year ?? ""} placeholder="e.g. 1887" className={INPUT} />
         </div>
         <div>
           <label className={LABEL}>Confidence</label>

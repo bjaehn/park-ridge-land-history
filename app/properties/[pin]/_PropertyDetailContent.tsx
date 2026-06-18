@@ -253,12 +253,17 @@ function LandLineageSection({ lineage }: { lineage: LandLineageEntry[] }) {
               )}
 
               {/* Subdivision name */}
-              <Link
-                href={`/subdivisions/${encodeURIComponent(entry.subdivision.id)}`}
-                className="block text-sm font-semibold text-text-primary hover:text-accent-purple transition-colors"
-              >
-                {entry.subdivision.name}
-              </Link>
+              <div className="flex items-baseline gap-2">
+                <Link
+                  href={`/subdivisions/${encodeURIComponent(entry.subdivision.id)}`}
+                  className="text-sm font-semibold text-text-primary hover:text-accent-purple transition-colors"
+                >
+                  {entry.subdivision.name}
+                </Link>
+                {entry.year && (
+                  <span className="text-xs text-text-muted">{entry.year}</span>
+                )}
+              </div>
 
               {/* Historical lots */}
               {entry.lots.length > 0 && (
@@ -539,7 +544,9 @@ export function PropertyDetailContent({ pin }: Props) {
       {sales.some((s) => s.sale_price != null && s.sale_price > 0) && (
         <section>
           <p className="section-heading">Sale price history</p>
-          <SalesPriceChart sales={sales} />
+          <div className="-mx-[clamp(1rem,4vw,3rem)]">
+            <SalesPriceChart sales={sales} />
+          </div>
         </section>
       )}
 
@@ -550,11 +557,13 @@ export function PropertyDetailContent({ pin }: Props) {
       {assessmentTimeline.length >= 2 && (
         <section>
           <p className="section-heading">Assessed value history</p>
-          <AssessmentChart
-            timeline={assessmentTimeline}
-            appealYears={appealYears}
-            totalReduction={props.total_assessment_reduction as number | null}
-          />
+          <div className="-mx-[clamp(1rem,4vw,3rem)]">
+            <AssessmentChart
+              timeline={assessmentTimeline}
+              appealYears={appealYears}
+              totalReduction={props.total_assessment_reduction as number | null}
+            />
+          </div>
           <InlineSourceNote className="mt-2">Cook County Assessor certified totals by assessment year</InlineSourceNote>
         </section>
       )}
@@ -591,6 +600,18 @@ export function PropertyDetailContent({ pin }: Props) {
           </div>
         </section>
       ) : null}
+
+      {/* Deed record */}
+      {props.deed_notes && (
+        <section>
+          <p className="section-heading">Deed Record</p>
+          <div className="bg-surface-card border border-surface-border rounded-lg p-4">
+            <p className="text-sm text-text-secondary font-mono leading-relaxed whitespace-pre-wrap">
+              {props.deed_notes}
+            </p>
+          </div>
+        </section>
+      )}
 
       {/* How this property compares */}
       {detail.comparisons && detail.comparisons.length > 0 && (

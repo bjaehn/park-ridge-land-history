@@ -66,6 +66,7 @@ export type LandLineageEntry = {
   } | null;
   lots: LandLot[];
   lineage_records?: HistoricalSubdivisionLineage[];
+  year?: number | null;
 };
 
 export type HistoricalSubdivisionLineage = {
@@ -138,6 +139,7 @@ export type PropertySubdivisionLink = {
   subdivision_id?: string | null;
   lot_number?: string | null;
   block_number?: string | null;
+  year?: number | null;
   match_method: string;
   confidence_level: SubdivisionConfidenceLevel;
   confidence_reason?: string | null;

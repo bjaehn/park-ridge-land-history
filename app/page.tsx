@@ -46,20 +46,16 @@ export default function HomePage() {
 
       <hr className="border-surface-border" />
 
-      {/* City trends */}
+      {/* City trends + archive inventory */}
       <section className="mt-10 mb-10">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <SparklinePriceCard />
           <SparklineSalesVolumeCard />
           <SparklinePermitCard />
         </div>
-      </section>
-
-      <hr className="border-surface-border" />
-
-      {/* Archive inventory */}
-      <section className="mt-10 mb-10">
-        <ArchiveInventory cardMode />
+        <div className="grid grid-cols-1 sm:grid-cols-5 gap-4 mt-4">
+          <ArchiveInventory cardMode />
+        </div>
       </section>
 
       <hr className="border-surface-border" />

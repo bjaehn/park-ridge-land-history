@@ -37,6 +37,7 @@ export async function updateParcel(pin: string, formData: FormData) {
       pin_block:     str(formData, "pin_block"),
       pin_parcel:    str(formData, "pin_parcel"),
       pin_unit:      str(formData, "pin_unit"),
+      deed_notes:    str(formData, "deed_notes"),
     })
     .eq("pin_normalized", pin);
 
@@ -57,6 +58,7 @@ export async function upsertSubdivisionLink(
     subdivision_id:   str(formData, "subdivision_id"),
     lot_number:       str(formData, "lot_number"),
     block_number:     str(formData, "block_number"),
+    year:             num(formData, "year"),
     match_method:     str(formData, "match_method") ?? "manual",
     confidence_level: str(formData, "confidence_level") ?? "unknown",
     confidence_reason: str(formData, "confidence_reason"),

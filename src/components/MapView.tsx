@@ -395,7 +395,7 @@ function MapTooltip({ x, y, address, decade, pin, yearBuilt, sqft }: {
 
 function buildScopeFilter(scope: MapScope): unknown[] {
   switch (scope.kind) {
-    case "property":    return ["all"];
+    case "property":    return ["==", ["get", "pin_normalized"], scope.pin];
     case "street":      return ["==", ["get", "street_name_normalized"], scope.streetName];
     case "neighborhood": return ["==", ["get", "neighborhood_id"], scope.neighborhoodId];
     case "subdivision":

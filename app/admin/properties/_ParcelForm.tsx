@@ -8,6 +8,26 @@ const INPUT = "w-full bg-surface-card border border-surface-border rounded px-3 
 const LABEL = "block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1";
 const SECTION = "bg-surface-raised rounded-lg border border-surface-border p-5 mb-5";
 
+function DeedNotesField({ defaultValue }: { defaultValue: string }) {
+  const [val, setVal] = useState(defaultValue);
+  const max = 1000;
+  return (
+    <div>
+      <label className={LABEL}>Deed legal description</label>
+      <textarea
+        name="deed_notes"
+        rows={4}
+        maxLength={max}
+        value={val}
+        onChange={(e) => setVal(e.target.value)}
+        placeholder="Paste deed legal description here…"
+        className={`${INPUT} resize-y`}
+      />
+      <p className="text-xs text-text-muted mt-1 text-right">{val.length} / {max}</p>
+    </div>
+  );
+}
+
 type Parcel = {
   pin_normalized: string;
   address: string | null;
@@ -21,6 +41,7 @@ type Parcel = {
   pin_block: string | null;
   pin_parcel: string | null;
   pin_unit: string | null;
+  deed_notes: string | null;
 };
 
 export function ParcelForm({ parcel }: { parcel: Parcel }) {
@@ -111,6 +132,12 @@ export function ParcelForm({ parcel }: { parcel: Parcel }) {
             <input name="municipality" defaultValue={parcel.municipality ?? ""} className={INPUT} />
           </div>
         </div>
+      </div>
+
+      {/* Deed Record */}
+      <div className={SECTION}>
+        <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-4">Deed Record</h3>
+        <DeedNotesField defaultValue={parcel.deed_notes ?? ""} />
       </div>
 
       <div className="flex items-center gap-3">

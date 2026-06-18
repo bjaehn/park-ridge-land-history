@@ -18,12 +18,12 @@ export default async function EditPropertyPage({ params }: { params: { pin: stri
   ] = await Promise.all([
     adminSupabase
       .from("parcels")
-      .select("pin_normalized, address, year_built, property_class, building_sqft, land_sqft, municipality, pin_township, pin_section, pin_block, pin_parcel, pin_unit")
+      .select("pin_normalized, address, year_built, property_class, building_sqft, land_sqft, municipality, pin_township, pin_section, pin_block, pin_parcel, pin_unit, deed_notes")
       .eq("pin_normalized", pin)
       .single(),
     adminSupabase
       .from("property_subdivision_links")
-      .select("id, subdivision_id, lot_number, block_number, match_method, confidence_level, confidence_reason, source_name, source_reference, subdivisions(name)")
+      .select("id, subdivision_id, lot_number, block_number, match_method, confidence_level, confidence_reason, source_name, source_reference, year, subdivisions(name)")
       .eq("pin", pin)
       .order("confidence_level"),
     adminSupabase

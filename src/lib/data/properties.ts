@@ -42,6 +42,7 @@ export type ParcelProperties = {
   lat?: number | null;
   lng?: number | null;
   decade_built?: string | null;
+  deed_notes?: string | null;
 };
 
 export type PropertyPageData = {
@@ -280,7 +281,7 @@ async function loadLandLineage(pin: string): Promise<LandLineageEntry[]> {
   // All subdivision links for this PIN, with subdivision details
   const { data: links } = await supabase
     .from("property_subdivision_links")
-    .select("subdivision_id, lot_number, block_number, confidence_level, subdivisions(id, name, entity_type, recorded_year, confidence_level, geometry_status, parent_subdivision_id)")
+    .select("subdivision_id, lot_number, block_number, confidence_level, year, subdivisions(id, name, entity_type, recorded_year, confidence_level, geometry_status, parent_subdivision_id)")
     .eq("pin", pin);
 
   if (!links?.length) return [];
@@ -365,6 +366,7 @@ async function loadLandLineage(pin: string): Promise<LandLineageEntry[]> {
           row.child_subdivision_id === subId ||
           row.child_subdivision === String(sub.name ?? "")
       ),
+      year: (link.year as number | null) ?? null,
     };
   });
 }
