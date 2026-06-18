@@ -3,12 +3,15 @@ import type { ChangeSignal } from "@/lib/formatters";
 import { SIGNAL_DESCRIPTION } from "@/lib/formatters";
 import { formatDecade } from "@/lib/formatters";
 
+export type MetaItem = { icon: React.ReactElement; value: string };
+
 type Props = {
   href?: string;
   eyebrow?: string;
   title: string;
   subtitle?: string;
   meta?: string;
+  metaItems?: MetaItem[];
   signal?: ChangeSignal;
   eraSwatch?: string;
   onClick?: () => void;
@@ -35,6 +38,7 @@ export function EntityCard({
   title,
   subtitle,
   meta,
+  metaItems,
   signal,
   eraSwatch,
 }: Props) {
@@ -58,16 +62,30 @@ export function EntityCard({
       {subtitle && (
         <p className="text-sm text-text-secondary leading-relaxed">{subtitle}</p>
       )}
-      {(signal || meta) && (
-        <div className="flex items-center justify-between mt-auto pt-2 flex-wrap gap-2">
-          {meta && <p className="text-xs text-text-muted">{meta}</p>}
-          {signal && (
-            <span
-              className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded ${SIGNAL_STYLES[signal]}`}
-              title={SIGNAL_DESCRIPTION[signal]}
-            >
-              {signal}
-            </span>
+      {(signal || meta || (metaItems && metaItems.length > 0)) && (
+        <div className="flex flex-col gap-1 mt-auto pt-2">
+          {metaItems && metaItems.length > 0 && (
+            <div className="flex flex-wrap gap-x-3 gap-y-1">
+              {metaItems.map((item, i) => (
+                <span key={i} className="inline-flex items-center gap-1 text-xs text-text-muted">
+                  {item.icon}
+                  <span>{item.value}</span>
+                </span>
+              ))}
+            </div>
+          )}
+          {(meta || signal) && (
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              {meta && <p className="text-xs text-text-muted">{meta}</p>}
+              {signal && (
+                <span
+                  className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded ${SIGNAL_STYLES[signal]}`}
+                  title={SIGNAL_DESCRIPTION[signal]}
+                >
+                  {signal}
+                </span>
+              )}
+            </div>
           )}
         </div>
       )}

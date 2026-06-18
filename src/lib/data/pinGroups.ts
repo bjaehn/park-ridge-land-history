@@ -10,6 +10,8 @@ export type PinGroupParcel = {
   decadeBuilt: string | null;
   buildingSqft: number | null;
   latestAssessedTotal: number | null;
+  saleCount: number | null;
+  permitCount: number | null;
 };
 
 export type PinGroupSummary = {
@@ -94,7 +96,7 @@ export async function getPinGroupDetail(prefix: string): Promise<PinGroupDetail 
   const pageCount = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
   const db = supabase;
-  const select = "pin_normalized, pin_original, address, year_built, decade_built, building_sqft, latest_assessed_total";
+  const select = "pin_normalized, pin_original, address, year_built, decade_built, building_sqft, latest_assessed_total, sale_count, permit_count";
 
   const pages = await Promise.all(
     Array.from({ length: pageCount }, (_, i) =>
@@ -116,6 +118,8 @@ export async function getPinGroupDetail(prefix: string): Promise<PinGroupDetail 
     decadeBuilt: (r.decade_built as string | null) ?? null,
     buildingSqft: (r.building_sqft as number | null) ?? null,
     latestAssessedTotal: (r.latest_assessed_total as number | null) ?? null,
+    saleCount: (r.sale_count as number | null) ?? null,
+    permitCount: (r.permit_count as number | null) ?? null,
   }));
 
   return { ...summary, parcels };

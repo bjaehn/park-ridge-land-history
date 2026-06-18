@@ -114,7 +114,7 @@ export async function searchSubdivisions(
 export async function fetchParcelsInSubdivision(
   subdivisionId: string,
   limit = 50
-): Promise<Array<{ pin: string; address: string | null; year_built: number | null; lot_number: string | null; block_number: string | null }>> {
+): Promise<Array<{ pin: string; address: string | null; year_built: number | null; building_sqft: number | null; sale_count: number | null; permit_count: number | null; lot_number: string | null; block_number: string | null }>> {
   if (!supabase || !subdivisionId) return [];
   const { data, error } = await supabase
     .from("property_subdivision_links")
@@ -129,7 +129,7 @@ export async function fetchParcelsInSubdivision(
 
   const { data: parcels, error: parcelError } = await supabase
     .from("parcels")
-    .select("pin_normalized, address, year_built")
+    .select("pin_normalized, address, year_built, building_sqft, sale_count, permit_count")
     .in("pin_normalized", pins);
 
   if (parcelError || !parcels) {
@@ -137,18 +137,26 @@ export async function fetchParcelsInSubdivision(
       pin: r.pin as string,
       address: r.address as string | null,
       year_built: null,
+      building_sqft: null,
+      sale_count: null,
+      permit_count: null,
       lot_number: r.lot_number as string | null,
       block_number: r.block_number as string | null,
     }));
   }
 
-  const parcelMap = new Map(parcels.map((p) => [p.pin_normalized, p]));
+  const parcelMap = new Map(
+    (parcels as Array<Record<string, unknown>>).map((p) => [p.pin_normalized, p])
+  );
   return data.map((r) => {
     const parcel = parcelMap.get(r.pin as string);
     return {
       pin: r.pin as string,
-      address: (parcel?.address ?? r.address) as string | null,
-      year_built: parcel?.year_built as number | null,
+      address: ((parcel?.address ?? r.address) as string | null),
+      year_built: (parcel?.year_built as number | null) ?? null,
+      building_sqft: (parcel?.building_sqft as number | null) ?? null,
+      sale_count: (parcel?.sale_count as number | null) ?? null,
+      permit_count: (parcel?.permit_count as number | null) ?? null,
       lot_number: r.lot_number as string | null,
       block_number: r.block_number as string | null,
     };
@@ -208,7 +216,7 @@ export const fetchSubdivisions = fetchSubdivisionIndex;
 /** Parcels belonging to a specific subdivision, with historical lot detail. */
 export async function fetchSubdivisionParcels(
   subdivisionId: string
-): Promise<Array<{ pin: string; address?: string | null; year_built?: number | null; lot_number?: string | null; block_number?: string | null; lot_count?: number }>> {
+): Promise<Array<{ pin: string; address?: string | null; year_built?: number | null; building_sqft?: number | null; sale_count?: number | null; permit_count?: number | null; lot_number?: string | null; block_number?: string | null; lot_count?: number }>> {
   if (!supabase) return [];
 
   const { data: links, error: linksError } = await supabase
@@ -240,14 +248,14 @@ export async function fetchSubdivisionParcels(
 
   const { data: parcels, error: parcelsError } = await supabase
     .from("parcels")
-    .select("pin_normalized, address, year_built")
+    .select("pin_normalized, address, year_built, building_sqft, sale_count, permit_count")
     .in("pin_normalized", pins);
 
   const parcelMap = new Map(
     (!parcelsError && parcels
-      ? (parcels as Array<{ pin_normalized: string; address: string | null; year_built: number | null }>)
+      ? (parcels as Array<Record<string, unknown>>)
       : []
-    ).map((p) => [p.pin_normalized, p])
+    ).map((p) => [p.pin_normalized as string, p])
   );
 
   return (links as Array<{ pin: string; lot_number: string | null; block_number: string | null }>).map((link) => {
@@ -257,8 +265,11 @@ export async function fetchSubdivisionParcels(
     const firstLot = pinLots[0] ?? link;
     return {
       pin: link.pin,
-      address: parcel?.address ?? null,
-      year_built: parcel?.year_built ?? null,
+      address: (parcel?.address as string | null) ?? null,
+      year_built: (parcel?.year_built as number | null) ?? null,
+      building_sqft: (parcel?.building_sqft as number | null) ?? null,
+      sale_count: (parcel?.sale_count as number | null) ?? null,
+      permit_count: (parcel?.permit_count as number | null) ?? null,
       lot_number: firstLot.lot_number,
       block_number: firstLot.block_number,
       lot_count: pinLots.length > 1 ? pinLots.length : undefined,

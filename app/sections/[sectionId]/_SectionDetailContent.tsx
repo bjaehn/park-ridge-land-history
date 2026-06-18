@@ -4,9 +4,11 @@ import { useState, useEffect } from "react";
 import { StatGrid } from "@/components/ui/StatGrid";
 import { ConstructionByDecadeChart } from "@/components/ui/ConstructionByDecadeChart";
 import { EntityCard, UnresolvableEntityCard } from "@/components/ui/EntityCard";
+import type { MetaItem } from "@/components/ui/EntityCard";
 import { LoadingSkeleton } from "@/components/ui/EmptyState";
 import { InlineSourceNote } from "@/components/ui/SourceNote";
 import { formatNumber, formatCurrency, formatAddress } from "@/lib/formatters";
+import { YearBuiltIcon, SizeIcon, SaleIcon, PermitIcon } from "@/lib/icons";
 import {
   fetchSectionBlocks,
   fetchSectionParcelsWithAssessment,
@@ -254,10 +256,12 @@ export function SectionDetailContent({ sectionId, mapSlot }: Props) {
                             key={p.pin}
                             href={`/properties/${encodeURIComponent(p.pin)}`}
                             title={formatAddress(p.address)}
-                            meta={[
-                              p.yearBuilt ? `Built ${p.yearBuilt}` : undefined,
-                              p.buildingSqft ? `${formatNumber(p.buildingSqft)} sqft` : undefined,
-                            ].filter(Boolean).join(" · ") || undefined}
+                            metaItems={[
+                              p.yearBuilt    ? { icon: <YearBuiltIcon size={11} />, value: String(p.yearBuilt) } : null,
+                              p.buildingSqft ? { icon: <SizeIcon size={11} />,     value: `${formatNumber(p.buildingSqft)} sqft` } : null,
+                              p.saleCount    ? { icon: <SaleIcon size={11} />,     value: `${p.saleCount} sales` } : null,
+                              p.permitCount  ? { icon: <PermitIcon size={11} />,   value: `${p.permitCount} permits` } : null,
+                            ].filter((x): x is MetaItem => x !== null)}
                           />
                         );
                       })}

@@ -3,12 +3,13 @@
 import { useState, useEffect } from "react";
 import { StatGrid } from "@/components/ui/StatGrid";
 import { EntityCard, UnresolvableEntityCard } from "@/components/ui/EntityCard";
+import type { MetaItem } from "@/components/ui/EntityCard";
 import { EraPortraitChart } from "@/components/ui/EraPortraitChart";
 import { NeighborhoodPriceChart } from "@/components/ui/NeighborhoodPriceChart";
 import { LoadingSkeleton, EmptyState } from "@/components/ui/EmptyState";
 import { InlineSourceNote } from "@/components/ui/SourceNote";
 import { PinScopedCharts } from "@/components/ui/PinScopedCharts";
-import { SaleIcon, YearBuiltIcon } from "@/lib/icons";
+import { SaleIcon, YearBuiltIcon, SizeIcon, PermitIcon } from "@/lib/icons";
 import { formatAddress, formatNumber, formatCurrency } from "@/lib/formatters";
 import { getEraColor } from "@/lib/mapConfig";
 import { getPinGroupDetail } from "@/lib/data/pinGroups";
@@ -400,10 +401,12 @@ export function PinGroupContent({ prefix, initialDetail, mapSlot }: Props) {
                             key={p.pin}
                             href={`/properties/${encodeURIComponent(p.pin)}`}
                             title={formatAddress(p.address)}
-                            meta={[
-                              p.yearBuilt ? `Built ${p.yearBuilt}` : undefined,
-                              p.buildingSqft ? `${formatNumber(p.buildingSqft)} sqft` : undefined,
-                            ].filter(Boolean).join(" · ") || undefined}
+                            metaItems={[
+                              p.yearBuilt    ? { icon: <YearBuiltIcon size={11} />, value: String(p.yearBuilt) } : null,
+                              p.buildingSqft ? { icon: <SizeIcon size={11} />,     value: `${formatNumber(p.buildingSqft)} sqft` } : null,
+                              p.saleCount    ? { icon: <SaleIcon size={11} />,     value: `${p.saleCount} sales` } : null,
+                              p.permitCount  ? { icon: <PermitIcon size={11} />,   value: `${p.permitCount} permits` } : null,
+                            ].filter((x): x is MetaItem => x !== null)}
                             eraSwatch={getEraColor(p.yearBuilt)}
                           />
                         );
@@ -466,10 +469,12 @@ export function PinGroupContent({ prefix, initialDetail, mapSlot }: Props) {
                             key={p.pin}
                             href={`/properties/${encodeURIComponent(p.pin)}`}
                             title={formatAddress(p.address)}
-                            meta={[
-                              p.yearBuilt ? `Built ${p.yearBuilt}` : undefined,
-                              p.buildingSqft ? `${formatNumber(p.buildingSqft)} sqft` : undefined,
-                            ].filter(Boolean).join(" · ") || undefined}
+                            metaItems={[
+                              p.yearBuilt    ? { icon: <YearBuiltIcon size={11} />, value: String(p.yearBuilt) } : null,
+                              p.buildingSqft ? { icon: <SizeIcon size={11} />,     value: `${formatNumber(p.buildingSqft)} sqft` } : null,
+                              p.saleCount    ? { icon: <SaleIcon size={11} />,     value: `${p.saleCount} sales` } : null,
+                              p.permitCount  ? { icon: <PermitIcon size={11} />,   value: `${p.permitCount} permits` } : null,
+                            ].filter((x): x is MetaItem => x !== null)}
                             eraSwatch={getEraColor(p.yearBuilt)}
                           />
                         );

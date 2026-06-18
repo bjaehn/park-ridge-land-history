@@ -7,6 +7,8 @@ export type BlockParcel = {
   buildingSqft: number | null;
   landSqft: number | null;
   decadeBuilt: string | null;
+  saleCount: number | null;
+  permitCount: number | null;
 };
 
 export type BlockSalesStats = {
@@ -41,7 +43,7 @@ export async function fetchBlockParcels(blockId: string): Promise<BlockParcel[]>
   if (!supabase || !blockId) return [];
   const { data, error } = await supabase
     .from("parcels")
-    .select("pin_normalized, address, year_built, building_sqft, land_sqft, decade_built")
+    .select("pin_normalized, address, year_built, building_sqft, land_sqft, decade_built, sale_count, permit_count")
     .eq("street_block_id", blockId)
     .order("address", { ascending: true });
   if (error || !data) return [];
@@ -52,6 +54,8 @@ export async function fetchBlockParcels(blockId: string): Promise<BlockParcel[]>
     buildingSqft: (r.building_sqft as number | null) ?? null,
     landSqft: (r.land_sqft as number | null) ?? null,
     decadeBuilt: (r.decade_built as string | null) ?? null,
+    saleCount: (r.sale_count as number | null) ?? null,
+    permitCount: (r.permit_count as number | null) ?? null,
   }));
 }
 
@@ -118,7 +122,7 @@ export async function fetchBlockParcelsWithAssessment(blockId: string): Promise<
   if (!supabase || !blockId) return { parcels: [], assessmentStats: { medianAssessedValue: null, assessedYear: null } };
   const { data, error } = await supabase
     .from("parcels")
-    .select("pin_normalized, address, year_built, building_sqft, land_sqft, decade_built, latest_assessed_total, latest_assessed_year")
+    .select("pin_normalized, address, year_built, building_sqft, land_sqft, decade_built, latest_assessed_total, latest_assessed_year, sale_count, permit_count")
     .eq("street_block_id", blockId)
     .order("address", { ascending: true });
   if (error || !data) return { parcels: [], assessmentStats: { medianAssessedValue: null, assessedYear: null } };
@@ -131,6 +135,8 @@ export async function fetchBlockParcelsWithAssessment(blockId: string): Promise<
     buildingSqft: (r.building_sqft as number | null) ?? null,
     landSqft: (r.land_sqft as number | null) ?? null,
     decadeBuilt: (r.decade_built as string | null) ?? null,
+    saleCount: (r.sale_count as number | null) ?? null,
+    permitCount: (r.permit_count as number | null) ?? null,
   }));
   const assessmentStats = computeBlockAssessmentStats(parcels, raw);
   return { parcels, assessmentStats };
@@ -229,7 +235,7 @@ export async function fetchSectionParcelsWithAssessment(sectionId: string): Prom
   if (!supabase || !sectionId) return { parcels: [], assessmentStats: { medianAssessedValue: null, assessedYear: null } };
   const { data, error } = await supabase
     .from("parcels")
-    .select("pin_normalized, address, year_built, building_sqft, land_sqft, decade_built, latest_assessed_total, latest_assessed_year")
+    .select("pin_normalized, address, year_built, building_sqft, land_sqft, decade_built, latest_assessed_total, latest_assessed_year, sale_count, permit_count")
     .like("street_block_id", `${sectionId}%`)
     .order("address", { ascending: true });
   if (error || !data) return { parcels: [], assessmentStats: { medianAssessedValue: null, assessedYear: null } };
@@ -242,6 +248,8 @@ export async function fetchSectionParcelsWithAssessment(sectionId: string): Prom
     buildingSqft: (r.building_sqft as number | null) ?? null,
     landSqft: (r.land_sqft as number | null) ?? null,
     decadeBuilt: (r.decade_built as string | null) ?? null,
+    saleCount: (r.sale_count as number | null) ?? null,
+    permitCount: (r.permit_count as number | null) ?? null,
   }));
   const assessmentStats = computeBlockAssessmentStats(parcels, raw);
   return { parcels, assessmentStats };

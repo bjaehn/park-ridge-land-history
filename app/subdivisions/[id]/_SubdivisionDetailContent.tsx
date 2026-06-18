@@ -5,12 +5,13 @@ import Link from "next/link";
 import { StatGrid } from "@/components/ui/StatGrid";
 import { ConstructionByDecadeChart } from "@/components/ui/ConstructionByDecadeChart";
 import { EntityCard, UnresolvableEntityCard } from "@/components/ui/EntityCard";
+import type { MetaItem } from "@/components/ui/EntityCard";
 import { LoadingSkeleton } from "@/components/ui/EmptyState";
 import { HighlightReel } from "@/components/ui/HighlightReel";
 import { InlineSourceNote } from "@/components/ui/SourceNote";
 import { SubdivisionLineageCard } from "@/components/ui/SubdivisionLineageCard";
-import { YearBuiltIcon } from "@/lib/icons";
-import { formatCount, formatAddress } from "@/lib/formatters";
+import { YearBuiltIcon, SizeIcon, SaleIcon, PermitIcon } from "@/lib/icons";
+import { formatCount, formatAddress, formatNumber } from "@/lib/formatters";
 import { getEraColor } from "@/lib/mapConfig";
 import { fetchSubdivisionLineage, fetchSubdivisionParcels } from "@/lib/supabase/subdivisionQueries";
 import type { HighlightGroup } from "@/components/ui/HighlightReel";
@@ -223,10 +224,13 @@ export function SubdivisionDetailContent({ subdivisionId, recordedYear, entityTy
                   key={p.pin}
                   href={`/properties/${encodeURIComponent(p.pin)}`}
                   title={formatAddress(p.address)}
-                  meta={[
-                    lotLabel ? `${lotLabel}${multiLotSuffix}` : undefined,
-                    p.year_built ? `Built ${p.year_built}` : undefined,
-                  ].filter(Boolean).join(" · ") || undefined}
+                  meta={lotLabel ? `${lotLabel}${multiLotSuffix}` : undefined}
+                  metaItems={[
+                    p.year_built    ? { icon: <YearBuiltIcon size={11} />, value: String(p.year_built) } : null,
+                    p.building_sqft ? { icon: <SizeIcon size={11} />,     value: `${formatNumber(p.building_sqft)} sqft` } : null,
+                    p.sale_count    ? { icon: <SaleIcon size={11} />,     value: `${p.sale_count} sales` } : null,
+                    p.permit_count  ? { icon: <PermitIcon size={11} />,   value: `${p.permit_count} permits` } : null,
+                  ].filter((x): x is MetaItem => x !== null)}
                   eraSwatch={getEraColor(p.year_built)}
                 />
               );
