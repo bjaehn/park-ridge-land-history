@@ -4,8 +4,9 @@ export type HighlightParcel = {
   pin: string;
   address: string;
   yearBuilt: number | null;
+  buildingSqft: number | null;
+  saleCount: number | null;
   permitCount: number | null;
-  latestSaleYear: number | null;
 };
 
 export type HighlightCategory = "oldest" | "most_active" | "newest" | "most_recent_sale";
@@ -26,13 +27,36 @@ export async function fetchHighlights(
       p_limit: limit,
     });
     if (error || !data) return [];
-    return (data as Array<Record<string, unknown>>).map((r) => ({
-      pin: String(r.pin ?? ""),
-      address: String(r.address ?? ""),
-      yearBuilt: r.year_built != null ? Number(r.year_built) : null,
-      permitCount: r.permit_count != null ? Number(r.permit_count) : null,
-      latestSaleYear: r.latest_sale_year != null ? Number(r.latest_sale_year) : null,
-    }));
+
+    const rpcRows = data as Array<Record<string, unknown>>;
+    const pins = rpcRows.map((r) => String(r.pin ?? "")).filter(Boolean);
+
+    const parcelMap = new Map<string, { building_sqft: number | null; sale_count: number | null }>();
+    if (pins.length) {
+      const { data: parcels } = await supabase
+        .from("parcels")
+        .select("pin_normalized, building_sqft, sale_count")
+        .in("pin_normalized", pins);
+      (parcels as Array<Record<string, unknown>> | null)?.forEach((p) => {
+        parcelMap.set(String(p.pin_normalized ?? ""), {
+          building_sqft: p.building_sqft != null ? Number(p.building_sqft) : null,
+          sale_count: p.sale_count != null ? Number(p.sale_count) : null,
+        });
+      });
+    }
+
+    return rpcRows.map((r) => {
+      const pin = String(r.pin ?? "");
+      const extra = parcelMap.get(pin);
+      return {
+        pin,
+        address: String(r.address ?? ""),
+        yearBuilt: r.year_built != null ? Number(r.year_built) : null,
+        buildingSqft: extra?.building_sqft ?? null,
+        saleCount: extra?.sale_count ?? null,
+        permitCount: r.permit_count != null ? Number(r.permit_count) : null,
+      };
+    });
   } catch {
     return [];
   }

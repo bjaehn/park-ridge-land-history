@@ -2,18 +2,10 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { formatAddress } from "@/lib/formatters";
+import { formatAddress, formatNumber } from "@/lib/formatters";
 import { fetchHighlights } from "@/lib/data/highlights";
-import { YearBuiltIcon, PermitIcon, SaleIcon, HighlightIcon } from "@/lib/icons";
+import { YearBuiltIcon, SizeIcon, PermitIcon, SaleIcon } from "@/lib/icons";
 import type { HighlightScope, HighlightCategory, HighlightParcel } from "@/lib/data/highlights";
-import type { LucideIcon } from "lucide-react";
-
-const CATEGORY_ICONS: Record<HighlightCategory, LucideIcon> = {
-  oldest:           YearBuiltIcon,
-  most_active:      PermitIcon,
-  newest:           HighlightIcon,
-  most_recent_sale: SaleIcon,
-};
 
 const CATEGORY_ACCENT: Record<HighlightCategory, { border: string; heading: string }> = {
   oldest:           { border: "#e6a64a", heading: "#e6a64a" },
@@ -89,7 +81,6 @@ export function HighlightReel({ scope, scopeId, groups, limit = 5 }: Props) {
             <p className="section-heading" style={{ color: CATEGORY_ACCENT[g.category].heading }}>{g.heading}</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {g.items.map((item) => {
-                const CatIcon = CATEGORY_ICONS[g.category];
                 const accent = CATEGORY_ACCENT[g.category];
                 return (
                 <Link
@@ -105,19 +96,25 @@ export function HighlightReel({ scope, scopeId, groups, limit = 5 }: Props) {
                     {item.yearBuilt != null && (
                       <span className="flex items-center gap-1">
                         <YearBuiltIcon size={11} strokeWidth={2} aria-hidden="true" />
-                        Built {item.yearBuilt}
+                        {item.yearBuilt}
+                      </span>
+                    )}
+                    {item.buildingSqft != null && (
+                      <span className="flex items-center gap-1">
+                        <SizeIcon size={11} strokeWidth={2} aria-hidden="true" />
+                        {formatNumber(item.buildingSqft)} sqft
+                      </span>
+                    )}
+                    {item.saleCount != null && item.saleCount > 0 && (
+                      <span className="flex items-center gap-1">
+                        <SaleIcon size={11} strokeWidth={2} aria-hidden="true" />
+                        {item.saleCount} {item.saleCount === 1 ? "sale" : "sales"}
                       </span>
                     )}
                     {item.permitCount != null && item.permitCount > 0 && (
                       <span className="flex items-center gap-1">
                         <PermitIcon size={11} strokeWidth={2} aria-hidden="true" />
                         {item.permitCount} {item.permitCount === 1 ? "permit" : "permits"}
-                      </span>
-                    )}
-                    {item.latestSaleYear != null && (
-                      <span className="flex items-center gap-1">
-                        <SaleIcon size={11} strokeWidth={2} aria-hidden="true" />
-                        Sold {item.latestSaleYear}
                       </span>
                     )}
                   </div>

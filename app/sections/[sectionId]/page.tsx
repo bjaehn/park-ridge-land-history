@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { SourceNote } from "@/components/ui/SourceNote";
@@ -26,7 +26,7 @@ export default async function SectionDetailPage({ params }: Props) {
     fetchSectionPins(sectionId).catch(() => [] as string[]),
   ]);
 
-  if (!blocks.length) notFound();
+  if (!blocks.length) redirect(`/pin/${encodeURIComponent(sectionId)}`);
 
   const totalParcels = blocks.reduce((sum, b) => sum + b.parcelCount, 0);
 
