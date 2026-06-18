@@ -19,7 +19,9 @@ export function SparklinePermitCard() {
 
   if (!data.length) return null;
 
-  const latest = data[data.length - 1];
+  const currentYear = new Date().getFullYear();
+  const completeData = data.filter((r) => r.permitYear < currentYear);
+  const latest = completeData.length ? completeData[completeData.length - 1] : data[data.length - 1];
   const earliest = data[0];
   const peak = data.reduce((best, r) => (r.total > best.total ? r : best), data[0]);
 
@@ -30,7 +32,7 @@ export function SparklinePermitCard() {
         {latest.total.toLocaleString()}
       </p>
       <p className="text-xs text-text-secondary mt-1">
-        Peak: {peak.permitYear} — {peak.total.toLocaleString()} permits
+        Permits in {latest.permitYear}
       </p>
       <div className="mt-3 h-14">
         <ResponsiveContainer width="100%" height="100%">
@@ -48,7 +50,9 @@ export function SparklinePermitCard() {
                 borderRadius: "6px",
                 fontSize: 11,
               }}
-              labelFormatter={(y) => String(y)}
+              labelFormatter={(_, payload) =>
+                payload && payload[0] ? String(payload[0].payload.permitYear) : ""
+              }
               formatter={(v) => [typeof v === "number" ? v.toLocaleString() : v, "Permits"]}
             />
             <Area
@@ -63,7 +67,7 @@ export function SparklinePermitCard() {
         </ResponsiveContainer>
       </div>
       <p className="text-xs text-text-muted mt-2">
-        {earliest.permitYear} to {latest.permitYear} permit records
+        Peak {peak.permitYear} ({peak.total.toLocaleString()} permits)
       </p>
     </div>
   );

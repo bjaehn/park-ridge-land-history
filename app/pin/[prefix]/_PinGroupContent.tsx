@@ -289,26 +289,61 @@ export function PinGroupContent({ prefix, initialDetail, mapSlot }: Props) {
           .sort((a, b) => a.blockPrefix.localeCompare(b.blockPrefix));
 
         if (!blocks.length) return null;
+
+        const byDecade = new Map<string, typeof blocks>();
+        blocks.forEach((b) => {
+          const key = b.oldestYear ? `${Math.floor(b.oldestYear / 10) * 10}s` : "Unknown";
+          const arr = byDecade.get(key) ?? [];
+          arr.push(b);
+          byDecade.set(key, arr);
+        });
+        const decades = Array.from(byDecade.entries()).sort(([a], [b]) => {
+          if (a === "Unknown") return 1;
+          if (b === "Unknown") return -1;
+          return a.localeCompare(b);
+        });
+
         return (
           <div>
             <p className="section-heading">Blocks in this section</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {blocks.map((b) => {
-                const yearRange = b.oldestYear && b.newestYear && b.oldestYear !== b.newestYear
-                  ? `${b.oldestYear}–${b.newestYear}`
-                  : b.oldestYear ? String(b.oldestYear) : null;
+            <div className="space-y-8">
+              {decades.map(([decade, decadeBlocks]) => {
+                const decadeYear = decade === "Unknown" ? null : parseInt(decade);
                 return (
-                  <EntityCard
-                    key={b.blockPrefix}
-                    href={`/pin/${encodeURIComponent(b.blockPrefix)}`}
-                    eyebrow="Block"
-                    title={`Block ${b.blockSegment}`}
-                    meta={[
-                      `${formatNumber(b.count)} ${b.count === 1 ? "property" : "properties"}`,
-                      yearRange ? `Built ${yearRange}` : undefined,
-                    ].filter(Boolean).join(" · ") || undefined}
-                    eraSwatch={getEraColor(b.oldestYear)}
-                  />
+                  <div key={decade}>
+                    <div className="flex items-center gap-3 mb-3">
+                      {decadeYear && (
+                        <span
+                          className="w-2.5 h-2.5 rounded-full shrink-0"
+                          style={{ background: getEraColor(decadeYear) ?? "#64748b" }}
+                          aria-hidden="true"
+                        />
+                      )}
+                      <span className="text-sm font-semibold text-text-secondary tracking-wide">{decade}</span>
+                      <div className="flex-1 border-t border-surface-border" />
+                      <span className="text-xs text-text-muted">{decadeBlocks.length}</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {decadeBlocks.map((b) => {
+                        const yearRange = b.oldestYear && b.newestYear && b.oldestYear !== b.newestYear
+                          ? `${b.oldestYear}–${b.newestYear}`
+                          : b.oldestYear ? String(b.oldestYear) : null;
+                        return (
+                          <EntityCard
+                            key={b.blockPrefix}
+                            href={`/pin/${encodeURIComponent(b.blockPrefix)}`}
+                            eyebrow="Block"
+                            title={`Block ${b.blockSegment}`}
+                            meta={[
+                              `${formatNumber(b.count)} ${b.count === 1 ? "property" : "properties"}`,
+                              yearRange ? `Built ${yearRange}` : undefined,
+                            ].filter(Boolean).join(" · ") || undefined}
+                            eraSwatch={getEraColor(b.oldestYear)}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
                 );
               })}
             </div>
@@ -382,29 +417,71 @@ export function PinGroupContent({ prefix, initialDetail, mapSlot }: Props) {
         );
       })()}
 
-      {/* Section: flat grid */}
-      {detail.level === "Section" && (
-        <div>
-          <p className="section-heading">Properties</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {parcels.map((p) => {
-              if (!p.address) return <UnresolvableEntityCard key={p.pin} pin={p.pin} />;
-              return (
-                <EntityCard
-                  key={p.pin}
-                  href={`/properties/${encodeURIComponent(p.pin)}`}
-                  title={formatAddress(p.address)}
-                  meta={[
-                    p.yearBuilt ? `Built ${p.yearBuilt}` : undefined,
-                    p.buildingSqft ? `${formatNumber(p.buildingSqft)} sqft` : undefined,
-                  ].filter(Boolean).join(" · ") || undefined}
-                  eraSwatch={getEraColor(p.yearBuilt)}
-                />
-              );
-            })}
+      {/* Section: properties by decade */}
+      {detail.level === "Section" && (() => {
+        const sorted = [...parcels].sort((a, b) => {
+          if (!a.yearBuilt && !b.yearBuilt) return 0;
+          if (!a.yearBuilt) return 1;
+          if (!b.yearBuilt) return -1;
+          return a.yearBuilt - b.yearBuilt;
+        });
+        const byDecade = new Map<string, typeof sorted>();
+        sorted.forEach((p) => {
+          const key = p.yearBuilt ? `${Math.floor(p.yearBuilt / 10) * 10}s` : "Unknown";
+          const arr = byDecade.get(key) ?? [];
+          arr.push(p);
+          byDecade.set(key, arr);
+        });
+        const decades = Array.from(byDecade.entries()).sort(([a], [b]) => {
+          if (a === "Unknown") return 1;
+          if (b === "Unknown") return -1;
+          return a.localeCompare(b);
+        });
+        if (!decades.length) return null;
+        return (
+          <div>
+            <p className="section-heading">Properties in this section</p>
+            <div className="space-y-8">
+              {decades.map(([decade, props]) => {
+                const decadeYear = decade === "Unknown" ? null : parseInt(decade);
+                return (
+                  <div key={decade}>
+                    <div className="flex items-center gap-3 mb-3">
+                      {decadeYear && (
+                        <span
+                          className="w-2.5 h-2.5 rounded-full shrink-0"
+                          style={{ background: getEraColor(decadeYear) ?? "#64748b" }}
+                          aria-hidden="true"
+                        />
+                      )}
+                      <span className="text-sm font-semibold text-text-secondary tracking-wide">{decade}</span>
+                      <div className="flex-1 border-t border-surface-border" />
+                      <span className="text-xs text-text-muted">{props.length}</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {props.map((p) => {
+                        if (!p.address) return <UnresolvableEntityCard key={p.pin} pin={p.pin} />;
+                        return (
+                          <EntityCard
+                            key={p.pin}
+                            href={`/properties/${encodeURIComponent(p.pin)}`}
+                            title={formatAddress(p.address)}
+                            meta={[
+                              p.yearBuilt ? `Built ${p.yearBuilt}` : undefined,
+                              p.buildingSqft ? `${formatNumber(p.buildingSqft)} sqft` : undefined,
+                            ].filter(Boolean).join(" · ") || undefined}
+                            eraSwatch={getEraColor(p.yearBuilt)}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

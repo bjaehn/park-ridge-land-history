@@ -17,9 +17,11 @@ export function SparklinePriceCard() {
 
   if (!data.length) return null;
 
-  const latest = data[data.length - 1];
+  const currentYear = new Date().getFullYear();
+  const completeData = data.filter((r) => r.saleYear < currentYear);
+  const latest = completeData.length ? completeData[completeData.length - 1] : data[data.length - 1];
   const earliest = data[0];
-  const pctChange = earliest
+  const pctChange = earliest && earliest.medianPrice > 0 && earliest.saleYear !== latest.saleYear
     ? Math.round(
         ((latest.medianPrice - earliest.medianPrice) / earliest.medianPrice) * 100
       )
@@ -33,7 +35,7 @@ export function SparklinePriceCard() {
       </p>
       {pctChange !== null && (
         <p className="text-xs text-text-secondary mt-1">
-          +{pctChange}% since {earliest.saleYear}
+          {pctChange >= 0 ? "+" : ""}{pctChange}% since {earliest.saleYear}
         </p>
       )}
       <div className="mt-3 h-14">
@@ -52,7 +54,9 @@ export function SparklinePriceCard() {
                 borderRadius: "6px",
                 fontSize: 11,
               }}
-              labelFormatter={(y) => String(y)}
+              labelFormatter={(_, payload) =>
+                payload && payload[0] ? String(payload[0].payload.saleYear) : ""
+              }
               formatter={(v) => [formatPrice(typeof v === "number" ? v : 0), "Median"]}
             />
             <Area
@@ -67,7 +71,7 @@ export function SparklinePriceCard() {
         </ResponsiveContainer>
       </div>
       <p className="text-xs text-text-muted mt-2">
-        {earliest.saleYear} to {latest.saleYear} market sales
+        Median price in {latest.saleYear}
       </p>
     </div>
   );
