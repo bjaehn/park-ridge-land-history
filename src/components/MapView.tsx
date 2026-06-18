@@ -214,6 +214,35 @@ export function MapView({ scope, height = "400px", showExpand = false, compactLe
       });
 
       flyToScope(map, scope);
+
+      if (scope.kind === "property") {
+        map.once("idle", () => {
+          const features = map.querySourceFeatures(SOURCE_ID, {
+            filter: ["==", ["get", "pin_normalized"], scope.pin] as unknown as FilterSpecification,
+          });
+          if (!features.length) return;
+
+          let minLng = Infinity, minLat = Infinity, maxLng = -Infinity, maxLat = -Infinity;
+          features.forEach((f) => {
+            const coords: number[][] =
+              f.geometry.type === "Polygon"
+                ? (f.geometry.coordinates as number[][][]).flat()
+                : f.geometry.type === "MultiPolygon"
+                ? (f.geometry.coordinates as number[][][][]).flat(2)
+                : [];
+            coords.forEach(([lng, lat]) => {
+              if (lng < minLng) minLng = lng;
+              if (lat < minLat) minLat = lat;
+              if (lng > maxLng) maxLng = lng;
+              if (lat > maxLat) maxLat = lat;
+            });
+          });
+          if (isFinite(minLng)) {
+            map.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 60, maxZoom: 19, animate: false });
+          }
+        });
+      }
+
       setIsLoaded(true);
     });
 

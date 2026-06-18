@@ -52,6 +52,8 @@ export type PropertyPageData = {
   neighborhoodLabel?: string | null;
   neighborhoodSlug?: string | null;
   streetName?: string | null;
+  pinNormalized?: string | null;
+  subdivision?: { id: string; name: string } | null;
 };
 
 export type PropertySale = {
@@ -118,6 +120,8 @@ export async function getPropertyByPin(pin: string): Promise<PropertyPageData> {
   const lng = props.lng as number | undefined;
   const neighborhoodId = props.neighborhood_id as string | undefined;
 
+  const subdivisionResult = await loadSubdivision(pin).catch(() => null);
+
   return {
     address: props.address,
     lat,
@@ -126,6 +130,8 @@ export async function getPropertyByPin(pin: string): Promise<PropertyPageData> {
     neighborhoodLabel: (props.neighborhood_label as string | undefined) ?? null,
     neighborhoodSlug: neighborhoodId?.replace("neighborhood:", "") ?? null,
     streetName: (props.street_name_normalized as string | undefined) ?? null,
+    pinNormalized: (props.pin_normalized as string | undefined) ?? null,
+    subdivision: subdivisionResult ? { id: subdivisionResult.id, name: subdivisionResult.name } : null,
   };
 }
 

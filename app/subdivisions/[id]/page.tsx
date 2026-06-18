@@ -48,7 +48,6 @@ export default async function SubdivisionDetailPage({ params }: Props) {
       <Breadcrumb
         items={[
           { label: "Park Ridge", href: "/city" },
-          { label: "Subdivisions", href: "/subdivisions" },
           { label: sub.name, current: true },
         ]}
       />

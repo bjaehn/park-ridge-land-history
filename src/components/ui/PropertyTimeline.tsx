@@ -6,6 +6,7 @@ import {
   EventDotIcon,
 } from "@/lib/icons";
 import type { LucideIcon } from "lucide-react";
+import type { PropertySale, PropertyPermit } from "@/lib/data/properties";
 
 export type TimelineEvent = {
   eventType: "built" | "plat" | "permit" | "permit_aggregate" | "sale" | "sale_aggregate";
@@ -67,7 +68,9 @@ export function PropertyTimeline({ events }: Props) {
 
 export function buildTimelineEvents(
   props: Record<string, unknown>,
-  subdivision?: { recorded_year?: number | null; name?: string; original_owner?: string | null } | null
+  subdivision?: { recorded_year?: number | null; name?: string; original_owner?: string | null } | null,
+  sales?: PropertySale[],
+  permits?: PropertyPermit[]
 ): TimelineEvent[] {
   const events: TimelineEvent[] = [];
 
@@ -93,33 +96,72 @@ export function buildTimelineEvents(
     });
   }
 
-  // Permit activity (aggregate from parcel; individual records will replace this when loaded)
-  const permitCount = props.permit_count as number | null;
-  const latestPermitYear = props.latest_permit_year as number | null;
-  if (permitCount && permitCount > 0 && latestPermitYear) {
-    events.push({
-      eventType: "permit_aggregate",
-      year: latestPermitYear,
-      title: `${permitCount} ${permitCount === 1 ? "permit" : "permits"} on record`,
-      detail: `Most recent filed ${latestPermitYear}`,
-      sourceLabel: "City of Park Ridge",
+  if (permits && permits.length > 0) {
+    // Individual permit events
+    permits.forEach((p) => {
+      const year = p.date_issued ? new Date(p.date_issued).getFullYear() : null;
+      if (!year) return;
+      const parts: string[] = [];
+      if (p.local_permit_number) parts.push(`#${p.local_permit_number.trim()}`);
+      if (p.status) parts.push(p.status);
+      events.push({
+        eventType: "permit",
+        year,
+        title: p.description ?? "Building permit",
+        detail: parts.length ? parts.join(" · ") : null,
+        sourceLabel: "City of Park Ridge",
+      });
     });
+  } else {
+    // Fallback aggregate from parcel props
+    const permitCount = props.permit_count as number | null;
+    const latestPermitYear = props.latest_permit_year as number | null;
+    if (permitCount && permitCount > 0 && latestPermitYear) {
+      events.push({
+        eventType: "permit_aggregate",
+        year: latestPermitYear,
+        title: `${permitCount} ${permitCount === 1 ? "permit" : "permits"} on record`,
+        detail: `Most recent filed ${latestPermitYear}`,
+        sourceLabel: "City of Park Ridge",
+      });
+    }
   }
 
-  // Most recent sale
-  const latestSaleYear = props.latest_sale_year as number | null;
-  const latestSalePrice = props.latest_sale_price as number | null;
-  if (latestSaleYear) {
-    const saleDetail = latestSalePrice
-      ? `Recorded sale price: $${latestSalePrice.toLocaleString("en-US", { maximumFractionDigits: 0 })}`
-      : null;
-    events.push({
-      eventType: "sale_aggregate",
-      year: latestSaleYear,
-      title: "Most recent recorded sale",
-      detail: saleDetail,
-      sourceLabel: "Cook County Recorder of Deeds",
+  if (sales && sales.length > 0) {
+    // Individual sale events
+    sales.forEach((s) => {
+      const year = s.sale_date
+        ? new Date(s.sale_date).getFullYear()
+        : s.sale_year ?? null;
+      if (!year) return;
+      const parts: string[] = [];
+      if (s.sale_price != null) parts.push(`$${s.sale_price.toLocaleString("en-US", { maximumFractionDigits: 0 })}`);
+      if (s.deed_type) parts.push(s.deed_type);
+      if (!s.is_market_sale) parts.push("non-market transfer");
+      events.push({
+        eventType: "sale",
+        year,
+        title: "Recorded sale",
+        detail: parts.length ? parts.join(" · ") : null,
+        sourceLabel: "Cook County Recorder of Deeds",
+      });
     });
+  } else {
+    // Fallback aggregate from parcel props
+    const latestSaleYear = props.latest_sale_year as number | null;
+    const latestSalePrice = props.latest_sale_price as number | null;
+    if (latestSaleYear) {
+      const saleDetail = latestSalePrice
+        ? `Recorded sale price: $${latestSalePrice.toLocaleString("en-US", { maximumFractionDigits: 0 })}`
+        : null;
+      events.push({
+        eventType: "sale_aggregate",
+        year: latestSaleYear,
+        title: "Most recent recorded sale",
+        detail: saleDetail,
+        sourceLabel: "Cook County Recorder of Deeds",
+      });
+    }
   }
 
   return events.sort((a, b) => a.year - b.year);

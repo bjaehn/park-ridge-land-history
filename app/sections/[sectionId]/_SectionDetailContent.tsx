@@ -3,10 +3,10 @@
 import { useState, useEffect } from "react";
 import { StatGrid } from "@/components/ui/StatGrid";
 import { ConstructionByDecadeChart } from "@/components/ui/ConstructionByDecadeChart";
-import { EntityCard } from "@/components/ui/EntityCard";
+import { EntityCard, UnresolvableEntityCard } from "@/components/ui/EntityCard";
 import { LoadingSkeleton } from "@/components/ui/EmptyState";
 import { InlineSourceNote } from "@/components/ui/SourceNote";
-import { formatNumber, formatCurrency } from "@/lib/formatters";
+import { formatNumber, formatCurrency, formatAddress } from "@/lib/formatters";
 import {
   fetchSectionBlocks,
   fetchSectionParcelsWithAssessment,
@@ -14,7 +14,7 @@ import {
   fetchBlockPermitStats,
 } from "@/lib/supabase/blockQueries";
 import type { DecadeRow } from "@/components/ui/ConstructionByDecadeChart";
-import type { BlockSalesStats, BlockPermitStats, BlockAssessmentStats, SectionBlock } from "@/lib/supabase/blockQueries";
+import type { BlockSalesStats, BlockPermitStats, BlockAssessmentStats, SectionBlock, BlockParcel } from "@/lib/supabase/blockQueries";
 
 type Props = {
   sectionId: string;
@@ -23,6 +23,7 @@ type Props = {
 
 export function SectionDetailContent({ sectionId, mapSlot }: Props) {
   const [blocks, setBlocks] = useState<SectionBlock[]>([]);
+  const [parcels, setParcels] = useState<BlockParcel[]>([]);
   const [decadeRows, setDecadeRows] = useState<DecadeRow[]>([]);
   const [salesStats, setSalesStats] = useState<BlockSalesStats | null>(null);
   const [permitStats, setPermitStats] = useState<BlockPermitStats | null>(null);
@@ -35,12 +36,13 @@ export function SectionDetailContent({ sectionId, mapSlot }: Props) {
       fetchSectionBlocks(sectionId),
       fetchSectionParcelsWithAssessment(sectionId),
     ])
-      .then(([blockList, { parcels, assessmentStats: as_ }]) => {
+      .then(([blockList, { parcels: parcelList, assessmentStats: as_ }]) => {
         setBlocks(blockList);
+        setParcels(parcelList);
         setAssessmentStats(as_);
-        setTotalParcels(parcels.length);
+        setTotalParcels(parcelList.length);
 
-        const yearsKnown = parcels.map((p) => p.yearBuilt).filter((y): y is number => y != null);
+        const yearsKnown = parcelList.map((p) => p.yearBuilt).filter((y): y is number => y != null);
         const decadeMap = new Map<number, number>();
         yearsKnown.forEach((yr) => {
           const d = Math.floor(yr / 10) * 10;
@@ -51,7 +53,7 @@ export function SectionDetailContent({ sectionId, mapSlot }: Props) {
           .map(([decade, count]) => ({ decade: String(decade), count }));
         setDecadeRows(rows);
 
-        const pins = parcels.map((p) => p.pin).filter(Boolean);
+        const pins = parcelList.map((p) => p.pin).filter(Boolean);
         return Promise.all([
           fetchBlockSalesStats(pins),
           fetchBlockPermitStats(pins),
@@ -174,27 +176,97 @@ export function SectionDetailContent({ sectionId, mapSlot }: Props) {
       {blocks.length > 0 && (
         <div>
           <p className="section-heading">Blocks in this section</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {blocks.map((b) => {
-              const yearRange = b.oldestYear && b.newestYear && b.oldestYear !== b.newestYear
-                ? `${b.oldestYear}–${b.newestYear}`
-                : b.oldestYear
-                ? String(b.oldestYear)
-                : null;
-              return (
-                <EntityCard
-                  key={b.blockId}
-                  href={`/blocks/${encodeURIComponent(b.blockId)}`}
-                  eyebrow="Block"
-                  title={b.blockId}
-                  meta={[
-                    `${formatNumber(b.parcelCount)} ${b.parcelCount === 1 ? "property" : "properties"}`,
-                    yearRange ? `Built ${yearRange}` : undefined,
-                  ].filter(Boolean).join(" · ") || undefined}
-                />
-              );
-            })}
-          </div>
+          {(() => {
+            const blocksByDecade = new Map<string, typeof blocks>();
+            blocks.forEach((b) => {
+              const key = b.oldestYear ? String(Math.floor(b.oldestYear / 10) * 10) : "Unknown";
+              if (!blocksByDecade.has(key)) blocksByDecade.set(key, []);
+              blocksByDecade.get(key)!.push(b);
+            });
+            const entries = Array.from(blocksByDecade.entries()).sort(([a], [b]) => {
+              if (a === "Unknown") return 1;
+              if (b === "Unknown") return -1;
+              return Number(a) - Number(b);
+            });
+            return (
+              <div className="space-y-6">
+                {entries.map(([decade, decadeBlocks]) => (
+                  <div key={decade}>
+                    <p className="text-sm font-semibold text-text-secondary mb-2">
+                      {decade === "Unknown" ? "Unknown era" : `${decade}s`}
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {decadeBlocks.map((b) => {
+                        const yearRange = b.oldestYear && b.newestYear && b.oldestYear !== b.newestYear
+                          ? `${b.oldestYear}–${b.newestYear}`
+                          : b.oldestYear
+                          ? String(b.oldestYear)
+                          : null;
+                        return (
+                          <EntityCard
+                            key={b.blockId}
+                            href={`/blocks/${encodeURIComponent(b.blockId)}`}
+                            eyebrow="Block"
+                            title={b.blockId}
+                            meta={[
+                              `${formatNumber(b.parcelCount)} ${b.parcelCount === 1 ? "property" : "properties"}`,
+                              yearRange ? `Built ${yearRange}` : undefined,
+                            ].filter(Boolean).join(" · ") || undefined}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
+      {parcels.length > 0 && (
+        <div>
+          <p className="section-heading">Properties in this section</p>
+          {(() => {
+            const parcelsByDecade = new Map<string, BlockParcel[]>();
+            parcels.forEach((p) => {
+              const key = p.yearBuilt ? String(Math.floor(p.yearBuilt / 10) * 10) : "Unknown";
+              if (!parcelsByDecade.has(key)) parcelsByDecade.set(key, []);
+              parcelsByDecade.get(key)!.push(p);
+            });
+            const entries = Array.from(parcelsByDecade.entries()).sort(([a], [b]) => {
+              if (a === "Unknown") return 1;
+              if (b === "Unknown") return -1;
+              return Number(a) - Number(b);
+            });
+            return (
+              <div className="space-y-6">
+                {entries.map(([decade, decadeParcels]) => (
+                  <div key={decade}>
+                    <p className="text-sm font-semibold text-text-secondary mb-2">
+                      {decade === "Unknown" ? "Unknown era" : `${decade}s`}
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {decadeParcels.map((p) => {
+                        if (!p.address) return <UnresolvableEntityCard key={p.pin} pin={p.pin} />;
+                        return (
+                          <EntityCard
+                            key={p.pin}
+                            href={`/properties/${encodeURIComponent(p.pin)}`}
+                            title={formatAddress(p.address)}
+                            meta={[
+                              p.yearBuilt ? `Built ${p.yearBuilt}` : undefined,
+                              p.buildingSqft ? `${formatNumber(p.buildingSqft)} sqft` : undefined,
+                            ].filter(Boolean).join(" · ") || undefined}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
         </div>
       )}
     </div>

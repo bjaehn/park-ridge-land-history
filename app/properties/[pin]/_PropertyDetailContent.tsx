@@ -448,7 +448,7 @@ export function PropertyDetailContent({ pin }: Props) {
     latest_sale_year: latestSaleYear,
     latest_sale_price: latestSalePrice,
   };
-  const timeline = buildTimelineEvents(propsForTimeline, detail.subdivision);
+  const timeline = buildTimelineEvents(propsForTimeline, detail.subdivision, detail.sales, detail.permits);
 
   const vitals: IconRowItem[] = [
     { icon: YearBuiltIcon, label: "Year built", value: formatYear(props.year_built) },

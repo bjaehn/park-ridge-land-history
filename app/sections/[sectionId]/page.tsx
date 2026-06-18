@@ -35,6 +35,7 @@ export default async function SectionDetailPage({ params }: Props) {
       <Breadcrumb
         items={[
           { label: "Park Ridge", href: "/city" },
+          { label: `Township ${sectionId.slice(0, 2)}`, href: `/pin/${encodeURIComponent(sectionId.slice(0, 2))}` },
           { label: `Section ${sectionId}`, current: true },
         ]}
       />
