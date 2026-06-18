@@ -8,7 +8,26 @@ const RECORDS = [
   { icon: TimelineIcon, count: "418K+", label: "historical events" },
 ];
 
-export function ArchiveInventory() {
+export function ArchiveInventory({ cardMode }: { cardMode?: boolean }) {
+  if (cardMode) {
+    return (
+      <>
+        {RECORDS.map((r) => (
+          <div
+            key={r.label}
+            className="bg-surface-card border border-surface-border rounded-lg p-4"
+          >
+            <div className="flex items-center gap-1.5 mb-2">
+              <r.icon size={12} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />
+              <p className="text-xs text-text-muted">{r.label}</p>
+            </div>
+            <p className="text-2xl font-semibold tabular-nums text-text-primary">{r.count}</p>
+          </div>
+        ))}
+      </>
+    );
+  }
+
   return (
     <div className="flex flex-wrap gap-3">
       {RECORDS.map((r) => (

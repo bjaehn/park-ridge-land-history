@@ -46,12 +46,9 @@ export default function HomePage() {
 
       {/* Market + archive */}
       <section className="mt-10 mb-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-4">
           <SparklinePriceCard />
-          <div className="space-y-2">
-            <p className="text-xs text-text-muted">What&apos;s in the archive</p>
-            <ArchiveInventory />
-          </div>
+          <ArchiveInventory cardMode />
         </div>
       </section>
 

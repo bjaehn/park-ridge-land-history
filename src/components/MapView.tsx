@@ -38,6 +38,8 @@ type TooltipState = {
   pin: string;
   address: string;
   decade: string;
+  yearBuilt: number | null;
+  sqft: number | null;
 } | null;
 
 type Props = {
@@ -192,6 +194,8 @@ export function MapView({ scope, height = "400px", showExpand = false, compactLe
           pin: String(props.pin_normalized ?? props.pin_original ?? ""),
           address: String(props.address ?? "Address not on record"),
           decade: formatDecade(String(props.decade_built ?? "")),
+          yearBuilt: typeof props.year_built === "number" ? props.year_built : null,
+          sqft: typeof props.building_sqft === "number" ? props.building_sqft : null,
         });
         map.getCanvas().style.cursor = "pointer";
       });
@@ -279,6 +283,8 @@ export function MapView({ scope, height = "400px", showExpand = false, compactLe
           address={tooltip.address}
           decade={tooltip.decade}
           pin={tooltip.pin}
+          yearBuilt={tooltip.yearBuilt}
+          sqft={tooltip.sqft}
         />
       )}
 
@@ -339,14 +345,20 @@ function MapLegend({ compact = false }: { compact?: boolean }) {
   );
 }
 
-function MapTooltip({ x, y, address, decade, pin }: { x: number; y: number; address: string; decade: string; pin: string }) {
+function MapTooltip({ x, y, address, decade, pin, yearBuilt, sqft }: {
+  x: number; y: number; address: string; decade: string; pin: string;
+  yearBuilt: number | null; sqft: number | null;
+}) {
+  const builtStr = yearBuilt ? `Built ${yearBuilt}` : decade !== "Unknown" ? `Built ${decade}` : null;
+  const sqftStr = sqft ? `${sqft.toLocaleString()} sqft` : null;
+  const detail = [builtStr, sqftStr].filter(Boolean).join(" · ");
   return (
     <div
-      className="absolute z-20 pointer-events-none bg-surface-card border border-surface-border rounded-lg shadow-xl px-3 py-2 text-xs max-w-[200px]"
+      className="absolute z-20 pointer-events-none bg-surface-card border border-surface-border rounded-lg shadow-xl px-3 py-2 text-xs max-w-[220px]"
       style={{ left: x + 12, top: y - 8 }}
     >
       <p className="text-text-primary font-medium leading-snug">{address}</p>
-      {decade !== "Unknown" && <p className="text-text-secondary mt-0.5">Built {decade}</p>}
+      {detail && <p className="text-text-secondary mt-0.5">{detail}</p>}
       <p className="text-text-muted mt-0.5 truncate">PIN {pin}</p>
     </div>
   );

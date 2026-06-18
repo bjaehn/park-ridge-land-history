@@ -89,16 +89,27 @@ export async function getPinGroupDetail(prefix: string): Promise<PinGroupDetail 
   const summary = await getPinGroupSummary(prefix);
   if (!summary || !supabase) return null;
 
-  const { data, error } = await supabase
-    .from("parcels")
-    .select("pin_normalized, pin_original, address, year_built, decade_built, building_sqft, latest_assessed_total")
-    .ilike("pin_normalized", `${prefix}%`)
-    .order("address", { ascending: true })
-    .limit(5000);
+  const PAGE_SIZE = 1000;
+  const totalCount = summary.parcelCount;
+  const pageCount = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
-  if (error || !data) return { ...summary, parcels: [] };
+  const db = supabase;
+  const select = "pin_normalized, pin_original, address, year_built, decade_built, building_sqft, latest_assessed_total";
 
-  const parcels: PinGroupParcel[] = (data as Array<Record<string, unknown>>).map((r) => ({
+  const pages = await Promise.all(
+    Array.from({ length: pageCount }, (_, i) =>
+      db
+        .from("parcels")
+        .select(select)
+        .ilike("pin_normalized", `${prefix}%`)
+        .order("address", { ascending: true })
+        .range(i * PAGE_SIZE, (i + 1) * PAGE_SIZE - 1)
+    )
+  );
+
+  const allRows = pages.flatMap((p) => (p.data ?? []) as Array<Record<string, unknown>>);
+
+  const parcels: PinGroupParcel[] = allRows.map((r) => ({
     pin: String(r.pin_normalized ?? r.pin_original ?? ""),
     address: (r.address as string | null) ?? null,
     yearBuilt: (r.year_built as number | null) ?? null,
