@@ -5,6 +5,8 @@ import { HighlightReel } from "@/components/ui/HighlightReel";
 import { HomeSearch, HomeStats } from "./_components/HomeClientComponents";
 import { NeighborhoodsGrid } from "./neighborhoods/_NeighborhoodsGrid";
 import { SparklinePriceCard } from "@/components/ui/SparklinePriceCard";
+import { SparklineSalesVolumeCard } from "@/components/ui/SparklineSalesVolumeCard";
+import { SparklinePermitCard } from "@/components/ui/SparklinePermitCard";
 import { ArchiveInventory } from "@/components/ui/ArchiveInventory";
 import { NeighborhoodIcon, HighlightIcon } from "@/lib/icons";
 import { NeighborhoodCharts } from "@/components/ui/NeighborhoodCharts";
@@ -44,12 +46,20 @@ export default function HomePage() {
 
       <hr className="border-surface-border" />
 
-      {/* Market + archive */}
+      {/* City trends */}
       <section className="mt-10 mb-10">
-        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <SparklinePriceCard />
-          <ArchiveInventory cardMode />
+          <SparklineSalesVolumeCard />
+          <SparklinePermitCard />
         </div>
+      </section>
+
+      <hr className="border-surface-border" />
+
+      {/* Archive inventory */}
+      <section className="mt-10 mb-10">
+        <ArchiveInventory cardMode />
       </section>
 
       <hr className="border-surface-border" />
