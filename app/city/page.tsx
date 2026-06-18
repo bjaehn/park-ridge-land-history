@@ -4,13 +4,16 @@ import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { SourceNote } from "@/components/ui/SourceNote";
 import { MapView } from "@/components/MapView";
 import { CityContent } from "./_CityContent";
+import { getCityTownships } from "@/lib/data/pinGroups";
 
 export const metadata: Metadata = {
   title: "City history",
   description: "How Park Ridge grew, decade by decade. Development history for the full city.",
 };
 
-export default function CityPage() {
+export default async function CityPage() {
+  const townships = await getCityTownships().catch(() => []);
+
   return (
     <div className="page-shell">
       <Breadcrumb
@@ -22,7 +25,7 @@ export default function CityPage() {
         subtitle="How Park Ridge's 13,000+ properties took shape, decade by decade."
       />
 
-      <CityContent />
+      <CityContent townships={townships} />
 
       <div className="mt-8">
         <p className="section-heading">City map</p>

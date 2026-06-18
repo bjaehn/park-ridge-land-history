@@ -125,6 +125,81 @@ export async function getPinGroupDetail(prefix: string): Promise<PinGroupDetail 
   return { ...summary, parcels };
 }
 
+export type CitySection = {
+  sectionPrefix: string;
+  sectionSegment: string;
+  count: number;
+  oldestYear: number | null;
+  newestYear: number | null;
+};
+
+export type CityTownship = {
+  prefix: string;
+  parcelCount: number;
+  sections: CitySection[];
+};
+
+export async function getCityTownships(): Promise<CityTownship[]> {
+  if (!supabase) return [];
+
+  const PAGE_SIZE = 1000;
+  const { count } = await supabase
+    .from("parcels")
+    .select("pin_normalized", { count: "exact", head: true });
+
+  const totalCount = count ?? 0;
+  const pageCount = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+  const db = supabase;
+
+  const pages = await Promise.all(
+    Array.from({ length: pageCount }, (_, i) =>
+      db
+        .from("parcels")
+        .select("pin_normalized, year_built")
+        .order("pin_normalized", { ascending: true })
+        .range(i * PAGE_SIZE, (i + 1) * PAGE_SIZE - 1)
+    )
+  );
+
+  const allRows = pages.flatMap(
+    (p) => (p.data ?? []) as Array<{ pin_normalized: string; year_built: number | null }>
+  );
+
+  const townshipMap = new Map<string, Map<string, { count: number; years: number[] }>>();
+
+  for (const row of allRows) {
+    const pin = row.pin_normalized;
+    if (!pin || pin.length < 4) continue;
+    const twpPrefix = pin.slice(0, 2);
+    const secPrefix = pin.slice(0, 4);
+    if (!townshipMap.has(twpPrefix)) townshipMap.set(twpPrefix, new Map());
+    const secMap = townshipMap.get(twpPrefix)!;
+    if (!secMap.has(secPrefix)) secMap.set(secPrefix, { count: 0, years: [] });
+    const sec = secMap.get(secPrefix)!;
+    sec.count++;
+    if (row.year_built) sec.years.push(row.year_built);
+  }
+
+  return Array.from(townshipMap.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([twpPrefix, secMap]) => {
+      const sections: CitySection[] = Array.from(secMap.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([secPrefix, { count, years }]) => ({
+          sectionPrefix: secPrefix,
+          sectionSegment: secPrefix.slice(2, 4),
+          count,
+          oldestYear: years.length ? Math.min(...years) : null,
+          newestYear: years.length ? Math.max(...years) : null,
+        }));
+      return {
+        prefix: twpPrefix,
+        parcelCount: sections.reduce((sum, s) => sum + s.count, 0),
+        sections,
+      };
+    });
+}
+
 export async function fetchPinPrefixBbox(prefix: string): Promise<[number, number, number, number] | null> {
   if (!supabase || !prefix) return null;
   try {

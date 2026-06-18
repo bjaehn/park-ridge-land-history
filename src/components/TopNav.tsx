@@ -17,16 +17,16 @@ type NavLink = {
 
 const NAV_LINKS: NavLink[] = [
   {
-    href: "/pin/09",
+    href: "/city",
     label: "Township",
     icon: Grid3x3,
-    isActive: (p) => p === "/pin/09",
+    isActive: (p) => p === "/city" || /^\/pin\/(09|12)$/.test(p),
   },
   {
     href: "/pin/09",
     label: "Section",
     icon: SectionIcon,
-    isActive: (p) => /^\/pin\/09[0-9]/.test(p),
+    isActive: (p) => /^\/pin\/(09|12)[0-9]/.test(p),
   },
   { href: "/neighborhoods", label: "Neighborhoods" },
   { href: "/subdivisions",  label: "Subdivisions"  },
