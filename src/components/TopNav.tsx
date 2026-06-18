@@ -3,14 +3,35 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useRef, useEffect, useCallback } from "react";
+import { Grid3x3, Section as SectionIcon } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { SITE_NAME } from "@/lib/content";
 import type { SearchResult } from "@/lib/supabase/homeQueries";
 
-const NAV_LINKS = [
+type NavLink = {
+  href: string;
+  label: string;
+  icon?: LucideIcon;
+  isActive?: (pathname: string) => boolean;
+};
+
+const NAV_LINKS: NavLink[] = [
+  {
+    href: "/pin/09",
+    label: "Township",
+    icon: Grid3x3,
+    isActive: (p) => p === "/pin/09",
+  },
+  {
+    href: "/pin/09",
+    label: "Section",
+    icon: SectionIcon,
+    isActive: (p) => /^\/pin\/09[0-9]/.test(p),
+  },
   { href: "/neighborhoods", label: "Neighborhoods" },
-  { href: "/subdivisions", label: "Subdivisions" },
-  { href: "/city", label: "City history" },
-] as const;
+  { href: "/subdivisions",  label: "Subdivisions"  },
+  { href: "/city",          label: "City history"  },
+];
 
 const REFERENCE_LINKS = [
   { href: "/sources", label: "Data sources" },
@@ -109,19 +130,24 @@ export function TopNav() {
 
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-1 flex-1" aria-label="Main navigation">
-          {NAV_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`px-3 py-1.5 rounded text-sm transition-colors ${
-                pathname.startsWith(link.href)
-                  ? "bg-accent-purple/15 text-accent-purple font-medium"
-                  : "text-text-secondary hover:text-text-primary hover:bg-surface-raised"
-              }`}
-            >
-              {link.label}
-            </Link>
-          ))}
+          {NAV_LINKS.map((link) => {
+            const active = link.isActive ? link.isActive(pathname) : pathname.startsWith(link.href);
+            const Icon = link.icon;
+            return (
+              <Link
+                key={link.label}
+                href={link.href}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-sm transition-colors ${
+                  active
+                    ? "bg-accent-purple/15 text-accent-purple font-medium"
+                    : "text-text-secondary hover:text-text-primary hover:bg-surface-raised"
+                }`}
+              >
+                {Icon && <Icon size={13} strokeWidth={1.8} aria-hidden={true} />}
+                {link.label}
+              </Link>
+            );
+          })}
           <div className="flex-1" />
           {REFERENCE_LINKS.map((link) => (
             <Link
@@ -227,7 +253,26 @@ export function TopNav() {
           aria-label="Mobile navigation"
         >
           <ul className="max-w-content mx-auto px-page-x py-3 flex flex-col gap-1">
-            {[...NAV_LINKS, ...REFERENCE_LINKS].map((link) => (
+            {NAV_LINKS.map((link) => {
+              const active = link.isActive ? link.isActive(pathname) : pathname.startsWith(link.href);
+              const Icon = link.icon;
+              return (
+                <li key={link.label}>
+                  <Link
+                    href={link.href}
+                    className={`flex items-center gap-2 px-3 py-2.5 rounded text-sm transition-colors ${
+                      active
+                        ? "bg-accent-purple/15 text-accent-purple font-medium"
+                        : "text-text-secondary hover:text-text-primary hover:bg-surface-card"
+                    }`}
+                  >
+                    {Icon && <Icon size={13} strokeWidth={1.8} aria-hidden={true} />}
+                    {link.label}
+                  </Link>
+                </li>
+              );
+            })}
+            {REFERENCE_LINKS.map((link) => (
               <li key={link.href}>
                 <Link
                   href={link.href}
