@@ -4,8 +4,6 @@ import Anthropic from "@anthropic-ai/sdk";
 import { revalidatePath } from "next/cache";
 import { adminSupabase } from "@/lib/supabase/adminClient";
 
-const client = new Anthropic();
-
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type AIDeedSubdivisionLink = {
@@ -65,6 +63,8 @@ export async function analyzeDeedWithAI(
   knownSubdivisions: { id: string; name: string }[]
 ): Promise<{ result?: DeedAnalysisResult; error?: string }> {
   if (!deedNotes.trim()) return { error: "No deed text to analyze." };
+
+  const client = new Anthropic();
 
   const subdivisionList = knownSubdivisions
     .map((s) => `  - "${s.name}" (id: ${s.id})`)
