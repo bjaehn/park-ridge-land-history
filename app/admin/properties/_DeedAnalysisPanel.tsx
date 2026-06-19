@@ -515,7 +515,13 @@ export function DeedAnalysisPanel({
   const [dismissedChanges, setDismissedChanges] = useState<Set<number>>(new Set());
 
   async function analyze() {
-    if (!deedNotes) return;
+    // Read live text from the textarea so this works even if the server prop hasn't refreshed yet
+    const textarea = document.querySelector<HTMLTextAreaElement>('textarea[name="deed_notes"]');
+    const liveText = textarea?.value?.trim() || deedNotes?.trim() || "";
+    if (!liveText) {
+      setError("Enter a deed legal description in the Deed Record field above first.");
+      return;
+    }
     setLoading(true);
     setError(null);
     setResult(null);
@@ -523,7 +529,7 @@ export function DeedAnalysisPanel({
     setDismissedLineage(new Set());
     setDismissedChanges(new Set());
 
-    const r = await analyzeDeedWithAI(pin, address, deedNotes, allSubdivisions);
+    const r = await analyzeDeedWithAI(pin, address, liveText, allSubdivisions);
     setLoading(false);
     if (r.error) { setError(r.error); return; }
     setResult(r.result ?? null);
@@ -554,18 +560,14 @@ export function DeedAnalysisPanel({
             Extract subdivision lineage and boundary changes from deed text
           </p>
         </div>
-        {deedNotes ? (
-          <button
-            type="button"
-            onClick={analyze}
-            disabled={loading}
-            className="text-xs bg-accent-teal text-surface-base font-semibold px-4 py-1.5 rounded hover:opacity-90 transition-opacity disabled:opacity-50"
-          >
-            {loading ? "Analyzing…" : result ? "Re-analyze" : "Analyze Deed"}
-          </button>
-        ) : (
-          <p className="text-xs text-text-muted italic">Enter deed notes above, then analyze.</p>
-        )}
+        <button
+          type="button"
+          onClick={analyze}
+          disabled={loading}
+          className="text-xs bg-accent-teal text-surface-base font-semibold px-4 py-1.5 rounded hover:opacity-90 transition-opacity disabled:opacity-50"
+        >
+          {loading ? "Analyzing…" : result ? "Re-analyze" : "Analyze Deed"}
+        </button>
       </div>
 
       {loading && (
