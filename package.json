@@ -13,6 +13,7 @@
     "data:tiles": "echo 'Run: tippecanoe -o public/tiles/parcels.pmtiles -z14 -Z10 --drop-densest-as-needed data/processed/park_ridge_parcels_map.geojson'"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.105.0",
     "@supabase/supabase-js": "^2.108.1",
     "lucide-react": "^1.18.0",
     "maplibre-gl": "^4.7.1",

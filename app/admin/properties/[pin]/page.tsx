@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { adminSupabase } from "@/lib/supabase/adminClient";
 import { ParcelForm } from "../_ParcelForm";
+import { DeedAnalysisPanel } from "../_DeedAnalysisPanel";
 import { SubdivisionLinkEditor } from "../_SubdivisionLinkEditor";
 import { PropertyEventEditor } from "../_PropertyEventEditor";
 import { ChangeEventEditor } from "../_ChangeEventEditor";
@@ -73,6 +74,13 @@ export default async function EditPropertyPage({ params }: { params: { pin: stri
       </div>
 
       <ParcelForm parcel={parcel} />
+
+      <DeedAnalysisPanel
+        pin={pin}
+        address={parcel.address}
+        deedNotes={parcel.deed_notes ?? null}
+        allSubdivisions={allSubdivisions}
+      />
 
       <SubdivisionLinkEditor
         links={shapedLinks}
