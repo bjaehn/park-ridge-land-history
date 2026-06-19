@@ -76,7 +76,7 @@ export default async function SubdivisionDetailPage({ params }: Props) {
       )}
 
       {sub.notes && (
-        <p className="text-text-secondary leading-relaxed mb-8 max-w-prose">{sub.notes}</p>
+        <p className="text-text-secondary leading-relaxed mb-8">{sub.notes}</p>
       )}
 
       {/* Historical context panel */}
