@@ -98,21 +98,29 @@ function SubdivisionLinkSection({
 
   function apply() {
     setErr(null);
-    const fd = new FormData();
-    fd.set("subdivision_id", subdivisionId);
-    fd.set("lot_number", lotNumber);
-    fd.set("block_number", blockNumber);
-    fd.set("confidence_level", confidence);
-    fd.set("confidence_reason", confidenceReason);
-    fd.set("match_method", "deed_legal_description");
-    fd.set("source_name", "AI deed analysis");
-    fd.set("source_reference", deedNotes.slice(0, 500));
+    startTransition(async () => {
+      let resolvedId = subdivisionId;
+      if (!resolvedId) {
+        // New subdivision — create it first
+        const r = await ensureSubdivision(link.subdivision_name, "subdivision");
+        if (r.error) { setErr(r.error); return; }
+        resolvedId = r.id ?? "";
+      }
+      if (!resolvedId) { setErr("Could not resolve subdivision ID."); return; }
 
-    startTransition(() => {
-      upsertSubdivisionLink(pin, null, fd).then((r) => {
-        if (r?.error) { setErr(r.error); return; }
-        onApplied();
-      });
+      const fd = new FormData();
+      fd.set("subdivision_id", resolvedId);
+      fd.set("lot_number", lotNumber);
+      fd.set("block_number", blockNumber);
+      fd.set("confidence_level", confidence);
+      fd.set("confidence_reason", confidenceReason);
+      fd.set("match_method", "deed_legal_description");
+      fd.set("source_name", "AI deed analysis");
+      fd.set("source_reference", deedNotes.slice(0, 500));
+
+      const r = await upsertSubdivisionLink(pin, null, fd);
+      if (r?.error) { setErr(r.error); return; }
+      onApplied();
     });
   }
 
@@ -163,7 +171,7 @@ function SubdivisionLinkSection({
       </div>
       {err && <p className="text-accent-red text-xs mb-2">{err}</p>}
       <div className="flex items-center gap-2">
-        <ApplyButton onClick={apply} disabled={!subdivisionId} />
+        <ApplyButton onClick={apply} disabled={!subdivisionId && !link.subdivision_name} />
         <SkipButton onClick={onSkip} />
       </div>
     </div>
