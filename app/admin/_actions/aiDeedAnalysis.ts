@@ -155,7 +155,9 @@ ${deedNotes}`;
       .map((b) => (b as { type: "text"; text: string }).text)
       .join("");
 
-    const parsed = JSON.parse(rawText) as DeedAnalysisResult;
+    // Strip markdown code fences if the model wrapped the JSON
+    const jsonText = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
+    const parsed = JSON.parse(jsonText) as DeedAnalysisResult;
     return { result: parsed };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
