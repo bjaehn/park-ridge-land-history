@@ -91,16 +91,24 @@ export default async function SubdivisionDetailPage({ params }: Props) {
         geometryStatus={(sub.geometry_status as string | null) ?? null}
         parentSubdivision={parentSub}
         mapSlot={
-          <MapView
-            scope={{
-              kind: "subdivision",
-              subdivisionId: id,
-              pins: mapData.pins.length > 0 ? mapData.pins : undefined,
-              bbox: mapData.bbox ?? undefined,
-            }}
-            height="400px"
-            showExpand
-          />
+          mapData.bbox ? (
+            <MapView
+              scope={{
+                kind: "subdivision",
+                subdivisionId: id,
+                pins: mapData.pins.length > 0 ? mapData.pins : undefined,
+                bbox: mapData.bbox,
+              }}
+              height="400px"
+              showExpand
+            />
+          ) : mapData.pins.length > 0 ? (
+            <div className="rounded-lg border border-surface-border bg-surface-raised px-5 py-6 text-sm text-text-muted">
+              Boundary not yet georeferenced —&nbsp;
+              {mapData.pins.length === 1 ? "1 property" : `${mapData.pins.length} properties`} linked.
+              Outline will appear once a source plat is mapped.
+            </div>
+          ) : null
         }
       />
 

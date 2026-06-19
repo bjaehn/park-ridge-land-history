@@ -148,13 +148,14 @@ export function SubdivisionDetailContent({ subdivisionId, recordedYear, entityTy
 
       {lineage.length > 0 && (
         <section>
-          <p className="section-heading">Subdivision ancestry</p>
+          <p className="section-heading">Deed-sourced lineage</p>
           <div className="space-y-3">
             {lineage.map((record) => (
               <SubdivisionLineageCard
                 key={record.lineage_key}
                 lineage={record}
-                showAddress={Boolean(record.address)}
+                showAddress={false}
+                context="subdivision"
               />
             ))}
           </div>

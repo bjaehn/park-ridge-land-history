@@ -48,14 +48,26 @@ export async function updateParcel(pin: string, formData: FormData) {
 
 // ─── Subdivision links ────────────────────────────────────────────────────────
 
+async function syncParcelCount(subdivisionId: string) {
+  const { count } = await adminSupabase
+    .from("property_subdivision_links")
+    .select("id", { count: "exact", head: true })
+    .eq("subdivision_id", subdivisionId);
+  await adminSupabase
+    .from("subdivisions")
+    .update({ parcel_count: count ?? 0 })
+    .eq("id", subdivisionId);
+}
+
 export async function upsertSubdivisionLink(
   pin: string,
   linkId: string | null,
   formData: FormData
 ) {
+  const subdivisionId = str(formData, "subdivision_id");
   const payload = {
     pin,
-    subdivision_id:   str(formData, "subdivision_id"),
+    subdivision_id:   subdivisionId,
     lot_number:       str(formData, "lot_number"),
     block_number:     str(formData, "block_number"),
     year:             num(formData, "year"),
@@ -70,18 +82,30 @@ export async function upsertSubdivisionLink(
     ? await adminSupabase.from("property_subdivision_links").update(payload).eq("id", linkId)
     : await adminSupabase.from("property_subdivision_links").insert(payload);
 
-  revalidatePath(`/admin/properties/${encodeURIComponent(pin)}`);
   if (error) return { error: error.message };
+  if (subdivisionId) await syncParcelCount(subdivisionId);
+  revalidatePath(`/admin/properties/${encodeURIComponent(pin)}`);
+  revalidatePath("/subdivisions");
   return {};
 }
 
 export async function deleteSubdivisionLink(linkId: string, pin: string) {
+  // Fetch subdivision_id before deleting so we can sync the count after
+  const { data: existing } = await adminSupabase
+    .from("property_subdivision_links")
+    .select("subdivision_id")
+    .eq("id", linkId)
+    .single();
+
   const { error } = await adminSupabase
     .from("property_subdivision_links")
     .delete()
     .eq("id", linkId);
-  revalidatePath(`/admin/properties/${encodeURIComponent(pin)}`);
+
   if (error) return { error: error.message };
+  if (existing?.subdivision_id) await syncParcelCount(existing.subdivision_id);
+  revalidatePath(`/admin/properties/${encodeURIComponent(pin)}`);
+  revalidatePath("/subdivisions");
   return {};
 }
 

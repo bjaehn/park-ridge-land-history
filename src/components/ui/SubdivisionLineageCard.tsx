@@ -23,21 +23,24 @@ export function SubdivisionLineageCard({
   lineage,
   showAddress = false,
   compact = false,
+  context = "property",
 }: {
   lineage: HistoricalSubdivisionLineage;
   showAddress?: boolean;
   compact?: boolean;
+  context?: "subdivision" | "property";
 }) {
   const items = chainItems(lineage);
+  const isSubdivisionContext = context === "subdivision";
   return (
     <article className="bg-surface-card border border-surface-border rounded-lg p-4 space-y-3">
       <div>
         <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">
-          Subdivision ancestry
+          {isSubdivisionContext ? "Lineage record" : "Subdivision ancestry"}
         </p>
         <h3 className="text-sm font-semibold text-text-primary mt-1">
           {lineage.child_subdivision}
-          {showAddress && lineage.address ? (
+          {!isSubdivisionContext && showAddress && lineage.address ? (
             <span className="font-normal text-text-secondary"> - {lineage.address}</span>
           ) : null}
         </h3>
@@ -56,13 +59,21 @@ export function SubdivisionLineageCard({
         </ol>
       )}
 
-      {lineage.plain_english_summary && (
-        <p className="text-sm text-text-secondary leading-relaxed">
-          {lineage.plain_english_summary}
-        </p>
+      {isSubdivisionContext ? (
+        lineage.development_interpretation && (
+          <p className="text-sm text-text-secondary leading-relaxed">
+            {lineage.development_interpretation}
+          </p>
+        )
+      ) : (
+        lineage.plain_english_summary && (
+          <p className="text-sm text-text-secondary leading-relaxed">
+            {lineage.plain_english_summary}
+          </p>
+        )
       )}
 
-      {!compact && lineage.development_interpretation && (
+      {!compact && !isSubdivisionContext && lineage.development_interpretation && (
         <p className="text-sm text-text-muted leading-relaxed">
           {lineage.development_interpretation}
         </p>

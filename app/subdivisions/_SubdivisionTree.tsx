@@ -20,12 +20,12 @@ const NODE_HALF_W = NODE_W / 2;
 const GAP = 20; // px gap between sibling nodes
 
 function NodeCard({ node }: { node: TreeNode }) {
-  const isMapped = node.parcel_count != null && node.parcel_count > 0;
+  const isLinked = node.parcel_count != null && node.parcel_count > 0;
   return (
     <Link
       href={`/subdivisions/${encodeURIComponent(node.id)}`}
       className={`group block rounded-xl border p-3.5 transition-all hover:-translate-y-0.5 hover:shadow-lg ${
-        isMapped
+        isLinked
           ? "bg-surface-card border-accent-purple/25 hover:border-accent-purple/60"
           : "bg-surface-raised border-surface-border hover:border-surface-border"
       }`}
@@ -43,11 +43,11 @@ function NodeCard({ node }: { node: TreeNode }) {
             {formatCount(node.parcel_count, "lot", "lots")}
           </span>
         ) : (
-          <span className="text-xs text-text-muted italic">Lots pending</span>
+          <span className="text-xs text-text-muted italic">Research pending</span>
         )}
-        {isMapped && (
+        {isLinked && (
           <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-accent-purple/10 text-accent-purple/80 border border-accent-purple/20 leading-none">
-            Mapped
+            Linked
           </span>
         )}
       </div>
@@ -112,11 +112,11 @@ export function SubdivisionTree({ subdivisions }: { subdivisions: TreeSubdivisio
     }
   }
 
-  // Sort roots: mapped (has parcel_count) before unmapped, then alphabetically
+  // Sort roots: linked (has parcel_count) before unlinked, then alphabetically
   roots.sort((a, b) => {
-    const aM = a.parcel_count != null ? 0 : 1;
-    const bM = b.parcel_count != null ? 0 : 1;
-    if (aM !== bM) return aM - bM;
+    const aL = a.parcel_count != null ? 0 : 1;
+    const bL = b.parcel_count != null ? 0 : 1;
+    if (aL !== bL) return aL - bL;
     return a.name.localeCompare(b.name);
   });
 
