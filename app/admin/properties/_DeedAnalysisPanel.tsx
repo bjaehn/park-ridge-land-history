@@ -128,7 +128,9 @@ function SubdivisionLinkSection({
     <div className="bg-surface-card border border-surface-border rounded-lg p-4 mb-3">
       <div className="flex items-start justify-between gap-3 mb-3">
         <div>
-          <p className="text-xs text-text-muted mb-0.5">Primary subdivision for this property</p>
+          <p className="text-xs text-text-muted mb-0.5">
+            {link.parcel_label ? link.parcel_label : "Subdivision for this property"}
+          </p>
           <p className="text-sm font-semibold text-text-primary">{link.subdivision_name}</p>
         </div>
         <ConfidenceBadge level={confidence} />
@@ -518,7 +520,7 @@ export function DeedAnalysisPanel({
   const [error, setError] = useState<string | null>(null);
 
   // Track dismissed cards
-  const [dismissedLink, setDismissedLink] = useState(false);
+  const [dismissedLinks, setDismissedLinks] = useState<Set<number>>(new Set());
   const [dismissedLineage, setDismissedLineage] = useState<Set<number>>(new Set());
   const [dismissedChanges, setDismissedChanges] = useState<Set<number>>(new Set());
 
@@ -533,7 +535,7 @@ export function DeedAnalysisPanel({
     setLoading(true);
     setError(null);
     setResult(null);
-    setDismissedLink(false);
+    setDismissedLinks(new Set());
     setDismissedLineage(new Set());
     setDismissedChanges(new Set());
 
@@ -548,13 +550,13 @@ export function DeedAnalysisPanel({
   }
 
   const hasContent = result && (
-    (result.subdivision_link && !dismissedLink) ||
+    result.subdivision_links.some((_, i) => !dismissedLinks.has(i)) ||
     result.lineage_records.some((_, i) => !dismissedLineage.has(i)) ||
     result.change_events.some((_, i) => !dismissedChanges.has(i))
   );
 
   const allEmpty = result && (
-    !result.subdivision_link &&
+    result.subdivision_links.length === 0 &&
     result.lineage_records.length === 0 &&
     result.change_events.length === 0
   );
@@ -613,17 +615,29 @@ export function DeedAnalysisPanel({
           )}
 
           {/* Section A */}
-          {result.subdivision_link && !dismissedLink && (
+          {result.subdivision_links.some((_, i) => !dismissedLinks.has(i)) && (
             <div className="mb-5">
-              <SectionHeader>A — Primary Subdivision Link</SectionHeader>
-              <SubdivisionLinkSection
-                link={result.subdivision_link}
-                pin={pin}
-                deedNotes={deedNotes ?? ""}
-                allSubdivisions={allSubdivisions}
-                onApplied={() => { setDismissedLink(true); handleApplied(); }}
-                onSkip={() => setDismissedLink(true)}
-              />
+              <SectionHeader>
+                A — Subdivision {result.subdivision_links.length > 1 ? "Links" : "Link"}
+                {result.subdivision_links.length > 1 && (
+                  <span className="ml-2 text-[10px] font-normal text-text-muted normal-case tracking-normal">
+                    {result.subdivision_links.length} parcels in deed
+                  </span>
+                )}
+              </SectionHeader>
+              {result.subdivision_links.map((link, i) =>
+                dismissedLinks.has(i) ? null : (
+                  <SubdivisionLinkSection
+                    key={i}
+                    link={link}
+                    pin={pin}
+                    deedNotes={deedNotes ?? ""}
+                    allSubdivisions={allSubdivisions}
+                    onApplied={() => { setDismissedLinks((prev) => new Set([...prev, i])); handleApplied(); }}
+                    onSkip={() => setDismissedLinks((prev) => new Set([...prev, i]))}
+                  />
+                )
+              )}
             </div>
           )}
 

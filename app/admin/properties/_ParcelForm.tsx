@@ -10,7 +10,7 @@ const SECTION = "bg-surface-raised rounded-lg border border-surface-border p-5 m
 
 function DeedNotesField({ defaultValue }: { defaultValue: string }) {
   const [val, setVal] = useState(defaultValue);
-  const max = 1000;
+  const max = 3000;
   return (
     <div>
       <label className={LABEL}>Deed legal description</label>
