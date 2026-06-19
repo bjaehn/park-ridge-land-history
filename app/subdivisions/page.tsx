@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 export default function SubdivisionsPage() {
   return (
-    <div className="page-shell">
+    <div className="page-shell max-w-none">
       <Breadcrumb
         items={[
           { label: "Park Ridge", href: "/city" },
