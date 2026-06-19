@@ -535,9 +535,19 @@ export async function fetchSubdivisionMapData(
     .filter(Boolean);
 
   const bboxData = (bboxResult.data?.bbox ?? null) as Record<string, number> | null;
-  const bbox: [number, number, number, number] | null = bboxData
+  let bbox: [number, number, number, number] | null = bboxData
     ? [bboxData.minLng, bboxData.minLat, bboxData.maxLng, bboxData.maxLat]
     : null;
+
+  // No official boundary — compute a bbox from the linked parcel geometries so
+  // the map can still center on the actual properties.
+  if (!bbox && pins.length > 0) {
+    const { data: pb } = await supabase.rpc("pins_bbox", { pin_array: pins });
+    const row = (pb as Array<{ min_lng: number; min_lat: number; max_lng: number; max_lat: number }>)?.[0];
+    if (row?.min_lng != null) {
+      bbox = [row.min_lng, row.min_lat, row.max_lng, row.max_lat];
+    }
+  }
 
   return { pins, bbox };
 }
