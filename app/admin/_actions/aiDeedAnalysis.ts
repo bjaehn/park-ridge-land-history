@@ -136,7 +136,7 @@ Rules:
 - "relationship_type" should be one of: "resubdivision", "addition", "addition/resubdivision", "subdivision".
 - "development_chain" is an ordered array from oldest (county/section) to newest (the property), e.g. ["Cook County, IL", "Section 26, Township 41 North, Range 12 East", "Parent Subdivision", "Block X", "Lot Y", "Child Subdivision", "Lot Z", "526 N Washington Ave"].
 - Match subdivision names to the known list case-insensitively. If matched, set the _id field to the UUID from the list. If not matched, set _id to null and add the name to "new_subdivision_names".
-- "change_events": If the deed has MULTIPLE PARCELS (Parcel One, Parcel Two, etc.), always include a consolidation change event describing which lots were combined under one PIN. Also include events if the deed text explicitly mentions alleys, adjacent parcels, or other acquisitions.
+- "change_events": If the deed has MULTIPLE PARCELS (Parcel One, Parcel Two, etc.), always include a consolidation change event describing which lots were combined under one PIN. Also include events if the deed text explicitly mentions combining, splitting, or adjusting parcels. event_type must be one of: "consolidation", "subdivision", "resubdivision", "boundary_adj", "creation", "annexation".
 - "related_pins" will usually be empty — only populate if specific PIN numbers appear in the deed text.
 - If the deed text is not a standard legal description, return an empty subdivision_links array and empty arrays for everything else.`;
 

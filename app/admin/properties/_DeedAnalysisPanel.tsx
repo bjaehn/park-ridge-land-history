@@ -469,13 +469,12 @@ function ChangeEventCard({
         <div>
           <label className={LABEL}>Event type</label>
           <select value={eventType} onChange={(e) => setEventType(e.target.value)} className={SELECT}>
-            <option value="acquisition">Acquisition</option>
             <option value="consolidation">Consolidation</option>
-            <option value="boundary_adj">Boundary adjustment</option>
             <option value="subdivision">Subdivision</option>
             <option value="resubdivision">Resubdivision</option>
-            <option value="annexation">Annexation</option>
+            <option value="boundary_adj">Boundary adjustment</option>
             <option value="creation">Creation</option>
+            <option value="annexation">Annexation</option>
           </select>
         </div>
         <div>
