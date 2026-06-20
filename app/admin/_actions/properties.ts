@@ -80,7 +80,7 @@ export async function upsertSubdivisionLink(
 
   const { error } = linkId
     ? await adminSupabase.from("property_subdivision_links").update(payload).eq("id", linkId)
-    : await adminSupabase.from("property_subdivision_links").insert(payload);
+    : await adminSupabase.from("property_subdivision_links").upsert(payload, { onConflict: "pin,subdivision_id" });
 
   if (error) return { error: error.message };
   if (subdivisionId) await syncParcelCount(subdivisionId);
