@@ -5,7 +5,7 @@ import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { SourceNote } from "@/components/ui/SourceNote";
 import { MapView } from "@/components/MapView";
 import { PropertyDetailContent } from "./_PropertyDetailContent";
-import { getPropertyByPin } from "@/lib/data/properties";
+import { getPropertyByPin, fetchPropertyBbox } from "@/lib/data/properties";
 import { formatAddress } from "@/lib/formatters";
 
 type Props = { params: { pin: string } };
@@ -23,13 +23,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function PropertyDetailPage({ params }: Props) {
   const pin = decodeURIComponent(params.pin);
-  const property = await getPropertyByPin(pin).catch(() => null);
+  const [property, propertyBbox] = await Promise.all([
+    getPropertyByPin(pin).catch(() => null),
+    fetchPropertyBbox(pin).catch(() => null),
+  ]);
 
   if (!property) notFound();
 
   const address = formatAddress(property.address);
-  const lat = property.lat ?? 42.0111;
-  const lng = property.lng ?? -87.8417;
+  const lat = property.lat;
+  const lng = property.lng;
 
   const pin_ = property.pinNormalized ?? pin;
   const township = pin_.slice(0, 2);
@@ -63,7 +66,7 @@ export default async function PropertyDetailPage({ params }: Props) {
       <div className="mb-8 grid grid-cols-1 lg:grid-cols-[55fr_45fr] gap-6 items-start">
         <div>
           <MapView
-            scope={{ kind: "property", pin, lat, lng }}
+            scope={{ kind: "property", pin, bbox: propertyBbox ?? undefined, lat: lat ?? undefined, lng: lng ?? undefined }}
             height="480px"
             showExpand
             hideLensSelector

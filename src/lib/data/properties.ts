@@ -113,6 +113,20 @@ export type PropertyDetailData = {
 
 export type { LandLineageEntry, LandLot };
 
+export async function fetchPropertyBbox(pin: string): Promise<[number, number, number, number] | null> {
+  if (!supabase) return null;
+  try {
+    const { data, error } = await supabase.rpc("pins_bbox", { pin_array: [pin] });
+    if (error || !data) return null;
+    const rows = data as Array<{ min_lng: number; min_lat: number; max_lng: number; max_lat: number }>;
+    const row = rows?.[0];
+    if (!row || row.min_lng == null) return null;
+    return [row.min_lng, row.min_lat, row.max_lng, row.max_lat];
+  } catch {
+    return null;
+  }
+}
+
 export async function getPropertyByPin(pin: string): Promise<PropertyPageData> {
   const props = await loadPropertyProps(pin);
   if (!props) throw new Error(`Property not found: ${pin}`);
