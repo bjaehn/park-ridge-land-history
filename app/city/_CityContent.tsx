@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { StatGrid } from "@/components/ui/StatGrid";
 import { ConstructionByDecadeChart } from "@/components/ui/ConstructionByDecadeChart";
 import { MarketHistoryChart } from "@/components/ui/MarketHistoryChart";
@@ -34,7 +34,7 @@ type HomeStatsSnapshot = {
   yearBuiltPct: number;
 };
 
-export function CityContent({ townships = [] }: { townships?: CityTownship[] }) {
+export function CityContent({ townships = [], mapSlot }: { townships?: CityTownship[]; mapSlot?: React.ReactNode }) {
   const [stats, setStats] = useState<HomeStatsSnapshot | null>(null);
   const [rows, setRows] = useState<DecadeRow[]>([]);
   const [neighborhoods, setNeighborhoods] = useState<NeighborhoodSummary[]>([]);
@@ -98,10 +98,64 @@ export function CityContent({ townships = [] }: { townships?: CityTownship[] }) 
 
       <StatGrid columns={4} stats={statItems.slice(0, 4)} />
 
+      {mapSlot}
+
       <div>
         <p className="section-heading">When Park Ridge was built, wave by wave</p>
         <ConstructionByDecadeChart rows={rows} />
       </div>
+
+      {/* Market history */}
+      <section>
+        <div className="flex items-center gap-2 mb-3">
+          <SaleIcon size={14} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />
+          <p className="section-heading !mb-0">Park Ridge home sales, 2000 to 2025</p>
+        </div>
+        <p className="text-sm text-text-muted mb-4">
+          Bars show annual sales volume. Line shows median sale price. Market sales only, $50K to $5M.
+        </p>
+        <div className="-mx-[clamp(1rem,4vw,3rem)]">
+          <MarketHistoryChart data={marketHistory} />
+        </div>
+      </section>
+
+      {/* Assessment trend */}
+      <section>
+        <div className="flex items-center gap-2 mb-3">
+          <AssessmentIcon size={14} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />
+          <p className="section-heading !mb-0">Average assessed value, 1999 to 2025</p>
+        </div>
+        <p className="text-sm text-text-muted mb-4">
+          Certified totals from Cook County. Dashed lines mark triennial reassessment years.
+        </p>
+        <div className="-mx-[clamp(1rem,4vw,3rem)]">
+          <AssessmentTrendChart data={assessmentTrend} />
+        </div>
+      </section>
+
+      {/* Appeals */}
+      <section>
+        <div className="flex items-center gap-2 mb-3">
+          <ComparisonIcon size={14} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />
+          <p className="section-heading !mb-0">Assessment appeals filed by year</p>
+        </div>
+        <p className="text-sm text-text-muted mb-4">
+          Spikes follow reassessment years as residents push back on new valuations.
+        </p>
+        <AppealsChart data={appealsByYear} />
+      </section>
+
+      {/* Permit activity */}
+      <section>
+        <div className="flex items-center gap-2 mb-3">
+          <PermitIcon size={14} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />
+          <p className="section-heading !mb-0">Building permits, 2019 to 2026</p>
+        </div>
+        <p className="text-sm text-text-muted mb-4">
+          Residential permits in purple, commercial in slate. The 2020 to 2021 renovation surge is visible.
+        </p>
+        <PermitActivityChart data={permitActivity} />
+      </section>
 
       {neighborhoods.length > 0 && (
         <div>
@@ -170,58 +224,6 @@ export function CityContent({ townships = [] }: { townships?: CityTownship[] }) 
           </div>
         </section>
       )}
-
-      {/* Market history */}
-      <section>
-        <div className="flex items-center gap-2 mb-3">
-          <SaleIcon size={14} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />
-          <p className="section-heading !mb-0">Park Ridge home sales, 2000 to 2025</p>
-        </div>
-        <p className="text-sm text-text-muted mb-4">
-          Bars show annual sales volume. Line shows median sale price. Market sales only, $50K to $5M.
-        </p>
-        <div className="-mx-[clamp(1rem,4vw,3rem)]">
-          <MarketHistoryChart data={marketHistory} />
-        </div>
-      </section>
-
-      {/* Assessment trend */}
-      <section>
-        <div className="flex items-center gap-2 mb-3">
-          <AssessmentIcon size={14} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />
-          <p className="section-heading !mb-0">Average assessed value, 1999 to 2025</p>
-        </div>
-        <p className="text-sm text-text-muted mb-4">
-          Certified totals from Cook County. Dashed lines mark triennial reassessment years.
-        </p>
-        <div className="-mx-[clamp(1rem,4vw,3rem)]">
-          <AssessmentTrendChart data={assessmentTrend} />
-        </div>
-      </section>
-
-      {/* Appeals */}
-      <section>
-        <div className="flex items-center gap-2 mb-3">
-          <ComparisonIcon size={14} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />
-          <p className="section-heading !mb-0">Assessment appeals filed by year</p>
-        </div>
-        <p className="text-sm text-text-muted mb-4">
-          Spikes follow reassessment years as residents push back on new valuations.
-        </p>
-        <AppealsChart data={appealsByYear} />
-      </section>
-
-      {/* Permit activity */}
-      <section>
-        <div className="flex items-center gap-2 mb-3">
-          <PermitIcon size={14} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />
-          <p className="section-heading !mb-0">Building permits, 2019 to 2026</p>
-        </div>
-        <p className="text-sm text-text-muted mb-4">
-          Residential permits in purple, commercial in slate. The 2020 to 2021 renovation surge is visible.
-        </p>
-        <PermitActivityChart data={permitActivity} />
-      </section>
 
       {/* Browse by section */}
       {townships.length > 0 && (

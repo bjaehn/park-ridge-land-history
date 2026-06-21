@@ -41,16 +41,17 @@ export default async function StreetDetailPage({ params }: Props) {
         subtitle={`${street.parcelCount} properties. ${street.eraSpan ? `Built ${street.eraSpan}.` : ""}`}
       />
 
-      <StreetDetailContent streetName={street.normalizedName} displayName={street.name} />
-
-      <div className="mt-8">
-        <p className="section-heading">Street map</p>
-        <MapView
-          scope={{ kind: "street", streetName: street.normalizedName, bbox: streetBbox ?? undefined }}
-          height="560px"
-          showExpand
-        />
-      </div>
+      <StreetDetailContent
+        streetName={street.normalizedName}
+        displayName={street.name}
+        mapSlot={
+          <MapView
+            scope={{ kind: "street", streetName: street.normalizedName, bbox: streetBbox ?? undefined }}
+            height="560px"
+            showExpand
+          />
+        }
+      />
 
       <SourceNote sources={["assessor", "permits"]} />
     </div>

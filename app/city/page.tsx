@@ -25,11 +25,14 @@ export default async function CityPage() {
         subtitle="How Park Ridge's 13,000+ properties took shape, decade by decade."
       />
 
-      <CityContent townships={townships} />
-
-      <div className="mt-8 map-full-bleed">
-        <MapView scope={{ kind: "city" }} height="700px" showExpand />
-      </div>
+      <CityContent
+        townships={townships}
+        mapSlot={
+          <div className="map-full-bleed">
+            <MapView scope={{ kind: "city" }} height="700px" showExpand />
+          </div>
+        }
+      />
 
       <SourceNote
         sources={["assessor", "permits", "hargis", "cookGis"]}

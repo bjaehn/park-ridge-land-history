@@ -187,6 +187,13 @@ export function SubdivisionDetailContent({ subdivisionId, recordedYear, entityTy
         </div>
       )}
 
+      {mapSlot && (
+        <div>
+          <p className="section-heading">Subdivision map</p>
+          {mapSlot}
+        </div>
+      )}
+
       {/* Median sale price, 2015 vs. 2024 */}
       {priceRow.length > 0 && (
         <section>
@@ -278,13 +285,6 @@ export function SubdivisionDetailContent({ subdivisionId, recordedYear, entityTy
             <MarketHistoryChart data={marketHistory} />
           </div>
         </section>
-      )}
-
-      {mapSlot && (
-        <div>
-          <p className="section-heading">Subdivision map</p>
-          {mapSlot}
-        </div>
       )}
 
       {parcels.length > 0 && (() => {
