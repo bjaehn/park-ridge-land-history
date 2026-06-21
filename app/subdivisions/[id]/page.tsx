@@ -109,7 +109,7 @@ export default async function SubdivisionDetailPage({ params }: Props) {
                 pins: mapData.pins.length > 0 ? mapData.pins : undefined,
                 bbox: mapData.bbox ?? undefined,
               }}
-              height="400px"
+              height="560px"
               showExpand
             />
           ) : null

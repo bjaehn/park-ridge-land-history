@@ -46,7 +46,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
         <p className="section-heading">Neighborhood map</p>
         <MapView
           scope={{ kind: "neighborhood", neighborhoodId: neighborhood.id, bbox: neighborhoodBbox ?? undefined }}
-          height="420px"
+          height="580px"
           showExpand
         />
       </div>

@@ -27,9 +27,8 @@ export default async function CityPage() {
 
       <CityContent townships={townships} />
 
-      <div className="mt-8">
-        <p className="section-heading">City map</p>
-        <MapView scope={{ kind: "city" }} height="500px" showExpand />
+      <div className="mt-8 map-full-bleed">
+        <MapView scope={{ kind: "city" }} height="700px" showExpand />
       </div>
 
       <SourceNote
