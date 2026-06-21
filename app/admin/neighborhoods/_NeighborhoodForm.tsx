@@ -9,6 +9,14 @@ const LABEL = "block text-xs font-semibold text-text-muted uppercase tracking-wi
 const TEXTAREA = "w-full bg-surface-card border border-surface-border rounded px-3 py-1.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-teal/60 resize-none";
 const SECTION = "bg-surface-raised rounded-lg border border-surface-border p-5 mb-5";
 
+const SELECT = "w-full bg-surface-card border border-surface-border rounded px-3 py-1.5 text-sm text-text-primary focus:outline-none focus:border-accent-teal/60 transition-colors";
+
+const NEIGHBORHOOD_TYPE_OPTIONS = [
+  { value: "official_planning", label: "Official Planning District" },
+  { value: "business_district", label: "Business District" },
+  { value: "local_market",      label: "Local / Market Neighborhood" },
+] as const;
+
 type NeighborhoodData = {
   id?: string;
   label?: string | null;
@@ -17,6 +25,7 @@ type NeighborhoodData = {
   historical_summary?: string | null;
   established_year?: number | null;
   notes?: string | null;
+  neighborhood_type?: string | null;
 };
 
 export function NeighborhoodForm({ neighborhood }: { neighborhood?: NeighborhoodData }) {
@@ -61,21 +70,41 @@ export function NeighborhoodForm({ neighborhood }: { neighborhood?: Neighborhood
               <input
                 name="id"
                 required
-                placeholder="neighborhood:uptown"
+                placeholder="official_planning:south-park"
                 className={INPUT}
               />
               <p className="text-xs text-text-muted mt-1">
-                Use format <code className="font-mono">neighborhood:slug</code>. Cannot be changed after creation.
+                Use format <code className="font-mono">type:slug</code>, e.g.{" "}
+                <code className="font-mono">official_planning:south-park</code>,{" "}
+                <code className="font-mono">business_district:uptown</code>,{" "}
+                <code className="font-mono">local_market:country-club</code>. Cannot be changed after creation.
               </p>
             </div>
           )}
+          <div>
+            <label className={LABEL}>Type <span className="text-accent-red">*</span></label>
+            {isEdit ? (
+              <>
+                <input type="hidden" name="neighborhood_type" value={neighborhood?.neighborhood_type ?? "official_planning"} />
+                <p className="text-sm text-text-secondary px-3 py-1.5 bg-surface-card border border-surface-border rounded">
+                  {NEIGHBORHOOD_TYPE_OPTIONS.find((o) => o.value === neighborhood?.neighborhood_type)?.label ?? neighborhood?.neighborhood_type ?? "—"}
+                </p>
+              </>
+            ) : (
+              <select name="neighborhood_type" required defaultValue="official_planning" className={SELECT}>
+                {NEIGHBORHOOD_TYPE_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+            )}
+          </div>
           <div>
             <label className={LABEL}>Label <span className="text-accent-red">*</span></label>
             <input name="label" defaultValue={neighborhood?.label ?? ""} required className={INPUT} />
           </div>
           <div>
             <label className={LABEL}>Slug</label>
-            <input name="slug" defaultValue={neighborhood?.slug ?? ""} placeholder="uptown" className={INPUT} />
+            <input name="slug" defaultValue={neighborhood?.slug ?? ""} placeholder="south-park" className={INPUT} />
           </div>
           <div>
             <label className={LABEL}>Established Year</label>

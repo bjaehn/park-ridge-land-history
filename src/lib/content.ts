@@ -80,8 +80,8 @@ export const COVERAGE_DISCLAIMER =
   "About 9% of parcels (1,190) could not be matched to a street address and are excluded from address-based lists.";
 
 export const NEIGHBORHOOD_BOUNDARY_DISCLAIMER =
-  "Neighborhood boundaries are approximate and not official. " +
-  "They are derived from Census tract groupings for orientation only.";
+  "Official planning district boundaries reflect the City of Park Ridge's planning areas. " +
+  "Business district and local neighborhood boundaries are approximate.";
 
 export const DATA_CURRENCY_DISCLAIMER =
   "Data reflects the most recent assessor extract and permit records available at build time.";

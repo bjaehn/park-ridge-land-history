@@ -8,7 +8,7 @@ import { NeighborhoodCharts } from "@/components/ui/NeighborhoodCharts";
 
 export const metadata: Metadata = {
   title: "Neighborhoods",
-  description: "Five approximate areas of Park Ridge, from the early Uptown core to the postwar south side.",
+  description: "Park Ridge neighborhoods — official planning districts, business districts, and local area names.",
 };
 
 export default function NeighborhoodsPage() {
@@ -23,7 +23,7 @@ export default function NeighborhoodsPage() {
       <PageHeader
         eyebrow="Park Ridge"
         title="Neighborhoods"
-        subtitle="Five approximate areas, derived from Census tract groupings. Each developed in a distinct era."
+        subtitle="Three overlapping ways to understand Park Ridge geography: official planning districts, business districts, and informal local names."
       />
       <div className="mb-10">
         <NeighborhoodCharts />

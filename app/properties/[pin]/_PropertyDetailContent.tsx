@@ -107,8 +107,7 @@ function PinBreakdown({ props }: { props: Record<string, unknown> }) {
   );
 }
 
-function NeighborhoodCard({ neighborhoodId, neighborhoodLabel }: { neighborhoodId: string; neighborhoodLabel: string | null }) {
-  const slug = neighborhoodId.replace("neighborhood:", "");
+function NeighborhoodChip({ label, slug, typeLabel }: { label: string; slug: string; typeLabel: string }) {
   return (
     <Link
       href={`/neighborhoods/${encodeURIComponent(slug)}`}
@@ -116,8 +115,8 @@ function NeighborhoodCard({ neighborhoodId, neighborhoodLabel }: { neighborhoodI
     >
       <StreetIcon size={15} strokeWidth={1.8} className="text-text-muted shrink-0 group-hover:text-accent-purple transition-colors" aria-hidden="true" />
       <div className="min-w-0">
-        <p className="text-sm font-medium text-text-primary">{neighborhoodLabel ?? slug} neighborhood</p>
-        <p className="text-xs text-text-muted mt-0.5">View all properties in this neighborhood</p>
+        <p className="text-[10px] text-text-muted uppercase tracking-wider mb-0.5">{typeLabel}</p>
+        <p className="text-sm font-medium text-text-primary">{label}</p>
       </div>
       <span className="text-text-muted text-xs ml-auto shrink-0">→</span>
     </Link>
@@ -485,13 +484,32 @@ export function PropertyDetailContent({ pin }: Props) {
         <p className="text-xs text-text-muted mt-2">Cook County 14-digit PIN: township · section · block · parcel · unit</p>
       </section>
 
-      {/* Neighborhood */}
-      {props.neighborhood_id && (
+      {/* Neighborhoods */}
+      {(props.official_planning_neighborhood_id || props.business_district_id || props.local_neighborhood_id) && (
         <section>
-          <NeighborhoodCard
-            neighborhoodId={props.neighborhood_id as string}
-            neighborhoodLabel={props.neighborhood_label as string | null}
-          />
+          <div className="space-y-2">
+            {props.official_planning_neighborhood_id && props.official_planning_neighborhood_slug && (
+              <NeighborhoodChip
+                label={(props.official_planning_neighborhood_label as string | null) ?? (props.official_planning_neighborhood_id as string)}
+                slug={props.official_planning_neighborhood_slug as string}
+                typeLabel="Official Planning"
+              />
+            )}
+            {props.business_district_id && props.business_district_slug && (
+              <NeighborhoodChip
+                label={(props.business_district_label as string | null) ?? (props.business_district_id as string)}
+                slug={props.business_district_slug as string}
+                typeLabel="Business District"
+              />
+            )}
+            {props.local_neighborhood_id && props.local_neighborhood_slug && (
+              <NeighborhoodChip
+                label={(props.local_neighborhood_label as string | null) ?? (props.local_neighborhood_id as string)}
+                slug={props.local_neighborhood_slug as string}
+                typeLabel="Local Name"
+              />
+            )}
+          </div>
         </section>
       )}
 

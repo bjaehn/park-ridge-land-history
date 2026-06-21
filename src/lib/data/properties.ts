@@ -38,6 +38,15 @@ export type ParcelProperties = {
   property_class?: string | null;
   neighborhood_id?: string | null;
   neighborhood_label?: string | null;
+  official_planning_neighborhood_id?: string | null;
+  official_planning_neighborhood_label?: string | null;
+  official_planning_neighborhood_slug?: string | null;
+  business_district_id?: string | null;
+  business_district_label?: string | null;
+  business_district_slug?: string | null;
+  local_neighborhood_id?: string | null;
+  local_neighborhood_label?: string | null;
+  local_neighborhood_slug?: string | null;
   street_name_normalized?: string | null;
   lat?: number | null;
   lng?: number | null;
@@ -52,6 +61,12 @@ export type PropertyPageData = {
   yearBuilt?: number | null;
   neighborhoodLabel?: string | null;
   neighborhoodSlug?: string | null;
+  officialPlanningNeighborhoodLabel?: string | null;
+  officialPlanningNeighborhoodSlug?: string | null;
+  businessDistrictLabel?: string | null;
+  businessDistrictSlug?: string | null;
+  localNeighborhoodLabel?: string | null;
+  localNeighborhoodSlug?: string | null;
   streetName?: string | null;
   pinNormalized?: string | null;
   subdivision?: { id: string; name: string } | null;
@@ -144,6 +159,12 @@ export async function getPropertyByPin(pin: string): Promise<PropertyPageData> {
     yearBuilt: props.year_built,
     neighborhoodLabel: (props.neighborhood_label as string | undefined) ?? null,
     neighborhoodSlug: neighborhoodId?.replace("neighborhood:", "") ?? null,
+    officialPlanningNeighborhoodLabel: (props.official_planning_neighborhood_label as string | undefined) ?? null,
+    officialPlanningNeighborhoodSlug: (props.official_planning_neighborhood_slug as string | undefined) ?? null,
+    businessDistrictLabel: (props.business_district_label as string | undefined) ?? null,
+    businessDistrictSlug: (props.business_district_slug as string | undefined) ?? null,
+    localNeighborhoodLabel: (props.local_neighborhood_label as string | undefined) ?? null,
+    localNeighborhoodSlug: (props.local_neighborhood_slug as string | undefined) ?? null,
     streetName: (props.street_name_normalized as string | undefined) ?? null,
     pinNormalized: (props.pin_normalized as string | undefined) ?? null,
     subdivision: subdivisionResult ? { id: subdivisionResult.id, name: subdivisionResult.name } : null,
@@ -395,7 +416,44 @@ async function loadPropertyProps(pin: string): Promise<ParcelProperties | null> 
       .single();
     if (error || !data) return null;
     const { geometry: _geom, imported_at: _ts, ...rest } = data as Record<string, unknown>;
-    return rest as ParcelProperties;
+    const props = rest as ParcelProperties;
+
+    // Enrich with labels/slugs for the three typed neighborhood columns.
+    const neighborhoodIds = [
+      props.official_planning_neighborhood_id,
+      props.business_district_id,
+      props.local_neighborhood_id,
+    ].filter((id): id is string => typeof id === "string");
+
+    if (neighborhoodIds.length > 0) {
+      const { data: nData } = await supabase
+        .from("neighborhoods")
+        .select("id, label, slug")
+        .in("id", neighborhoodIds);
+      const nMap = new Map(
+        (nData ?? []).map((n) => [
+          (n as { id: string }).id,
+          n as { id: string; label: string; slug: string | null },
+        ])
+      );
+      const opId = props.official_planning_neighborhood_id as string | undefined;
+      const bdId = props.business_district_id as string | undefined;
+      const lnId = props.local_neighborhood_id as string | undefined;
+      if (opId) {
+        const n = nMap.get(opId);
+        if (n) { props.official_planning_neighborhood_label = n.label; props.official_planning_neighborhood_slug = n.slug; }
+      }
+      if (bdId) {
+        const n = nMap.get(bdId);
+        if (n) { props.business_district_label = n.label; props.business_district_slug = n.slug; }
+      }
+      if (lnId) {
+        const n = nMap.get(lnId);
+        if (n) { props.local_neighborhood_label = n.label; props.local_neighborhood_slug = n.slug; }
+      }
+    }
+
+    return props;
   } catch {
     return null;
   }

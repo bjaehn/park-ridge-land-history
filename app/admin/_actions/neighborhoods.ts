@@ -22,11 +22,12 @@ export async function createNeighborhood(formData: FormData) {
   const { error } = await adminSupabase.from("neighborhoods").insert({
     id,
     label,
-    description:       str(formData, "description"),
-    slug:              str(formData, "slug"),
+    neighborhood_type:  str(formData, "neighborhood_type") ?? "official_planning",
+    description:        str(formData, "description"),
+    slug:               str(formData, "slug"),
     historical_summary: str(formData, "historical_summary"),
-    established_year:  num(formData, "established_year"),
-    notes:             str(formData, "notes"),
+    established_year:   num(formData, "established_year"),
+    notes:              str(formData, "notes"),
   });
   revalidatePath("/admin/neighborhoods");
   if (error) return { error: error.message };
@@ -37,13 +38,14 @@ export async function updateNeighborhood(id: string, formData: FormData) {
   const { error } = await adminSupabase
     .from("neighborhoods")
     .update({
-      label:             str(formData, "label") ?? "",
-      description:       str(formData, "description"),
-      slug:              str(formData, "slug"),
+      label:              str(formData, "label") ?? "",
+      neighborhood_type:  str(formData, "neighborhood_type") ?? "official_planning",
+      description:        str(formData, "description"),
+      slug:               str(formData, "slug"),
       historical_summary: str(formData, "historical_summary"),
-      established_year:  num(formData, "established_year"),
-      notes:             str(formData, "notes"),
-      updated_at:        new Date().toISOString(),
+      established_year:   num(formData, "established_year"),
+      notes:              str(formData, "notes"),
+      updated_at:         new Date().toISOString(),
     })
     .eq("id", id);
   revalidatePath("/admin/neighborhoods");
@@ -115,6 +117,52 @@ export async function deleteNeighborhoodSubdivisionLink(linkId: string, neighbor
     .from("neighborhood_subdivision_links")
     .delete()
     .eq("id", linkId);
+  revalidatePath(`/admin/neighborhoods/${encodeURIComponent(neighborhoodId)}`);
+  if (error) return { error: error.message };
+  return {};
+}
+
+// ─── Parcel assignment by street ─────────────────────────────────────────────
+
+export async function assignParcelsToNeighborhoodByStreet(
+  neighborhoodId: string,
+  neighborhoodType: string,
+  streets: string[]
+) {
+  if (streets.length === 0) return { error: "No streets provided." };
+
+  const column =
+    neighborhoodType === "business_district" ? "business_district_id" :
+    neighborhoodType === "local_market"       ? "local_neighborhood_id" :
+                                                "official_planning_neighborhood_id";
+
+  const normalizedStreets = streets.map((s) => s.toLowerCase().trim()).filter(Boolean);
+  if (normalizedStreets.length === 0) return { error: "No valid street names." };
+
+  const { error, count } = await adminSupabase
+    .from("parcels")
+    .update({ [column]: neighborhoodId })
+    .in("street_name_normalized", normalizedStreets);
+
+  revalidatePath(`/admin/neighborhoods/${encodeURIComponent(neighborhoodId)}`);
+  if (error) return { error: error.message };
+  return { updated: count ?? 0 };
+}
+
+export async function removeParcelsFromNeighborhood(
+  neighborhoodId: string,
+  neighborhoodType: string
+) {
+  const column =
+    neighborhoodType === "business_district" ? "business_district_id" :
+    neighborhoodType === "local_market"       ? "local_neighborhood_id" :
+                                                "official_planning_neighborhood_id";
+
+  const { error } = await adminSupabase
+    .from("parcels")
+    .update({ [column]: null })
+    .eq(column, neighborhoodId);
+
   revalidatePath(`/admin/neighborhoods/${encodeURIComponent(neighborhoodId)}`);
   if (error) return { error: error.message };
   return {};

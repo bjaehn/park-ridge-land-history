@@ -35,7 +35,12 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
         ]}
       />
       <PageHeader
-        eyebrow="Neighborhood"
+        eyebrow={
+          neighborhood.neighborhoodType === "official_planning" ? "Official Planning Neighborhood" :
+          neighborhood.neighborhoodType === "business_district" ? "Business District" :
+          neighborhood.neighborhoodType === "local_market" ? "Local Neighborhood" :
+          "Neighborhood"
+        }
         title={neighborhood.label}
         subtitle={`${neighborhood.parcelCount} properties. ${neighborhood.medianYear ? `Typical build year: ${neighborhood.medianYear}.` : ""}`}
       />

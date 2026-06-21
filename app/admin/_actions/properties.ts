@@ -38,6 +38,9 @@ export async function updateParcel(pin: string, formData: FormData) {
       pin_parcel:    str(formData, "pin_parcel"),
       pin_unit:      str(formData, "pin_unit"),
       deed_notes:    str(formData, "deed_notes"),
+      official_planning_neighborhood_id: str(formData, "official_planning_neighborhood_id"),
+      business_district_id:              str(formData, "business_district_id"),
+      local_neighborhood_id:             str(formData, "local_neighborhood_id"),
     })
     .eq("pin_normalized", pin);
 

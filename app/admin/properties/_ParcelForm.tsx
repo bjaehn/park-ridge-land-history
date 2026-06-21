@@ -7,6 +7,7 @@ import { updateParcel } from "../_actions/properties";
 const INPUT = "w-full bg-surface-card border border-surface-border rounded px-3 py-1.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-teal/60 transition-colors";
 const LABEL = "block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1";
 const SECTION = "bg-surface-raised rounded-lg border border-surface-border p-5 mb-5";
+const SELECT = "w-full bg-surface-card border border-surface-border rounded px-3 py-1.5 text-sm text-text-primary focus:outline-none focus:border-accent-teal/60 transition-colors";
 
 function DeedNotesField({ defaultValue }: { defaultValue: string }) {
   const [val, setVal] = useState(defaultValue);
@@ -28,6 +29,8 @@ function DeedNotesField({ defaultValue }: { defaultValue: string }) {
   );
 }
 
+type Neighborhood = { id: string; label: string };
+
 type Parcel = {
   pin_normalized: string;
   address: string | null;
@@ -42,9 +45,19 @@ type Parcel = {
   pin_parcel: string | null;
   pin_unit: string | null;
   deed_notes: string | null;
+  official_planning_neighborhood_id?: string | null;
+  business_district_id?: string | null;
+  local_neighborhood_id?: string | null;
 };
 
-export function ParcelForm({ parcel }: { parcel: Parcel }) {
+type Props = {
+  parcel: Parcel;
+  officialPlanningNeighborhoods: Neighborhood[];
+  businessDistrictNeighborhoods: Neighborhood[];
+  localMarketNeighborhoods: Neighborhood[];
+};
+
+export function ParcelForm({ parcel, officialPlanningNeighborhoods, businessDistrictNeighborhoods, localMarketNeighborhoods }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -138,6 +151,40 @@ export function ParcelForm({ parcel }: { parcel: Parcel }) {
       <div className={SECTION}>
         <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-4">Deed Record</h3>
         <DeedNotesField defaultValue={parcel.deed_notes ?? ""} />
+      </div>
+
+      {/* Neighborhood Assignment */}
+      <div className={SECTION}>
+        <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-4">Neighborhood Assignment</h3>
+        <div className="space-y-4">
+          <div>
+            <label className={LABEL}>Official Planning Neighborhood</label>
+            <select name="official_planning_neighborhood_id" defaultValue={parcel.official_planning_neighborhood_id ?? ""} className={SELECT}>
+              <option value="">— None —</option>
+              {officialPlanningNeighborhoods.map((n) => (
+                <option key={n.id} value={n.id}>{n.label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className={LABEL}>Business District</label>
+            <select name="business_district_id" defaultValue={parcel.business_district_id ?? ""} className={SELECT}>
+              <option value="">— None —</option>
+              {businessDistrictNeighborhoods.map((n) => (
+                <option key={n.id} value={n.id}>{n.label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className={LABEL}>Local / Market Neighborhood</label>
+            <select name="local_neighborhood_id" defaultValue={parcel.local_neighborhood_id ?? ""} className={SELECT}>
+              <option value="">— None —</option>
+              {localMarketNeighborhoods.map((n) => (
+                <option key={n.id} value={n.id}>{n.label}</option>
+              ))}
+            </select>
+          </div>
+        </div>
       </div>
 
       <div className="flex items-center gap-3">

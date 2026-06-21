@@ -26,14 +26,6 @@ export type StreetDetail = StreetSummary & {
   parcels: StreetParcelRow[];
 };
 
-const NEIGHBORHOOD_LABELS: Record<string, string> = {
-  "neighborhood:uptown":    "Uptown",
-  "neighborhood:central":   "Central",
-  "neighborhood:northwest": "Northwest",
-  "neighborhood:northeast": "Northeast",
-  "neighborhood:south":     "South Park Ridge",
-};
-
 export async function getStreetByName(rawName: string): Promise<StreetSummary> {
   const normalized = rawName.toLowerCase().trim();
   const displayName = formatStreetDisplayName(normalized);
@@ -48,6 +40,8 @@ export async function getStreetByName(rawName: string): Promise<StreetSummary> {
     const oldestYear = row.oldest_year as number | null;
     const newestYear = row.newest_year as number | null;
     const neighborhoodId = row.neighborhood_id as string | undefined;
+    const neighborhoodLabel = row.neighborhood_label as string | undefined;
+    const neighborhoodSlug = row.neighborhood_slug as string | undefined;
 
     const eraSpan =
       oldestYear && newestYear && oldestYear !== newestYear
@@ -65,8 +59,8 @@ export async function getStreetByName(rawName: string): Promise<StreetSummary> {
       newestYear: newestYear ?? undefined,
       eraSpan,
       neighborhoodId,
-      neighborhoodLabel: neighborhoodId ? NEIGHBORHOOD_LABELS[neighborhoodId] : undefined,
-      neighborhoodSlug: neighborhoodId?.replace("neighborhood:", ""),
+      neighborhoodLabel,
+      neighborhoodSlug,
     };
   } catch {
     return { name: displayName, normalizedName: normalized, parcelCount: 0 };

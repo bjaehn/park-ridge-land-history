@@ -16,10 +16,11 @@ export default async function EditPropertyPage({ params }: { params: { pin: stri
     { data: eventsRaw },
     { data: changeEventsRaw },
     { data: allSubdivisionsRaw },
+    { data: allNeighborhoodsRaw },
   ] = await Promise.all([
     adminSupabase
       .from("parcels")
-      .select("pin_normalized, address, year_built, property_class, building_sqft, land_sqft, municipality, pin_township, pin_section, pin_block, pin_parcel, pin_unit, deed_notes")
+      .select("pin_normalized, address, year_built, property_class, building_sqft, land_sqft, municipality, pin_township, pin_section, pin_block, pin_parcel, pin_unit, deed_notes, official_planning_neighborhood_id, business_district_id, local_neighborhood_id")
       .eq("pin_normalized", pin)
       .single(),
     adminSupabase
@@ -37,6 +38,7 @@ export default async function EditPropertyPage({ params }: { params: { pin: stri
       .select("id, event_type, event_date, event_year, date_precision, description, plat_book, plat_page, document_number, confidence_level, notes, parcel_lineage_edges(id, pin, side, notes)")
       .order("event_year", { ascending: false, nullsFirst: false }),
     adminSupabase.from("subdivisions").select("id, name").order("name"),
+    adminSupabase.from("neighborhoods").select("id, label, neighborhood_type").order("label"),
   ]);
 
   if (!parcel) notFound();
@@ -45,6 +47,7 @@ export default async function EditPropertyPage({ params }: { params: { pin: stri
   const events = eventsRaw ?? [];
   const changeEvents = changeEventsRaw ?? [];
   const allSubdivisions = allSubdivisionsRaw ?? [];
+  const allNeighborhoods = (allNeighborhoodsRaw ?? []) as Array<{ id: string; label: string; neighborhood_type: string | null }>;
 
   // Shape links to include a flat subdivision_name
   const shapedLinks = links.map((l) => ({
@@ -73,7 +76,12 @@ export default async function EditPropertyPage({ params }: { params: { pin: stri
         )}
       </div>
 
-      <ParcelForm parcel={parcel} />
+      <ParcelForm
+        parcel={parcel}
+        officialPlanningNeighborhoods={allNeighborhoods.filter((n) => n.neighborhood_type === "official_planning")}
+        businessDistrictNeighborhoods={allNeighborhoods.filter((n) => n.neighborhood_type === "business_district")}
+        localMarketNeighborhoods={allNeighborhoods.filter((n) => n.neighborhood_type === "local_market")}
+      />
 
       <DeedAnalysisPanel
         pin={pin}

@@ -4,6 +4,7 @@ import { adminSupabase } from "@/lib/supabase/adminClient";
 import { NeighborhoodForm } from "../_NeighborhoodForm";
 import { BoundaryEditor } from "../_BoundaryEditor";
 import { NeighborhoodSubdivisionLinkEditor } from "../_SubdivisionLinkEditor";
+import { StreetAssignmentEditor } from "../_StreetAssignmentEditor";
 
 export default async function EditNeighborhoodPage({ params }: { params: { id: string } }) {
   const id = decodeURIComponent(params.id);
@@ -12,10 +13,11 @@ export default async function EditNeighborhoodPage({ params }: { params: { id: s
     { data: neighborhood },
     { data: links = [] },
     { data: allSubdivisions = [] },
+    { data: streetRows = [] },
   ] = await Promise.all([
     adminSupabase
       .from("neighborhoods")
-      .select("id, label, description, slug, historical_summary, established_year, notes, geometry")
+      .select("id, label, description, slug, historical_summary, established_year, notes, geometry, neighborhood_type")
       .eq("id", id)
       .single(),
     adminSupabase
@@ -24,6 +26,7 @@ export default async function EditNeighborhoodPage({ params }: { params: { id: s
       .eq("neighborhood_id", id)
       .order("subdivision_id"),
     adminSupabase.from("subdivisions").select("id, name").order("name"),
+    adminSupabase.rpc("neighborhood_streets", { p_neighborhood_id: id }),
   ]);
 
   if (!neighborhood) notFound();
@@ -31,6 +34,12 @@ export default async function EditNeighborhoodPage({ params }: { params: { id: s
   const shapedLinks = (links ?? []).map((l) => ({
     ...l,
     subdivision_name: ((l.subdivisions as unknown) as { name: string } | null)?.name ?? null,
+  }));
+
+  const currentStreets = (streetRows ?? []).map((r: { street_name: string; display_name: string; parcel_count: number }) => ({
+    name: r.street_name,
+    displayName: r.display_name,
+    parcelCount: Number(r.parcel_count),
   }));
 
   return (
@@ -57,6 +66,12 @@ export default async function EditNeighborhoodPage({ params }: { params: { id: s
         links={shapedLinks}
         neighborhoodId={id}
         allSubdivisions={allSubdivisions ?? []}
+      />
+
+      <StreetAssignmentEditor
+        neighborhoodId={id}
+        neighborhoodType={neighborhood.neighborhood_type ?? "official_planning"}
+        currentStreets={currentStreets}
       />
     </div>
   );

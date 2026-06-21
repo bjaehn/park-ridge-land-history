@@ -21,18 +21,25 @@ export type NeighborhoodEraRow = {
   total: number;
 };
 
-const NEIGHBORHOOD_LABELS: Record<string, string> = {
-  "neighborhood:central": "Central",
-  "neighborhood:northeast": "Northeast",
-  "neighborhood:northwest": "Northwest",
-  "neighborhood:south": "South",
-  "neighborhood:uptown": "Uptown",
-};
-
 export async function fetchNeighborhoodPriceComparison(): Promise<NeighborhoodPriceRow[]> {
   if (!supabase) return [];
   const { data, error } = await supabase.rpc("neighborhood_price_comparison");
   if (error || !data) return [];
+
+  const ids = (data as Array<{ neighborhood_id: string }>).map((r) => r.neighborhood_id);
+  let labelMap = new Map<string, string>();
+  if (ids.length > 0) {
+    const { data: meta } = await supabase
+      .from("neighborhoods")
+      .select("id, label")
+      .in("id", ids);
+    if (meta) {
+      for (const m of meta as Array<{ id: string; label: string }>) {
+        labelMap.set(m.id, m.label);
+      }
+    }
+  }
+
   return (data as Array<{ neighborhood_id: string; year_2015: number | null; year_2024: number | null }>)
     .map((r) => {
       const pct =
@@ -41,7 +48,7 @@ export async function fetchNeighborhoodPriceComparison(): Promise<NeighborhoodPr
           : null;
       return {
         neighborhoodId: r.neighborhood_id,
-        label: NEIGHBORHOOD_LABELS[r.neighborhood_id] ?? r.neighborhood_id,
+        label: labelMap.get(r.neighborhood_id) ?? r.neighborhood_id,
         year2015: r.year_2015,
         year2024: r.year_2024,
         pctChange: pct,
@@ -55,12 +62,26 @@ export async function fetchNeighborhoodEraDistribution(): Promise<NeighborhoodEr
   const { data, error } = await supabase.rpc("neighborhood_era_distribution");
   if (error || !data) return [];
 
+  const ids = [...new Set((data as Array<{ neighborhood_id: string }>).map((r) => r.neighborhood_id))];
+  let labelMap2 = new Map<string, string>();
+  if (ids.length > 0) {
+    const { data: meta } = await supabase
+      .from("neighborhoods")
+      .select("id, label")
+      .in("id", ids);
+    if (meta) {
+      for (const m of meta as Array<{ id: string; label: string }>) {
+        labelMap2.set(m.id, m.label);
+      }
+    }
+  }
+
   const byNeighborhood = new Map<string, NeighborhoodEraRow>();
   for (const r of data as Array<{ neighborhood_id: string; era: string; count: number }>) {
     if (!byNeighborhood.has(r.neighborhood_id)) {
       byNeighborhood.set(r.neighborhood_id, {
         neighborhoodId: r.neighborhood_id,
-        label: NEIGHBORHOOD_LABELS[r.neighborhood_id] ?? r.neighborhood_id,
+        label: labelMap2.get(r.neighborhood_id) ?? r.neighborhood_id,
         pre1920: 0,
         boom: 0,
         postwar: 0,
