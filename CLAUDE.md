@@ -1,5 +1,9 @@
 # Park Ridge Land History — Developer Notes
 
+## Build Requirement
+
+**Always run `npm run build` locally and confirm it passes before committing and pushing.** Fix any TypeScript or build errors before the commit. Never push broken builds.
+
 ## UI Style Conventions
 
 ### Decade grouping
