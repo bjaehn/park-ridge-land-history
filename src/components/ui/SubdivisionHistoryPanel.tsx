@@ -234,13 +234,6 @@ export function SubdivisionHistoryPanel({ subdivision }: Props) {
         </div>
       )}
 
-      {/* Historical summary */}
-      {subdivision.historical_summary && (
-        <p className="text-sm text-text-secondary leading-relaxed max-w-prose mb-6">
-          {subdivision.historical_summary}
-        </p>
-      )}
-
       {!hasContent && (
         <p className="text-sm text-text-muted italic">
           Historical research not yet added for this subdivision.

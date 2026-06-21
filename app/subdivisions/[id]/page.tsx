@@ -79,6 +79,16 @@ export default async function SubdivisionDetailPage({ params }: Props) {
         <p className="text-text-secondary leading-relaxed mb-8">{sub.notes}</p>
       )}
 
+      {sub.historical_summary && (
+        <div className="mb-8">
+          {sub.historical_summary.split('\n\n').map((para, i) => (
+            <p key={i} className="text-text-secondary leading-relaxed mb-4 last:mb-0">
+              {para}
+            </p>
+          ))}
+        </div>
+      )}
+
       {/* Historical context panel */}
       <div className="mb-8">
         <SubdivisionHistoryPanel subdivision={sub} />
