@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { StatGrid } from "@/components/ui/StatGrid";
 import { ConstructionByDecadeChart } from "@/components/ui/ConstructionByDecadeChart";
 import { EntityCard, UnresolvableEntityCard } from "@/components/ui/EntityCard";
@@ -17,9 +17,9 @@ const STREET_HIGHLIGHTS: readonly HighlightGroup[] = [
   { heading: "Most recently sold", category: "most_recent_sale" },
 ];
 
-type Props = { streetName: string; displayName: string };
+type Props = { streetName: string; displayName: string; mapSlot?: React.ReactNode };
 
-export function StreetDetailContent({ streetName, displayName }: Props) {
+export function StreetDetailContent({ streetName, displayName, mapSlot }: Props) {
   const [detail, setDetail] = useState<Awaited<ReturnType<typeof getStreetDetail>> | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -42,6 +42,13 @@ export function StreetDetailContent({ streetName, displayName }: Props) {
   return (
     <div className="space-y-10">
       <StatGrid columns={(Math.max(2, Math.min(statItems.length, 4))) as 2 | 3 | 4} stats={statItems} />
+
+      {mapSlot && (
+        <div>
+          <p className="section-heading">Street map</p>
+          {mapSlot}
+        </div>
+      )}
 
       <HighlightReel
         scope="street"

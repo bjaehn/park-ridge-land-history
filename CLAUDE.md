@@ -4,6 +4,26 @@
 
 **Always run `npm run build` locally and confirm it passes before committing and pushing.** Fix any TypeScript or build errors before the commit. Never push broken builds.
 
+## Page Content Order
+
+All discovery pages (city, neighborhood, street, subdivision, PIN group) MUST follow this canonical section order. Omit sections with no data. Extra page-specific sections go in the most logical position within this hierarchy — never appended blindly to the bottom.
+
+1. Breadcrumb
+2. Page header (eyebrow · title · subtitle · badges · alias chips)
+3. Introductory text / narrative / notes / historical summary
+4. Contextual panels (e.g. SubdivisionHistoryPanel)
+5. Stat grid
+6. Map — always immediately after the stat grid
+7. Price comparison (2015 vs. 2024)
+8. Sales activity stat cards
+9. Assessment snapshot
+10. Charts — construction by decade first, then market history / home sales
+11. Highlight reel
+12. Sub-entity lists (streets, sections, blocks, property grids)
+13. Source note
+
+The property page is exempt (2-column layout; map is the entire left column at top).
+
 ## UI Style Conventions
 
 ### Decade grouping

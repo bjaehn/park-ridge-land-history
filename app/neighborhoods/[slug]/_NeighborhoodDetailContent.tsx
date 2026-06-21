@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { StatGrid } from "@/components/ui/StatGrid";
 import { ConstructionByDecadeChart } from "@/components/ui/ConstructionByDecadeChart";
 import { CoverageTable } from "@/components/ui/CoverageTable";
@@ -18,9 +18,9 @@ const NEIGHBORHOOD_HIGHLIGHTS: readonly HighlightGroup[] = [
   { heading: "Most recently sold", category: "most_recent_sale" },
 ];
 
-type Props = { neighborhoodId: string; label: string; slug: string };
+type Props = { neighborhoodId: string; label: string; slug: string; mapSlot?: React.ReactNode };
 
-export function NeighborhoodDetailContent({ neighborhoodId, label, slug }: Props) {
+export function NeighborhoodDetailContent({ neighborhoodId, label, slug, mapSlot }: Props) {
   const [detail, setDetail] = useState<Awaited<ReturnType<typeof getNeighborhoodDetail>> | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -58,6 +58,13 @@ export function NeighborhoodDetailContent({ neighborhoodId, label, slug }: Props
       )}
 
       <StatGrid columns={(Math.max(2, Math.min(statItems.length, 4))) as 2 | 3 | 4} stats={statItems.slice(0, 4)} />
+
+      {mapSlot && (
+        <div>
+          <p className="section-heading">Neighborhood map</p>
+          {mapSlot}
+        </div>
+      )}
 
       <HighlightReel
         scope="neighborhood"

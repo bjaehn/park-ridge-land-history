@@ -40,16 +40,18 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
         subtitle={`${neighborhood.parcelCount} properties. ${neighborhood.medianYear ? `Typical build year: ${neighborhood.medianYear}.` : ""}`}
       />
 
-      <NeighborhoodDetailContent neighborhoodId={neighborhood.id} label={neighborhood.label} slug={neighborhood.slug} />
-
-      <div className="mt-8">
-        <p className="section-heading">Neighborhood map</p>
-        <MapView
-          scope={{ kind: "neighborhood", neighborhoodId: neighborhood.id, bbox: neighborhoodBbox ?? undefined }}
-          height="580px"
-          showExpand
-        />
-      </div>
+      <NeighborhoodDetailContent
+        neighborhoodId={neighborhood.id}
+        label={neighborhood.label}
+        slug={neighborhood.slug}
+        mapSlot={
+          <MapView
+            scope={{ kind: "neighborhood", neighborhoodId: neighborhood.id, bbox: neighborhoodBbox ?? undefined }}
+            height="580px"
+            showExpand
+          />
+        }
+      />
 
       <SourceNote
         sources={["assessor", "permits"]}
