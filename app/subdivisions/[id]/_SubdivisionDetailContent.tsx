@@ -203,45 +203,82 @@ export function SubdivisionDetailContent({ subdivisionId, recordedYear, entityTy
         </div>
       )}
 
-      {parcels.length > 0 && (
-        <div>
-          <p className="section-heading">Known properties in this subdivision</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {parcels.map((p) => {
-              const lotLabel =
-                p.lot_number && p.block_number
-                  ? `Lot ${p.lot_number}, Block ${p.block_number}`
-                  : p.lot_number
-                  ? `Lot ${p.lot_number}`
-                  : undefined;
-              const multiLotSuffix = p.lot_count && p.lot_count > 1
-                ? ` (+${p.lot_count - 1} more lot${p.lot_count > 2 ? "s" : ""})`
-                : "";
-              if (!p.address) {
-                return <UnresolvableEntityCard key={p.pin} pin={p.pin} />;
-              }
-              return (
-                <EntityCard
-                  key={p.pin}
-                  href={`/properties/${encodeURIComponent(p.pin)}`}
-                  title={formatAddress(p.address)}
-                  meta={lotLabel ? `${lotLabel}${multiLotSuffix}` : undefined}
-                  metaItems={[
-                    p.year_built    ? { icon: <YearBuiltIcon size={11} />, value: String(p.year_built) } : null,
-                    p.building_sqft ? { icon: <SizeIcon size={11} />,     value: `${formatNumber(p.building_sqft)} sqft` } : null,
-                    p.sale_count    ? { icon: <SaleIcon size={11} />,     value: `${p.sale_count} sales` } : null,
-                    p.permit_count  ? { icon: <PermitIcon size={11} />,   value: `${p.permit_count} permits` } : null,
-                  ].filter((x): x is MetaItem => x !== null)}
-                  eraSwatch={getEraColor(p.year_built)}
-                />
-              );
-            })}
+      {parcels.length > 0 && (() => {
+        const byDecade = new Map<string, typeof parcels>();
+        [...parcels].forEach((p) => {
+          const key = p.year_built ? `${Math.floor(p.year_built / 10) * 10}s` : "Unknown";
+          const arr = byDecade.get(key) ?? [];
+          arr.push(p);
+          byDecade.set(key, arr);
+        });
+        const decades = Array.from(byDecade.entries()).sort(([a], [b]) => {
+          if (a === "Unknown") return 1;
+          if (b === "Unknown") return -1;
+          return a.localeCompare(b);
+        });
+        return (
+          <div>
+            <p className="section-heading">Known properties in this subdivision</p>
+            <div className="space-y-8">
+              {decades.map(([decade, group]) => {
+                const decadeYear = decade === "Unknown" ? null : parseInt(decade);
+                return (
+                  <div key={decade}>
+                    <div className="flex items-center gap-3 mb-3">
+                      {decadeYear && (
+                        <span
+                          className="w-2.5 h-2.5 rounded-full shrink-0"
+                          style={{ background: getEraColor(decadeYear) ?? "#64748b" }}
+                          aria-hidden="true"
+                        />
+                      )}
+                      <span className="text-sm font-semibold text-text-secondary tracking-wide">
+                        {decade === "Unknown" ? "Unknown era" : decade}
+                      </span>
+                      <div className="flex-1 border-t border-surface-border" />
+                      <span className="text-xs text-text-muted">{group.length}</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {group.map((p) => {
+                        const lotLabel =
+                          p.lot_number && p.block_number
+                            ? `Lot ${p.lot_number}, Block ${p.block_number}`
+                            : p.lot_number
+                            ? `Lot ${p.lot_number}`
+                            : undefined;
+                        const multiLotSuffix = p.lot_count && p.lot_count > 1
+                          ? ` (+${p.lot_count - 1} more lot${p.lot_count > 2 ? "s" : ""})`
+                          : "";
+                        if (!p.address) {
+                          return <UnresolvableEntityCard key={p.pin} pin={p.pin} />;
+                        }
+                        return (
+                          <EntityCard
+                            key={p.pin}
+                            href={`/properties/${encodeURIComponent(p.pin)}`}
+                            title={formatAddress(p.address)}
+                            meta={lotLabel ? `${lotLabel}${multiLotSuffix}` : undefined}
+                            metaItems={[
+                              p.year_built    ? { icon: <YearBuiltIcon size={11} />, value: String(p.year_built) } : null,
+                              p.building_sqft ? { icon: <SizeIcon size={11} />,     value: `${formatNumber(p.building_sqft)} sqft` } : null,
+                              p.sale_count    ? { icon: <SaleIcon size={11} />,     value: `${p.sale_count} sales` } : null,
+                              p.permit_count  ? { icon: <PermitIcon size={11} />,   value: `${p.permit_count} permits` } : null,
+                            ].filter((x): x is MetaItem => x !== null)}
+                            eraSwatch={getEraColor(p.year_built)}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <InlineSourceNote className="mt-3">
+              Sourced from deed / legal descriptions. This list represents the current research sample and is not exhaustive.
+            </InlineSourceNote>
           </div>
-          <InlineSourceNote className="mt-3">
-            Sourced from deed / legal descriptions. This list represents the current research sample and is not exhaustive.
-          </InlineSourceNote>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

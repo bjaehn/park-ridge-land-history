@@ -35,9 +35,11 @@ export function SubdivisionLineageCard({
   return (
     <article className="bg-surface-card border border-surface-border rounded-lg p-4 space-y-3">
       <div>
-        <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">
-          {isSubdivisionContext ? "Lineage record" : "Subdivision ancestry"}
-        </p>
+        {!isSubdivisionContext && (
+          <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+            Subdivision ancestry
+          </p>
+        )}
         <h3 className="text-sm font-semibold text-text-primary mt-1">
           {lineage.child_subdivision}
           {!isSubdivisionContext && showAddress && lineage.address ? (
