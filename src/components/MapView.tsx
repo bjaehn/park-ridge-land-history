@@ -621,20 +621,6 @@ export function MapView({
           </div>
         )}
 
-        {/* Compact legend (property scope only, bottom-right above nav control) */}
-        {isLoaded && isPropertyScope && lens === "era" && (
-          <div className="absolute bottom-10 right-3 z-10 bg-surface-card/95 border border-surface-border rounded-lg p-2 shadow-lg">
-            <p className="text-[10px] font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Built era</p>
-            <ul className="grid grid-cols-2 gap-x-3 gap-y-0.5">
-              {ERA_ORDER.map((decade) => (
-                <li key={decade} className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: ERA_PALETTE[decade] }} aria-hidden="true" />
-                  <span className="text-[10px] text-text-muted">{formatDecade(decade)}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
       </div>
 
       {/* Below-map: era filter + legend bar + stats (non-property scopes only) */}

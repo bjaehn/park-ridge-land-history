@@ -17,7 +17,7 @@ import type { StyleSpecification } from "maplibre-gl";
 
 export const MAP_CENTER: [number, number] = [-87.8417, 42.0111];
 export const MAP_ZOOM_DEFAULT = 13;
-export const MAP_ZOOM_PROPERTY = 16;
+export const MAP_ZOOM_PROPERTY = 18;
 export const MAP_ZOOM_STREET = 15;
 export const MAP_ZOOM_NEIGHBORHOOD = 13;
 export const MAP_ZOOM_SUBDIVISION = 14;
