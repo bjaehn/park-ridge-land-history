@@ -273,9 +273,9 @@ export function MapView({
             0.5, "rgba(234,88,12,0.8)",
             0.8, "rgba(220,38,38,0.9)",
             1,   "rgba(155,28,28,1)",
-          ] as unknown as string,
+          ],
         },
-      } as LayerSpecification);
+      } as unknown as LayerSpecification);
 
       // CARTO labels overlay (on top of parcel layers)
       map.addLayer({
@@ -757,7 +757,7 @@ export function MapLegendBar({
   byDecade: Partial<Record<string, number>>;
   eraFilter: [number, number] | null;
 }) {
-  const total = Object.values(byDecade).reduce((s, v) => s + (v ?? 0), 0);
+  const total = Object.values(byDecade).reduce((s: number, v) => s + (v ?? 0), 0);
   const hasData = total > 0;
 
   return (
