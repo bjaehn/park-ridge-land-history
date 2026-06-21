@@ -9,14 +9,21 @@ import type { MetaItem } from "@/components/ui/EntityCard";
 import { LoadingSkeleton } from "@/components/ui/EmptyState";
 import { HighlightReel } from "@/components/ui/HighlightReel";
 import { InlineSourceNote } from "@/components/ui/SourceNote";
-import { SubdivisionLineageCard } from "@/components/ui/SubdivisionLineageCard";
+import { NeighborhoodPriceChart } from "@/components/ui/NeighborhoodPriceChart";
+import { MarketHistoryChart } from "@/components/ui/MarketHistoryChart";
 import { YearBuiltIcon, SizeIcon, SaleIcon, PermitIcon } from "@/lib/icons";
-import { formatCount, formatAddress, formatNumber } from "@/lib/formatters";
+import { formatCount, formatAddress, formatNumber, formatCurrency } from "@/lib/formatters";
 import { getEraColor } from "@/lib/mapConfig";
-import { fetchSubdivisionLineage, fetchSubdivisionParcels } from "@/lib/supabase/subdivisionQueries";
+import {
+  fetchSubdivisionParcels,
+  fetchSubdivisionAssessmentStats,
+  fetchSubdivisionMarketHistory,
+} from "@/lib/supabase/subdivisionQueries";
+import { fetchBlockSalesStats, fetchBlockSalesByYear } from "@/lib/supabase/blockQueries";
 import type { HighlightGroup } from "@/components/ui/HighlightReel";
 import type { DecadeRow } from "@/components/ui/ConstructionByDecadeChart";
-import type { HistoricalSubdivisionLineage } from "@/lib/subdivisionTypes";
+import type { BlockSalesStats, BlockSalesByYear, BlockAssessmentStats } from "@/lib/supabase/blockQueries";
+import type { MarketHistoryRow } from "@/lib/supabase/cityQueries";
 
 const SUBDIVISION_HIGHLIGHTS: readonly HighlightGroup[] = [
   { heading: "Oldest surviving lots", category: "oldest" },
@@ -35,17 +42,29 @@ type Props = {
 
 export function SubdivisionDetailContent({ subdivisionId, recordedYear, entityType, geometryStatus, parentSubdivision, mapSlot }: Props) {
   const [parcels, setParcels] = useState<Awaited<ReturnType<typeof fetchSubdivisionParcels>>>([]);
-  const [lineage, setLineage] = useState<HistoricalSubdivisionLineage[]>([]);
+  const [salesStats, setSalesStats] = useState<BlockSalesStats | null>(null);
+  const [salesByYear, setSalesByYear] = useState<BlockSalesByYear | null>(null);
+  const [assessmentStats, setAssessmentStats] = useState<BlockAssessmentStats | null>(null);
+  const [marketHistory, setMarketHistory] = useState<MarketHistoryRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      fetchSubdivisionParcels(subdivisionId),
-      fetchSubdivisionLineage(subdivisionId),
-    ])
-      .then(([parcelRows, lineageRows]) => {
+    fetchSubdivisionParcels(subdivisionId)
+      .then((parcelRows) => {
         setParcels(parcelRows);
-        setLineage(lineageRows);
+        const pins = parcelRows.map((p) => p.pin).filter(Boolean);
+        if (!pins.length) return;
+        return Promise.all([
+          fetchBlockSalesStats(pins),
+          fetchBlockSalesByYear(pins),
+          fetchSubdivisionAssessmentStats(pins),
+          fetchSubdivisionMarketHistory(pins),
+        ]).then(([sales, byYear, assessment, history]) => {
+          setSalesStats(sales);
+          setSalesByYear(byYear);
+          setAssessmentStats(assessment);
+          setMarketHistory(history);
+        });
       })
       .catch(() => null)
       .finally(() => setLoading(false));
@@ -102,6 +121,10 @@ export function SubdivisionDetailContent({ subdivisionId, recordedYear, entityTy
   if (geometryStatus === "not_started" || geometryStatus === "needs_source")
     qualityWarnings.push("Subdivision boundary not yet mapped.");
 
+  const priceRow = salesByYear && (salesByYear.year2015 || salesByYear.year2024)
+    ? [{ label: "This subdivision", ...salesByYear }]
+    : [];
+
   return (
     <div className="space-y-10">
       {/* Parent subdivision / estate link */}
@@ -146,22 +169,6 @@ export function SubdivisionDetailContent({ subdivisionId, recordedYear, entityTy
         </div>
       )}
 
-      {lineage.length > 0 && (
-        <section>
-          <p className="section-heading">Deed-sourced lineage</p>
-          <div className="space-y-3">
-            {lineage.map((record) => (
-              <SubdivisionLineageCard
-                key={record.lineage_key}
-                lineage={record}
-                showAddress={false}
-                context="subdivision"
-              />
-            ))}
-          </div>
-        </section>
-      )}
-
       <StatGrid columns={columns} stats={statItems} />
 
       {yearsAfterPlat !== null && (
@@ -180,6 +187,67 @@ export function SubdivisionDetailContent({ subdivisionId, recordedYear, entityTy
         </div>
       )}
 
+      {/* Median sale price, 2015 vs. 2024 */}
+      {priceRow.length > 0 && (
+        <section>
+          <div className="flex items-center gap-2 mb-3">
+            <SaleIcon size={14} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />
+            <p className="section-heading !mb-0">Median sale price, 2015 vs. 2024</p>
+          </div>
+          <NeighborhoodPriceChart data={priceRow} />
+          <InlineSourceNote className="mt-3">Cook County Recorder of Deeds. Market sales only ($50K–$5M).</InlineSourceNote>
+        </section>
+      )}
+
+      {/* Sales activity */}
+      {salesStats && salesStats.totalSales > 0 && (
+        <section>
+          <p className="section-heading">Sales activity</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="bg-surface-card border border-surface-border rounded-lg p-4">
+              <p className="text-2xl font-semibold text-text-primary tabular-nums">
+                {formatNumber(salesStats.totalSales)}
+              </p>
+              <p className="text-sm text-text-muted mt-1">Market sales on record</p>
+            </div>
+            {salesStats.medianPrice != null && (
+              <div className="bg-surface-card border border-surface-border rounded-lg p-4">
+                <p className="text-2xl font-semibold text-text-primary tabular-nums">
+                  {formatCurrency(salesStats.medianPrice)}
+                </p>
+                <p className="text-sm text-text-muted mt-1">Median sale price</p>
+              </div>
+            )}
+            {salesStats.mostRecentYear != null && (
+              <div className="bg-surface-card border border-surface-border rounded-lg p-4">
+                <p className="text-2xl font-semibold text-text-primary tabular-nums">
+                  {salesStats.mostRecentYear}
+                </p>
+                <p className="text-sm text-text-muted mt-1">
+                  Most recent sale
+                  {salesStats.mostRecentPrice != null && ` · ${formatCurrency(salesStats.mostRecentPrice)}`}
+                </p>
+              </div>
+            )}
+          </div>
+          <InlineSourceNote className="mt-3">Cook County Recorder of Deeds. Market sales only ($50K–$5M).</InlineSourceNote>
+        </section>
+      )}
+
+      {/* Assessment snapshot */}
+      {assessmentStats?.medianAssessedValue != null && (
+        <section>
+          <p className="section-heading">Assessment snapshot</p>
+          <div className="bg-surface-card border border-surface-border rounded-lg p-4 inline-block">
+            <p className="text-2xl font-semibold text-text-primary tabular-nums">
+              {formatCurrency(assessmentStats.medianAssessedValue)}
+            </p>
+            <p className="text-sm text-text-muted mt-1">Median assessed value</p>
+          </div>
+          <InlineSourceNote className="mt-3">Cook County Assessor certified valuations.</InlineSourceNote>
+        </section>
+      )}
+
       {parcels.length > 0 && (
         <HighlightReel
           scope="subdivision"
@@ -194,6 +262,22 @@ export function SubdivisionDetailContent({ subdivisionId, recordedYear, entityTy
           <p className="section-heading">When this subdivision was built out</p>
           <ConstructionByDecadeChart rows={decadeRows} />
         </div>
+      )}
+
+      {/* Home sales in this subdivision */}
+      {marketHistory.length > 0 && (
+        <section>
+          <div className="flex items-center gap-2 mb-3">
+            <SaleIcon size={14} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />
+            <p className="section-heading !mb-0">Home sales in this subdivision</p>
+          </div>
+          <p className="text-sm text-text-muted mb-4">
+            Bars show annual sales volume. Line shows median sale price. Market sales only, $50K to $5M.
+          </p>
+          <div className="-mx-[clamp(1rem,4vw,3rem)]">
+            <MarketHistoryChart data={marketHistory} />
+          </div>
+        </section>
       )}
 
       {mapSlot && (
