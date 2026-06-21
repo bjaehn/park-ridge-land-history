@@ -47,7 +47,7 @@ export default async function StreetDetailPage({ params }: Props) {
         <p className="section-heading">Street map</p>
         <MapView
           scope={{ kind: "street", streetName: street.normalizedName, bbox: streetBbox ?? undefined }}
-          height="380px"
+          height="560px"
           showExpand
         />
       </div>

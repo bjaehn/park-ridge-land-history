@@ -30,11 +30,37 @@ export const MAP_ZOOM_CITY = 12;
 // Falls back to full GeoJSON if PMTiles not present.
 // ---------------------------------------------------------------------------
 
-// Set NEXT_PUBLIC_PMTILES_URL in Railway once the generate-pmtiles workflow has run.
-// Empty string disables PMTiles and falls back to the GeoJSON source.
 export const PMTILES_URL = process.env.NEXT_PUBLIC_PMTILES_URL ?? "";
 export const GEOJSON_FALLBACK_URL = "/data/park_ridge_parcels_map.geojson";
 export const BOUNDARY_URL = "/data/park_ridge_boundary.geojson";
+
+// ---------------------------------------------------------------------------
+// Basemap tile URLs — CARTO raster tiles (no API key required)
+// Structure: base layer (no labels) → parcel layers → labels overlay
+// ---------------------------------------------------------------------------
+
+export const BASEMAP_CONFIGS = {
+  dark: {
+    base: "https://basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png",
+    labels: "https://basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png",
+    rasterOpacity: 1.0,
+    labelsOpacity: 0.85,
+  },
+  light: {
+    base: "https://basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png",
+    labels: "https://basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png",
+    rasterOpacity: 1.0,
+    labelsOpacity: 0.9,
+  },
+  satellite: {
+    base: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    labels: "https://basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png",
+    rasterOpacity: 1.0,
+    labelsOpacity: 0.9,
+  },
+} as const;
+
+export type BasemapMode = keyof typeof BASEMAP_CONFIGS;
 
 // ---------------------------------------------------------------------------
 // Era/decade color scale (single definition; MapLegend reads from here)
@@ -72,84 +98,153 @@ export const ERA_ORDER = [
 ] as const;
 
 // ---------------------------------------------------------------------------
-// Map lenses (mutually exclusive coloring modes)
-// The same set is offered on every map regardless of scope.
+// Neighborhood color palette (for "neighborhood" lens — uses neighborhood_id)
 // ---------------------------------------------------------------------------
 
-export type MapLens = "era" | "permits" | "sales" | "historic" | "subdivision";
+export const NEIGHBORHOOD_PALETTE: Record<string, string> = {
+  "neighborhood:central":   "#4fb6a8",
+  "neighborhood:northeast": "#9ac35d",
+  "neighborhood:northwest": "#785f9a",
+  "neighborhood:south":     "#e6a64a",
+  "neighborhood:uptown":    "#df8252",
+};
 
-export const MAP_LENSES: Array<{ id: MapLens; label: string; description: string }> = [
+// ---------------------------------------------------------------------------
+// Map lenses (mutually exclusive coloring modes)
+// ---------------------------------------------------------------------------
+
+export type MapLens = "era" | "permits" | "neighborhood" | "sales" | "subdivision";
+
+export const MAP_LENSES: Array<{ id: MapLens; label: string; description: string; hasData: boolean }> = [
   {
     id: "era",
-    label: "When it was built",
+    label: "Era",
     description: "Parcels shaded by decade of construction.",
+    hasData: true,
   },
   {
     id: "permits",
-    label: "Permit activity",
+    label: "Permits",
     description: "Parcels shaded by number of building permits on record.",
+    hasData: true,
+  },
+  {
+    id: "neighborhood",
+    label: "Neighborhood",
+    description: "Parcels shaded by neighborhood area.",
+    hasData: true,
   },
   {
     id: "sales",
-    label: "Sales recency",
+    label: "Sales",
     description: "Parcels shaded by how recently they last sold.",
-  },
-  {
-    id: "historic",
-    label: "Historic survey matches",
-    description: "Parcels that appear in the Hargis Illinois historic architecture survey.",
+    hasData: false,
   },
   {
     id: "subdivision",
-    label: "Subdivision origin",
-    description: "Parcels shaded by the recorded plat that created their lot.",
+    label: "Plat",
+    description: "Parcels shaded by recorded plat origin.",
+    hasData: false,
   },
 ];
 
 export const DEFAULT_LENS: MapLens = "era";
 
 // ---------------------------------------------------------------------------
-// MapLibre style (basemap + parcel layer spec)
-// One style object, consumed by the single MapView component.
-// No page overrides fonts, glyphs, or basemap.
+// Lens paint expressions — returned as MapLibre expression arrays
 // ---------------------------------------------------------------------------
 
-export function buildMapStyle(): StyleSpecification {
+export function eraFillExpression(): unknown[] {
+  const expr: unknown[] = ["match", ["get", "decade_built"]];
+  for (const decade of ERA_ORDER) {
+    expr.push(decade, ERA_PALETTE[decade]);
+  }
+  expr.push(ERA_PALETTE["Unknown"]);
+  return expr;
+}
+
+export function permitFillExpression(): unknown[] {
+  return [
+    "interpolate",
+    ["linear"],
+    ["coalesce", ["get", "permit_count"], 0],
+    0, "#1f2937",
+    1, "#78350f",
+    2, "#b45309",
+    3, "#ea580c",
+    5, "#dc2626",
+    10, "#9b1c1c",
+  ];
+}
+
+export function neighborhoodFillExpression(): unknown[] {
+  const expr: unknown[] = ["match", ["get", "neighborhood_id"]];
+  for (const [id, color] of Object.entries(NEIGHBORHOOD_PALETTE)) {
+    expr.push(id, color);
+  }
+  expr.push("#374151");
+  return expr;
+}
+
+export function getLensFillExpression(lens: MapLens): unknown[] | null {
+  switch (lens) {
+    case "era":          return eraFillExpression();
+    case "permits":      return permitFillExpression();
+    case "neighborhood": return neighborhoodFillExpression();
+    default:             return null; // lenses without data in map tiles
+  }
+}
+
+// ---------------------------------------------------------------------------
+// MapLibre style (basemap + parcel layer spec)
+// Parcel source is added dynamically by MapView (PMTiles or GeoJSON fallback).
+// Labels overlay is also added dynamically (after parcel layers).
+// ---------------------------------------------------------------------------
+
+export function buildMapStyle(basemap: BasemapMode = "dark"): StyleSpecification {
+  const cfg = BASEMAP_CONFIGS[basemap];
   return {
     version: 8,
     glyphs: "https://fonts.openmaptiles.org/{fontstack}/{range}.pbf",
     sources: {
-      osm: {
+      "osm-base": {
         type: "raster",
-        tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+        tiles: [cfg.base],
         tileSize: 256,
-        attribution: "OpenStreetMap contributors",
+        attribution: "© CARTO, © OpenStreetMap contributors",
+        maxzoom: 19,
+      },
+      "osm-labels": {
+        type: "raster",
+        tiles: [cfg.labels],
+        tileSize: 256,
+        attribution: "",
         maxzoom: 19,
       },
       boundary: {
         type: "geojson",
         data: BOUNDARY_URL,
       },
-      // Parcel source is added dynamically by MapView (PMTiles or GeoJSON fallback)
     },
     layers: [
       {
-        id: "osm-tiles",
+        id: "base-tiles",
         type: "raster",
-        source: "osm",
+        source: "osm-base",
         paint: {
-          "raster-opacity": 0.35,
-          "raster-brightness-max": 0.3,
-          "raster-saturation": -0.8,
+          "raster-opacity": cfg.rasterOpacity,
         },
       },
+      // Boundary: glow (wide blurred) + crisp inner line; no fill
       {
-        id: "boundary-fill",
-        type: "fill",
+        id: "boundary-glow",
+        type: "line",
         source: "boundary",
         paint: {
-          "fill-color": "#1a1a2e",
-          "fill-opacity": 0.2,
+          "line-color": "#8b7ff0",
+          "line-width": 6,
+          "line-opacity": 0.15,
+          "line-blur": 3,
         },
       },
       {
@@ -159,39 +254,26 @@ export function buildMapStyle(): StyleSpecification {
         paint: {
           "line-color": "#8b7ff0",
           "line-width": 1.5,
-          "line-opacity": 0.6,
+          "line-opacity": 0.7,
         },
       },
+      // Parcel source and labels-overlay are added dynamically by MapView
     ],
   };
-}
-
-// ---------------------------------------------------------------------------
-// Parcel layer paint spec (era lens, default)
-// MapView applies this after adding the parcel source.
-// ---------------------------------------------------------------------------
-
-export function eraFillExpression(): unknown[] {
-  const expr: unknown[] = ["match", ["get", "decade_built"]];
-  for (const decade of ERA_ORDER) {
-    expr.push(decade, ERA_PALETTE[decade]);
-  }
-  expr.push(ERA_PALETTE["Unknown"]); // fallback
-  return expr;
 }
 
 // ---------------------------------------------------------------------------
 // Parcel layer style constants (single definition)
 // ---------------------------------------------------------------------------
 
-export const PARCEL_FILL_OPACITY = 0.75;
-export const PARCEL_FILL_OPACITY_HOVER = 0.92;
-export const PARCEL_STROKE_COLOR = "#0f0f13";
-export const PARCEL_STROKE_WIDTH = 0.5;
+export const PARCEL_FILL_OPACITY = 0.88;
+export const PARCEL_FILL_OPACITY_HOVER = 0.97;
+export const PARCEL_STROKE_COLOR = "#000000";
+export const PARCEL_STROKE_WIDTH = 0.8;
 export const PARCEL_STROKE_COLOR_SELECTED = "#ffffff";
-export const PARCEL_STROKE_WIDTH_SELECTED = 2.5;
-export const PARCEL_FILL_COLOR_MUTED = "#2a2a38"; // for out-of-scope parcels
-export const PARCEL_FILL_OPACITY_MUTED = 0.3;
+export const PARCEL_STROKE_WIDTH_SELECTED = 3;
+export const PARCEL_FILL_COLOR_MUTED = "#1a1a28";
+export const PARCEL_FILL_OPACITY_MUTED = 0.15;
 
 // ---------------------------------------------------------------------------
 // Map scope type (controls initial extent and emphasis)
@@ -203,3 +285,10 @@ export type MapScope =
   | { kind: "neighborhood"; neighborhoodId: string; bbox?: [number, number, number, number] }
   | { kind: "subdivision"; subdivisionId: string; pins?: string[]; bbox?: [number, number, number, number] }
   | { kind: "city" };
+
+// ---------------------------------------------------------------------------
+// Era filter range (for the year-range slider)
+// ---------------------------------------------------------------------------
+
+export const ERA_FILTER_MIN = 1880;
+export const ERA_FILTER_MAX = 2025;

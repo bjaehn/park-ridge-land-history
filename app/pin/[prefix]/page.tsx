@@ -54,7 +54,7 @@ export default async function PinGroupPage({ params }: Props) {
               pins: pins.length > 0 ? pins : undefined,
               bbox: bbox ?? undefined,
             }}
-            height="400px"
+            height="520px"
             showExpand
           />
         }

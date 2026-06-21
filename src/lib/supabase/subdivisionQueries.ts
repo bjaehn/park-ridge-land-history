@@ -6,6 +6,9 @@
  */
 
 import { supabase } from "./client";
+import { computeBlockAssessmentStats } from "./blockQueries";
+import type { BlockAssessmentStats } from "./blockQueries";
+import type { MarketHistoryRow } from "./cityQueries";
 import type {
   Subdivision,
   SubdivisionSummary,
@@ -550,6 +553,46 @@ export async function fetchSubdivisionMapData(
   }
 
   return { pins, bbox };
+}
+
+// ─── Subdivision-scoped sales + assessment stats ──────────────────────────────
+
+export async function fetchSubdivisionAssessmentStats(pins: string[]): Promise<BlockAssessmentStats> {
+  if (!supabase || !pins.length) return { medianAssessedValue: null, assessedYear: null };
+  const { data, error } = await supabase
+    .from("parcels")
+    .select("latest_assessed_total, latest_assessed_year")
+    .in("pin_normalized", pins);
+  if (error || !data || !data.length) return { medianAssessedValue: null, assessedYear: null };
+  return computeBlockAssessmentStats([], data as Array<Record<string, unknown>>);
+}
+
+function medianOfNumbers(nums: number[]): number {
+  const sorted = [...nums].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+}
+
+export async function fetchSubdivisionMarketHistory(pins: string[]): Promise<MarketHistoryRow[]> {
+  if (!supabase || !pins.length) return [];
+  const { data, error } = await supabase
+    .from("sales")
+    .select("sale_year, sale_price")
+    .in("pin", pins)
+    .eq("is_market_sale", true)
+    .gte("sale_price", 50000)
+    .lte("sale_price", 5000000)
+    .not("sale_year", "is", null);
+  if (error || !data || !data.length) return [];
+  const byYear = new Map<number, number[]>();
+  (data as Array<{ sale_year: number; sale_price: number }>).forEach((r) => {
+    const arr = byYear.get(r.sale_year) ?? [];
+    arr.push(r.sale_price);
+    byYear.set(r.sale_year, arr);
+  });
+  return Array.from(byYear.entries())
+    .sort(([a], [b]) => a - b)
+    .map(([yr, prices]) => ({ saleYear: yr, saleCount: prices.length, medianPrice: Math.round(medianOfNumbers(prices)) }));
 }
 
 /** Fetch a subdivision for property page cross-links. */
