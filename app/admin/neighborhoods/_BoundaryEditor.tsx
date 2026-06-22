@@ -1,31 +1,36 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { updateNeighborhoodGeometry, assignParcelsByGeometry } from "../_actions/neighborhoods";
 import { generateNeighborhoodBoundary } from "../_actions/aiBoundaryGeneration";
+import { BoundaryMapEditor, type BoundaryMapEditorHandle } from "./_BoundaryMapEditor";
 
 export function BoundaryEditor({
   neighborhoodId,
   neighborhoodLabel,
   neighborhoodType,
   hasGeometry,
+  initialGeojson,
 }: {
   neighborhoodId: string;
   neighborhoodLabel?: string;
   neighborhoodType?: string;
   hasGeometry: boolean;
+  initialGeojson?: string | null;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [isGenerating, startGenerating] = useTransition();
   const [isAssigning, startAssigning] = useTransition();
   const [assignResult, setAssignResult] = useState<{ assigned?: number; error?: string } | null>(null);
-  const [geojson, setGeojson] = useState("");
+  const [geojson, setGeojson] = useState(initialGeojson ?? "");
   const [aiDescription, setAiDescription] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [showManualJson, setShowManualJson] = useState(false);
+  const mapEditorRef = useRef<BoundaryMapEditorHandle | null>(null);
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -36,7 +41,7 @@ export function BoundaryEditor({
       try {
         JSON.parse(geojson);
       } catch {
-        setError("Invalid JSON - paste a valid GeoJSON Geometry object (e.g. {\"type\":\"Polygon\",\"coordinates\":[...]}).");
+        setError("Invalid JSON - paste a valid GeoJSON Geometry object.");
         return;
       }
     }
@@ -64,7 +69,10 @@ export function BoundaryEditor({
     startGenerating(() => {
       generateNeighborhoodBoundary(neighborhoodLabel ?? neighborhoodId, aiDescription).then((r) => {
         if (r.error) { setAiError(r.error); return; }
-        if (r.geojson) setGeojson(r.geojson);
+        if (r.geojson) {
+          setGeojson(r.geojson);
+          mapEditorRef.current?.setGeometry(r.geojson);
+        }
       });
     });
   }
@@ -75,10 +83,17 @@ export function BoundaryEditor({
         <h3 className="text-sm font-semibold text-text-primary">Boundary / Geometry</h3>
         <p className="text-xs text-text-muted mt-1">
           {hasGeometry
-            ? "A geometry is currently saved. Paste a new GeoJSON to replace it, or submit with empty field to clear."
-            : "No geometry saved yet. Paste a GeoJSON Geometry object to set the boundary."}
+            ? "Boundary saved. Draw or edit the polygon on the map, then save."
+            : "No boundary yet. Draw a polygon on the map below, then save."}
         </p>
       </div>
+
+      {/* Interactive map editor */}
+      <BoundaryMapEditor
+        ref={mapEditorRef}
+        initialGeojson={geojson || null}
+        onChange={(g) => setGeojson(g ?? "")}
+      />
 
       {/* AI Assist */}
       <div className="mb-5 rounded border border-surface-border bg-surface-card p-4">
@@ -111,23 +126,42 @@ export function BoundaryEditor({
         </div>
       </div>
 
-      {/* Manual / save form */}
+      {/* Save form */}
       <form onSubmit={handleSubmit} className="space-y-3">
+        {/* Collapsible manual JSON */}
         <div>
-          <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">
-            GeoJSON Geometry
-          </label>
-          <textarea
-            name="geojson"
-            value={geojson}
-            onChange={(e) => setGeojson(e.target.value)}
-            rows={8}
-            placeholder={`{\n  "type": "Polygon",\n  "coordinates": [[[x1, y1], [x2, y2], ...]]\n}`}
-            className="w-full bg-surface-card border border-surface-border rounded px-3 py-2 text-xs font-mono text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-teal/60 resize-y"
-          />
-          <p className="text-xs text-text-muted mt-1">
-            Paste a GeoJSON Geometry object (Polygon or MultiPolygon). Coordinates must be [longitude, latitude].
-          </p>
+          <button
+            type="button"
+            onClick={() => setShowManualJson((v) => !v)}
+            className="text-xs text-text-muted hover:text-text-secondary transition-colors flex items-center gap-1 mb-2"
+          >
+            <span>{showManualJson ? "▾" : "▸"}</span>
+            Manual JSON
+          </button>
+          {showManualJson ? (
+            <div>
+              <textarea
+                name="geojson"
+                value={geojson}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setGeojson(val);
+                  try {
+                    JSON.parse(val);
+                    mapEditorRef.current?.setGeometry(val);
+                  } catch { /* wait for valid JSON */ }
+                }}
+                rows={8}
+                placeholder={`{\n  "type": "Polygon",\n  "coordinates": [[[x1, y1], [x2, y2], ...]]\n}`}
+                className="w-full bg-surface-card border border-surface-border rounded px-3 py-2 text-xs font-mono text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-teal/60 resize-y"
+              />
+              <p className="text-xs text-text-muted mt-1">
+                Paste a GeoJSON Geometry object (Polygon or MultiPolygon). Coordinates must be [longitude, latitude].
+              </p>
+            </div>
+          ) : (
+            <input type="hidden" name="geojson" value={geojson} />
+          )}
         </div>
 
         {error && <p className="text-accent-red text-xs">{error}</p>}
@@ -140,7 +174,7 @@ export function BoundaryEditor({
           >
             {isPending ? "Saving…" : "Save Geometry"}
           </button>
-            {saved && <p className="text-confidence-high text-sm">Saved!</p>}
+          {saved && <p className="text-confidence-high text-sm">Saved!</p>}
         </div>
       </form>
 
