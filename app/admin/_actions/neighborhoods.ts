@@ -70,16 +70,27 @@ export async function updateNeighborhoodGeometry(id: string, formData: FormData)
     return {};
   }
 
-  let parsed: unknown;
+  let parsed: { type: string; coordinates: unknown };
   try { parsed = JSON.parse(geojsonStr); } catch {
     return { error: "Invalid JSON - paste a valid GeoJSON geometry object." };
   }
 
-  // Use ST_GeomFromGeoJSON via rpc or pass GeoJSON directly
+  // The geometry column is MultiPolygon — auto-upgrade a bare Polygon so users
+  // don't have to manually wrap coordinates.
+  if (parsed.type === "Polygon") {
+    parsed = { type: "MultiPolygon", coordinates: [parsed.coordinates] };
+  }
+
+  if (parsed.type !== "MultiPolygon") {
+    return { error: `Geometry type (${parsed.type}) is not supported. Paste a Polygon or MultiPolygon.` };
+  }
+
+  const finalGeojson = JSON.stringify(parsed);
+
   const { error } = await adminSupabase
     .from("neighborhoods")
     .update({
-      geometry:   geojsonStr,
+      geometry:    finalGeojson,
       bounds_json: parsed,
     })
     .eq("id", id);
