@@ -34,6 +34,7 @@ export function SubdivisionCharts() {
   }, []);
 
   if (loading) return <LoadingSkeleton rows={2} />;
+  if (platData.length === 0 && gapData.length === 0) return null;
 
   return (
     <div className="space-y-10 mb-10">

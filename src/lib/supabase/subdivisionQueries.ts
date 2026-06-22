@@ -380,12 +380,13 @@ export async function fetchSubdivisionStats(): Promise<{
   try {
     const { data, error } = await supabase
       .from("subdivisions")
-      .select("recorded_year")
-      .not("recorded_year", "is", null);
+      .select("recorded_year");
     if (error || !data) return { total: 0, minYear: null, maxYear: null };
-    const years = (data as Array<{ recorded_year: number }>).map((r) => r.recorded_year);
+    const years = (data as Array<{ recorded_year: number | null }>)
+      .map((r) => r.recorded_year)
+      .filter((y): y is number => y != null);
     return {
-      total: years.length,
+      total: data.length,
       minYear: years.length ? Math.min(...years) : null,
       maxYear: years.length ? Math.max(...years) : null,
     };
