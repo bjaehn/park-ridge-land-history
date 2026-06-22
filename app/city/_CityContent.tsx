@@ -10,6 +10,7 @@ import { PermitActivityChart } from "@/components/ui/PermitActivityChart";
 import Link from "next/link";
 import { LoadingSkeleton } from "@/components/ui/EmptyState";
 import { SubdivisionLineageCard } from "@/components/ui/SubdivisionLineageCard";
+import { SubdivisionPlatChart } from "@/components/ui/SubdivisionPlatChart";
 import { formatNumber } from "@/lib/formatters";
 import { CITY_NARRATIVE } from "@/lib/content";
 import { SaleIcon, AssessmentIcon, ComparisonIcon, PermitIcon } from "@/lib/icons";
@@ -43,6 +44,8 @@ export function CityContent({ townships = [], mapSlot }: { townships?: CityTowns
   const [appealsByYear, setAppealsByYear] = useState<AppealsRow[]>([]);
   const [permitActivity, setPermitActivity] = useState<PermitActivityRow[]>([]);
   const [resubdivisionExamples, setResubdivisionExamples] = useState<HistoricalSubdivisionLineage[]>([]);
+  const [subdivisionStats, setSubdivisionStats] = useState<{ total: number; minYear: number | null; maxYear: number | null }>({ total: 0, minYear: null, maxYear: null });
+  const [platByDecade, setPlatByDecade] = useState<Array<{ decade: number; platCount: number }>>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -55,8 +58,10 @@ export function CityContent({ townships = [], mapSlot }: { townships?: CityTowns
       import("@/lib/supabase/cityQueries").then((m) => m.fetchAppealsByYear()),
       import("@/lib/supabase/cityQueries").then((m) => m.fetchPermitActivity()),
       import("@/lib/supabase/subdivisionQueries").then((m) => m.fetchCityResubdivisionExamples()),
+      import("@/lib/supabase/subdivisionQueries").then((m) => m.fetchSubdivisionStats()),
+      import("@/lib/supabase/subdivisionQueries").then((m) => m.fetchSubdivisionPlatByDecade()),
     ])
-      .then(([s, d, n, mh, at, ay, pa, lineageExamples]) => {
+      .then(([s, d, n, mh, at, ay, pa, lineageExamples, subdivStats, platDecade]) => {
         if (s) setStats(s as unknown as HomeStatsSnapshot);
         setRows(d.map((r) => ({ decade: r.decade, count: r.count })));
         setNeighborhoods(
@@ -67,6 +72,8 @@ export function CityContent({ townships = [], mapSlot }: { townships?: CityTowns
         setAppealsByYear(ay);
         setPermitActivity(pa);
         setResubdivisionExamples(lineageExamples);
+        setSubdivisionStats(subdivStats);
+        setPlatByDecade(platDecade);
       })
       .catch(() => null)
       .finally(() => setLoading(false));
@@ -203,25 +210,62 @@ export function CityContent({ townships = [], mapSlot }: { townships?: CityTowns
         </div>
       )}
 
-      {resubdivisionExamples.length > 0 && (
+      {(subdivisionStats.total > 0 || platByDecade.length > 0 || resubdivisionExamples.length > 0) && (
         <section>
-          <p className="section-heading">Resubdivision over time</p>
-          <p className="text-sm text-text-muted mb-4 max-w-prose">
-            Park Ridge developed not only through original plats, but also through later
-            additions, partial-lot resubdivisions, and replatting of older subdivision
-            blocks. These deed-derived examples show an older plat, a parent block or lot,
-            a carved-out portion, a later subdivision/addition, and a current lot or property.
+          <p className="section-heading">How Park Ridge was platted</p>
+          <p className="text-sm text-text-muted mb-6 max-w-prose">
+            Park Ridge's land was divided and redivided across nearly a century.
+            The 1910s and 1920s brought the densest wave of original plats; later decades
+            saw additions and resubdivisions carve existing blocks into finer parcels.
           </p>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-            {resubdivisionExamples.map((record) => (
-              <SubdivisionLineageCard
-                key={record.lineage_key}
-                lineage={record}
-                showAddress={Boolean(record.address)}
-                compact
+
+          {subdivisionStats.total > 0 && (() => {
+            const peak = platByDecade.reduce<{ decade: number; platCount: number } | null>(
+              (best, row) => (!best || row.platCount > best.platCount ? row : best),
+              null
+            );
+            return (
+              <StatGrid
+                columns={3}
+                stats={[
+                  { value: formatNumber(subdivisionStats.total), label: "Subdivisions recorded" },
+                  subdivisionStats.minYear && subdivisionStats.maxYear
+                    ? { value: `${subdivisionStats.minYear}–${subdivisionStats.maxYear}`, label: "Year range" }
+                    : null,
+                  peak
+                    ? { value: `${peak.platCount} plats`, label: `Peak decade: ${peak.decade}s` }
+                    : null,
+                ].filter((s): s is { value: string; label: string } => s !== null)}
               />
-            ))}
-          </div>
+            );
+          })()}
+
+          {platByDecade.length > 0 && (
+            <div className="mt-8 mb-2">
+              <p className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-3">
+                Plats recorded by decade
+              </p>
+              <SubdivisionPlatChart data={platByDecade} />
+            </div>
+          )}
+
+          {resubdivisionExamples.length > 0 && (
+            <div className="mt-8">
+              <p className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-4">
+                A closer look: land reworked over time
+              </p>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                {resubdivisionExamples.map((record) => (
+                  <SubdivisionLineageCard
+                    key={record.lineage_key}
+                    lineage={record}
+                    showAddress={Boolean(record.address)}
+                    compact
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </section>
       )}
 

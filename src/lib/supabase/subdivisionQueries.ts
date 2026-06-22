@@ -369,6 +369,31 @@ export async function fetchSubdivisionPlatByDecade(): Promise<
   }));
 }
 
+// ─── Subdivision stats (city page headline row) ───────────────────────────────
+
+export async function fetchSubdivisionStats(): Promise<{
+  total: number;
+  minYear: number | null;
+  maxYear: number | null;
+}> {
+  if (!supabase) return { total: 0, minYear: null, maxYear: null };
+  try {
+    const { data, error } = await supabase
+      .from("subdivisions")
+      .select("recorded_year")
+      .not("recorded_year", "is", null);
+    if (error || !data) return { total: 0, minYear: null, maxYear: null };
+    const years = (data as Array<{ recorded_year: number }>).map((r) => r.recorded_year);
+    return {
+      total: years.length,
+      minYear: years.length ? Math.min(...years) : null,
+      maxYear: years.length ? Math.max(...years) : null,
+    };
+  } catch {
+    return { total: 0, minYear: null, maxYear: null };
+  }
+}
+
 // ─── Build-gap chart ──────────────────────────────────────────────────────────
 
 export async function fetchSubdivisionBuildGap(): Promise<
