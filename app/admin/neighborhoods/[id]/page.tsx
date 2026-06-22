@@ -59,6 +59,7 @@ export default async function EditNeighborhoodPage({ params }: { params: { id: s
 
       <BoundaryEditor
         neighborhoodId={id}
+        neighborhoodLabel={neighborhood.label}
         hasGeometry={neighborhood.geometry != null}
       />
 

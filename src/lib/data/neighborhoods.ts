@@ -20,6 +20,8 @@ export type NeighborhoodDetail = NeighborhoodSummary & {
   streets?: Array<{ name: string; displayName: string; parcelCount: number }>;
 };
 
+type NeighborhoodMeta = { id: string; label: string; slug: string | null; neighborhood_type: string | null };
+
 export async function fetchNeighborhoodSummaries(): Promise<NeighborhoodSummary[]> {
   if (!supabase) return [];
   let data: unknown = null;
@@ -33,27 +35,13 @@ export async function fetchNeighborhoodSummaries(): Promise<NeighborhoodSummary[
   }
   if (error || !data) return [];
 
-  // Fetch slug and label from neighborhoods table to supplement RPC results
-  const ids = (data as Array<{ neighborhood_id: string }>).map((r) => r.neighborhood_id);
-  let metaMap = new Map<string, { slug: string; label: string }>();
-  try {
-    const { data: meta } = await supabase
-      .from("neighborhoods")
-      .select("id, slug, label")
-      .in("id", ids);
-    if (meta) {
-      for (const m of meta as Array<{ id: string; slug: string | null; label: string }>) {
-        metaMap.set(m.id, { slug: m.slug ?? m.id.split(":").slice(1).join(":"), label: m.label });
-      }
-    }
-  } catch { /* use fallback */ }
-
   return (data as unknown[]).map((row: unknown) => {
     const r = row as Record<string, unknown>;
     const id = String(r.neighborhood_id);
-    const meta = metaMap.get(id);
-    const slug = meta?.slug ?? id.split(":").slice(1).join(":");
-    const label = meta?.label ?? id;
+    const slug = r.neighborhood_slug
+      ? String(r.neighborhood_slug)
+      : id.split(":").slice(1).join(":");
+    const label = r.neighborhood_label ? String(r.neighborhood_label) : id;
     return {
       id,
       slug,
@@ -92,8 +80,6 @@ export async function getNeighborhoodBySlug(slug: string): Promise<NeighborhoodS
   }
   throw new Error(`Unknown neighborhood slug: ${slug}`);
 }
-
-type NeighborhoodMeta = { id: string; label: string; slug: string | null; neighborhood_type: string | null };
 
 export async function getNeighborhoodDetail(id: string): Promise<NeighborhoodDetail> {
   const summaries = await fetchNeighborhoodSummaries();
