@@ -2,21 +2,25 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { updateNeighborhoodGeometry } from "../_actions/neighborhoods";
+import { updateNeighborhoodGeometry, assignParcelsByGeometry } from "../_actions/neighborhoods";
 import { generateNeighborhoodBoundary } from "../_actions/aiBoundaryGeneration";
 
 export function BoundaryEditor({
   neighborhoodId,
   neighborhoodLabel,
+  neighborhoodType,
   hasGeometry,
 }: {
   neighborhoodId: string;
   neighborhoodLabel?: string;
+  neighborhoodType?: string;
   hasGeometry: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [isGenerating, startGenerating] = useTransition();
+  const [isAssigning, startAssigning] = useTransition();
+  const [assignResult, setAssignResult] = useState<{ assigned?: number; error?: string } | null>(null);
   const [geojson, setGeojson] = useState("");
   const [aiDescription, setAiDescription] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +49,13 @@ export function BoundaryEditor({
         setTimeout(() => setSaved(false), 3000);
         router.refresh();
       });
+    });
+  }
+
+  function handleAssign() {
+    setAssignResult(null);
+    startAssigning(() => {
+      assignParcelsByGeometry(neighborhoodId).then((r) => setAssignResult(r));
     });
   }
 
@@ -129,9 +140,34 @@ export function BoundaryEditor({
           >
             {isPending ? "Saving…" : "Save Geometry"}
           </button>
-          {saved && <p className="text-confidence-high text-sm">Saved!</p>}
+            {saved && <p className="text-confidence-high text-sm">Saved!</p>}
         </div>
       </form>
+
+      {hasGeometry && (
+        <div className="mt-4 border-t border-surface-border pt-4">
+          <p className="text-xs text-text-muted mb-3">
+            Assign all parcels whose centroid falls inside the saved boundary to this neighborhood.
+            Existing assignments for this neighborhood type are overwritten.
+          </p>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleAssign}
+              disabled={isAssigning}
+              className="bg-surface-raised border border-surface-border text-text-primary font-semibold px-4 py-2 rounded text-sm hover:border-accent-teal/60 transition-colors disabled:opacity-50"
+            >
+              {isAssigning ? "Assigning…" : "Assign parcels from boundary"}
+            </button>
+            {assignResult?.assigned != null && (
+              <p className="text-confidence-high text-sm">{assignResult.assigned} parcels assigned</p>
+            )}
+            {assignResult?.error && (
+              <p className="text-accent-red text-xs">{assignResult.error}</p>
+            )}
+          </div>
+        </div>
+      )}
     </section>
   );
 }

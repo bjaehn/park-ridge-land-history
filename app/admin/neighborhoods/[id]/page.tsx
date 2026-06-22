@@ -60,6 +60,7 @@ export default async function EditNeighborhoodPage({ params }: { params: { id: s
       <BoundaryEditor
         neighborhoodId={id}
         neighborhoodLabel={neighborhood.label}
+        neighborhoodType={neighborhood.neighborhood_type ?? "official_planning"}
         hasGeometry={neighborhood.geometry != null}
       />
 

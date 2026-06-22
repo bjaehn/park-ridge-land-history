@@ -100,6 +100,17 @@ export async function updateNeighborhoodGeometry(id: string, formData: FormData)
   return {};
 }
 
+// ─── Assign parcels by geometry ──────────────────────────────────────────────
+
+export async function assignParcelsByGeometry(neighborhoodId: string) {
+  const { data, error } = await adminSupabase.rpc("assign_parcels_by_geometry", {
+    p_neighborhood_id: neighborhoodId,
+  });
+  revalidatePath(`/admin/neighborhoods/${encodeURIComponent(neighborhoodId)}`);
+  if (error) return { error: error.message };
+  return { assigned: Number(data ?? 0) };
+}
+
 // ─── Subdivision links ────────────────────────────────────────────────────────
 
 export async function upsertNeighborhoodSubdivisionLink(
