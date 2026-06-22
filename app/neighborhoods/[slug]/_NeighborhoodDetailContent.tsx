@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import { StatGrid } from "@/components/ui/StatGrid";
 import { ConstructionByDecadeChart } from "@/components/ui/ConstructionByDecadeChart";
-import { CoverageTable } from "@/components/ui/CoverageTable";
 import { EntityCard } from "@/components/ui/EntityCard";
 import { LoadingSkeleton } from "@/components/ui/EmptyState";
 import { HighlightReel } from "@/components/ui/HighlightReel";
@@ -40,8 +39,6 @@ export function NeighborhoodDetailContent({ neighborhoodId, label, slug, mapSlot
     recent_teardown_count: detail.recentTeardowns,
   });
 
-  const total = detail.decadeRows.reduce((s, r) => s + r.count, 0);
-
   const statItems = [
     { value: formatNumber(detail.parcelCount), label: "Properties" },
     detail.medianYear ? { value: String(detail.medianYear), label: "Typical build year" } : null,
@@ -73,15 +70,9 @@ export function NeighborhoodDetailContent({ neighborhoodId, label, slug, mapSlot
         limit={5}
       />
 
-      <div className="two-col-layout">
-        <div>
-          <p className="section-heading">When {label} took shape</p>
-          <ConstructionByDecadeChart rows={detail.decadeRows} />
-        </div>
-        <div>
-          <p className="section-heading">Homes by decade</p>
-          <CoverageTable rows={detail.decadeRows} total={total} />
-        </div>
+      <div>
+        <p className="section-heading">When {label} took shape</p>
+        <ConstructionByDecadeChart rows={detail.decadeRows} />
       </div>
 
       {detail.streets && detail.streets.length > 0 && (
