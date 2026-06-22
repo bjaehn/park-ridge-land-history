@@ -395,6 +395,23 @@ export async function fetchSubdivisionStats(): Promise<{
   }
 }
 
+// ─── City page subdivision list (name + earliest build year) ─────────────────
+
+export async function fetchSubdivisionsForCityList(): Promise<
+  Array<{ id: string; name: string; normalizedName: string; parcelCount: number | null; earliestBuilt: number | null }>
+> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc("subdivision_list_with_earliest_build");
+  if (error || !data) return [];
+  return (data as Array<{ id: string; name: string; normalized_name: string; parcel_count: number | null; earliest_built: number | null }>).map((r) => ({
+    id: r.id,
+    name: r.name,
+    normalizedName: r.normalized_name,
+    parcelCount: r.parcel_count,
+    earliestBuilt: r.earliest_built,
+  }));
+}
+
 // ─── Build-gap chart ──────────────────────────────────────────────────────────
 
 export async function fetchSubdivisionBuildGap(): Promise<
