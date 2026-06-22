@@ -134,6 +134,17 @@ export async function getNeighborhoodDetail(id: string): Promise<NeighborhoodDet
   return { ...base, decadeRows, streets };
 }
 
+export async function fetchNeighborhoodPins(neighborhoodId: string): Promise<string[]> {
+  if (!supabase) return [];
+  try {
+    const { data, error } = await supabase.rpc("neighborhood_pins", { p_neighborhood_id: neighborhoodId });
+    if (error || !data) return [];
+    return (data as Array<{ pin: string }>).map((r) => r.pin).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
 export async function fetchNeighborhoodBbox(
   neighborhoodId: string
 ): Promise<[number, number, number, number] | null> {

@@ -927,7 +927,11 @@ function buildScopeFilter(scope: MapScope): unknown[] {
   switch (scope.kind) {
     case "property":     return ["==", ["get", "pin_normalized"], scope.pin];
     case "street":       return ["==", ["get", "street_name_normalized"], scope.streetName];
-    case "neighborhood": return ["==", ["get", "neighborhood_id"], scope.neighborhoodId];
+    case "neighborhood":
+      if (scope.pins && scope.pins.length > 0) {
+        return ["in", ["get", "pin_normalized"], ["literal", scope.pins]];
+      }
+      return ["==", "1", "0"]; // no pins assigned — show nothing
     case "subdivision":
       if (scope.pins && scope.pins.length > 0) {
         return ["in", ["get", "pin_normalized"], ["literal", scope.pins]];

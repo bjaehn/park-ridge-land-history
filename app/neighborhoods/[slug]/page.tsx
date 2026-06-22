@@ -5,7 +5,7 @@ import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { SourceNote } from "@/components/ui/SourceNote";
 import { MapView } from "@/components/MapView";
 import { NeighborhoodDetailContent } from "./_NeighborhoodDetailContent";
-import { getNeighborhoodBySlug, fetchNeighborhoodBbox } from "@/lib/data/neighborhoods";
+import { getNeighborhoodBySlug, fetchNeighborhoodBbox, fetchNeighborhoodPins } from "@/lib/data/neighborhoods";
 import { NEIGHBORHOOD_BOUNDARY_DISCLAIMER } from "@/lib/content";
 
 type Props = { params: { slug: string } };
@@ -24,7 +24,10 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   const neighborhood = await getNeighborhoodBySlug(slug).catch(() => null);
   if (!neighborhood) notFound();
 
-  const neighborhoodBbox = await fetchNeighborhoodBbox(neighborhood.id).catch(() => null);
+  const [neighborhoodBbox, neighborhoodPins] = await Promise.all([
+    fetchNeighborhoodBbox(neighborhood.id).catch(() => null),
+    fetchNeighborhoodPins(neighborhood.id).catch(() => []),
+  ]);
 
   return (
     <div className="page-shell">
@@ -51,7 +54,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
         slug={neighborhood.slug}
         mapSlot={
           <MapView
-            scope={{ kind: "neighborhood", neighborhoodId: neighborhood.id, bbox: neighborhoodBbox ?? undefined }}
+            scope={{ kind: "neighborhood", neighborhoodId: neighborhood.id, pins: neighborhoodPins, bbox: neighborhoodBbox ?? undefined }}
             height="580px"
             showExpand
           />
