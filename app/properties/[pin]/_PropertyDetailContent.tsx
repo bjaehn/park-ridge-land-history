@@ -562,9 +562,7 @@ export function PropertyDetailContent({ pin }: Props) {
       {sales.some((s) => s.sale_price != null && s.sale_price > 0) && (
         <section>
           <p className="section-heading">Sale price history</p>
-          <div className="-mx-[clamp(1rem,4vw,3rem)]">
-            <SalesPriceChart sales={sales} />
-          </div>
+          <SalesPriceChart sales={sales} />
         </section>
       )}
 
@@ -575,13 +573,11 @@ export function PropertyDetailContent({ pin }: Props) {
       {assessmentTimeline.length >= 2 && (
         <section>
           <p className="section-heading">Assessed value history</p>
-          <div className="-mx-[clamp(1rem,4vw,3rem)]">
-            <AssessmentChart
+          <AssessmentChart
               timeline={assessmentTimeline}
               appealYears={appealYears}
               totalReduction={props.total_assessment_reduction as number | null}
             />
-          </div>
           <InlineSourceNote className="mt-2">Cook County Assessor certified totals by assessment year</InlineSourceNote>
         </section>
       )}
