@@ -8,7 +8,7 @@ import { NeighborhoodCharts } from "@/components/ui/NeighborhoodCharts";
 
 export const metadata: Metadata = {
   title: "Neighborhoods",
-  description: "Park Ridge neighborhoods — official planning districts, business districts, and local area names.",
+  description: "Park Ridge neighborhoods: official planning districts, business districts, and local area names.",
 };
 
 export default function NeighborhoodsPage() {

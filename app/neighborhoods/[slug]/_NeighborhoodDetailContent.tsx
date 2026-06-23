@@ -6,9 +6,14 @@ import { ConstructionByDecadeChart } from "@/components/ui/ConstructionByDecadeC
 import { EntityCard } from "@/components/ui/EntityCard";
 import { LoadingSkeleton } from "@/components/ui/EmptyState";
 import { HighlightReel } from "@/components/ui/HighlightReel";
+import { NeighborhoodPriceChart } from "@/components/ui/NeighborhoodPriceChart";
+import { InlineSourceNote } from "@/components/ui/SourceNote";
 import { getChangeSignal, formatNumber, formatCount } from "@/lib/formatters";
-import { getNeighborhoodDetail } from "@/lib/data/neighborhoods";
+import { getNeighborhoodDetail, fetchNeighborhoodPins } from "@/lib/data/neighborhoods";
+import { fetchBlockSalesByYear } from "@/lib/supabase/blockQueries";
+import type { BlockSalesByYear } from "@/lib/supabase/blockQueries";
 import { NEIGHBORHOOD_NARRATIVES } from "@/lib/content";
+import { SaleIcon } from "@/lib/icons";
 import type { HighlightGroup } from "@/components/ui/HighlightReel";
 
 const NEIGHBORHOOD_HIGHLIGHTS: readonly HighlightGroup[] = [
@@ -21,11 +26,22 @@ type Props = { neighborhoodId: string; label: string; slug: string; mapSlot?: Re
 
 export function NeighborhoodDetailContent({ neighborhoodId, label, slug, mapSlot }: Props) {
   const [detail, setDetail] = useState<Awaited<ReturnType<typeof getNeighborhoodDetail>> | null>(null);
+  const [salesByYear, setSalesByYear] = useState<BlockSalesByYear | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     getNeighborhoodDetail(neighborhoodId)
-      .then(setDetail)
+      .then((d) => {
+        setDetail(d);
+        return fetchNeighborhoodPins(neighborhoodId);
+      })
+      .then((pins) => {
+        if (pins.length) return fetchBlockSalesByYear(pins);
+        return null;
+      })
+      .then((byYear) => {
+        if (byYear) setSalesByYear(byYear);
+      })
       .catch(() => null)
       .finally(() => setLoading(false));
   }, [neighborhoodId]);
@@ -48,6 +64,11 @@ export function NeighborhoodDetailContent({ neighborhoodId, label, slug, mapSlot
 
   const narrative = NEIGHBORHOOD_NARRATIVES[slug];
 
+  const priceRow =
+    salesByYear && (salesByYear.year2015 || salesByYear.year2024)
+      ? [{ label, ...salesByYear }]
+      : [];
+
   return (
     <div className="space-y-10">
       {narrative && (
@@ -61,6 +82,17 @@ export function NeighborhoodDetailContent({ neighborhoodId, label, slug, mapSlot
           <p className="section-heading">Neighborhood map</p>
           {mapSlot}
         </div>
+      )}
+
+      {priceRow.length > 0 && (
+        <section>
+          <div className="flex items-center gap-2 mb-3">
+            <SaleIcon size={14} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />
+            <p className="section-heading !mb-0">Median sale price, 2015 vs. 2024</p>
+          </div>
+          <NeighborhoodPriceChart data={priceRow} />
+          <InlineSourceNote className="mt-3">Cook County Recorder of Deeds. Market sales only ($50K$5M).</InlineSourceNote>
+        </section>
       )}
 
       <HighlightReel

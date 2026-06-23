@@ -398,6 +398,26 @@ function HargisSurveySection({ records }: { records: HargisRecord[] }) {
   );
 }
 
+function buildPropertyStory(
+  yearBuilt: number | null,
+  subdivisionName: string | null,
+  neighborhoodLabel: string | null,
+): string | null {
+  if (!yearBuilt && !subdivisionName) return null;
+
+  if (yearBuilt) {
+    if (subdivisionName) {
+      return `This home was built in ${yearBuilt} in the ${subdivisionName} subdivision.`;
+    }
+    if (neighborhoodLabel) {
+      return `This home was built in ${yearBuilt} in the ${neighborhoodLabel} neighborhood.`;
+    }
+    return `This home was built in ${yearBuilt}.`;
+  }
+
+  return `This property is part of the ${subdivisionName} subdivision.`;
+}
+
 export function PropertyDetailContent({ pin }: Props) {
   const [detail, setDetail] = useState<Awaited<ReturnType<typeof getPropertyDetail>> | null>(null);
   const [loading, setLoading] = useState(true);
@@ -467,8 +487,66 @@ export function PropertyDetailContent({ pin }: Props) {
   if (!permitCount || permitCount === 0) missingGaps.push("No permit history in dataset");
   if (actualSaleCount === 0) missingGaps.push("No recorded sales in dataset");
 
+  const yearBuilt = props.year_built as number | null;
+  const subdivisionName = detail.subdivision?.name
+    ?? landLineage[0]?.subdivision?.name
+    ?? null;
+  const neighborhoodLabel = (
+    (props.local_neighborhood_label as string | null)
+    ?? (props.official_planning_neighborhood_label as string | null)
+  );
+  const propertyStory = buildPropertyStory(yearBuilt, subdivisionName, neighborhoodLabel ?? null);
+
+  const whatThisMeansBullets: string[] = [];
+  if (detail.comparisons && detail.comparisons.length > 0) {
+    const streetComp =
+      detail.comparisons.find((c) => c.metric === "year_built" && c.scope === "street") ??
+      detail.comparisons.find((c) => c.metric === "year_built");
+    if (streetComp && streetComp.propertyValue !== null && streetComp.referenceValue !== null) {
+      const diff = Math.abs(streetComp.propertyValue - streetComp.referenceValue);
+      const scopeLabel =
+        streetComp.scope === "street"
+          ? "this street"
+          : streetComp.scope === "neighborhood"
+          ? "this neighborhood"
+          : "Park Ridge";
+      if (diff <= 5) {
+        whatThisMeansBullets.push(
+          `Built around the same time as most homes on ${scopeLabel} (median ${streetComp.referenceValue}).`
+        );
+      } else {
+        const direction =
+          streetComp.propertyValue < streetComp.referenceValue ? "older" : "newer";
+        whatThisMeansBullets.push(
+          `This home is ${diff} years ${direction} than the typical home on ${scopeLabel} (median ${streetComp.referenceValue}).`
+        );
+      }
+    }
+    if (assessmentTimeline.length >= 2) {
+      const first = assessmentTimeline[0];
+      const last = assessmentTimeline[assessmentTimeline.length - 1];
+      if (first.value && last.value && first.year !== last.year) {
+        const pct = Math.round(((last.value - first.value) / first.value) * 100);
+        const dir = pct >= 0 ? "increased" : "decreased";
+        whatThisMeansBullets.push(
+          `Assessed value has ${dir} ${Math.abs(pct)}% from ${first.year} to ${last.year}.`
+        );
+      }
+    }
+    if (actualSaleCount > 0) {
+      whatThisMeansBullets.push(
+        `${actualSaleCount} recorded ${actualSaleCount === 1 ? "sale" : "sales"} on file since records began.`
+      );
+    }
+  }
+
   return (
     <div className="space-y-10">
+      {/* Property story synthesis */}
+      {propertyStory && (
+        <p className="text-base text-text-secondary leading-relaxed">{propertyStory}</p>
+      )}
+
       {/* Confidence + vitals */}
       <section>
         <div className="mb-4">
@@ -528,10 +606,10 @@ export function PropertyDetailContent({ pin }: Props) {
         </section>
       )}
 
-      {/* Evidence timeline */}
+      {/* Property timeline */}
       {timeline.length > 0 && (
         <section>
-          <p className="section-heading">Evidence trail</p>
+          <p className="section-heading">Property timeline</p>
           <PropertyTimeline events={timeline} />
         </section>
       )}
@@ -613,6 +691,21 @@ export function PropertyDetailContent({ pin }: Props) {
             <p className="section-heading !mb-0">How this property compares</p>
           </div>
           <ComparisonList rows={detail.comparisons} />
+        </section>
+      )}
+
+      {/* What this means */}
+      {whatThisMeansBullets.length > 0 && (
+        <section>
+          <p className="section-heading">What this means</p>
+          <ul className="space-y-2">
+            {whatThisMeansBullets.map((b, i) => (
+              <li key={i} className="flex items-start gap-2.5 text-sm text-text-secondary">
+                <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-accent-purple shrink-0" aria-hidden="true" />
+                {b}
+              </li>
+            ))}
+          </ul>
         </section>
       )}
 

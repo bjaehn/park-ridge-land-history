@@ -7,9 +7,7 @@ import { NeighborhoodsGrid } from "./neighborhoods/_NeighborhoodsGrid";
 import { SparklinePriceCard } from "@/components/ui/SparklinePriceCard";
 import { SparklineSalesVolumeCard } from "@/components/ui/SparklineSalesVolumeCard";
 import { SparklinePermitCard } from "@/components/ui/SparklinePermitCard";
-import { ArchiveInventory } from "@/components/ui/ArchiveInventory";
 import { NeighborhoodIcon, HighlightIcon } from "@/lib/icons";
-import { NeighborhoodCharts } from "@/components/ui/NeighborhoodCharts";
 import type { HighlightGroup } from "@/components/ui/HighlightReel";
 
 export const metadata: Metadata = {
@@ -27,7 +25,7 @@ const CITY_HIGHLIGHTS: readonly HighlightGroup[] = [
 export default function HomePage() {
   return (
     <div className="page-shell">
-      {/* Hero */}
+      {/* Hero + key facts */}
       <section className="py-12 md:py-16">
         <h1 className="text-3xl md:text-4xl font-bold text-text-primary leading-tight mb-4">
           {HOME_HERO_HEADLINE}
@@ -36,25 +34,20 @@ export default function HomePage() {
           {HOME_HERO_SUBHEAD}
         </p>
         <HomeSearch />
-      </section>
-
-      {/* Key facts */}
-      <section className="mb-10">
-        <HomeStats />
-        <InlineSourceNote>{COVERAGE_DISCLAIMER}</InlineSourceNote>
+        <div className="mt-8">
+          <HomeStats />
+          <InlineSourceNote>{COVERAGE_DISCLAIMER}</InlineSourceNote>
+        </div>
       </section>
 
       <hr className="border-surface-border" />
 
-      {/* City trends + archive inventory */}
+      {/* City trends */}
       <section className="mt-10 mb-10">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <SparklinePriceCard />
           <SparklineSalesVolumeCard />
           <SparklinePermitCard />
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-5 gap-4 mt-4">
-          <ArchiveInventory cardMode />
         </div>
       </section>
 
@@ -67,13 +60,6 @@ export default function HomePage() {
           <p className="section-heading !mb-0">Notable properties</p>
         </div>
         <HighlightReel scope="city" scopeId="" groups={CITY_HIGHLIGHTS} limit={6} />
-      </section>
-
-      <hr className="border-surface-border" />
-
-      {/* Neighborhood charts */}
-      <section className="mt-10 mb-10">
-        <NeighborhoodCharts />
       </section>
 
       <hr className="border-surface-border" />

@@ -892,21 +892,21 @@ For each task in each sprint:
 
 | Item | Sprint | Status | Owner | Notes | Completed date |
 |------|--------|--------|-------|-------|----------------|
-| Task 1.1: Consolidate property page sale/permit sections | 1 | Not started | Frontend | | |
-| Task 1.2: Remove redundant Sources sections from page body | 1 | Not started | Frontend | | |
-| Task 1.3: Fix construction chart duplication | 1 | Not started | Frontend | | |
-| Task 1.4: Clarify neighborhood type system | 1 | Not started | Frontend | | |
-| Task 1.5: Fix empty street pages (Prospect Ave, Touhy Ave) | 1 | Not started | Data/Frontend | | |
-| Task 1.6: Consolidate city page chart overload | 1 | Not started | Frontend | | |
-| Task 1.7: Add hierarchy context chips to entity pages | 1 | Not started | Frontend | | |
-| Task 1.8: Improve search empty and failed states | 1 | Not started | Frontend | | |
-| Task 1.9: Standardize section headings | 1 | Not started | Frontend | | |
-| Task 1.10: Add plain-English empty state for unresolvable parcels | 1 | Not started | Frontend | | |
-| Task 2.1: Add property story synthesis header | 2 | Not started | Frontend/Content | | |
-| Task 2.2: Upgrade Evidence trail to visual timeline | 2 | Not started | Frontend | | |
-| Task 2.3: Add "What this means" buyer summary | 2 | Not started | Frontend/Content | | |
-| Task 2.4: Add price comparison to neighborhood pages | 2 | Not started | Frontend/Data | | |
-| Task 2.5: Improve homepage and reduce overload | 2 | Not started | Frontend | | |
+| Task 1.1: Consolidate property page sale/permit sections | 1 | Complete | Frontend | Removed Activity record stat cards; counts shown in section headings | 2026-06-23 |
+| Task 1.2: Remove redundant Sources sections from page body | 1 | Complete | Frontend | Removed SourceNote from city, neighborhood, subdivision, street, pin pages; added /sources link | 2026-06-23 |
+| Task 1.3: Fix construction chart duplication | 1 | Complete | Frontend | Replaced chart with text summary on street and block pages; added >30 threshold on pin group | 2026-06-23 |
+| Task 1.4: Clarify neighborhood type system | 1 | Complete | Frontend | Added Geographic context heading and explanation on property page; neighborhoods index was already grouped | 2026-06-23 |
+| Task 1.5: Fix empty street pages (Prospect Ave, Touhy Ave) | 1 | Complete | Data/Frontend | Fixed hyphen-to-space normalization in getStreetByName and fetchStreetBbox; fixed breadcrumb to show Streets | 2026-06-23 |
+| Task 1.6: Consolidate city page chart overload | 1 | Complete | Frontend | Removed AppealsChart and PermitActivityChart; city page now has 4 charts | 2026-06-23 |
+| Task 1.7: Add hierarchy context chips to entity pages | 1 | Complete | Frontend | Added street link on property page; added neighborhood chip on street page; subdivision context deferred (data not in layer) | 2026-06-23 |
+| Task 1.8: Improve search empty and failed states | 1 | Complete | Frontend | Added inline empty state message for 3+ char queries with no results; Enter on empty results routes to /search | 2026-06-23 |
+| Task 1.9: Standardize section headings | 1 | Complete | Frontend | Standardized all construction decade headings to How X was built; fixed Subdivision ancestry case | 2026-06-23 |
+| Task 1.10: Add plain-English empty state for unresolvable parcels | 1 | Complete | Frontend | Added explanation to UnresolvableEntityCard; changed boundary text to Boundary map coming soon | 2026-06-23 |
+| Task 2.1: Add property story synthesis header | 2 | Complete | Frontend/Content | Added buildPropertyStory utility; renders 1-sentence synthesis above vitals using year built, subdivision, and neighborhood | 2026-06-23 |
+| Task 2.2: Upgrade Evidence trail to visual timeline | 2 | Complete | Frontend | Renamed heading to Property timeline; component already renders as visual vertical timeline with icons and connecting line | 2026-06-23 |
+| Task 2.3: Add "What this means" buyer summary | 2 | Complete | Frontend/Content | Added section before What we don't know yet; generates bullets from comparisons data, assessment timeline, and sale count | 2026-06-23 |
+| Task 2.4: Add price comparison to neighborhood pages | 2 | Complete | Frontend/Data | Added fetchNeighborhoodPins + fetchBlockSalesByYear calls in NeighborhoodDetailContent; renders NeighborhoodPriceChart after map slot | 2026-06-23 |
+| Task 2.5: Improve homepage and reduce overload | 2 | Complete | Frontend | Removed ArchiveInventory and NeighborhoodCharts; merged key facts into hero; homepage now has exactly 4 sections | 2026-06-23 |
 | Task 3.1: Explain confidence levels at point of use | 3 | Not started | Frontend/Content | | |
 | Task 3.2: Explain HARGIS codes in plain English | 3 | Not started | Content/Frontend | | |
 | Task 3.3: Add construction era context | 3 | Not started | Frontend/Content | | |
