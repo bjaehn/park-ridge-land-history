@@ -46,7 +46,7 @@ function IconRow({ items }: { items: IconRowItem[] }) {
   const filtered = items.filter((i) => i.value !== null && i.value !== "");
   if (!filtered.length) return null;
   return (
-    <dl className="grid grid-cols-2 gap-x-6 gap-y-4">
+    <dl className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-4">
       {filtered.map((item) => (
         <div key={item.label} className="flex items-start gap-2.5">
           <item.icon size={15} strokeWidth={1.8} className="text-text-muted mt-0.5 shrink-0" aria-hidden="true" />
@@ -88,15 +88,15 @@ function PinBreakdown({ props }: { props: Record<string, unknown> }) {
   ];
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex gap-2">
       {items.map(({ label, value, href }) => {
         const chip = (
           <div className={[
-            "bg-surface-card border border-surface-border rounded px-3 py-1.5 text-center min-w-[60px]",
+            "flex-1 bg-surface-card border border-surface-border rounded-lg px-3 py-4 text-center",
             href ? "hover:border-accent-purple/40 transition-colors" : "",
           ].join(" ")}>
-            <p className="text-[10px] text-text-muted uppercase tracking-wider mb-0.5">{label}</p>
-            <p className="font-mono text-sm font-semibold text-text-primary">{value || "-"}</p>
+            <p className="text-[10px] text-text-muted uppercase tracking-wider mb-1.5">{label}</p>
+            <p className="font-mono text-lg font-semibold text-text-primary">{value || "-"}</p>
           </div>
         );
         return href
