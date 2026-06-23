@@ -129,7 +129,7 @@ function SaleHistorySection({ sales }: { sales: PropertySale[] }) {
   const visible = expanded ? sales : sales.slice(0, 3);
   return (
     <section>
-      <p className="section-heading">Sale history</p>
+      <p className="section-heading">Sale history ({sales.length} on record)</p>
       <div className="space-y-2">
         {visible.map((s) => (
           <div key={s.id} className="flex items-start justify-between gap-3 bg-surface-card border border-surface-border rounded-lg px-4 py-3">
@@ -174,7 +174,7 @@ function PermitHistorySection({ permits }: { permits: PropertyPermit[] }) {
   const visible = expanded ? permits : permits.slice(0, 3);
   return (
     <section>
-      <p className="section-heading">Permit history</p>
+      <p className="section-heading">Permit history ({permits.length} on record)</p>
       <div className="space-y-2">
         {visible.map((p) => (
           <div key={p.id} className="bg-surface-card border border-surface-border rounded-lg px-4 py-3">
@@ -217,7 +217,7 @@ function LandLineageSection({ lineage }: { lineage: LandLineageEntry[] }) {
   const legacyLineage = lineage.filter((entry) => !(entry.lineage_records?.length));
   return (
     <section>
-      <p className="section-heading">Subdivision Ancestry</p>
+      <p className="section-heading">Subdivision ancestry</p>
       <div className="space-y-3">
         {richLineage.map((record) => (
           <SubdivisionLineageCard key={record.lineage_key} lineage={record} showAddress />
@@ -307,7 +307,7 @@ function LandLineageSection({ lineage }: { lineage: LandLineageEntry[] }) {
               )}
               {entry.subdivision.geometry_status === "not_started" && (
                 <p className="text-xs text-text-muted italic">
-                  Subdivision boundary not yet mapped.
+                  Boundary map coming soon.
                 </p>
               )}
               {!entry.subdivision.recorded_year && (
@@ -477,6 +477,19 @@ export function PropertyDetailContent({ pin }: Props) {
         <IconRow items={vitals} />
       </section>
 
+      {/* Street context link */}
+      {props.street_name_normalized && (
+        <div>
+          <Link
+            href={`/streets/${encodeURIComponent(props.street_name_normalized as string)}`}
+            className="inline-flex items-center gap-1.5 text-sm text-accent-purple hover:underline"
+          >
+            <StreetIcon size={13} strokeWidth={1.8} aria-hidden="true" />
+            View all properties on this street
+          </Link>
+        </div>
+      )}
+
       {/* PIN decomposition */}
       <section>
         <p className="section-heading">Parcel ID (PIN)</p>
@@ -487,6 +500,8 @@ export function PropertyDetailContent({ pin }: Props) {
       {/* Neighborhoods */}
       {(props.official_planning_neighborhood_id || props.business_district_id || props.local_neighborhood_id) && (
         <section>
+          <p className="section-heading">Geographic context</p>
+          <p className="text-sm text-text-secondary mb-3">This property sits within overlapping planning districts, business areas, and local neighborhoods.</p>
           <div className="space-y-2">
             {props.official_planning_neighborhood_id && props.official_planning_neighborhood_slug && (
               <NeighborhoodChip
@@ -518,43 +533,6 @@ export function PropertyDetailContent({ pin }: Props) {
         <section>
           <p className="section-heading">Evidence trail</p>
           <PropertyTimeline events={timeline} />
-        </section>
-      )}
-
-      {/* Permit and sale activity summary */}
-      {((permitCount && permitCount > 0) || actualSaleCount > 0) && (
-        <section>
-          <p className="section-heading">Activity record</p>
-          <div className="flex gap-4">
-            {permitCount != null && permitCount > 0 && (
-              <div className="flex-1 bg-surface-card border border-surface-border rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <PermitIcon size={14} strokeWidth={1.8} className="text-confidence-medium" aria-hidden="true" />
-                  <span className="text-xs font-semibold text-text-secondary uppercase tracking-wide">Permits</span>
-                </div>
-                <p className="text-2xl font-bold text-text-primary leading-none mb-1">{permitCount}</p>
-                <p className="text-xs text-text-muted">
-                  {latestPermitYear ? `Most recent: ${latestPermitYear}` : "on record"}
-                </p>
-              </div>
-            )}
-            {actualSaleCount > 0 && (
-              <div className="flex-1 bg-surface-card border border-surface-border rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <SaleIcon size={14} strokeWidth={1.8} className="text-confidence-high" aria-hidden="true" />
-                  <span className="text-xs font-semibold text-text-secondary uppercase tracking-wide">Sales</span>
-                </div>
-                <p className="text-2xl font-bold text-text-primary leading-none mb-1">{actualSaleCount}</p>
-                <p className="text-xs text-text-muted">
-                  {latestSaleYear
-                    ? latestSalePrice
-                      ? `Last sold ${latestSaleYear} for $${latestSalePrice.toLocaleString("en-US", { maximumFractionDigits: 0 })}`
-                      : `Most recent: ${latestSaleYear}`
-                    : "on record"}
-                </p>
-              </div>
-            )}
-          </div>
         </section>
       )}
 

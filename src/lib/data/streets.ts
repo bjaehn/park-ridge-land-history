@@ -27,7 +27,7 @@ export type StreetDetail = StreetSummary & {
 };
 
 export async function getStreetByName(rawName: string): Promise<StreetSummary> {
-  const normalized = rawName.toLowerCase().trim();
+  const normalized = rawName.toLowerCase().trim().replace(/-/g, " ");
   const displayName = formatStreetDisplayName(normalized);
 
   if (!supabase) return { name: displayName, normalizedName: normalized, parcelCount: 0 };

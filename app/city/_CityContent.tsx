@@ -5,8 +5,6 @@ import { StatGrid } from "@/components/ui/StatGrid";
 import { ConstructionByDecadeChart } from "@/components/ui/ConstructionByDecadeChart";
 import { MarketHistoryChart } from "@/components/ui/MarketHistoryChart";
 import { AssessmentTrendChart } from "@/components/ui/AssessmentTrendChart";
-import { AppealsChart } from "@/components/ui/AppealsChart";
-import { PermitActivityChart } from "@/components/ui/PermitActivityChart";
 import Link from "next/link";
 import { LoadingSkeleton } from "@/components/ui/EmptyState";
 import { SubdivisionPlatChart } from "@/components/ui/SubdivisionPlatChart";
@@ -14,14 +12,12 @@ import { EntityCard } from "@/components/ui/EntityCard";
 import { formatNumber } from "@/lib/formatters";
 import { getEraColor } from "@/lib/mapConfig";
 import { CITY_NARRATIVE } from "@/lib/content";
-import { SaleIcon, AssessmentIcon, ComparisonIcon, PermitIcon } from "@/lib/icons";
+import { SaleIcon, AssessmentIcon } from "@/lib/icons";
 import type { DecadeRow } from "@/components/ui/ConstructionByDecadeChart";
 import type { NeighborhoodSummary } from "@/lib/data/neighborhoods";
 import type {
   MarketHistoryRow,
   AssessmentTrendRow,
-  AppealsRow,
-  PermitActivityRow,
 } from "@/lib/supabase/cityQueries";
 import type { CityTownship } from "@/lib/data/pinGroups";
 
@@ -41,8 +37,6 @@ export function CityContent({ townships = [], mapSlot }: { townships?: CityTowns
   const [neighborhoods, setNeighborhoods] = useState<NeighborhoodSummary[]>([]);
   const [marketHistory, setMarketHistory] = useState<MarketHistoryRow[]>([]);
   const [assessmentTrend, setAssessmentTrend] = useState<AssessmentTrendRow[]>([]);
-  const [appealsByYear, setAppealsByYear] = useState<AppealsRow[]>([]);
-  const [permitActivity, setPermitActivity] = useState<PermitActivityRow[]>([]);
   const [subdivisions, setSubdivisions] = useState<Array<{ id: string; name: string; normalizedName: string; earliestBuilt: number | null }>>([]);
   const [platByDecade, setPlatByDecade] = useState<Array<{ decade: number; platCount: number }>>([]);
   const [loading, setLoading] = useState(true);
@@ -54,12 +48,10 @@ export function CityContent({ townships = [], mapSlot }: { townships?: CityTowns
       import("@/lib/data/neighborhoods").then((m) => m.fetchNeighborhoodSummaries()),
       import("@/lib/supabase/cityQueries").then((m) => m.fetchMarketHistory()),
       import("@/lib/supabase/cityQueries").then((m) => m.fetchAssessmentTrend()),
-      import("@/lib/supabase/cityQueries").then((m) => m.fetchAppealsByYear()),
-      import("@/lib/supabase/cityQueries").then((m) => m.fetchPermitActivity()),
       import("@/lib/supabase/subdivisionQueries").then((m) => m.fetchSubdivisionsForCityList()),
       import("@/lib/supabase/subdivisionQueries").then((m) => m.fetchSubdivisionPlatByDecade()),
     ])
-      .then(([s, d, n, mh, at, ay, pa, subdivList, platDecade]) => {
+      .then(([s, d, n, mh, at, subdivList, platDecade]) => {
         if (s) setStats(s as unknown as HomeStatsSnapshot);
         setRows(d.map((r) => ({ decade: r.decade, count: r.count })));
         setNeighborhoods(
@@ -67,8 +59,6 @@ export function CityContent({ townships = [], mapSlot }: { townships?: CityTowns
         );
         setMarketHistory(mh);
         setAssessmentTrend(at);
-        setAppealsByYear(ay);
-        setPermitActivity(pa);
         setSubdivisions(subdivList);
         setPlatByDecade(platDecade);
       })
@@ -105,7 +95,7 @@ export function CityContent({ townships = [], mapSlot }: { townships?: CityTowns
       {mapSlot}
 
       <div>
-        <p className="section-heading">When Park Ridge was built, wave by wave</p>
+        <p className="section-heading">How Park Ridge was built</p>
         <ConstructionByDecadeChart rows={rows} />
       </div>
 
@@ -135,30 +125,6 @@ export function CityContent({ townships = [], mapSlot }: { townships?: CityTowns
         <div className="-mx-[clamp(1rem,4vw,3rem)]">
           <AssessmentTrendChart data={assessmentTrend} />
         </div>
-      </section>
-
-      {/* Appeals */}
-      <section>
-        <div className="flex items-center gap-2 mb-3">
-          <ComparisonIcon size={14} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />
-          <p className="section-heading !mb-0">Assessment appeals filed by year</p>
-        </div>
-        <p className="text-sm text-text-muted mb-4">
-          Spikes follow reassessment years as residents push back on new valuations.
-        </p>
-        <AppealsChart data={appealsByYear} />
-      </section>
-
-      {/* Permit activity */}
-      <section>
-        <div className="flex items-center gap-2 mb-3">
-          <PermitIcon size={14} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />
-          <p className="section-heading !mb-0">Building permits, 2019 to 2026</p>
-        </div>
-        <p className="text-sm text-text-muted mb-4">
-          Residential permits in purple, commercial in slate. The 2020 to 2021 renovation surge is visible.
-        </p>
-        <PermitActivityChart data={permitActivity} />
       </section>
 
       {neighborhoods.length > 0 && (

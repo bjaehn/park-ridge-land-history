@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { StatGrid } from "@/components/ui/StatGrid";
-import { ConstructionByDecadeChart } from "@/components/ui/ConstructionByDecadeChart";
 import { EntityCard, UnresolvableEntityCard } from "@/components/ui/EntityCard";
 import type { MetaItem } from "@/components/ui/EntityCard";
 import { LoadingSkeleton } from "@/components/ui/EmptyState";
@@ -14,7 +13,6 @@ import {
   fetchBlockSalesStats,
   fetchBlockPermitStats,
 } from "@/lib/supabase/blockQueries";
-import type { DecadeRow } from "@/components/ui/ConstructionByDecadeChart";
 import type { BlockSalesStats, BlockPermitStats, BlockAssessmentStats, BlockParcel } from "@/lib/supabase/blockQueries";
 
 type Props = {
@@ -56,9 +54,11 @@ export function BlockDetailContent({ blockId, mapSlot }: Props) {
     const d = Math.floor(yr / 10) * 10;
     decadeMap.set(d, (decadeMap.get(d) ?? 0) + 1);
   });
-  const decadeRows: DecadeRow[] = Array.from(decadeMap.entries())
-    .sort(([a], [b]) => a - b)
-    .map(([decade, count]) => ({ decade: String(decade), count }));
+  let modeDecade: number | null = null;
+  let modeCount = 0;
+  decadeMap.forEach((count, decade) => {
+    if (count > modeCount) { modeCount = count; modeDecade = decade; }
+  });
 
   const oldestYear = yearsKnown.length ? Math.min(...yearsKnown) : null;
   const newestYear = yearsKnown.length ? Math.max(...yearsKnown) : null;
@@ -92,10 +92,15 @@ export function BlockDetailContent({ blockId, mapSlot }: Props) {
         </div>
       )}
 
-      {decadeRows.length > 0 && (
+      {modeDecade !== null && (
         <div>
-          <p className="section-heading">When this block was built</p>
-          <ConstructionByDecadeChart rows={decadeRows} />
+          <p className="section-heading">How this block was built</p>
+          <p className="text-sm text-text-secondary">
+            {`Built primarily in the ${modeDecade}s`}
+            {oldestYear && newestYear && oldestYear !== newestYear
+              ? `, with homes built from ${oldestYear} to ${newestYear}.`
+              : `.`}
+          </p>
         </div>
       )}
 

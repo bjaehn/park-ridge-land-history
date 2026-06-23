@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { ConfidenceBadge } from "@/components/ui/ConfidenceBadge";
-import { SourceNote } from "@/components/ui/SourceNote";
 import { MapView } from "@/components/MapView";
 import { SubdivisionDetailContent } from "./_SubdivisionDetailContent";
 import { SubdivisionHistoryPanel } from "@/components/ui/SubdivisionHistoryPanel";
@@ -116,10 +116,9 @@ export default async function SubdivisionDetailPage({ params }: Props) {
         }
       />
 
-      <SourceNote
-        sources={["recorder", "cookGis", "assessor"]}
-        note={sub.source_reference ? `Source: ${sub.source_reference}` : undefined}
-      />
+      <p className="text-xs text-text-muted mt-6 pt-4 border-t border-surface-border">
+        <Link href="/sources" className="hover:underline">About our data sources</Link>
+      </p>
     </div>
   );
 }

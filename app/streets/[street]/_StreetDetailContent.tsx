@@ -2,11 +2,10 @@
 
 import React, { useState, useEffect } from "react";
 import { StatGrid } from "@/components/ui/StatGrid";
-import { ConstructionByDecadeChart } from "@/components/ui/ConstructionByDecadeChart";
 import { EntityCard, UnresolvableEntityCard } from "@/components/ui/EntityCard";
 import { LoadingSkeleton } from "@/components/ui/EmptyState";
 import { HighlightReel } from "@/components/ui/HighlightReel";
-import { formatNumber, formatCount, formatAddress } from "@/lib/formatters";
+import { formatNumber, formatAddress } from "@/lib/formatters";
 import { getEraColor } from "@/lib/mapConfig";
 import { getStreetDetail } from "@/lib/data/streets";
 import type { HighlightGroup } from "@/components/ui/HighlightReel";
@@ -57,10 +56,19 @@ export function StreetDetailContent({ streetName, displayName, mapSlot }: Props)
         limit={5}
       />
 
-      <div>
-        <p className="section-heading">How {displayName} was built, decade by decade</p>
-        <ConstructionByDecadeChart rows={detail.decadeRows} />
-      </div>
+      {(detail.medianYear || detail.eraSpan) && (
+        <div>
+          <p className="section-heading">How {displayName} was built</p>
+          <p className="text-sm text-text-secondary">
+            {detail.medianYear
+              ? `Built primarily in the ${Math.floor(detail.medianYear / 10) * 10}s`
+              : `Homes here were built`}
+            {detail.eraSpan
+              ? `, with homes spanning ${detail.eraSpan}.`
+              : `.`}
+          </p>
+        </div>
+      )}
 
       <div>
         <p className="section-heading">All properties on {displayName}</p>

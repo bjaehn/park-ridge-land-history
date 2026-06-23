@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
-import { SourceNote } from "@/components/ui/SourceNote";
 import { MapView } from "@/components/MapView";
 import { CityContent } from "./_CityContent";
 import { getCityTownships } from "@/lib/data/pinGroups";
@@ -34,10 +34,9 @@ export default async function CityPage() {
         }
       />
 
-      <SourceNote
-        sources={["assessor", "permits", "hargis", "cookGis"]}
-        note="Coverage based on the Cook County assessor parcel dataset."
-      />
+      <p className="text-xs text-text-muted mt-6 pt-4 border-t border-surface-border">
+        <Link href="/sources" className="hover:underline">About our data sources</Link>
+      </p>
     </div>
   );
 }

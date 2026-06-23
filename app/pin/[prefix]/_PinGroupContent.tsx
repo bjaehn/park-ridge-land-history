@@ -133,7 +133,7 @@ export function PinGroupContent({ prefix, initialDetail, mapSlot }: Props) {
                 <NeighborhoodPriceChart data={priceRow} />
               </section>
             )}
-            {eraRow.total > 0 && (
+            {eraRow.total > 30 && (
               <section>
                 <div className="flex items-center gap-2 mb-3">
                   <YearBuiltIcon size={14} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />

@@ -1,14 +1,13 @@
 export const dynamic = "force-dynamic";
 
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
-import { SourceNote } from "@/components/ui/SourceNote";
 import { MapView } from "@/components/MapView";
 import { NeighborhoodDetailContent } from "./_NeighborhoodDetailContent";
 import { getNeighborhoodBySlug, fetchNeighborhoodBbox, fetchNeighborhoodPins } from "@/lib/data/neighborhoods";
-import { NEIGHBORHOOD_BOUNDARY_DISCLAIMER } from "@/lib/content";
 
 type Props = { params: { slug: string } };
 
@@ -63,10 +62,9 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
         }
       />
 
-      <SourceNote
-        sources={["assessor", "permits"]}
-        note={NEIGHBORHOOD_BOUNDARY_DISCLAIMER}
-      />
+      <p className="text-xs text-text-muted mt-6 pt-4 border-t border-surface-border">
+        <Link href="/sources" className="hover:underline">About our data sources</Link>
+      </p>
     </div>
   );
 }

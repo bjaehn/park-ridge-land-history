@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
-import { SourceNote } from "@/components/ui/SourceNote";
 import { MapView } from "@/components/MapView";
 import { StreetDetailContent } from "./_StreetDetailContent";
 import { getStreetByName, fetchStreetBbox } from "@/lib/data/streets";
@@ -19,9 +19,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function StreetDetailPage({ params }: Props) {
   const streetName = decodeURIComponent(params.street);
+  const normalizedForLookup = streetName.toLowerCase().trim().replace(/-/g, " ");
   const [street, streetBbox] = await Promise.all([
     getStreetByName(streetName).catch(() => null),
-    fetchStreetBbox(streetName.toLowerCase().trim()).catch(() => null),
+    fetchStreetBbox(normalizedForLookup).catch(() => null),
   ]);
 
   if (!street) notFound();
@@ -31,7 +32,7 @@ export default async function StreetDetailPage({ params }: Props) {
       <Breadcrumb
         items={[
           { label: "Park Ridge", href: "/city" },
-          { label: street.neighborhoodLabel ?? "Neighborhoods", href: street.neighborhoodSlug ? `/neighborhoods/${encodeURIComponent(street.neighborhoodSlug)}` : "/neighborhoods" },
+          { label: "Streets", href: "/streets" },
           { label: street.name, current: true },
         ]}
       />
@@ -40,6 +41,17 @@ export default async function StreetDetailPage({ params }: Props) {
         title={street.name}
         subtitle={`${street.parcelCount} properties. ${street.eraSpan ? `Built ${street.eraSpan}.` : ""}`}
       />
+
+      {street.neighborhoodLabel && street.neighborhoodSlug && (
+        <div className="mb-6">
+          <Link
+            href={`/neighborhoods/${encodeURIComponent(street.neighborhoodSlug)}`}
+            className="inline-flex items-center gap-2 text-sm bg-surface-card border border-surface-border rounded-full px-3 py-1.5 text-text-secondary hover:border-accent-purple/40 hover:text-text-primary transition-colors"
+          >
+            Neighborhood: {street.neighborhoodLabel}
+          </Link>
+        </div>
+      )}
 
       <StreetDetailContent
         streetName={street.normalizedName}
@@ -53,7 +65,9 @@ export default async function StreetDetailPage({ params }: Props) {
         }
       />
 
-      <SourceNote sources={["assessor", "permits"]} />
+      <p className="text-xs text-text-muted mt-6 pt-4 border-t border-surface-border">
+        <Link href="/sources" className="hover:underline">About our data sources</Link>
+      </p>
     </div>
   );
 }

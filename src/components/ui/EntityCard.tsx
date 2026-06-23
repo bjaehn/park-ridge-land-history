@@ -104,9 +104,10 @@ export function EntityCard({
  */
 export function UnresolvableEntityCard({ pin }: { pin: string }) {
   return (
-    <div className="flex flex-col gap-1 bg-surface-card border border-surface-border rounded-lg p-4 opacity-50 cursor-default select-none">
+    <div className="flex flex-col gap-1 bg-surface-card border border-surface-border rounded-lg p-4 opacity-60 cursor-default select-none">
       <p className="text-xs text-text-muted uppercase tracking-wide">Address not on record</p>
       <p className="text-sm text-text-secondary">PIN {pin}</p>
+      <p className="text-xs text-text-muted">No street address on record. This parcel is included in totals but cannot be searched by address.</p>
     </div>
   );
 }

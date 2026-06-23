@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
-import { SourceNote } from "@/components/ui/SourceNote";
 import { MapView } from "@/components/MapView";
 import { PinGroupContent } from "./_PinGroupContent";
 import { getPinGroupSummary, getPinGroupDetail, fetchPinPrefixBbox } from "@/lib/data/pinGroups";
@@ -60,7 +60,9 @@ export default async function PinGroupPage({ params }: Props) {
         }
       />
 
-      <SourceNote sources={["assessor"]} />
+      <p className="text-xs text-text-muted mt-6 pt-4 border-t border-surface-border">
+        <Link href="/sources" className="hover:underline">About our data sources</Link>
+      </p>
     </div>
   );
 }

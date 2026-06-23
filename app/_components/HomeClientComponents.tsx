@@ -18,29 +18,33 @@ export function HomeSearch() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [focused, setFocused] = useState(false);
+  const [searched, setSearched] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const search = useCallback((q: string) => {
     setQuery(q);
     if (timerRef.current) clearTimeout(timerRef.current);
-    if (q.trim().length < 2) { setResults([]); return; }
+    if (q.trim().length < 2) { setResults([]); setSearched(false); return; }
     timerRef.current = setTimeout(async () => {
       try {
         const { searchParcels } = await import("@/lib/supabase/homeQueries");
         const found = await searchParcels(q, 8);
         setResults(found);
-      } catch { setResults([]); }
+        setSearched(true);
+      } catch { setResults([]); setSearched(true); }
     }, 180);
   }, []);
 
   const select = (pin: string) => {
     setQuery("");
     setResults([]);
+    setSearched(false);
     router.push(`/properties/${encodeURIComponent(pin)}`);
   };
 
   const showDropdown = focused && results.length > 0 && query.trim().length >= 2;
+  const showEmptyState = focused && searched && results.length === 0 && query.trim().length >= 3;
 
   return (
     <div className="space-y-3">
@@ -71,7 +75,10 @@ export function HomeSearch() {
             onBlur={() => setTimeout(() => setFocused(false), 150)}
             onKeyDown={(e) => {
               if (e.key === "Enter" && results[0]) select(results[0].pin);
-              if (e.key === "Escape") setResults([]);
+              if (e.key === "Enter" && results.length === 0 && query.trim().length >= 3) {
+                router.push(`/search?q=${encodeURIComponent(query.trim())}`);
+              }
+              if (e.key === "Escape") { setResults([]); setSearched(false); }
             }}
             placeholder="Type an address or Cook County PIN..."
             className="w-full pl-10 pr-4 py-3 text-base bg-surface-card border border-surface-border rounded-lg text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-purple/60 transition-colors"
@@ -95,6 +102,11 @@ export function HomeSearch() {
               </li>
             ))}
           </ul>
+        )}
+        {showEmptyState && (
+          <p className="absolute top-full left-0 right-0 mt-1 px-4 py-3 bg-surface-card border border-surface-border rounded-lg text-sm text-text-muted z-50">
+            No properties found for &ldquo;{query}&rdquo;. Try an address, street name, or 14-digit PIN.
+          </p>
         )}
       </div>
       <div className="flex flex-wrap gap-2">

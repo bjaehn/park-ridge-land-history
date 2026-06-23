@@ -71,7 +71,7 @@ export function NeighborhoodDetailContent({ neighborhoodId, label, slug, mapSlot
       />
 
       <div>
-        <p className="section-heading">When {label} took shape</p>
+        <p className="section-heading">How {label} was built</p>
         <ConstructionByDecadeChart rows={detail.decadeRows} />
       </div>
 

@@ -119,7 +119,7 @@ export function SubdivisionDetailContent({ subdivisionId, recordedYear, entityTy
   const qualityWarnings: string[] = [];
   if (!recordedYear) qualityWarnings.push("Plat recording date not yet verified - needs source document.");
   if (geometryStatus === "not_started" || geometryStatus === "needs_source")
-    qualityWarnings.push("Subdivision boundary not yet mapped.");
+    qualityWarnings.push("Boundary map coming soon.");
 
   const priceRow = salesByYear && (salesByYear.year2015 || salesByYear.year2024)
     ? [{ label: "This subdivision", ...salesByYear }]
@@ -266,7 +266,7 @@ export function SubdivisionDetailContent({ subdivisionId, recordedYear, entityTy
 
       {decadeRows.length > 0 && (
         <div>
-          <p className="section-heading">When this subdivision was built out</p>
+          <p className="section-heading">How this subdivision was built</p>
           <ConstructionByDecadeChart rows={decadeRows} />
         </div>
       )}
