@@ -3,33 +3,19 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Grid3x3, Section as SectionIcon } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 import { SITE_NAME } from "@/lib/content";
 import type { SearchResult } from "@/lib/supabase/homeQueries";
 
 type NavLink = {
   href: string;
   label: string;
-  icon?: LucideIcon;
   isActive?: (pathname: string) => boolean;
 };
 
 const NAV_LINKS: NavLink[] = [
-  {
-    href: "/city",
-    label: "Township",
-    icon: Grid3x3,
-    isActive: (p) => p === "/city" || /^\/pin\/(09|12)$/.test(p),
-  },
-  {
-    href: "/pin/09",
-    label: "Section",
-    icon: SectionIcon,
-    isActive: (p) => /^\/pin\/(09|12)[0-9]/.test(p),
-  },
   { href: "/neighborhoods", label: "Neighborhoods" },
   { href: "/subdivisions",  label: "Subdivisions"  },
+  { href: "/streets",       label: "Streets"       },
   { href: "/city",          label: "City history"  },
 ];
 
@@ -132,18 +118,16 @@ export function TopNav() {
         <nav className="hidden md:flex items-center gap-1 flex-1" aria-label="Main navigation">
           {NAV_LINKS.map((link) => {
             const active = link.isActive ? link.isActive(pathname) : pathname.startsWith(link.href);
-            const Icon = link.icon;
             return (
               <Link
                 key={link.label}
                 href={link.href}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-sm transition-colors ${
+                className={`px-3 py-1.5 rounded text-sm transition-colors ${
                   active
                     ? "bg-accent-purple/15 text-accent-purple font-medium"
                     : "text-text-secondary hover:text-text-primary hover:bg-surface-raised"
                 }`}
               >
-                {Icon && <Icon size={13} strokeWidth={1.8} aria-hidden={true} />}
                 {link.label}
               </Link>
             );
@@ -255,18 +239,16 @@ export function TopNav() {
           <ul className="max-w-content mx-auto px-page-x py-3 flex flex-col gap-1">
             {NAV_LINKS.map((link) => {
               const active = link.isActive ? link.isActive(pathname) : pathname.startsWith(link.href);
-              const Icon = link.icon;
               return (
                 <li key={link.label}>
                   <Link
                     href={link.href}
-                    className={`flex items-center gap-2 px-3 py-2.5 rounded text-sm transition-colors ${
+                    className={`block px-3 py-2.5 rounded text-sm transition-colors ${
                       active
                         ? "bg-accent-purple/15 text-accent-purple font-medium"
                         : "text-text-secondary hover:text-text-primary hover:bg-surface-card"
                     }`}
                   >
-                    {Icon && <Icon size={13} strokeWidth={1.8} aria-hidden={true} />}
                     {link.label}
                   </Link>
                 </li>

@@ -36,15 +36,15 @@ export const CITY_NARRATIVE =
 // ---------------------------------------------------------------------------
 
 export const NEIGHBORHOOD_ERA_LABELS: Record<string, string> = {
-  uptown:    "Railroad-era core, 1870s to 1930s",
-  northeast: "Bungalow-era expansion, 1910s to 1940s",
-  central:   "Mixed-era crossroads, 1920s to 1960s",
-  northwest: "Postwar ranch country, 1940s to 1970s",
-  south:     "The city's last great build-out, 1950s to 1980s",
+  uptown_park_ridge: "Railroad-era core, 1870s to 1930s",
+  northeast:         "Bungalow-era expansion, 1910s to 1940s",
+  central:           "Mixed-era crossroads, 1920s to 1960s",
+  northwest_park:    "Postwar ranch country, 1940s to 1970s",
+  south_park:        "The city's last great build-out, 1950s to 1980s",
 };
 
 export const NEIGHBORHOOD_NARRATIVES: Record<string, string> = {
-  uptown:
+  uptown_park_ridge:
     "Uptown is the oldest part of Park Ridge, built around the commuter rail stop that sparked " +
     "the city's first settlement in the 1870s. The streets closest to the depot still hold some of " +
     "the earliest surviving homes in Cook County. Development here peaked in the 1920s and slowed " +
@@ -59,12 +59,12 @@ export const NEIGHBORHOOD_NARRATIVES: Record<string, string> = {
     "from the 1920s sit alongside Cape Cods built just after World War II. The neighborhood saw " +
     "sustained construction across five decades, giving it a more mixed architectural character than " +
     "any other part of the city.",
-  northwest:
+  northwest_park:
     "The Northwest is Park Ridge's ranch country. Nearly all of its homes were built in the fifteen " +
     "years after World War II, when returning veterans and growing families pushed the city's footprint " +
     "toward Des Plaines. Streets of nearly identical 1950s ranches and split-levels reflect how quickly " +
     "this section was built and sold.",
-  south:
+  south_park:
     "South Park Ridge was the last area to develop, with most of its construction occurring from the " +
     "1950s through the 1970s. It shares the postwar character of the Northwest but extends into a " +
     "slightly later period, with split-levels and colonial revivals standing alongside the ranches " +

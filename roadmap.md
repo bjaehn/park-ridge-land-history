@@ -2,16 +2,24 @@
 
 ## Purpose
 
-This roadmap converts the product assessment (June 2026) into a sequenced execution plan for improving the app into the "Ancestry.com for Park Ridge homes."
+This roadmap is the durable execution plan for making the app excellent enough in design and usability to send to real Park Ridge residents. It is the result of a full cross-functional audit conducted June 23, 2026 against the live production app and the full codebase.
 
-The roadmap is focused on:
+The roadmap supersedes the previous version. All Sprint 1-3 tasks from the prior cycle that are still unimplemented are carried forward below. New findings from the fresh audit are added as new tasks (prefixed with 0.x for Sprint 0 blockers and new numbered tasks within each sprint).
 
-- Reducing duplication: the same chart, metric, or concept appears on multiple pages without adding new meaning
-- Clarifying information architecture: three parallel systems (geographic admin, community geography, historical plats) confuse users who need a single clear path
-- Improving trust and historical sourcing: historical claims exist but lack confidence indicators and inline citations at the point of use
-- Making property, block, subdivision, neighborhood, and city pages more useful: each page must have one clear job
-- Improving visual storytelling: data is displayed but rarely interpreted or narrated
-- Increasing usefulness for home shoppers, homeowners, agents, and local-history users
+---
+
+## Launch Readiness Verdict
+
+**Not ready until must-fix items are addressed.**
+
+The app has a genuinely excellent property page and a strong city history page. It has correct data, a working confidence system, and a trustworthy sources page. However:
+
+- Every neighborhood detail page returns HTTP 404. The slug values in `src/lib/content.ts` do not match the slug values in the Supabase `neighborhoods` table. The entire neighborhood layer is inaccessible to users.
+- The primary navigation exposes "Township" and "Section" as Cook County PIN taxonomy terms. Two nav items link to the same URL (/city). Streets are not in the nav.
+- The About page says "please reach out" with no email, link, or form.
+- /streets returns 404.
+
+Fix these four issues. Then the app is ready for a small controlled user test.
 
 ---
 
@@ -30,13 +38,346 @@ The roadmap is focused on:
 
 ---
 
-## Sprint Overview
+## Persona Coverage Summary
 
-| Sprint | Theme | Goal | Primary users helped | Expected impact | Complexity | Dependencies |
-|--------|-------|------|----------------------|-----------------|------------|--------------|
-| 1 | Clarity, Cleanup, and Information Architecture | Remove duplication, fix naming, establish hierarchy | All | High: reduces confusion immediately | Medium | None |
-| 2 | Visual Storytelling and Page Consistency | Make pages feel like a story, not a dashboard | Home shoppers, homeowners | High: creates emotional engagement | Medium | Sprint 1 complete |
-| 3 | Historical Trust and Real Estate Usefulness | Add citations, confidence levels, buyer context | Agents, historians, homeowners | High: creates credibility and quotability | Large | Sprint 2 complete |
+| Persona | Served today | Primary blocker |
+|---------|-------------|-----------------|
+| Home shopper | Partially | Neighborhood 404 |
+| Relocation buyer | Poorly | Nav confusion + neighborhood 404 |
+| Current homeowner | Well (property page) | Neighborhood 404 |
+| Longtime resident | Partially | Nav labels expose PIN taxonomy |
+| New homeowner | Well (property page) | Neighborhood 404 |
+| Buyer agent | Partially | "Quick summary" label; neighborhood 404 |
+| Listing agent | Partially | Same as buyer agent |
+| Local history enthusiast | Well | No source note on neighborhood narratives |
+| Historic preservation | Well | Activity signal has no definition |
+| Historical Society researcher | Partially | No inferred label on era notes |
+| Local journalist | Partially | No named author on About page |
+| Neighbor comparing homes | Partially | Streets not in nav; /streets is 404 |
+| Parent evaluating neighborhood | Poorly | Neighborhood 404 |
+| Mobile-only user | Unknown | Nav search is cramped; table scrolls |
+| Skeptical first-time visitor | Partially | Neighborhood 404 kills credibility |
+| Site admin | Partially | No data quality queue; no needs-attention panel |
+| Content editor | Partially | No draft/preview workflow |
+| Historical researcher | Partially | No source workflow for neighborhood content |
+| Data quality reviewer | Poorly | No data quality dashboard |
+| Address correction reviewer | Unknown | Auth wall; no queue visible |
+| User feedback reviewer | Poorly | No feedback mechanism exists |
+| Product owner | Well | Roadmap is current |
+| Support person | Poorly | No contact mechanism |
+
+---
+
+## Must-Fix Blockers
+
+### Blocker 0.1: Neighborhood detail pages return HTTP 404
+
+**Issue:** The slug values in `NEIGHBORHOOD_NARRATIVES` and `NEIGHBORHOOD_ERA_LABELS` in `src/lib/content.ts` ("uptown", "northeast", "central", "northwest", "south") do not exist in the Supabase `neighborhoods` table. `getNeighborhoodBySlug(slug)` queries `eq("slug", slug)` and finds no matching row, causing the page to call `notFound()`.
+
+**Affected personas:** Every public persona.
+
+**Why it blocks useful feedback:** Every neighborhood card on the homepage grid and the city page table links to a 404. The entire neighborhood layer is invisible. This is the most visible defect in the product.
+
+**Exact fix:**
+1. In the Supabase SQL editor, run: `SELECT id, slug, label FROM neighborhoods ORDER BY label LIMIT 50;`
+2. Identify the actual slug values stored for each neighborhood.
+3. If slugs are null or do not match the content.ts keys: update the `slug` column in the database to match "uptown", "northeast", "central", "northwest", "south" for the corresponding neighborhood records. OR update the keys in `NEIGHBORHOOD_NARRATIVES` and `NEIGHBORHOOD_ERA_LABELS` to match whatever the DB uses.
+4. Approach (a) (update DB slugs) is preferred if the DB currently has null or auto-generated slugs. Approach (b) (update content.ts keys) is safer if the DB slugs are already meaningful and used elsewhere.
+5. After the fix, confirm that `/neighborhoods/[slug]` returns 200 for all neighborhood slugs that exist in the DB.
+
+**Files likely involved:** `src/lib/content.ts` (if using approach b), Supabase `neighborhoods` table (if using approach a).
+
+**Complexity:** Low if it is a slug column update. Medium if the DB has no slug column populated.
+
+**Acceptance criteria:** Every neighborhood card links to a page that returns 200 with neighborhood content, narrative, stat grid, and map.
+
+**Verification:** Load /neighborhoods. Click every card. Confirm 200 on each.
+
+---
+
+### Blocker 0.2: "Township" and "Section" in primary navigation
+
+**Issue:** `NAV_LINKS` in `src/components/TopNav.tsx` contains "Township" (linking to /city) and "Section" (linking to /pin/09). These are Cook County PIN taxonomy terms. "Township" and "City history" both link to /city, creating a duplicate nav item. "Section" links to a raw PIN taxonomy page.
+
+**Exact fix:** Remove "Township" and "Section" from `NAV_LINKS`. Keep "City history" as the single link to /city. Add "Streets" linking to /streets.
+
+**Files:** `src/components/TopNav.tsx`
+
+**Acceptance criteria:** Nav shows: Neighborhoods, Subdivisions, Streets, City history, (Data sources, About). No PIN taxonomy terms.
+
+---
+
+### Blocker 0.3: /streets returns 404 and streets are not in navigation
+
+**Issue:** `/streets` returns HTTP 404. The `/streets/[street]` detail pages exist but are only reachable from property detail pages. "Streets" is not in the navigation.
+
+**Exact fix:** Create `app/streets/page.tsx` with a heading ("Streets in Park Ridge"), a one-paragraph explanation of what street pages show, and a prompt to search by address to find a street. Add "Streets" to `NAV_LINKS` in `TopNav.tsx` after Subdivisions.
+
+**Files:** `app/streets/page.tsx` (new), `src/components/TopNav.tsx`
+
+**Acceptance criteria:** /streets returns 200. "Streets" appears in the nav on desktop and mobile.
+
+---
+
+### Blocker 0.4: About page contact mechanism missing
+
+**Issue:** `app/about/page.tsx` line 25 says "please reach out" with no email, form, or link. Users who find errors cannot report them.
+
+**Exact fix:** Add a mailto link or GitHub Issues URL after the "please reach out" sentence. Add a "Start here" section with three user paths. See Task 1.8 details below.
+
+**Files:** `app/about/page.tsx`
+
+**Acceptance criteria:** About page has a working contact link and a "Start here" section.
+
+---
+
+## Design and Usability Excellence Scorecard
+
+| Category | Score (1-5) | Primary issue | Required improvement |
+|----------|-------------|--------------|---------------------|
+| First impression | 3 | Township/Section in nav | Fix nav labels |
+| Visual hierarchy | 4 | Section headings use `<p>` not `<h2>` | Semantic heading elements |
+| Navigation | 2 | Two items link to /city; no Streets | Fix nav (Blocker 0.2) |
+| Search | 3 | No "no results" state; no loading indicator | Add empty state and loading |
+| Property page | 4 | Two sale sections; "Quick summary" label | Merge sections; rename |
+| Neighborhood page | 1 | All 404 | Fix Blocker 0.1 |
+| Subdivision page | 3 | Three overlapping sales sections | Remove NeighborhoodPriceChart |
+| City history page | 4 | Construction chart has no context note | Add context note |
+| Map usability | Unknown | Cannot evaluate without live browser | Evaluate in Sprint 2 |
+| Chart usability | 3 | NeighborhoodPriceChart adds no value; charts lack descriptions | Remove weak chart; add descriptions |
+| Mobile usability | 2 | Nav search cramped; neighborhood table scrolls | Fix in Sprint 2 |
+| Accessibility | 2 | `<p>` for headings; hardcoded aria-selected | Semantic headings (Sprint 2) |
+| Trust and source clarity | 3 | Neighborhood narratives unsourced; no inferred labels | Sprint 1 tasks 1.6 and 3.3 |
+| Shareability | 2 | No og:image; no share prompt | Sprint 2 |
+| Admin dashboard | 2 | No data quality queue | Sprint 3 |
+| Admin data quality | 1 | No data quality workflow | Sprint 3 |
+| Admin content editing | 3 | No draft/preview state | Sprint 3 |
+| Admin source workflow | 2 | No neighborhood-level source workflow | Sprint 3 |
+| Design system consistency | 4 | Section heading element inconsistency | Sprint 2 |
+| Overall design craft | 3 | Excellent property page; broken neighborhood layer | Fix blockers first |
+
+---
+
+## Top 15 Design and Usability Fixes (Ranked)
+
+| Rank | Issue | Area | Severity | Launch blocker | Sprint |
+|------|-------|------|----------|---------------|--------|
+| 1 | Neighborhood detail pages 404 | Public | Critical | Yes | 0 |
+| 2 | Township and Section in nav | Public | Critical | Yes | 0 |
+| 3 | No contact mechanism on About page | Public | High | Yes | 0 |
+| 4 | Neighborhoods landing page opening copy | Public | High | Yes | 1 |
+| 5 | /streets returns 404; not in nav | Public | High | Yes | 0 |
+| 6 | NeighborhoodPriceChart on subdivision pages | Public | High | No | 1 |
+| 7 | "Quick summary" should be "Agent summary" | Public | Medium | No | 1 |
+| 8 | No source note on neighborhood narratives | Public | Medium | No | 1 |
+| 9 | Era context notes not labeled as inferred | Public | Medium | No | 1 |
+| 10 | No context notes above ConstructionByDecadeCharts | Public | Medium | No | 1 |
+| 11 | Merge duplicate sale sections on property pages | Public | Medium | No | 1 |
+| 12 | Activity signal has no definition | Public | Medium | No | 1 |
+| 13 | Section headings use `<p>` not `<h2>` | Public | Medium | No | 2 |
+| 14 | No "Explore more" prompts at end of pages | Public | Medium | No | 2 |
+| 15 | No og:image/og:description metadata | Public | Low | No | 2 |
+
+---
+
+## Information Architecture Plan
+
+**Recommended primary nav:** Neighborhoods | Subdivisions | Streets | City history
+**Reference nav:** Data sources | About
+**Brand:** Park Ridge (links to /)
+
+**Hierarchy:**
+- City (/city): orientation, city-wide development character
+  - Neighborhood (/neighborhoods/[slug]): lived area, historical character, streets list
+    - Street (/streets/[street]): all homes on the street, era comparison
+      - Property (/properties/[pin]): individual home story
+  - Subdivision (/subdivisions/[id]): legal plat history, lot list, parent/child hierarchy
+    - Property (/properties/[pin]): same home, different entry path
+
+PIN taxonomy (/pin/*): accessible from the city page "Browse by section" grid only. Not in primary nav.
+
+**Naming rules (enforce in all copy):**
+- "neighborhood" not "district" or "area"
+- "subdivision" not "plat," "development," or "addition"
+- "property" not "parcel" or "lot"
+- "built" not "constructed" or "developed"
+- "recorded" not "filed" for plat dates
+
+**Breadcrumb rules:**
+- Property: Park Ridge > [Street Name] > [Address]
+- Street: Park Ridge > Streets > [Street Name]
+- Neighborhood: Park Ridge > Neighborhoods > [Name]
+- Subdivision: Park Ridge > Subdivisions > [Name]
+- City: Park Ridge > City history
+
+**Cross-linking requirements:**
+- Property pages link to: street page, neighborhood page (if assigned), subdivision (via lineage)
+- Street pages link to: neighborhood page (if assigned)
+- Neighborhood pages link to: city page
+- Subdivision pages link to: city page, parent subdivision (if exists)
+- City page links to: all neighborhoods, "See all subdivisions"
+
+---
+
+## Search Plan
+
+**Current failure modes:**
+1. No "no results" state when the dropdown returns empty.
+2. No loading indicator during the 180ms debounce window.
+3. Placeholder copy inconsistency ("Search address or PIN" vs. "Search an address or PIN").
+4. Homepage example "Uptown" suggests neighborhood search but produces address results.
+5. No PIN format guidance.
+
+**Required changes:**
+- Unify placeholder: "123 Main St or 14-digit PIN" on all search inputs.
+- Add a "No properties found. Try a full street address." message when results are empty.
+- Add a visual loading indicator (spinner or skeleton row) that shows after the debounce fires.
+- Replace "Uptown" in homepage examples with a real address (e.g., "100 Prospect Ave").
+- Confirm that arrow-key navigation in the search dropdown updates `aria-selected` on each item.
+
+---
+
+## Mobile and Accessibility Plan
+
+**Critical mobile issues:**
+- TopNav search is compressed between brand and hamburger on 320px viewports.
+- City page neighborhood comparison table will scroll horizontally on phones.
+- Sparkline cards stack in single column on mobile (correct behavior but creates long scroll before property content).
+
+**Critical accessibility issues:**
+- All section headings use `<p className="section-heading">` not `<h2>` or `<h3>`. Screen readers cannot navigate by heading.
+- Search result listbox has `aria-selected="false"` hardcoded; never updates.
+- Section elements sometimes use `<div>` and sometimes use `<section>` inconsistently.
+
+**Sprint 2 accessibility targets:**
+- Convert all `<p className="section-heading">` to `<h2 className="section-heading">` (or `<h3>` for sub-sections) across all public page types.
+- Add `overflow-x-auto` to the city page neighborhood comparison table.
+- Update `aria-selected` on search results during keyboard navigation.
+
+---
+
+## Historical Trust Plan
+
+**Confidence signal pattern (already implemented, maintain):**
+- ConfidenceBadge on property pages with showDescription
+- InlineSourceNote on sales, permits, HARGIS, subdivision ancestry
+- Confidence level shown in subdivision lineage source rows
+
+**Gaps to address in Sprint 1:**
+- Add InlineSourceNote after each rendered neighborhood narrative (Task 1.6).
+- Add "(Inferred)" in muted text after era context notes on property pages (promoted from Sprint 3).
+
+**Gaps to address in Sprint 3:**
+- Add "(Primary record)" label option to InlineSourceNote for deed-backed facts.
+- Add "How records are linked" and "What to do if something looks wrong" to the sources page.
+- Move neighborhood narratives to the database so they can be sourced through admin.
+
+**Historical claim pattern (enforce on all new content):**
+- Claim: the factual statement
+- Source: the specific source document or dataset
+- Source type: Official record / Survey / Derived from data / Inferred
+- Confidence: High / Medium / Low
+- Interpretation: one plain-English sentence when the claim requires interpretation
+- Related entity: the PIN, subdivision ID, neighborhood slug, or city
+
+---
+
+## Real Estate Usefulness Plan
+
+**What works today:**
+- Construction era context on property pages.
+- Subdivision ancestry with lot/block and source confidence.
+- Sale history with prices, deed types, and document numbers.
+- Assessment trend chart with year-over-year context.
+- HARGIS survey data for architecturally significant properties.
+- "Agent summary" (currently "Quick summary") with copyable text.
+- "Questions to consider" section flagging buyer-relevant patterns.
+
+**Sprint 1 additions:**
+- Rename "Quick summary" to "Agent summary."
+
+**Sprint 3 additions:**
+- Expand "What this means" to include HARGIS bullet, appeal bullet, and frequent-turnover bullet.
+- Expand Agent summary text to include HARGIS status and assessment change summary.
+
+**What must never be added:**
+- Appraisal claims.
+- Inspection claims.
+- School quality claims.
+- Safety or crime context.
+- Investment return projections.
+- Lending or mortgage claims.
+- Legal advice of any kind.
+
+---
+
+## Sprint 0: Critical Blockers (implement before any Sprint 1 work)
+
+These four fixes must be deployed before any user testing. They are the minimum required to make the product usable.
+
+### Task 0.1: Fix neighborhood detail page 404
+
+See Blocker 0.1 above for full details.
+
+**Files:** `src/lib/content.ts` (if rekeying) or Supabase `neighborhoods` table (if updating slugs)
+
+**QA steps:**
+1. Run `SELECT id, slug, label FROM neighborhoods ORDER BY label;` in Supabase SQL editor.
+2. Confirm the slug values match (or update to match) the keys in NEIGHBORHOOD_NARRATIVES.
+3. Load /neighborhoods. Click every card. Confirm all return 200.
+
+---
+
+### Task 0.2: Remove Township and Section from navigation; add Streets
+
+**Files:** `src/components/TopNav.tsx`
+
+**Changes:**
+1. Remove the "Township" entry from `NAV_LINKS`.
+2. Remove the "Section" entry from `NAV_LINKS`.
+3. Add `{ href: "/streets", label: "Streets" }` after the Subdivisions entry.
+
+**QA steps:**
+1. Load the homepage. Confirm nav shows: Neighborhoods, Subdivisions, Streets, City history.
+2. Open mobile hamburger menu. Confirm same items.
+3. Navigate to /city. Confirm "Browse by section" grid is still present.
+4. Navigate to /streets. Confirm it does not 404.
+
+---
+
+### Task 0.3: Create /streets index page
+
+**Files:** `app/streets/page.tsx` (new file)
+
+**Content:** A simple page with:
+- Breadcrumb: Park Ridge > Streets
+- PageHeader: title "Streets", subtitle "Browse every street in Park Ridge, block by block."
+- One paragraph: "Each street page shows all properties on that street, grouped by construction era. To find a specific street, search for any address on that street using the search bar above."
+- Link to homepage: "Search by address"
+
+**QA steps:**
+1. Load /streets. Confirm 200 and readable content.
+2. Confirm breadcrumb links correctly.
+3. Confirm "Streets" nav item links to /streets.
+
+---
+
+### Task 0.4: Add contact mechanism and "Start here" section to About page
+
+**Files:** `app/about/page.tsx`
+
+**Changes:**
+1. Add a "Start here" section before the existing paragraphs:
+   - "Looking at a specific property? Search by address in the bar at the top of any page."
+   - "Want to understand a neighborhood? Browse neighborhoods."
+   - "Curious about Park Ridge history? Start with the city history page."
+   Each with a clickable link.
+2. Replace "please reach out" with a concrete contact mechanism: a mailto link or GitHub Issues URL.
+
+**QA steps:**
+1. Load /about. Confirm "Start here" section is present.
+2. Click each "Start here" link. Confirm all navigate correctly.
+3. Click the contact link. Confirm it opens a working destination.
 
 ---
 
@@ -48,342 +389,293 @@ Remove confusion, duplication, and inconsistent structure. Make the app easier t
 
 ### Why This Sprint Matters
 
-The app cannot feel trustworthy or premium if users see repeated metrics, unclear entity relationships, inconsistent labels, or pages that do not have a clear job. Right now a user on the property page sees their sale count in the "Activity record" stat card, then again in the "Sale price history" chart title, then again in the "Sale history" list. A city-level user sees construction timing in "When Park Ridge was built," then again in "Plats recorded by decade." A neighborhood-level user sees the same ConstructionByDecadeChart pattern with no differentiation from city, block, or street level. This sprint eliminates that noise.
+The app cannot feel trustworthy or premium if users see repeated metrics, unclear entity relationships, inconsistent labels, or pages that do not have a clear job. The top navigation currently exposes Cook County PIN taxonomy terms (Township, Section) as primary navigation. Three separate sales visualizations still appear on subdivision pages. The neighborhoods landing page still opens with an internal data-model explanation rather than a user-facing value proposition. Neighborhood narratives still lack source attribution. These issues undermine every other investment the previous sprints made.
+
+Fix the structure first. Then build on it.
 
 ### Scope
 
-- Audit and remove duplicated sections across homepage, city, neighborhood, subdivision, and property pages.
-- Identify charts or cards that show the same idea in different forms and consolidate them.
-- Standardize naming for property, block, street, subdivision, neighborhood, and city throughout the UI.
-- Add a consistent hierarchy indicator (breadcrumb or context chip) to all non-home pages.
-- Make page titles and subtitles explain the job of each page.
-- Clarify the distinction between neighborhood (community geography) and subdivision (recorded plat), and explain both in plain English where users first encounter each.
-- Clarify what "no address found" and "unresolvable parcel" mean in user-facing language.
-- Make search states clearer: empty results, failed PIN matches, partial address matches.
-- Create consistent page-level navigation between related property, block, subdivision, neighborhood, and city views.
-- Fix the "Activity record" + separate chart + separate list triple-display of the same sale and permit data on property pages.
-- Remove "Sources" footers from page body where they duplicate the Data Sources page. Replace with inline source labels at the point of use only.
-- Investigate and fix street pages returning 0 properties for streets advertised on the homepage (Prospect Ave, Touhy Ave).
+1. Fix neighborhoods landing page opening copy.
+2. Remove NeighborhoodPriceChart from subdivision pages.
+3. Merge sale price chart and sale history list on property pages.
+4. Add source attribution (InlineSourceNote) to neighborhood narratives.
+5. Add explanation to "Activity signal" stat label.
+6. Add context notes above ConstructionByDecadeChart sections on city, neighborhood, and subdivision pages.
+7. Update neighborhood page subtitles to include era labels.
+8. Rename "Quick summary" to "Agent summary" on property pages.
+9. Add "(Inferred)" label to era context notes on property pages.
 
-### Out of Scope
+### Out of Scope for Sprint 1
 
-Do not add new historical facts.
-Do not invent neighborhood boundaries.
-Do not redesign the full visual system yet.
-Do not add new charts unless needed to replace duplicated ones.
-Do not rewrite the data model unless required to fix broken page relationships.
+- Do not add new historical facts or narratives.
+- Do not redesign the full visual system.
+- Do not add new charts unless replacing duplicated ones.
+- Do not rewrite the data model.
+- Do not start Sprint 2 visual changes.
+
+---
 
 ### Detailed Tasks
 
 ---
 
-#### Task 1.1: Consolidate property page sale and permit sections
+#### Task 1.1: Fix the neighborhoods landing page framing
 
-**Current problem:**
-The property page (`app/properties/[pin]/_PropertyDetailContent.tsx`) shows sale and permit data three times each:
-1. "Activity record" stat cards showing total count and most recent year/price
-2. "Sale price history" chart (SalesPriceChart)
-3. "Sale history" list (SaleHistorySection)
-
-Similarly for permits: stat card then PermitHistorySection list.
+**Current problem:** `app/neighborhoods/page.tsx` line 26 renders: "Three overlapping ways to understand Park Ridge geography: official planning districts, business districts, and informal local names." This exposes the internal data model instead of the user value.
 
 **Required change:**
-Remove the "Activity record" stat card section (lines 524-559 in `_PropertyDetailContent.tsx`). Move the permit count and sale count into the existing vitals IconRow at the top as additional items, or display them as a small inline summary above their respective history sections. The chart and list together are sufficient. The stat card is redundant.
+1. Open `app/neighborhoods/page.tsx`.
+2. Replace the PageHeader subtitle with: "Each neighborhood in Park Ridge has a distinct history and character. Start with a name you recognize or explore by construction era."
+3. Keep the section headers inside the NeighborhoodsGrid ("Official Planning Neighborhoods," "Business Districts," "Local / Market Neighborhoods") as secondary organization.
 
-**Files involved:**
-- `app/properties/[pin]/_PropertyDetailContent.tsx` (lines 524-559: the "Activity record" section)
+**Files:** `app/neighborhoods/page.tsx`
 
 **Acceptance criteria:**
-- Sale count and permit count are visible once, not twice.
-- Sale price chart and sale list remain.
-- Permit list remains.
-- No data is hidden from the user.
+- Neighborhoods page does not contain "Three overlapping ways."
+- Opening copy is user-facing and explains the page's job.
+- No em dashes in the updated copy.
 
 **QA steps:**
-- Open a property with multiple sales and permits.
-- Confirm sale count appears exactly once (in list header or inline note, not a separate stat card).
-- Confirm permit count appears exactly once.
-- Confirm sale chart and list still render.
+1. Load /neighborhoods. Confirm the opening subtitle is user-facing.
+2. Confirm neighborhood section headers inside the grid are still present.
+3. Confirm mobile layout is not broken.
 
 ---
 
-#### Task 1.2: Remove redundant "Sources" sections from page body
+#### Task 1.2: Remove NeighborhoodPriceChart from subdivision pages
 
-**Current problem:**
-Every page (city, neighborhood, subdivision, street, block) ends with a "Sources" bulleted list citing the same 2-4 data sources. This creates visual noise and duplicates the Data Sources page. The same sources appear on 10+ page types.
+**Current problem:** `app/subdivisions/[id]/_SubdivisionDetailContent.tsx` lines 197-207 render a NeighborhoodPriceChart (2015 vs. 2024 two-bar comparison) that shows the same data already shown in the Sales activity stat cards and the MarketHistoryChart. Three sections show the same sales data.
 
 **Required change:**
-Remove the standalone "Sources" footer section from all entity pages. Keep inline `InlineSourceNote` components where they appear directly below a chart or data section (these are already in the code and work correctly). On each page, add a single small hyperlink at the bottom: "About our data sources" linking to `/sources`.
+1. Open `app/subdivisions/[id]/_SubdivisionDetailContent.tsx`.
+2. Remove the "Median sale price, 2015 vs. 2024" section (lines 197-207).
+3. Remove the `priceRow` variable and its computation (lines 124-126) if only used for this section.
+4. Remove the `salesByYear` state and `fetchBlockSalesByYear` import if only used for `priceRow`.
+5. Remove the `NeighborhoodPriceChart` import if no longer used.
+6. Keep the Sales activity stat cards and MarketHistoryChart sections unchanged.
 
-**Files involved:**
-- The `Sources` section rendering in each page's server component (`app/city/page.tsx`, `app/neighborhoods/[slug]/page.tsx`, `app/subdivisions/[id]/page.tsx`, `app/streets/[street]/page.tsx`, `app/blocks/[blockId]/page.tsx`, `app/pin/[prefix]/page.tsx`)
-- Confirm which pages render this via shared layout vs. individual page components.
+**Files:** `app/subdivisions/[id]/_SubdivisionDetailContent.tsx`
 
 **Acceptance criteria:**
-- No page body ends with a bulleted "Sources" list.
-- Every page has one "About our data sources" link at bottom.
-- Inline source notes (InlineSourceNote) remain in place below individual data sections.
+- Subdivision pages no longer show "Median sale price, 2015 vs. 2024."
+- Subdivision pages still show "Sales activity" stat cards.
+- Subdivision pages still show the MarketHistoryChart.
+- No TypeScript errors. No unused imports.
 
 **QA steps:**
-- Visit city, neighborhood, subdivision, street, block pages.
-- Confirm no "Sources" bullet section appears in the page body.
-- Confirm the "About our data sources" link is present and routes to /sources.
-- Confirm inline source notes under charts are still present.
+1. Load any subdivision detail page. Confirm "Median sale price, 2015 vs. 2024" is gone.
+2. Confirm "Sales activity" stat cards appear.
+3. Confirm MarketHistoryChart appears.
+4. Run `npm run build`.
 
 ---
 
-#### Task 1.3: Fix the "Construction by decade" chart duplication
+#### Task 1.3: Merge sale price chart and sale history list on property pages
 
-**Current problem:**
-The `ConstructionByDecadeChart` component appears identically on: city page, neighborhood page, street page, block page, subdivision page, and pin group page. Each uses the same visual pattern with different section headings ("When Park Ridge was built, wave by wave" / "When X took shape" / "How X was built, decade by decade" / "When this block was built" / "When this subdivision was built out"). At lower levels (block, single street) this chart often has 2-4 bars and communicates almost nothing new.
+**Current problem:** `app/properties/[pin]/_PropertyDetailContent.tsx` renders "Sale price history" (SalesPriceChart) and "Sale history (N on record)" (SaleHistorySection) as two adjacent sections from the same `sales` array.
 
 **Required change:**
-Keep the ConstructionByDecadeChart only at city, neighborhood, and subdivision levels. At block and street level, replace the chart with a plain-text summary sentence: "Built primarily in the [decade], with [N] homes from [start] to [end]." At pin-group (township/section) level, keep the chart only if there are more than 30 properties.
+1. Combine into one "Sale history" section.
+2. The SalesPriceChart renders inside the combined section when at least one sale has a price.
+3. The expandable SaleHistorySection list renders below the chart within the same section.
+4. Remove the separate "Sale price history" heading.
+5. The InlineSourceNote from SaleHistorySection remains at the bottom of the combined section.
 
-**Files involved:**
-- `app/streets/[street]/_StreetDetailContent.tsx` (lines 61-64: replace chart with text summary)
-- `app/blocks/[blockId]/_BlockDetailContent.tsx` (lines 95-99: replace chart with text summary)
-- `app/pin/[prefix]/_PinGroupContent.tsx` (add minimum bar threshold)
+**Files:** `app/properties/[pin]/_PropertyDetailContent.tsx`
 
 **Acceptance criteria:**
-- ConstructionByDecadeChart does not appear on street or block pages.
-- A plain-text era summary appears instead on street and block pages.
-- Chart still appears on city, neighborhood, and subdivision pages.
+- Property pages have one "Sale history" section heading, not two.
+- Chart renders above the expandable list.
+- Source note is present at the end of the section.
+- No TypeScript errors.
 
 **QA steps:**
-- Visit a street page with multiple properties. Confirm no chart. Confirm text era summary.
-- Visit a block page. Confirm no chart. Confirm text era summary.
-- Visit city and neighborhood pages. Confirm chart still present.
+1. Load a property page with multiple sales. Confirm one heading for the sales section.
+2. Confirm chart appears above the list.
+3. Confirm the expandable list works.
+4. Confirm source note is present.
 
 ---
 
-#### Task 1.4: Clarify the neighborhood type system
+#### Task 1.4: Add source attribution to neighborhood narratives
 
-**Current problem:**
-The app has three neighborhood types: "Official Planning," "Business District," and "Local Name." On the property page, these appear as three unlabeled chips with only the typeLabel in tiny uppercase above the name. On the neighborhoods page, the intro paragraph explains "three overlapping ways" but the actual list is unclear about which neighborhoods belong to which type. Users do not understand why one property might show three neighborhood chips.
+**Current problem:** `app/neighborhoods/[slug]/_NeighborhoodDetailContent.tsx` lines 74-76 render the narrative paragraph with no InlineSourceNote. The city narrative has one; neighborhood narratives do not.
 
 **Required change:**
-On the property page (`_PropertyDetailContent.tsx` lines 488-514, `NeighborhoodChip` component), add a small tooltip or parenthetical explanation. Change the chips section heading to "Geographic context" with a subtitle: "This property sits within overlapping planning districts, business areas, and local neighborhoods." On the neighborhoods index page (`app/neighborhoods/page.tsx`), add a visual legend or three labeled columns (one per type) rather than a mixed list.
+1. Open `app/neighborhoods/[slug]/_NeighborhoodDetailContent.tsx`.
+2. After the `{narrative && <p ...>{narrative}</p>}` line, add an InlineSourceNote inside the same conditional block:
+   "Historical summary based on Cook County Assessor build-year distributions and Cook County Recorder subdivision records. Era characterizations are interpretive summaries of the data. Confidence: Medium."
 
-**Files involved:**
-- `app/properties/[pin]/_PropertyDetailContent.tsx` (lines 488-514)
-- `app/neighborhoods/page.tsx` and `app/neighborhoods/_NeighborhoodsGrid.tsx`
+**Files:** `app/neighborhoods/[slug]/_NeighborhoodDetailContent.tsx`
 
 **Acceptance criteria:**
-- Property page shows a heading "Geographic context" above the neighborhood chips.
-- A one-sentence explanation below the heading clarifies what the three types mean.
-- The neighborhoods index groups or labels neighborhoods by their type.
+- All rendered neighborhood narratives are followed by an InlineSourceNote.
+- The note cites Cook County Assessor and Recorder records at Confidence: Medium.
+- No note appears when there is no narrative.
+- No em dashes in the note text.
 
 **QA steps:**
-- Open a property with all three neighborhood types set.
-- Confirm heading and explanation are visible.
-- Open neighborhoods page. Confirm types are labeled.
+1. Load a neighborhood page with a known slug. Confirm InlineSourceNote appears below the narrative.
+2. Load a neighborhood page without a narrative. Confirm no orphaned source note.
 
 ---
 
-#### Task 1.5: Fix empty street pages and investigate the Prospect Ave and Touhy Ave data issues
+#### Task 1.5: Add explanation to "Activity signal" stat label
 
-**Current problem:**
-The homepage advertises "Prospect Ave" and "Touhy Ave" as example search chips. But `/streets/prospect-ave` and `/streets/touhy-ave` both returned 0 properties. The breadcrumb on the Touhy Ave page incorrectly shows "Park Ridge / Neighborhoods / Touhy-ave" (wrong parent category for a street). The display name shows "Touhy-ave" with a lowercase 'a' and a hyphen, not "Touhy Ave."
+**Current problem:** `app/neighborhoods/[slug]/_NeighborhoodDetailContent.tsx` lines 52-63 show an "Activity signal" stat with values like "Reinvestment," "Turnover," "Rebuild," or "Dormant" with no definition.
 
 **Required change:**
-Investigate why Prospect Ave and Touhy Ave street pages are empty. Check the street name normalization in `src/lib/data/streets.ts` and relevant Supabase queries. Determine the correct URL slugs for these streets and either fix the data or update the example chips to use working examples. Fix the breadcrumb parent from "Neighborhoods" to "Streets." Fix the display name capitalization (should be "Touhy Ave" not "Touhy-ave").
+1. Open `app/neighborhoods/[slug]/_NeighborhoodDetailContent.tsx`.
+2. After the StatGrid, add a conditional paragraph that explains the current signal value:
+   - Reinvestment: "Elevated permit activity relative to the city median, suggesting ongoing improvement work."
+   - Turnover: "Elevated sale frequency relative to the city median."
+   - Rebuild: "Recent teardown or significant reconstruction activity detected."
+   - Dormant: (do not show the stat at all - already suppressed by the current code when signal is "Dormant")
+3. Style as `<p className="text-xs text-text-muted -mt-6">` (negative top margin to visually connect to the stat grid).
 
-**Files involved:**
-- `app/_components/HomeClientComponents.tsx` (EXAMPLE_CHIPS, lines 10-14)
-- `app/streets/[street]/page.tsx` and `_StreetDetailContent.tsx`
-- `src/lib/data/streets.ts`
-- Street name normalization logic
+**Files:** `app/neighborhoods/[slug]/_NeighborhoodDetailContent.tsx`
 
 **Acceptance criteria:**
-- The three example chips on the homepage lead to pages with actual property data.
-- Street display names are properly capitalized ("Touhy Ave" not "Touhy-ave").
-- Street page breadcrumb shows correct parent ("Streets" not "Neighborhoods").
-- Street pages with 0 properties show an honest empty state, not a blank page.
-
-**QA steps:**
-- Click each example chip on the homepage. Confirm all lead to pages with data.
-- Visit a street page directly. Confirm breadcrumb parent is correct.
-- Test a street name that genuinely has no properties and confirm empty state message.
+- A neighborhood page showing "Reinvestment," "Turnover," or "Rebuild" has a one-sentence explanation visible.
+- The explanation is consistent with the signal value shown.
+- No em dashes in the explanation text.
 
 ---
 
-#### Task 1.6: Consolidate city page chart overload
+#### Task 1.6: Add context notes above ConstructionByDecadeChart sections
 
-**Current problem:**
-The city page (`app/city/_CityContent.tsx`) contains 6 charts in sequence: ConstructionByDecadeChart, MarketHistoryChart (home sales 2000-2025), AssessmentTrendChart (1999-2025), AppealsChart (by year), PermitActivityChart (2019-2026), and SubdivisionPlatChart (plats by decade). Plus a neighborhood development table. Plus a "Browse by section" grid. This is a dashboard, not a history page. The charts do not tell a story together; they sit as isolated data panels.
+**Current problem:** ConstructionByDecadeChart renders on city, neighborhood, and subdivision pages without a sentence explaining what to look for.
 
 **Required change:**
-Remove the AppealsChart and PermitActivityChart from the city history page. These are detailed enough to deserve their own analysis context and do not contribute to the primary story of "how Park Ridge was built." Move them to the Data Sources page as "dataset coverage" panels, or remove them entirely from the public view for Sprint 1. Keep: ConstructionByDecadeChart, MarketHistoryChart, and the neighborhood development table. The SubdivisionPlatChart should be merged into the "How Park Ridge was platted" section already in the code (it already is in that section - confirm it is positioned correctly). The AssessmentTrendChart can be deferred to Sprint 2 when it will be given narrative context.
 
-**Files involved:**
-- `app/city/_CityContent.tsx` (lines 142-162: AppealsChart section; lines 163-171: PermitActivityChart section)
+On `app/city/_CityContent.tsx`:
+- Before the chart (after "How Park Ridge was built" heading), add:
+  "Park Ridge's housing stock reflects three distinct construction waves: the railroad-era 1870s-1880s, the interwar bungalow boom of the 1910s-1930s, and the postwar expansion of the 1940s-1960s."
+
+On `app/neighborhoods/[slug]/_NeighborhoodDetailContent.tsx`:
+- Before the chart, add a note using `NEIGHBORHOOD_ERA_LABELS[slug]` when available. Example for "northeast": "The Northeast was built primarily during the bungalow-era expansion, 1910s to 1940s."
+- For slugs not in NEIGHBORHOOD_ERA_LABELS, use: "Construction in this neighborhood spanned multiple decades, as shown below."
+
+On `app/subdivisions/[id]/_SubdivisionDetailContent.tsx`:
+- Before the chart, add using `earliestBuilt` and `latestBuilt`: "Construction in this plat began in {earliestBuilt} and extended through {latestBuilt}." Adjust for single-year cases.
+
+Style all context notes as `<p className="text-sm text-text-muted mb-4">`.
+
+**Files:**
+- `app/city/_CityContent.tsx`
+- `app/neighborhoods/[slug]/_NeighborhoodDetailContent.tsx`
+- `app/subdivisions/[id]/_SubdivisionDetailContent.tsx`
 
 **Acceptance criteria:**
-- City page has no more than 4 charts.
-- The page tells a coherent story: construction eras, then sales market, then how the city was platted.
-- Appeals and permit charts are either removed or moved to a more appropriate context.
-
-**QA steps:**
-- Visit /city. Confirm no more than 4 chart components render.
-- Confirm the narrative flows from construction to market to plats.
-- Confirm no data loss warning is needed (these are supplementary charts, not core data).
+- Each construction chart section has a one-sentence context note between the heading and the chart.
+- The city note references the three construction waves.
+- The neighborhood note references the era label when available.
+- The subdivision note references the known earliest and latest build years.
+- Notes are all different and scoped to their level.
+- No em dashes in the notes.
 
 ---
 
-#### Task 1.7: Add hierarchy context chips to all entity pages
+#### Task 1.7: Update neighborhood page subtitles to include era labels
 
-**Current problem:**
-When a user lands on a subdivision page, they see the subdivision name and data but no visible link to the neighborhood it belongs to or the city level above it. The property page shows neighborhood chips (good) and a PIN breakdown (good) but does not link to the block or street level. Navigation feels like a dead end at each level.
+**Current problem:** `app/neighborhoods/[slug]/page.tsx` line 49 sets the PageHeader subtitle to `"{N} properties. Typical build year: {year}."` This is dry. The era labels in NEIGHBORHOOD_ERA_LABELS are more useful but not currently shown on the detail page.
 
 **Required change:**
-Add a consistent "Context breadcrumb + level chips" pattern to every entity page. At minimum:
-- Property page: already has neighborhood chips and PIN breakdown (good). Add a link to the street page if the property has a street address.
-- Subdivision page: add a chip showing which neighborhood(s) the subdivision falls within, if that data is available. If not available, note "Neighborhood: not yet mapped."
-- Street page: add a chip showing which neighborhood the street belongs to.
-- Block page: add chips for street and neighborhood.
-This can use the existing `NeighborhoodChip` component pattern or a simpler EntityCard.
+1. Import `NEIGHBORHOOD_ERA_LABELS` from `@/lib/content` in `app/neighborhoods/[slug]/page.tsx`.
+2. Replace the subtitle with: `NEIGHBORHOOD_ERA_LABELS[slug] ?? \`\${neighborhood.parcelCount} properties. Typical build year: \${neighborhood.medianYear}.\``
 
-**Files involved:**
-- `app/properties/[pin]/_PropertyDetailContent.tsx` (add street link)
-- `app/subdivisions/[id]/_SubdivisionDetailContent.tsx` (add neighborhood context)
-- `app/streets/[street]/_StreetDetailContent.tsx` (add neighborhood context)
-- `app/blocks/[blockId]/_BlockDetailContent.tsx` (add street and neighborhood context)
+**Files:** `app/neighborhoods/[slug]/page.tsx`
 
 **Acceptance criteria:**
-- Property pages link to their street page.
-- Subdivision pages show their neighborhood context.
-- Street pages show their neighborhood.
-- Users can navigate up the hierarchy from any entity page.
-
-**QA steps:**
-- Open a property page. Confirm street link is present and routes correctly.
-- Open a subdivision page. Confirm neighborhood context chip or note is present.
-- Open a street page. Confirm neighborhood chip is present.
+- Neighborhood pages with known slugs show the era label in the subtitle.
+- Neighborhood pages with unknown slugs show the property count and median year fallback.
+- No em dashes in the subtitle (era labels use hyphens, not em dashes).
 
 ---
 
-#### Task 1.8: Improve search empty and failed states
+#### Task 1.8: Rename "Quick summary" to "Agent summary"
 
-**Current problem:**
-When search returns no results, the dropdown simply closes. There is no message. If a user searches "10-01-999" (invalid PIN), nothing happens. If a user types a street name with no matches, they get silence.
+**Current problem:** The shareable copyable summary block on property pages is labeled "Quick summary." Agents do not look for "quick summaries." The label undersells the feature.
 
 **Required change:**
-In `HomeSearch` (`app/_components/HomeClientComponents.tsx`), add an empty state message below the input when a query of 3+ characters returns 0 results: "No properties found for '[query]'. Try an address, street name, or 14-digit PIN." Keep this visible for 3 seconds or until the user types again.
+1. Open `app/properties/[pin]/_PropertyDetailContent.tsx`.
+2. Find the section heading at approximately line 700-701.
+3. Change "Quick summary" to "Agent summary."
 
-Also: if a user presses Enter on an empty results set, route to a dedicated `/search?q=[query]` page that explains what was searched and why no results were found, with suggestions (check spelling, try a PIN, browse neighborhoods).
-
-**Files involved:**
-- `app/_components/HomeClientComponents.tsx` (HomeSearch component)
-- Optionally: `app/search/page.tsx` (new page for failed searches)
+**Files:** `app/properties/[pin]/_PropertyDetailContent.tsx`
 
 **Acceptance criteria:**
-- Typing 3+ characters with no matches shows an inline empty state message.
-- Pressing Enter on empty results does not silently do nothing.
-- The empty state message is plain English and helpful.
-
-**QA steps:**
-- Type a nonsense string in the search box. Confirm empty state message appears.
-- Type a valid street name that exists in the database. Confirm results appear.
-- Press Enter with no results. Confirm the user receives feedback.
+- Property pages show "Agent summary" as the section heading.
+- The "Shareable" badge still appears.
+- The clipboard copy button still works.
 
 ---
 
-#### Task 1.9: Standardize section headings across entity pages
+#### Task 1.9: Add "(Inferred)" label to era context notes
 
-**Current problem:**
-The same concept is labeled differently across pages:
-- "When Park Ridge was built, wave by wave" (city)
-- "When [neighborhood] took shape" (neighborhood)
-- "How [street] was built, decade by decade" (street)
-- "When this block was built" (block)
-- "When this subdivision was built out" (subdivision)
-
-These are five ways to say the same thing. There are also inconsistencies in whether the entity name appears in the heading or not, and whether it is "built" vs. "built out" vs. "took shape."
-
-Additionally, "Subdivision Ancestry" (property page line 220) uses title case while all other section headings use sentence case ("Sale history", "Permit history", "Evidence trail").
+**Current problem:** The `eraContextNote` ("Built during the postwar era.") appears on property pages at line 683 without indicating it is an interpretation, not a primary record.
 
 **Required change:**
-Standardize to a consistent pattern: "How [entity name] was built" for all construction decade sections. This is short, specific, and consistent. Apply sentence case to all section headings throughout the app. Fix "Subdivision Ancestry" to "Subdivision ancestry."
+1. Open `app/properties/[pin]/_PropertyDetailContent.tsx`.
+2. In the rendering of `eraContextNote` (the `<p className="text-sm text-text-muted">` block), append a `<span className="text-xs text-text-muted ml-1">(Inferred)</span>` after the era context text.
 
-**Files involved:**
-- `app/city/_CityContent.tsx` (line 108)
-- `app/neighborhoods/[slug]/_NeighborhoodDetailContent.tsx` (line 75)
-- `app/streets/[street]/_StreetDetailContent.tsx` (line 61)
-- `app/blocks/[blockId]/_BlockDetailContent.tsx` (line 97)
-- `app/subdivisions/[id]/_SubdivisionDetailContent.tsx` (line 269)
-- `app/properties/[pin]/_PropertyDetailContent.tsx` (line 220: "Subdivision Ancestry")
+**Files:** `app/properties/[pin]/_PropertyDetailContent.tsx`
 
 **Acceptance criteria:**
-- All construction decade section headings follow the same pattern.
-- All section headings throughout the app use sentence case.
-- "Subdivision Ancestry" is renamed to "Subdivision ancestry."
-
-**QA steps:**
-- Visit city, neighborhood, street, block, subdivision pages. Confirm heading consistency.
-- Open property page. Confirm "Subdivision ancestry" heading.
-
----
-
-#### Task 1.10: Add plain-English empty state for unresolvable parcels
-
-**Current problem:**
-The `UnresolvableEntityCard` component (used in subdivision, street, and block property grids) shows a PIN with no explanation of why no address exists. The Coverage disclaimer exists at the bottom of the homepage but is not surfaced at the point of use. Internal quality flags like "geometry_status: not_started" leak into user-facing text.
-
-**Required change:**
-In `UnresolvableEntityCard`, add a tooltip or subtitle: "No street address on record. This parcel is included in totals but cannot be searched by address." In subdivision detail, change "Subdivision boundary not yet mapped." (line 123 of `_SubdivisionDetailContent.tsx`) to "Boundary map coming soon."
-
-**Files involved:**
-- `src/components/ui/EntityCard.tsx` (UnresolvableEntityCard component)
-- `app/subdivisions/[id]/_SubdivisionDetailContent.tsx` (line 123)
-
-**Acceptance criteria:**
-- Unresolvable cards explain why in plain English.
-- No internal status language ("geometry_status", "not_started") appears in user-facing copy.
-- The card still shows the PIN for reference.
-
-**QA steps:**
-- Open a subdivision with unresolvable parcels. Confirm card explanation is present.
-- Confirm no technical status strings appear.
+- Era context notes show "(Inferred)" in muted text.
+- Year built, sale price, and assessment values do not show this label.
 
 ---
 
 ### Sprint 1 Acceptance Criteria
 
-- No duplicated "Activity record" + chart + list pattern remains on the property page.
-- The ConstructionByDecadeChart does not appear on street or block pages.
-- City page has no more than 4 charts.
-- Example homepage chips (Prospect Ave, Touhy Ave) route to pages with actual property data.
-- All section headings use sentence case and consistent naming patterns.
-- Street page breadcrumbs show the correct parent.
-- No standalone "Sources" sections appear in page bodies (only inline source notes).
-- Neighborhood type chips on the property page include a one-sentence explanation.
-- Users can navigate from a property up to its street, neighborhood, subdivision, and city.
-- Empty search states produce a helpful plain-English message.
-- Unresolvable parcel cards explain the gap without technical language.
-- No em dashes appear anywhere in changed content.
+- /neighborhoods/[any-existing-slug] returns 200 with neighborhood content.
+- Nav shows: Neighborhoods, Subdivisions, Streets, City history.
+- /streets loads without 404.
+- Neighborhoods landing page subtitle does not contain "Three overlapping ways."
+- Subdivision pages have no NeighborhoodPriceChart section.
+- Property pages have one "Sale history" section (chart above list).
+- All rendered neighborhood narratives have an InlineSourceNote.
+- "Activity signal" stat has an explanation when shown.
+- About page has a "Start here" section and a contact link.
+- Each ConstructionByDecadeChart section on city, neighborhood, and subdivision pages has a context note.
+- Neighborhood pages with known slugs show era labels in the subtitle.
+- Property pages show "Agent summary" heading.
+- Era context notes show "(Inferred)" in muted text.
+- `npm run build` passes with no TypeScript errors.
+- No em dashes anywhere in changed content.
 
 ### Sprint 1 QA Checklist
 
-- [ ] Homepage: example chips route to real data
-- [ ] Homepage: empty search state shows explanation
-- [ ] Search: partial matches, full matches, and no-match states all produce feedback
-- [ ] Property page: sale and permit data shown once each (not stat card + chart + list)
-- [ ] Property page: neighborhood section has "Geographic context" heading with explanation
-- [ ] Property page: link to street page is present
-- [ ] Property page: section headings all use sentence case
-- [ ] Neighborhood page: neighborhoods grouped or labeled by type
-- [ ] Subdivision page: neighborhood context chip present
-- [ ] Street page: breadcrumb shows correct parent
-- [ ] Street page: neighborhood chip present
-- [ ] Block page: street and neighborhood context chips present
-- [ ] City page: no more than 4 charts
-- [ ] All entity pages: no standalone Sources section in body
-- [ ] All entity pages: inline source notes still present under charts
-- [ ] Mobile layout: all changed sections readable on 375px viewport
-- [ ] Console: no TypeScript or React errors in changed components
-- [ ] Build: `npm run build` passes with no errors
-- [ ] Em dash scan: grep for the em dash character (U+2014) in all changed files
+- [ ] Homepage: nav shows Neighborhoods, Subdivisions, Streets, City history
+- [ ] Homepage: nav does not show Township or Section
+- [ ] Streets: /streets loads without 404
+- [ ] Streets: "Streets" appears in mobile nav
+- [ ] Neighborhoods landing: opening copy is user-facing (no "Three overlapping ways")
+- [ ] Neighborhoods: click every card, confirm 200 response
+- [ ] Neighborhood detail (known slug): InlineSourceNote below narrative paragraph
+- [ ] Neighborhood detail (known slug): era label in subtitle
+- [ ] Neighborhood detail (known slug): context note before construction chart
+- [ ] Neighborhood detail (known slug): Activity signal has explanation if shown
+- [ ] Neighborhood detail (unknown slug): no orphaned source note; fallback subtitle correct
+- [ ] Subdivision detail: no NeighborhoodPriceChart section
+- [ ] Subdivision detail: Sales activity stat cards present
+- [ ] Subdivision detail: MarketHistoryChart present
+- [ ] Subdivision detail: context note before construction chart
+- [ ] Property detail: one "Sale history" section heading, chart above list
+- [ ] Property detail: expandable list still works
+- [ ] Property detail: source note still present after sale list
+- [ ] Property detail: "Agent summary" heading with "Shareable" badge
+- [ ] Property detail: "(Inferred)" after era context note
+- [ ] City history: Browse by section grid still present
+- [ ] City history: context note before construction chart
+- [ ] About: "Start here" section with three clickable paths
+- [ ] About: contact link or email present and working
+- [ ] Mobile: nav hamburger does not show Township or Section
+- [ ] Mobile: neighborhood subtitle not truncated on small screens
+- [ ] Console: no new errors
+- [ ] Build: `npm run build` passes
+- [ ] Em dash scan: zero matches across all changed files
 
 ---
 
@@ -391,543 +683,433 @@ In `UnresolvableEntityCard`, add a tooltip or subtitle: "No street address on re
 
 ### Goal
 
-Make the app more engaging, visual, and emotionally compelling while preserving trust and clarity.
+Make the product feel premium, coherent, visual, local, and usable across devices.
 
 ### Why This Sprint Matters
 
-The app should not feel like a generic real estate dashboard. It should feel like a historical, property-specific story product. Right now, every page presents data without narrative synthesis. The property page shows "Year built: 1924" without saying "This home was built during Park Ridge's most active construction decade." The city page shows 6 charts without a through-line. The neighborhood pages have no visual rhythm and no emotional arc. This sprint adds the connective tissue.
+After Sprint 1 makes the product understandable and usable, Sprint 2 makes it enjoyable. A product that works but feels like a generic data dashboard will not generate the "I want to share this" moment. Sprint 2 creates that moment.
 
 ### Scope
 
-- Add a "property story" header block to property pages: one or two sentences synthesizing the property's era, subdivision, and construction context, derived from existing data.
-- Create a consistent visual system for section headings across property, block, street, subdivision, neighborhood, and city pages.
-- Add meaningful era color usage consistently: every property card, decade group, and chart uses the era color system already defined in `src/lib/mapConfig.ts`.
-- Improve card hierarchy: title, meta, and metaItems should have clear visual weight difference.
-- Standardize chart styles: all charts should share the same color palette, axis style, and tooltip format.
-- Convert the "Evidence trail" timeline on property pages from a list to a proper visual timeline.
-- Add a "What this means" module at the bottom of property pages that synthesizes the most important facts in plain English.
-- Improve neighborhood pages: add median sale price (2015 vs. 2024) comparison, matching the pattern already used on subdivision pages.
-- Improve mobile layouts: ensure stat grids, entity card grids, and charts are readable on narrow screens.
-- Add stronger "next action" links: every major section should end with a contextual link ("See all properties in this subdivision," "Explore the Northeast neighborhood," "Browse Park Ridge history").
+1. Enforce canonical section order on neighborhood detail pages.
+2. Add MarketHistoryChart to neighborhood detail pages.
+3. Add a framing note before the property timeline.
+4. Add "Explore more" prompts at the end of property and neighborhood pages.
+5. Audit all chart sections for four required elements (heading, description, chart, source note).
+6. Convert `<p className="section-heading">` to semantic `<h2>` or `<h3>` across all public page types.
+7. Add `overflow-x-auto` to the city page neighborhood comparison table.
+8. Add og:image and og:description metadata to property and neighborhood pages.
+9. Add a minimal footer (copyright year, About link, Data sources link, contact link).
+10. Reduce the homepage neighborhoods grid to a teaser (6 cards max, "See all neighborhoods" link).
+11. Fix `aria-selected` updates in the search results listbox.
 
-### Out of Scope
+### Out of Scope for Sprint 2
 
-Do not add unsourced historical claims.
-Do not introduce decorative visuals that do not explain something.
-Do not add heavy animation unless it improves comprehension.
-Do not create a separate design system disconnected from existing components.
+- Do not add unsourced historical claims.
+- Do not introduce decorative visuals that do not explain something.
+- Do not add heavy animation.
+- Do not start Sprint 3 historical trust work.
+
+---
 
 ### Detailed Tasks
 
 ---
 
-#### Task 2.1: Add "property story" synthesis header
+#### Task 2.1: Enforce canonical section order on neighborhood detail pages
 
-**Current problem:**
-Property pages start with a confidence badge and vitals grid. There is no sentence that says what this property is and why it matters historically. Users have to piece together year built + subdivision + neighborhood themselves.
+**Required section order (from CLAUDE.md):**
+1. Narrative paragraph with InlineSourceNote
+2. StatGrid
+3. mapSlot (neighborhood map)
+4. "Median sale price, 2015 vs. 2024" NeighborhoodPriceChart
+5. "How [label] was built" ConstructionByDecadeChart with context note
+6. "Home sales in this neighborhood" MarketHistoryChart (Task 2.2)
+7. HighlightReel
+8. Streets list
 
-**Required change:**
-Generate a 1-2 sentence story header above the vitals grid on the property page. Use existing data: year built, subdivision, neighborhood, construction era. Example: "This home was built in 1924 during Park Ridge's interwar construction peak, in what was then known as the Park Ridge Highlands subdivision." If year built is unknown, omit the date. If subdivision is unknown, omit the subdivision reference. Keep it data-driven, not speculative.
+**Files:** `app/neighborhoods/[slug]/_NeighborhoodDetailContent.tsx`
 
-**Files involved:**
-- `app/properties/[pin]/_PropertyDetailContent.tsx`
-- A utility function to compose the story string from property data
-
-**Acceptance criteria:**
-- Every property with a year built shows a 1-2 sentence synthesis above the vitals.
-- Properties with missing year built show a shorter version or omit the era reference.
-- The synthesis sentence uses only verified data fields (no inference).
-
-**QA steps:**
-- Open a property with year built and subdivision. Confirm story sentence appears.
-- Open a property with no year built. Confirm graceful fallback.
+**Acceptance criteria:** Section order matches canonical order. No content is removed.
 
 ---
 
-#### Task 2.2: Upgrade "Evidence trail" to a visual timeline
+#### Task 2.2: Add MarketHistoryChart to neighborhood detail pages
 
-**Current problem:**
-The PropertyTimeline component already exists and is used in the property page as "Evidence trail." The timeline component itself may render as a list or simple vertical bar. The name "Evidence trail" is accurate but academic.
-
-**Required change:**
-Rename "Evidence trail" to "Property timeline" (matches user expectation for a home history product). Ensure the PropertyTimeline component renders as a visual vertical timeline with year markers, icons, and connecting lines, not just a list. Verify the component at `src/components/ui/PropertyTimeline.tsx` and improve its visual hierarchy if needed.
-
-**Files involved:**
-- `app/properties/[pin]/_PropertyDetailContent.tsx` (line 519: section heading)
-- `src/components/ui/PropertyTimeline.tsx`
-
-**Acceptance criteria:**
-- Section heading is "Property timeline" not "Evidence trail."
-- Timeline renders with clear year markers and visual structure.
-- Icons differentiate event types (sale, permit, subdivision recording, assessment).
-
-**QA steps:**
-- Open a property with multiple timeline events. Confirm timeline renders with visual structure.
-- Confirm event types have distinct icons or colors.
-
----
-
-#### Task 2.3: Add "What this means" buyer summary to property pages
-
-**Current problem:**
-Property pages show data but never explain what it means for a buyer, owner, or agent. A user sees "3 sales on record" but does not know if that is typical or unusual for the area. They see "Assessed value: $312,000" but have no comparison.
+**Current problem:** Neighborhood pages do not show a full sales trend over time. Subdivision pages do. Neighborhoods are the more user-facing concept.
 
 **Required change:**
-Add a "What this means" section near the bottom of the property page (before "What we don't know yet"). This section generates 2-4 bullet points from existing data fields. Examples (all data-derived, non-speculative):
-- "This home is [N] years older / younger than the typical home on this street."
-- "It has changed hands [N] times since [year], which is [above/below/typical for] the area median."
-- "The assessed value has [increased/decreased] [X]% since [year]."
-Do not generate bullet points where comparison data is unavailable.
+1. In `_NeighborhoodDetailContent.tsx`, after the existing `fetchNeighborhoodPins` call, also call `fetchSubdivisionMarketHistory(pins)` from `src/lib/supabase/subdivisionQueries.ts`.
+2. Store the result in a `marketHistory` state variable.
+3. Render a `MarketHistoryChart` section after the ConstructionByDecadeChart with heading "Home sales in this neighborhood" and description: "Bars show annual sales volume. Line shows median sale price. Market sales only, $50K to $5M."
+4. Add an InlineSourceNote: "Cook County Recorder of Deeds."
+5. Only render if `marketHistory.length >= 3`.
 
-**Files involved:**
-- `app/properties/[pin]/_PropertyDetailContent.tsx`
-- Data already available via `detail.comparisons`; use this to generate plain-English bullets
-
-**Acceptance criteria:**
-- Properties with comparison data show a "What this means" section.
-- All bullets are derived from existing data, no inference or speculation.
-- Section does not appear if no comparison data is available.
-
-**QA steps:**
-- Open a property with comparisons data. Confirm bullets render.
-- Open a property without comparison data. Confirm section does not appear.
-- Verify no appraisal, inspection, or investment language appears.
-
----
-
-#### Task 2.4: Add price comparison to neighborhood pages
-
-**Current problem:**
-Subdivision pages already show "Median sale price, 2015 vs. 2024" using the NeighborhoodPriceChart component. Neighborhood pages do not have this. For a home shopper, neighborhood-level price context is more useful than subdivision-level, but it is currently missing.
-
-**Required change:**
-Fetch and display a 2015 vs. 2024 median price comparison on neighborhood pages, using the same NeighborhoodPriceChart component and the same `fetchBlockSalesByYear` query pattern adapted for neighborhoods.
-
-**Files involved:**
+**Files:**
 - `app/neighborhoods/[slug]/_NeighborhoodDetailContent.tsx`
-- `src/lib/supabase/blockQueries.ts` (may need a neighborhood-scoped version of fetchBlockSalesByYear)
-- `src/components/ui/NeighborhoodPriceChart.tsx`
+- `src/lib/supabase/subdivisionQueries.ts` (import only)
 
-**Acceptance criteria:**
-- Neighborhood pages show a price comparison section when data is available.
-- Uses the same chart component and visual style as subdivision pages.
-- Source note is present.
-
-**QA steps:**
-- Open a neighborhood page with sufficient sale data. Confirm chart renders.
-- Open a neighborhood with sparse data. Confirm the section is gracefully hidden.
+**Acceptance criteria:** Neighborhood pages show MarketHistoryChart when at least 3 data points exist. Section is gracefully hidden when data is sparse.
 
 ---
 
-#### Task 2.5: Improve homepage narrative and reduce information overload
+#### Task 2.3: Add framing note before property timeline
 
-**Current problem:**
-The homepage (`app/page.tsx`) shows 7+ distinct sections before the user has searched anything: hero, stats, sparkline cards (3), archive inventory (5 cards), notable properties, neighborhood comparison charts, neighborhoods grid. This is overwhelming for a first-time visitor who just wants to know what the site does.
+**Required change:** In `app/properties/[pin]/_PropertyDetailContent.tsx`, inside the timeline section, add between the heading and the `<PropertyTimeline>` component:
+`<p className="text-sm text-text-muted mb-3">Key moments in this property's recorded history, from the original plat to the most recent transaction.</p>`
 
-**Required change:**
-Restructure the homepage to: hero + search (full width), then one row of 3 sparkline cards (keep), then the notable properties highlight reel (keep, but move directly after sparklines), then neighborhoods grid (keep). Remove the archive inventory row (the 5-card database stats panel) from the homepage and move it to the About or Data Sources page. Remove the neighborhood comparison charts section from the homepage (it belongs on the city or neighborhood pages). The homepage job should be: orient, search, discover.
+**Acceptance criteria:** Framing sentence appears above the timeline. No em dashes.
 
-**Files involved:**
-- `app/page.tsx`
-- The removed sections are still accessible at /city and /neighborhoods
+---
+
+#### Task 2.4: Add "Explore more" prompts
+
+**Property pages:** After the assessor record details, add an "Explore more" section with contextual links:
+- "View all properties on [street name]" linking to `/streets/[street_name_normalized]` (only when `props.street_name_normalized` exists)
+- "Learn about the [neighborhood name] neighborhood" linking to `/neighborhoods/[slug]` (only when a neighborhood assignment exists)
+
+**Neighborhood pages:** After the streets list, add:
+- "Search for a property in this neighborhood" linking to / with a note suggesting the neighborhood name
+- "See Park Ridge city history" linking to /city
+
+**Style:** Simple text links with right arrow, using `text-accent-purple hover:underline`.
 
 **Acceptance criteria:**
-- Homepage has 4 sections maximum: hero/search, sparkline cards, notable properties, neighborhoods grid.
-- Archive inventory (database stats) is removed from homepage.
-- Neighborhood comparison charts are removed from homepage.
-- Load time improves due to fewer parallel data fetches on the home route.
+- Property pages end with "Explore more" section containing at least one contextual link.
+- Street link only renders when `street_name_normalized` is present.
+- Neighborhood link only renders when a neighborhood assignment is present.
 
-**QA steps:**
-- Visit homepage. Confirm 4 sections maximum.
-- Confirm no archive inventory cards on homepage.
-- Confirm no neighborhood comparison charts on homepage.
-- Confirm sparklines, highlights, and neighborhoods grid still render.
-- Confirm homepage still communicates value proposition clearly.
+---
+
+#### Task 2.5: Convert section heading `<p>` elements to `<h2>` or `<h3>`
+
+**Current problem:** Throughout the app, section headings use `<p className="section-heading">`. Screen readers cannot navigate by heading. WCAG 2.1 requires heading markup for headings.
+
+**Required change:**
+1. Identify all uses of `<p className="section-heading">` on public-facing pages.
+2. Replace with `<h2 className="section-heading">` (or `<h3>` for sub-sections within a page that already has an `<h2>`).
+3. The visual styling is unchanged; only the element changes.
+4. Do not apply to admin pages in this sprint.
+
+**Acceptance criteria:**
+- All section headings on property, neighborhood, subdivision, street, and city pages use `<h2>` or `<h3>`.
+- No visual regressions.
+
+---
+
+#### Task 2.6: Audit all chart sections for four required elements
+
+Every chart section on city, neighborhood, subdivision, and street pages must have:
+1. A heading
+2. A one-sentence description explaining what the chart shows
+3. The chart itself
+4. An InlineSourceNote
+
+For any missing element, add it. Do not change chart data or component logic.
+
+**Files:**
+- `app/city/_CityContent.tsx`
+- `app/neighborhoods/[slug]/_NeighborhoodDetailContent.tsx`
+- `app/subdivisions/[id]/_SubdivisionDetailContent.tsx`
+- `app/streets/[street]/_StreetDetailContent.tsx`
 
 ---
 
 ### Sprint 2 Acceptance Criteria
 
-- Property pages have a 1-2 sentence story synthesis header.
-- "Evidence trail" is renamed to "Property timeline."
-- Property pages have a "What this means" buyer summary section.
-- Neighborhood pages show a 2015 vs. 2024 price comparison.
-- Homepage has no more than 4 sections.
-- Archive inventory and neighborhood comparison charts are moved off the homepage.
-- All pages use consistent section heading style.
-- No em dashes appear anywhere in changed content.
+- Neighborhood detail pages follow canonical section order.
+- Neighborhood detail pages include MarketHistoryChart when data is available.
+- Property pages have a framing note before the timeline.
+- Property and neighborhood pages have "Explore more" sections.
+- All chart sections on all major page types have: heading, description, chart, source note.
+- All section headings on public pages use `<h2>` or `<h3>`.
+- City page neighborhood table does not scroll horizontally on mobile (has overflow-x-auto).
+- Shared property and neighborhood links show title and description in social previews.
+- A footer exists on all public pages.
+- `npm run build` passes.
+- No em dashes.
 
 ### Sprint 2 QA Checklist
 
-- [ ] Visual consistency: property, neighborhood, subdivision, street pages share heading style
-- [ ] Typography: section headings all use sentence case
-- [ ] Card hierarchy: entity cards have clear title/meta/detail visual weight
-- [ ] Property page: story synthesis header renders
-- [ ] Property page: "Property timeline" heading (not "Evidence trail")
-- [ ] Property page: "What this means" section renders when data available
-- [ ] Property page: no "What this means" section when comparison data absent
-- [ ] Neighborhood page: price comparison chart renders
-- [ ] Homepage: 4 sections maximum
-- [ ] Homepage: no archive inventory
-- [ ] Homepage: no neighborhood comparison charts
-- [ ] Charts: consistent axis style across all chart components
-- [ ] Mobile layout: all new sections readable at 375px
-- [ ] Mobile layout: timelines and cards stack correctly
-- [ ] Accessibility: new sections have appropriate headings and aria labels
+- [ ] Neighborhood pages: section order matches canonical (narrative, stats, map, price chart, construction chart, market chart, highlights, streets)
+- [ ] Neighborhood pages: MarketHistoryChart present where data exists
+- [ ] Neighborhood pages: "Explore more" section at end
+- [ ] Property pages: framing note before timeline
+- [ ] Property pages: "Explore more" section at end with street and neighborhood links
+- [ ] Property pages: street link absent when street_name_normalized is missing
+- [ ] Property pages: neighborhood link absent when no neighborhood assignment
+- [ ] City page: all charts have heading, description, chart, source note
+- [ ] Neighborhood page: all charts have heading, description, chart, source note
+- [ ] Subdivision page: all charts have heading, description, chart, source note
+- [ ] Street pages: all charts have heading, description, chart, source note
+- [ ] Screen reader test: navigate by heading, confirm major sections are reachable
+- [ ] Mobile: neighborhood page is readable and sections are in correct order on small screens
+- [ ] Mobile: city page neighborhood table does not scroll horizontally
+- [ ] Social preview: share a property page URL in Slack or iMessage, confirm title and description appear
+- [ ] Footer: visible on homepage, property page, neighborhood page, city page
+- [ ] Console: no new errors
 - [ ] Build: `npm run build` passes
-- [ ] Em dash scan: grep for the em dash character (U+2014) in all changed files
+- [ ] Em dash scan: zero matches in all changed files
 
 ---
 
-## Sprint 3: Historical Trust and Real Estate Usefulness
+## Sprint 3: Historical Trust, Admin Workflows, and Real Estate Usefulness
 
 ### Goal
 
-Make the app more credible, useful, and specific for home shoppers, agents, homeowners, and local historians.
+Make the product credible, operationally maintainable, and useful for agents, buyers, homeowners, and historians.
 
 ### Why This Sprint Matters
 
-The product becomes valuable when it translates land, property, subdivision, and neighborhood data into trustworthy interpretation. Right now, the Hargis survey section shows architectural class codes ("NR eval: C") without explaining what they mean. The subdivision ancestry section shows "Confidence: medium" without explaining what medium means. The city narrative says "Park Ridge grew in three distinct waves" without citing a source. Each of these small credibility gaps compounds into a feeling that the app is "just data," not authoritative history.
+After Sprints 0/1 and 2 fix structural and visual foundations, Sprint 3 deepens the product's value proposition. The agent summary needs more content. Historians need confidence labels. Admins need a data quality view. The feedback loop needs to be closed.
 
 ### Scope
 
-- Add a standard historical claim pattern: claim, date, source, source type, confidence level, interpretation.
-- Add plain-English explanations of confidence levels at their point of use.
-- Explain HARGIS architectural class codes and NR evaluation values in plain English.
-- Add subdivision genealogy explanations where parent/child relationships exist.
-- Add city narrative source citation.
-- Add "What to ask before buying" buyer guidance module (factual, non-speculative).
-- Add agent-friendly property summary block that is factual and quotable.
-- Improve methodology explanations on the Data Sources page.
-- Add construction era context to property pages: explain what the era means for construction type and materials.
+1. Expand "What this means" on property pages (HARGIS bullet, appeal bullet, turnover bullet).
+2. Expand Agent summary text to include HARGIS status and assessment change.
+3. Add "(Inferred)" and "(Primary record)" source type labels to InlineSourceNote pattern.
+4. Add "How records are linked" and "What to do if something looks wrong" to the sources page.
+5. Add plain-English genealogy context to subdivision pages.
+6. Add an admin "Needs attention" panel to the dashboard.
+7. Move neighborhood narratives to the Supabase database (or document this as a known limitation with a ticket).
 
-### Out of Scope
+### Out of Scope for Sprint 3
 
-Do not provide appraisals.
-Do not make inspection claims.
-Do not make school-quality claims.
-Do not make safety claims.
-Do not make investment claims.
-Do not invent historical facts or boundaries.
-Do not infer causation unless clearly labeled as interpretation.
-
-### Historical Claim Pattern
-
-Every significant historical claim on entity pages must follow this pattern:
-
-```
-[Claim text]
-Source: [Source name]
-Source type: [Official record / Survey / Inferred / Approximated]
-Confidence: High / Medium / Low
-[Optional: Interpretation note in italics]
-```
-
-Confidence levels:
-- High: directly supported by official records or primary sources (Cook County Recorder, assessor parcel data)
-- Medium: inferred from multiple consistent sources or approximated from spatial joins
-- Low: plausible but not directly verified (neighborhood boundary approximations, some build years)
-
-### Real Estate Usefulness Pattern
-
-Every property page must address (where data permits):
-
-- What happened here? (timeline synthesis)
-- How does this property compare with nearby homes? (comparison section already exists)
-- What changed over time? (assessment and sale history)
-- What should a buyer or agent understand? (new "What this means" module from Sprint 2)
-- What is known, unknown, or inferred? (existing "What we don't know yet" section)
-
-### Detailed Tasks
+- Appraisal, inspection, school, safety, or investment claims.
+- New neighborhood boundaries.
+- Full audit trail implementation.
+- Public user-facing feedback form (email is sufficient for initial feedback collection).
 
 ---
 
-#### Task 3.1: Explain confidence levels at the point of use
+### Historical Claim Pattern (enforce on all new Sprint 3 content)
 
-**Current problem:**
-The `ConfidenceBadge` component shows "High confidence" / "Medium confidence" / "Low confidence" at the top of property pages. In the subdivision ancestry section, "Confidence: medium" appears. But nowhere does the app explain what these mean.
-
-**Required change:**
-Add a small (?) tooltip or expandable inline explanation next to each confidence label. Content: "High: directly supported by official county records. Medium: inferred from multiple consistent sources. Low: plausible but not directly verified." The tooltip should be a shared component usable wherever confidence is shown.
-
-**Files involved:**
-- `src/components/ui/ConfidenceBadge.tsx`
-- `app/properties/[pin]/_PropertyDetailContent.tsx` (subdivision ancestry section, line 299)
-
-**Acceptance criteria:**
-- ConfidenceBadge has an accessible (?) tooltip explaining the level.
-- Subdivision ancestry confidence label has the same tooltip.
-- The tooltip content matches the definitions in this roadmap.
-
-**QA steps:**
-- Open a property page. Hover or tap the confidence badge. Confirm tooltip appears.
-- Open subdivision ancestry section. Confirm confidence label has explanation.
+| Field | Description |
+|-------|-------------|
+| Claim | The factual statement |
+| Date or date range | When this occurred or was recorded |
+| Source | The specific source document or dataset |
+| Source type | Official record / Survey / Inferred from data |
+| Confidence | High / Medium / Low |
+| Interpretation | One plain-English sentence |
+| Related entity | Property PIN, subdivision ID, neighborhood slug, or city |
 
 ---
 
-#### Task 3.2: Explain HARGIS codes in plain English
+### Task 3.1: Expand "What this means" on property pages
 
-**Current problem:**
-The HARGIS survey section shows fields like "arch_class" and "NR eval: C" without explaining what they mean. "NR eval" stands for National Register of Historic Places evaluation. "Arch class" is an architectural classification code. These are meaningful to historians but opaque to home shoppers.
+Add bullets when data supports them:
+- If `hargisRecords.length > 0`: "This property was documented in the Illinois Historic Architecture Survey, which noted its architectural significance."
+- If `appealYears.length > 2`: "This property has had {appealYears.length} assessment appeals on record. Assessment appeals are filed by owners who believe the assessed value is too high."
+- If `recentSaleCount > 4`: "This property has sold {actualSaleCount} times since records began, which is above average for the area."
 
-**Required change:**
-Add plain-English labels next to HARGIS codes:
-- "NR eval: C" -> "National Register: contributing structure"
-- "NR eval: NC" -> "National Register: non-contributing"
-- "arch_class: A" -> "Architectural class: high significance"
-(Add a lookup table for common values, and a fallback "Code: [value]" for unknown ones.)
-
-Also rename the section heading from "Historic survey (HARGIS)" to "Historic architecture survey" with a subtitle "From the Illinois Historic Architectural Resources Geographic Information System (HARGIS), Illinois State Historic Preservation Office."
-
-**Files involved:**
-- `app/properties/[pin]/_PropertyDetailContent.tsx` (`HargisSurveySection` component, lines 329-399)
-
-**Acceptance criteria:**
-- NR evaluation values are shown in plain English, not as raw codes.
-- Section heading is "Historic architecture survey."
-- Source subtitle explains HARGIS and SHPO.
-
-**QA steps:**
-- Open a property with a HARGIS record. Confirm plain-English NR evaluation label.
-- Confirm section heading is updated.
+**Files:** `app/properties/[pin]/_PropertyDetailContent.tsx`
 
 ---
 
-#### Task 3.3: Add construction era context to property pages
+### Task 3.2: Expand Agent summary text
 
-**Current problem:**
-Property pages show "Year built: 1924" but do not explain what 1924 means for Park Ridge construction. Was this the bungalow era? The railroad era? What does that imply for construction type?
+Add to `buildQuickSummary()`:
+- If `hargisRecords.length > 0`: "Documented in the Illinois Historic Architecture Survey."
+- If `assessmentTimeline.length >= 2`: "Assessed value changed from ${first.value} to ${last.value} between {first.year} and {last.year}."
 
-**Required change:**
-Add an era context note below the year built vital item (or within the story synthesis header from Task 2.1). Map the year built to the Park Ridge construction era using the era labels already defined in `src/lib/content.ts` (`NEIGHBORHOOD_ERA_LABELS`). Example: if a home was built in 1924 in the Northeast neighborhood, note "Built during the bungalow-era expansion, 1910s to 1940s." If the neighborhood era label is not available, use a generic era label based on decade ranges.
-
-**Files involved:**
-- `app/properties/[pin]/_PropertyDetailContent.tsx`
-- `src/lib/content.ts` (`NEIGHBORHOOD_ERA_LABELS`)
-
-**Acceptance criteria:**
-- Properties with known year built show a construction era label.
-- The era label matches the neighborhood's known era where available.
-- Era label is derived from existing content constants, not invented.
-
-**QA steps:**
-- Open a property in the Uptown neighborhood. Confirm "Railroad-era" or equivalent label.
-- Open a property in Northwest. Confirm "Postwar ranch" or equivalent label.
-- Open a property with no year built. Confirm no era label.
+**Files:** `app/properties/[pin]/_PropertyDetailContent.tsx`
 
 ---
 
-#### Task 3.4: Add source citation to the city narrative
+### Task 3.3: Add methodology sections to the Data Sources page
 
-**Current problem:**
-The CITY_NARRATIVE in `src/lib/content.ts` states "Park Ridge grew in three distinct waves" and describes specific historical periods. This is a historical claim with no source. It appears on the city history page without citation.
+Add after existing sections:
+1. "How records are linked": plain-English explanation of PIN-based joining, spatial joins, and neighborhood boundary approximations.
+2. "What to do if something looks wrong": specific guidance for year built discrepancies (check assessor), subdivision name errors (check recorder), and app-level errors (contact link).
 
-**Required change:**
-Add an inline source note below the city narrative paragraph on the city history page. Content: "Historical summary based on Cook County Assessor build-year distributions and Cook County Recorder subdivision records. Era characterizations are interpretive summaries of the data." Add a `Confidence: Medium` note.
-
-**Files involved:**
-- `app/city/_CityContent.tsx` (line 101 where `CITY_NARRATIVE` is rendered)
-
-**Acceptance criteria:**
-- A source note appears below the city narrative paragraph.
-- The note clarifies this is interpretive, not a primary source quote.
-- No factual claims are removed or changed.
-
-**QA steps:**
-- Visit /city. Confirm source note appears below the opening narrative.
-- Confirm the note is readable and appropriately styled (InlineSourceNote component).
+**Files:** `app/sources/page.tsx`
 
 ---
 
-#### Task 3.5: Add agent-friendly property summary block
+### Task 3.4: Add genealogy context to subdivision pages
 
-**Current problem:**
-There is no section on the property page designed for a real estate agent who needs a quick, quotable summary of a property's history. An agent must currently read the entire page and synthesize manually.
+When `entityType === "estate"`: add "This land was originally part of a private estate before being subdivided for residential use."
+When `parentSubdivision` is present: add "This subdivision was carved from the [parent name] plat."
 
-**Required change:**
-Add an "Agent summary" or "Quick summary" section near the top of the property page (after the vitals, before the PIN breakdown). This section renders a compact 3-5 line text summary combining: address, year built, building size, most recent sale year and price, subdivision, and neighborhood. Format it as readable prose, not a data table. Label it with a small badge: "Shareable summary." Add a copy-to-clipboard button.
-
-Only render this section if the property has year built, at least one sale record, and a subdivision or neighborhood on record.
-
-**Files involved:**
-- `app/properties/[pin]/_PropertyDetailContent.tsx`
-
-**Acceptance criteria:**
-- "Quick summary" section renders for properties with sufficient data.
-- Summary is readable prose, 3-5 lines.
-- Copy-to-clipboard button works.
-- Section does not render for properties with sparse data.
-- No appraisal, investment, inspection, or safety language.
-
-**QA steps:**
-- Open a well-documented property. Confirm summary section renders.
-- Click copy button. Paste. Confirm correct text is copied.
-- Open a sparse property. Confirm section does not render.
+**Files:** `app/subdivisions/[id]/_SubdivisionDetailContent.tsx`
 
 ---
 
-#### Task 3.6: Improve Data Sources page with methodology
+### Task 3.5: Add admin "Needs attention" panel
 
-**Current problem:**
-The Data Sources page lists 6 sources but does not explain how they are joined, why 9% of parcels lack addresses, what the known limitations are for each source, or how confidence levels are determined.
+On the admin dashboard, add a "Needs attention" panel showing:
+- Neighborhoods with null or missing slugs.
+- Subdivisions with no recorded year.
+- Properties with low confidence flags.
 
-**Required change:**
-Add a "How we connect the data" section to the Data Sources page explaining the join methodology in plain English. Add a "Known limitations" section with a bullet list. Add a "How confidence levels work" section using the definitions from this roadmap.
-
-**Files involved:**
-- `app/sources/page.tsx`
-
-**Acceptance criteria:**
-- Data Sources page has "How we connect the data" section.
-- Data Sources page has "Known limitations" section.
-- Data Sources page has "How confidence levels work" section.
-- All content is factual and matches actual methodology.
-
-**QA steps:**
-- Visit /sources. Confirm three new sections are present.
-- Verify the methodology description matches the actual data pipeline.
-
----
-
-#### Task 3.7: Add "Questions to consider" buyer guidance module
-
-**Current problem:**
-The app has useful data for home shoppers but never guides them on what questions to ask based on what they see. A shopper who sees "No permit history in dataset" has no idea if that is a concern or normal.
-
-**Required change:**
-Add a "Questions to consider" section to property pages, rendered only for properties with specific data patterns. Examples (data-triggered, not speculative):
-- If permit_count is 0: "No permits are in this dataset (records are available from 2018 onward). It may be worth asking about renovation history directly."
-- If the property has changed hands more than 4 times in 10 years: "This property has sold frequently. It may be worth understanding the transaction history."
-- If year_built is missing: "The build year is not recorded in county data. A title search or building department inquiry may fill this gap."
-
-These are factual observations, not legal or appraisal advice. Label the section clearly: "Questions to consider (based on available records)."
-
-**Files involved:**
-- `app/properties/[pin]/_PropertyDetailContent.tsx`
-
-**Acceptance criteria:**
-- "Questions to consider" section renders when data triggers exist.
-- All bullets are based on data patterns, not invented advice.
-- Section includes a disclaimer: "These are observations from county records, not legal or appraisal advice."
-- Section does not appear if no triggers are present.
-
-**QA steps:**
-- Open a property with 0 permits. Confirm permit-related question appears.
-- Open a well-documented property with no triggers. Confirm section does not appear.
-- Verify disclaimer is present.
+**Files:** `app/admin/page.tsx`
 
 ---
 
 ### Sprint 3 Acceptance Criteria
 
-- ConfidenceBadge has a tooltip explaining the confidence level meaning.
-- Subdivision ancestry confidence labels have the same explanation.
-- HARGIS NR evaluation codes are shown in plain English.
-- HARGIS section heading is "Historic architecture survey."
-- Properties with known year built show a construction era label.
-- City narrative paragraph has an inline source note.
-- "Quick summary" section renders for well-documented properties.
-- Data Sources page has methodology, limitations, and confidence level explanations.
-- "Questions to consider" section appears for properties with relevant data patterns.
-- All new content avoids appraisal, inspection, school, safety, and investment claims.
-- No em dashes appear anywhere in changed content.
+- "What this means" shows HARGIS, appeal, and turnover bullets where data exists.
+- "Agent summary" copyable text includes HARGIS status and assessment change where data exists.
+- Data sources page has "How records are linked" and "What to do if something looks wrong."
+- Subdivision pages with estate type or parent subdivision show genealogy context.
+- Admin dashboard shows a "Needs attention" panel.
+- `npm run build` passes.
+- No em dashes.
 
 ### Sprint 3 QA Checklist
 
-- [ ] ConfidenceBadge: tooltip explains High/Medium/Low
-- [ ] Subdivision ancestry: confidence label has explanation
-- [ ] HARGIS: NR codes shown in plain English
-- [ ] HARGIS: section heading updated
-- [ ] Property page: era context label appears for known year built
-- [ ] City page: source note below narrative paragraph
-- [ ] Property page: "Quick summary" renders for rich properties
-- [ ] Property page: "Quick summary" absent for sparse properties
-- [ ] Copy button: works correctly
-- [ ] Data Sources page: methodology section present
-- [ ] Data Sources page: limitations section present
-- [ ] Data Sources page: confidence level explanation present
-- [ ] Property page: "Questions to consider" appears for triggered patterns
-- [ ] Property page: "Questions to consider" absent when no triggers
-- [ ] Disclaimer present in "Questions to consider"
-- [ ] No appraisal/inspection/safety/investment language anywhere
+- [ ] Property page with HARGIS records: HARGIS bullet in "What this means"
+- [ ] Property page with 3+ appeals: appeal bullet in "What this means"
+- [ ] Property page with recentSaleCount 5+: turnover bullet in "What this means"
+- [ ] Agent summary text: includes HARGIS sentence when records exist
+- [ ] Agent summary text: includes assessment change when timeline has 2+ points
+- [ ] Data sources page: "How records are linked" section visible
+- [ ] Data sources page: "What to do if something looks wrong" section visible
+- [ ] Subdivision page with parent subdivision: genealogy context note visible
+- [ ] Subdivision page with estate type: estate explanation visible
+- [ ] Admin dashboard: "Needs attention" panel visible
+- [ ] All new copy contains no appraisal, inspection, school, safety, or investment claims
 - [ ] Build: `npm run build` passes
-- [ ] Em dash scan: grep for the em dash character (U+2014) in all changed files
+- [ ] Em dash scan: zero matches
 
 ---
 
 ## Cross-Sprint Rules
 
-These rules apply to all three sprints and all future work:
-
-- Do not hallucinate facts. All claims must come from data or be labeled as interpretation.
-- Do not create placeholder historical claims. If a claim needs a source, add a "Needs citation" note.
-- Do not duplicate metrics. If a number appears in two places, eliminate the less prominent one.
-- Do not use multiple names for the same concept. Pick one name per entity type and use it everywhere.
-- Do not bury methodology. If users can see data, they can see how the data was produced.
-- Do not ship pages with unexplained missing data. Every gap needs a plain-English explanation.
-- Do not create new one-off components if a shared component should exist.
-- Do not use em dashes anywhere: in code, in UI copy, in comments, in commit messages, in documentation.
-- Each sprint must leave the app cleaner than it started. No net increase in complexity unless justified.
+- Do not hallucinate facts. All claims must derive from data in the Supabase tables or from the SOURCES constant in content.ts.
+- Do not create placeholder historical claims. Mark uncertain content as "Needs citation" or omit it.
+- Do not duplicate metrics. If a number appears in a stat card, it should not also appear as a chart series on the same page unless the chart adds time dimension or comparison context.
+- Do not use multiple names for the same concept. "subdivision" not "plat." "neighborhood" not "district." "property" not "parcel." in user-facing copy.
+- Do not bury methodology. Link to /sources from every page that makes a historical claim.
+- Do not ship pages with unexplained missing data. Every empty or missing state must explain why in plain English.
+- Do not create new one-off components if a shared component already exists.
+- Do not use em dashes (the character U+2014) anywhere: not in UI copy, not in code comments, not in commit messages, not in documentation.
+- Each sprint must leave the app cleaner than it started.
 
 ---
 
 ## Required Developer Workflow
 
-For each task in each sprint:
-
-1. Inspect the current implementation of the relevant component or page.
-2. Identify all files and components involved.
-3. Write a short implementation note (2-4 sentences) before making changes. Describe what you are changing and why.
-4. Make the smallest coherent set of changes. Do not refactor adjacent code unless it is directly in the way.
-5. Reuse existing components where reasonable. Do not create new components unless the pattern does not exist.
-6. Remove dead or duplicated code. Do not leave commented-out sections.
-7. Run `npm run build` and confirm it passes. Fix any TypeScript errors before committing.
-8. Manually inspect the affected routes in the browser.
-9. Update this roadmap file with completion notes for each finished task.
-10. Document known limitations at the bottom of the relevant task section.
+For each task, before making any changes:
+1. Read the relevant file(s) using the Read tool.
+2. Identify which other files import or depend on the changed component.
+3. Make the smallest coherent set of changes that achieves the task acceptance criteria.
+4. Reuse existing components (EntityCard, StatGrid, InlineSourceNote, ConfidenceBadge, MarketHistoryChart) rather than creating new one-off components.
+5. Remove any dead code or unused imports introduced by the change.
+6. Run `npm run build` to confirm TypeScript passes before committing.
+7. Update the Progress Tracking table below with completion notes.
+8. Run `grep -r -- $'\xe2\x80\x94' .` to confirm no em dashes were introduced.
 
 ---
 
 ## Progress Tracking
 
-| Item | Sprint | Status | Owner | Notes | Completed date |
-|------|--------|--------|-------|-------|----------------|
-| Task 1.1: Consolidate property page sale/permit sections | 1 | Complete | Frontend | Removed Activity record stat cards; counts shown in section headings | 2026-06-23 |
-| Task 1.2: Remove redundant Sources sections from page body | 1 | Complete | Frontend | Removed SourceNote from city, neighborhood, subdivision, street, pin pages; added /sources link | 2026-06-23 |
-| Task 1.3: Fix construction chart duplication | 1 | Complete | Frontend | Replaced chart with text summary on street and block pages; added >30 threshold on pin group | 2026-06-23 |
-| Task 1.4: Clarify neighborhood type system | 1 | Complete | Frontend | Added Geographic context heading and explanation on property page; neighborhoods index was already grouped | 2026-06-23 |
-| Task 1.5: Fix empty street pages (Prospect Ave, Touhy Ave) | 1 | Complete | Data/Frontend | Fixed hyphen-to-space normalization in getStreetByName and fetchStreetBbox; fixed breadcrumb to show Streets | 2026-06-23 |
-| Task 1.6: Consolidate city page chart overload | 1 | Complete | Frontend | Removed AppealsChart and PermitActivityChart; city page now has 4 charts | 2026-06-23 |
-| Task 1.7: Add hierarchy context chips to entity pages | 1 | Complete | Frontend | Added street link on property page; added neighborhood chip on street page; subdivision context deferred (data not in layer) | 2026-06-23 |
-| Task 1.8: Improve search empty and failed states | 1 | Complete | Frontend | Added inline empty state message for 3+ char queries with no results; Enter on empty results routes to /search | 2026-06-23 |
-| Task 1.9: Standardize section headings | 1 | Complete | Frontend | Standardized all construction decade headings to How X was built; fixed Subdivision ancestry case | 2026-06-23 |
-| Task 1.10: Add plain-English empty state for unresolvable parcels | 1 | Complete | Frontend | Added explanation to UnresolvableEntityCard; changed boundary text to Boundary map coming soon | 2026-06-23 |
-| Task 2.1: Add property story synthesis header | 2 | Complete | Frontend/Content | Added buildPropertyStory utility; renders 1-sentence synthesis above vitals using year built, subdivision, and neighborhood | 2026-06-23 |
-| Task 2.2: Upgrade Evidence trail to visual timeline | 2 | Complete | Frontend | Renamed heading to Property timeline; component already renders as visual vertical timeline with icons and connecting line | 2026-06-23 |
-| Task 2.3: Add "What this means" buyer summary | 2 | Complete | Frontend/Content | Added section before What we don't know yet; generates bullets from comparisons data, assessment timeline, and sale count | 2026-06-23 |
-| Task 2.4: Add price comparison to neighborhood pages | 2 | Complete | Frontend/Data | Added fetchNeighborhoodPins + fetchBlockSalesByYear calls in NeighborhoodDetailContent; renders NeighborhoodPriceChart after map slot | 2026-06-23 |
-| Task 2.5: Improve homepage and reduce overload | 2 | Complete | Frontend | Removed ArchiveInventory and NeighborhoodCharts; merged key facts into hero; homepage now has exactly 4 sections | 2026-06-23 |
-| Task 3.1: Explain confidence levels at point of use | 3 | Complete | Frontend/Content | Added (?) tooltip to ConfidenceBadge and subdivision ancestry confidence label; CONFIDENCE_TOOLTIP exported from formatters.ts | 2026-06-23 |
-| Task 3.2: Explain HARGIS codes in plain English | 3 | Complete | Content/Frontend | Renamed section to Historic architecture survey; added SHPO subtitle; NR eval and arch_class now show plain-English labels with lookup tables | 2026-06-23 |
-| Task 3.3: Add construction era context | 3 | Complete | Frontend/Content | Added getEraContextNote using NEIGHBORHOOD_ERA_LABELS with generic decade fallback; renders below property story synthesis | 2026-06-23 |
-| Task 3.4: Add source citation to city narrative | 3 | Complete | Content | Added InlineSourceNote below CITY_NARRATIVE in CityContent with Confidence: Medium attribution | 2026-06-23 |
-| Task 3.5: Add agent-friendly property summary block | 3 | Complete | Frontend | Added Quick summary section with Shareable badge and copy-to-clipboard; renders for properties with year built, sales, and subdivision or neighborhood | 2026-06-23 |
-| Task 3.6: Improve Data Sources page with methodology | 3 | Complete | Content | Added How we connect the data section and How confidence levels work section to sources page | 2026-06-23 |
-| Task 3.7: Add "Questions to consider" buyer guidance | 3 | Complete | Frontend/Content | Added Questions to consider section with three data-triggered bullets; includes disclaimer; does not render when no triggers present | 2026-06-23 |
+| Item | Sprint | Area | Status | Owner | Notes | Completed date |
+|------|--------|------|--------|-------|-------|----------------|
+| 0.1 Fix neighborhood detail page 404 | 0 | Data/Frontend | Complete | | Renamed content.ts keys to match DB slugs: uptown_park_ridge, northwest_park, south_park | 2026-06-23 |
+| 0.2 Remove Township/Section from nav; add Streets | 0 | Frontend | Complete | | Removed Township/Section entries and unused lucide imports; added Streets after Subdivisions | 2026-06-23 |
+| 0.3 Create /streets index page | 0 | Frontend | Complete | | Created app/streets/page.tsx with Breadcrumb, PageHeader, and homepage search link | 2026-06-23 |
+| 0.4 Fix About page: contact link and Start here | 0 | Content | Complete | | Added Start here section with 3 linked paths; replaced "please reach out" with mailto link | 2026-06-23 |
+| 1.1 Fix neighborhoods landing page opening copy | 1 | Content/Frontend | Not started | | Replace "Three overlapping ways" subtitle | |
+| 1.2 Remove NeighborhoodPriceChart from subdivision pages | 1 | Frontend | Not started | | Also remove priceRow and salesByYear if only used for this section | |
+| 1.3 Merge sale price chart and sale history list | 1 | Frontend | Not started | | One "Sale history" section heading | |
+| 1.4 Add source attribution to neighborhood narratives | 1 | Frontend | Not started | | InlineSourceNote after narrative paragraph | |
+| 1.5 Add Activity signal explanation | 1 | Frontend | Not started | | One-sentence definition per signal value | |
+| 1.6 Add context notes to ConstructionByDecadeChart | 1 | Content/Frontend | Not started | | City, neighborhood, subdivision pages | |
+| 1.7 Update neighborhood page subtitles with era labels | 1 | Frontend | Not started | | Use NEIGHBORHOOD_ERA_LABELS in PageHeader subtitle | |
+| 1.8 Rename Quick summary to Agent summary | 1 | Frontend | Not started | | One-word change in _PropertyDetailContent.tsx | |
+| 1.9 Add (Inferred) label to era context notes | 1 | Frontend | Not started | | Append span after eraContextNote text | |
+| 2.1 Enforce section order on neighborhood pages | 2 | Frontend | Not started | | Reordering only | |
+| 2.2 Add MarketHistoryChart to neighborhood pages | 2 | Frontend/Data | Not started | | Requires fetchSubdivisionMarketHistory with neighborhood pins | |
+| 2.3 Add framing note before property timeline | 2 | Frontend | Not started | | One sentence above PropertyTimeline component | |
+| 2.4 Add "Explore more" prompts | 2 | Frontend | Not started | | Property and neighborhood pages | |
+| 2.5 Convert section heading p to h2/h3 | 2 | Frontend | Not started | | All public pages | |
+| 2.6 Audit all chart sections for four required elements | 2 | Frontend | Not started | | City, neighborhood, subdivision, street pages | |
+| 2.7 Add overflow-x-auto to neighborhood table | 2 | Frontend | Not started | | City page neighborhood comparison table | |
+| 2.8 Add og:image and og:description metadata | 2 | Frontend | Not started | | Property and neighborhood pages | |
+| 2.9 Add footer to all public pages | 2 | Frontend | Not started | | Copyright, About, Data sources, contact links | |
+| 2.10 Reduce homepage neighborhood grid to teaser | 2 | Frontend | Not started | | 6 cards max plus See all link | |
+| 2.11 Fix aria-selected on search results | 2 | Frontend | Not started | | Update on keyboard focus change | |
+| 3.1 Expand What this means on property pages | 3 | Frontend | Not started | | HARGIS, appeal, turnover bullets | |
+| 3.2 Expand Agent summary text | 3 | Frontend | Not started | | HARGIS status and assessment change | |
+| 3.3 Add methodology sections to sources page | 3 | Content | Not started | | "How records are linked" and "What to do if wrong" | |
+| 3.4 Add genealogy context to subdivision pages | 3 | Frontend | Not started | | Estate and parent plat explanations | |
+| 3.5 Add admin Needs attention panel | 3 | Frontend/Data | Not started | | Admin dashboard | |
 
 Statuses: Not started / In progress / Blocked / Complete / Deferred
 
 ---
 
+## Send-To-Users Plan
+
+**Recommended first audience:** 10-15 Park Ridge homeowners who have owned their home for more than 5 years.
+
+**Users to exclude for now:** Real estate agents (needs Agent summary fix first), relocation buyers (needs neighborhood layer working), general public (too many broken paths until Sprint 0 is complete).
+
+**Number of users:** 10-15 for the first round.
+
+**Test framing:** "I've been building a research tool that traces the history of every property in Park Ridge. I'd love for you to try it with your own home address. I'm looking for honest feedback about what's useful, what's confusing, and what's missing. This is not a finished product."
+
+**Tasks for users:**
+1. Search for your home address. What do you find?
+2. Find the homes on your street. Do any of the details surprise you?
+3. Navigate to the neighborhood section. What do you learn about your neighborhood?
+4. Find something you would share with a neighbor or family member.
+
+**Feedback questions:**
+1. What was the first thing you looked for?
+2. What did you find that you did not expect?
+3. What did you expect to find that was not there?
+4. Did anything look wrong or confusing?
+5. On a scale of 1-5, how confident do you feel in the accuracy of the data?
+6. Would you share a specific page with someone? Which one and why?
+
+**What counts as success:** 7 of 10 users find their property page and express genuine interest. 5 of 10 navigate from their property to a second page without prompting.
+
+**What counts as failure:** More than 3 of 10 users hit a 404 and cannot recover. Any user misinterprets an era context note as a primary-source fact.
+
+---
+
+## QA Checklist (Full Pre-Launch)
+
+- [ ] All four Sprint 0 blockers resolved
+- [ ] All Sprint 1 tasks complete
+- [ ] Nav shows: Neighborhoods, Subdivisions, Streets, City history, Data sources, About
+- [ ] No "Township" or "Section" in nav (desktop or mobile)
+- [ ] /streets loads without 404
+- [ ] /neighborhoods/[every-existing-slug] returns 200
+- [ ] /about has contact link and Start here section
+- [ ] Subdivision pages have no duplicate sales sections
+- [ ] Property pages have one Sale history section
+- [ ] Property pages show "Agent summary" heading
+- [ ] Era context notes show "(Inferred)"
+- [ ] All neighborhood narratives have InlineSourceNote
+- [ ] ConstructionByDecadeChart sections have context notes
+- [ ] Neighborhood subtitles show era labels where available
+- [ ] Activity signal stats have definitions
+- [ ] `npm run build` passes with no TypeScript errors
+- [ ] No console errors on homepage, property, neighborhood, subdivision, city, about, or sources pages
+- [ ] No em dashes in any user-facing content
+- [ ] Mobile: nav is usable on 375px viewport
+- [ ] Mobile: city page neighborhood table does not scroll horizontally
+
+---
+
+## Completion Notes
+
+(Record implementation decisions, workarounds, and known limitations here as tasks complete.)
+
+---
+
 ## Next Action
 
-Sprint 1 should be implemented first. No Sprint 2 work should begin until all Sprint 1 tasks are complete and the Sprint 1 QA checklist passes. No Sprint 3 work should begin until Sprint 2 is complete.
+Implement Sprint 0 completely before starting Sprint 1. Sprint 0 has four tasks that are all blockers. None require data model changes. All are low-complexity. Together they make the app safe to share.
 
-Sprint 1 is the highest-leverage sprint. It removes noise that makes every other improvement harder to see. Duplication, naming inconsistency, broken example flows, and chart overload are all problems that compound. Fixing them first creates a clean foundation for the storytelling work in Sprint 2 and the credibility work in Sprint 3.
+Sprint 0 order of implementation:
+1. Task 0.1 (neighborhood 404): diagnose the slug mismatch in Supabase first. Everything else depends on neighborhoods working.
+2. Task 0.2 (nav cleanup): two-minute change with high first-impression impact.
+3. Task 0.3 (/streets index page): needed before task 0.2 so the Streets nav link has a destination.
+4. Task 0.4 (About page contact): closes the feedback loop before any user testing.
 
-The first five tasks to execute in Sprint 1 are:
-1. Task 1.5 first (fix broken street pages): this is a data trust issue that affects first impressions.
-2. Task 1.1 (consolidate property page sale/permit sections): highest-traffic page, clearest win.
-3. Task 1.6 (city page chart overload): reduces visual noise on a primary discovery page.
-4. Task 1.9 (standardize section headings): small change, high consistency payoff.
-5. Task 1.2 (remove redundant Sources sections): cleans up every entity page at once.
+Do not start Sprint 1 until all Sprint 0 QA checks pass.
