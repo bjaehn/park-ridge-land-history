@@ -126,6 +126,14 @@ export const BoundaryMapEditor = forwardRef<BoundaryMapEditorHandle, Props>(
             paint: { "line-color": "#3a3a50", "line-width": 0.5 },
           });
 
+          // Street name labels on top of parcels
+          map.addLayer({
+            id: "labels-overlay",
+            type: "raster",
+            source: "osm-labels",
+            paint: { "raster-opacity": 0.9 },
+          });
+
           // Add draw control after parcel layers so handles render on top
           map.addControl(draw);
 
