@@ -719,10 +719,10 @@ export function MapLegendBar({
 
   return (
     <div
-      className="rounded-lg border border-surface-border bg-surface-raised px-3 py-2.5 overflow-x-auto"
+      className="rounded-lg border border-surface-border bg-surface-raised px-3 py-2.5"
       aria-label="Construction era legend"
     >
-      <div className="flex items-stretch gap-0.5 min-w-[600px]">
+      <div className="flex items-stretch gap-0.5">
         {ERA_ORDER.map((decade) => {
           const count = byDecade[decade] ?? 0;
           const pct = hasData ? (count / total) * 100 : 0;
@@ -731,8 +731,8 @@ export function MapLegendBar({
           return (
             <div
               key={decade}
-              className="flex flex-col items-center gap-1 flex-shrink-0"
-              style={{ width: `${Math.max(pct, 2)}%`, minWidth: "36px" }}
+              className="flex flex-col items-center gap-1 min-w-0"
+              style={{ flexBasis: `${Math.max(pct, 2)}%`, flexShrink: 1, flexGrow: 0 }}
             >
               <div
                 className="w-full rounded-sm transition-opacity"
