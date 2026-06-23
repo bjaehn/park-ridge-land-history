@@ -16,6 +16,15 @@ function num(fd: FormData, key: string): number | null {
 
 // ─── Subdivision ──────────────────────────────────────────────────────────────
 
+function deriveRecordedYear(formData: FormData): number | null {
+  const explicit = num(formData, "recorded_year");
+  if (explicit !== null) return explicit;
+  const dateStr = str(formData, "recorded_date");
+  if (!dateStr) return null;
+  const year = parseInt(dateStr.split("-")[0], 10);
+  return isNaN(year) ? null : year;
+}
+
 export async function createSubdivision(formData: FormData) {
   const alternateNames = (formData.getAll("alternate_names") as string[]).filter(Boolean);
   const { data, error } = await adminSupabase
@@ -28,7 +37,7 @@ export async function createSubdivision(formData: FormData) {
       alternate_names:          alternateNames.length ? alternateNames : null,
       entity_type:              str(formData, "entity_type"),
       recorded_date:            str(formData, "recorded_date"),
-      recorded_year:            num(formData, "recorded_year"),
+      recorded_year:            deriveRecordedYear(formData),
       development_era_start_year: num(formData, "development_era_start_year"),
       development_era_end_year:   num(formData, "development_era_end_year"),
       plat_book:                str(formData, "plat_book"),
@@ -68,7 +77,7 @@ export async function updateSubdivision(id: string, formData: FormData) {
       alternate_names:          alternateNames.length ? alternateNames : null,
       entity_type:              str(formData, "entity_type"),
       recorded_date:            str(formData, "recorded_date"),
-      recorded_year:            num(formData, "recorded_year"),
+      recorded_year:            deriveRecordedYear(formData),
       development_era_start_year: num(formData, "development_era_start_year"),
       development_era_end_year:   num(formData, "development_era_end_year"),
       plat_book:                str(formData, "plat_book"),
