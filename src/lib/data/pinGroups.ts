@@ -35,7 +35,7 @@ export function levelForPrefix(prefix: string): PinLevel | null {
   return LEVEL_BY_LENGTH[prefix.length] ?? null;
 }
 
-function buildBreadcrumbs(prefix: string, level: PinLevel): BreadcrumbItem[] {
+function buildBreadcrumbs(prefix: string): BreadcrumbItem[] {
   const parts: BreadcrumbItem[] = [{ label: "Park Ridge", href: "/city" }];
 
   const ancestors: { levelName: string; slice: string; href: string }[] = [
@@ -55,7 +55,6 @@ function buildBreadcrumbs(prefix: string, level: PinLevel): BreadcrumbItem[] {
     }
   });
 
-  void level;
   return parts;
 }
 
@@ -83,7 +82,7 @@ export async function getPinGroupSummary(prefix: string): Promise<PinGroupSummar
     level,
     levelLabel: `${level} ${segValue[level]}`,
     parcelCount: count ?? 0,
-    breadcrumbParts: buildBreadcrumbs(prefix, level),
+    breadcrumbParts: buildBreadcrumbs(prefix),
   };
 }
 

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ChangeSignal } from "@/lib/formatters";
 import { SIGNAL_DESCRIPTION } from "@/lib/formatters";
-import { formatDecade } from "@/lib/formatters";
+
 
 export type MetaItem = { icon: React.ReactElement; value: string };
 
