@@ -1011,15 +1011,15 @@ For each task, before making any changes:
 | 0.2 Remove Township/Section from nav; add Streets | 0 | Frontend | Complete | | Removed Township/Section entries and unused lucide imports; added Streets after Subdivisions | 2026-06-23 |
 | 0.3 Create /streets index page | 0 | Frontend | Complete | | Created app/streets/page.tsx with Breadcrumb, PageHeader, and homepage search link | 2026-06-23 |
 | 0.4 Fix About page: contact link and Start here | 0 | Content | Complete | | Added Start here section with 3 linked paths; replaced "please reach out" with mailto link | 2026-06-23 |
-| 1.1 Fix neighborhoods landing page opening copy | 1 | Content/Frontend | Not started | | Replace "Three overlapping ways" subtitle | |
-| 1.2 Remove NeighborhoodPriceChart from subdivision pages | 1 | Frontend | Not started | | Also remove priceRow and salesByYear if only used for this section | |
-| 1.3 Merge sale price chart and sale history list | 1 | Frontend | Not started | | One "Sale history" section heading | |
-| 1.4 Add source attribution to neighborhood narratives | 1 | Frontend | Not started | | InlineSourceNote after narrative paragraph | |
-| 1.5 Add Activity signal explanation | 1 | Frontend | Not started | | One-sentence definition per signal value | |
-| 1.6 Add context notes to ConstructionByDecadeChart | 1 | Content/Frontend | Not started | | City, neighborhood, subdivision pages | |
-| 1.7 Update neighborhood page subtitles with era labels | 1 | Frontend | Not started | | Use NEIGHBORHOOD_ERA_LABELS in PageHeader subtitle | |
-| 1.8 Rename Quick summary to Agent summary | 1 | Frontend | Not started | | One-word change in _PropertyDetailContent.tsx | |
-| 1.9 Add (Inferred) label to era context notes | 1 | Frontend | Not started | | Append span after eraContextNote text | |
+| 1.1 Fix neighborhoods landing page opening copy | 1 | Content/Frontend | Complete | | Replaced "Three overlapping ways" subtitle with user-facing copy | 2026-06-23 |
+| 1.2 Remove NeighborhoodPriceChart from subdivision pages | 1 | Frontend | Complete | | Removed priceRow, salesByYear, fetchBlockSalesByYear, BlockSalesByYear, NeighborhoodPriceChart import; actual signal value is "Rebuild pressure" not "Rebuild" | 2026-06-23 |
+| 1.3 Merge sale price chart and sale history list | 1 | Frontend | Complete | | SaleHistorySection accepts chartSlot prop; heading changed to "Sale history"; chart passed as slot at call site | 2026-06-23 |
+| 1.4 Add source attribution to neighborhood narratives | 1 | Frontend | Complete | | InlineSourceNote inside narrative conditional block; no orphan when no narrative | 2026-06-23 |
+| 1.5 Add Activity signal explanation | 1 | Frontend | Complete | | Paragraph shown when signal is not Dormant; uses "Rebuild pressure" to match ChangeSignal type | 2026-06-23 |
+| 1.6 Add context notes to ConstructionByDecadeChart | 1 | Content/Frontend | Complete | | City: three-wave note. Neighborhood: era label or fallback. Subdivision: earliest-to-latest or single-year | 2026-06-23 |
+| 1.7 Update neighborhood page subtitles with era labels | 1 | Frontend | Complete | | Imported NEIGHBORHOOD_ERA_LABELS; subtitle uses era label when available, falls back to count + year | 2026-06-23 |
+| 1.8 Rename Quick summary to Agent summary | 1 | Frontend | Complete | | Changed label in _PropertyDetailContent.tsx; Shareable badge and clipboard button unchanged | 2026-06-23 |
+| 1.9 Add (Inferred) label to era context notes | 1 | Frontend | Complete | | Appended span after eraContextNote text only; year built, sale price, assessment unchanged | 2026-06-23 |
 | 2.1 Enforce section order on neighborhood pages | 2 | Frontend | Not started | | Reordering only | |
 | 2.2 Add MarketHistoryChart to neighborhood pages | 2 | Frontend/Data | Not started | | Requires fetchSubdivisionMarketHistory with neighborhood pins | |
 | 2.3 Add framing note before property timeline | 2 | Frontend | Not started | | One sentence above PropertyTimeline component | |

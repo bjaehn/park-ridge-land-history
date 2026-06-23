@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { ConfidenceBadge } from "@/components/ui/ConfidenceBadge";
 import { ComparisonList } from "@/components/ui/ComparisonList";
@@ -125,13 +125,14 @@ function NeighborhoodChip({ label, slug, typeLabel }: { label: string; slug: str
   );
 }
 
-function SaleHistorySection({ sales }: { sales: PropertySale[] }) {
+function SaleHistorySection({ sales, chartSlot }: { sales: PropertySale[]; chartSlot?: React.ReactNode }) {
   const [expanded, setExpanded] = useState(false);
   if (!sales.length) return null;
   const visible = expanded ? sales : sales.slice(0, 3);
   return (
     <section>
-      <p className="section-heading">Sale history ({sales.length} on record)</p>
+      <p className="section-heading">Sale history</p>
+      {chartSlot}
       <div className="space-y-2">
         {visible.map((s) => (
           <div key={s.id} className="flex items-start justify-between gap-3 bg-surface-card border border-surface-border rounded-lg px-4 py-3">
@@ -681,7 +682,10 @@ export function PropertyDetailContent({ pin }: Props) {
             <p className="text-base text-text-secondary leading-relaxed">{propertyStory}</p>
           )}
           {eraContextNote && (
-            <p className="text-sm text-text-muted">{eraContextNote}</p>
+            <p className="text-sm text-text-muted">
+              {eraContextNote}
+              <span className="text-xs text-text-muted ml-1">(Inferred)</span>
+            </p>
           )}
         </div>
       )}
@@ -698,7 +702,7 @@ export function PropertyDetailContent({ pin }: Props) {
       {quickSummaryText && (
         <section>
           <div className="flex items-center gap-2 mb-2">
-            <p className="section-heading !mb-0">Quick summary</p>
+            <p className="section-heading !mb-0">Agent summary</p>
             <span className="text-[10px] font-semibold uppercase tracking-wider bg-accent-purple/10 text-accent-purple px-2 py-0.5 rounded">
               Shareable
             </span>
@@ -781,16 +785,11 @@ export function PropertyDetailContent({ pin }: Props) {
         </section>
       )}
 
-      {/* Sale price chart */}
-      {sales.some((s) => s.sale_price != null && s.sale_price > 0) && (
-        <section>
-          <p className="section-heading">Sale price history</p>
-          <SalesPriceChart sales={sales} />
-        </section>
-      )}
-
-      {/* Individual sale events */}
-      <SaleHistorySection sales={sales} />
+      {/* Sale history - combined chart and list */}
+      <SaleHistorySection
+        sales={sales}
+        chartSlot={sales.some((s) => s.sale_price != null && s.sale_price > 0) ? <SalesPriceChart sales={sales} /> : undefined}
+      />
 
       {/* Assessment value chart */}
       {assessmentTimeline.length >= 2 && (

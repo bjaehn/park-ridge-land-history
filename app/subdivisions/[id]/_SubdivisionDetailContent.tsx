@@ -9,7 +9,6 @@ import type { MetaItem } from "@/components/ui/EntityCard";
 import { LoadingSkeleton } from "@/components/ui/EmptyState";
 import { HighlightReel } from "@/components/ui/HighlightReel";
 import { InlineSourceNote } from "@/components/ui/SourceNote";
-import { NeighborhoodPriceChart } from "@/components/ui/NeighborhoodPriceChart";
 import { MarketHistoryChart } from "@/components/ui/MarketHistoryChart";
 import { YearBuiltIcon, SizeIcon, SaleIcon, PermitIcon } from "@/lib/icons";
 import { formatCount, formatAddress, formatNumber, formatCurrency } from "@/lib/formatters";
@@ -19,10 +18,10 @@ import {
   fetchSubdivisionAssessmentStats,
   fetchSubdivisionMarketHistory,
 } from "@/lib/supabase/subdivisionQueries";
-import { fetchBlockSalesStats, fetchBlockSalesByYear } from "@/lib/supabase/blockQueries";
+import { fetchBlockSalesStats } from "@/lib/supabase/blockQueries";
 import type { HighlightGroup } from "@/components/ui/HighlightReel";
 import type { DecadeRow } from "@/components/ui/ConstructionByDecadeChart";
-import type { BlockSalesStats, BlockSalesByYear, BlockAssessmentStats } from "@/lib/supabase/blockQueries";
+import type { BlockSalesStats, BlockAssessmentStats } from "@/lib/supabase/blockQueries";
 import type { MarketHistoryRow } from "@/lib/supabase/cityQueries";
 
 const SUBDIVISION_HIGHLIGHTS: readonly HighlightGroup[] = [
@@ -43,7 +42,6 @@ type Props = {
 export function SubdivisionDetailContent({ subdivisionId, recordedYear, entityType, geometryStatus, parentSubdivision, mapSlot }: Props) {
   const [parcels, setParcels] = useState<Awaited<ReturnType<typeof fetchSubdivisionParcels>>>([]);
   const [salesStats, setSalesStats] = useState<BlockSalesStats | null>(null);
-  const [salesByYear, setSalesByYear] = useState<BlockSalesByYear | null>(null);
   const [assessmentStats, setAssessmentStats] = useState<BlockAssessmentStats | null>(null);
   const [marketHistory, setMarketHistory] = useState<MarketHistoryRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,12 +54,10 @@ export function SubdivisionDetailContent({ subdivisionId, recordedYear, entityTy
         if (!pins.length) return;
         return Promise.all([
           fetchBlockSalesStats(pins),
-          fetchBlockSalesByYear(pins),
           fetchSubdivisionAssessmentStats(pins),
           fetchSubdivisionMarketHistory(pins),
-        ]).then(([sales, byYear, assessment, history]) => {
+        ]).then(([sales, assessment, history]) => {
           setSalesStats(sales);
-          setSalesByYear(byYear);
           setAssessmentStats(assessment);
           setMarketHistory(history);
         });
@@ -120,10 +116,6 @@ export function SubdivisionDetailContent({ subdivisionId, recordedYear, entityTy
   if (!recordedYear) qualityWarnings.push("Plat recording date not yet verified - needs source document.");
   if (geometryStatus === "not_started" || geometryStatus === "needs_source")
     qualityWarnings.push("Boundary map coming soon.");
-
-  const priceRow = salesByYear && (salesByYear.year2015 || salesByYear.year2024)
-    ? [{ label: "This subdivision", ...salesByYear }]
-    : [];
 
   return (
     <div className="space-y-10">
@@ -194,18 +186,6 @@ export function SubdivisionDetailContent({ subdivisionId, recordedYear, entityTy
         </div>
       )}
 
-      {/* Median sale price, 2015 vs. 2024 */}
-      {priceRow.length > 0 && (
-        <section>
-          <div className="flex items-center gap-2 mb-3">
-            <SaleIcon size={14} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />
-            <p className="section-heading !mb-0">Median sale price, 2015 vs. 2024</p>
-          </div>
-          <NeighborhoodPriceChart data={priceRow} />
-          <InlineSourceNote className="mt-3">Cook County Recorder of Deeds. Market sales only ($50K–$5M).</InlineSourceNote>
-        </section>
-      )}
-
       {/* Sales activity */}
       {salesStats && salesStats.totalSales > 0 && (
         <section>
@@ -267,6 +247,11 @@ export function SubdivisionDetailContent({ subdivisionId, recordedYear, entityTy
       {decadeRows.length > 0 && (
         <div>
           <p className="section-heading">How this subdivision was built</p>
+          <p className="text-sm text-text-muted mb-4">
+            {earliestBuilt === latestBuilt
+              ? `Construction in this plat took place in ${earliestBuilt}.`
+              : `Construction in this plat began in ${earliestBuilt} and extended through ${latestBuilt}.`}
+          </p>
           <ConstructionByDecadeChart rows={decadeRows} />
         </div>
       )}

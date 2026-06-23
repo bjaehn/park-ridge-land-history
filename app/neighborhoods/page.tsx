@@ -23,7 +23,7 @@ export default function NeighborhoodsPage() {
       <PageHeader
         eyebrow="Park Ridge"
         title="Neighborhoods"
-        subtitle="Three overlapping ways to understand Park Ridge geography: official planning districts, business districts, and informal local names."
+        subtitle="Each neighborhood in Park Ridge has a distinct history and character. Start with a name you recognize or explore by construction era."
       />
       <div className="mb-10">
         <NeighborhoodCharts />

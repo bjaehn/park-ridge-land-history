@@ -100,6 +100,9 @@ export function CityContent({ townships = [], mapSlot }: { townships?: CityTowns
 
       <div>
         <p className="section-heading">How Park Ridge was built</p>
+        <p className="text-sm text-text-muted mb-4">
+          Park Ridge's housing stock reflects three distinct construction waves: the railroad-era 1870s-1880s, the interwar bungalow boom of the 1910s-1930s, and the postwar expansion of the 1940s-1960s.
+        </p>
         <ConstructionByDecadeChart rows={rows} />
       </div>
 

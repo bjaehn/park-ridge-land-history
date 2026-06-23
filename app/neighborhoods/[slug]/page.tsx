@@ -8,6 +8,7 @@ import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { MapView } from "@/components/MapView";
 import { NeighborhoodDetailContent } from "./_NeighborhoodDetailContent";
 import { getNeighborhoodBySlug, fetchNeighborhoodBbox, fetchNeighborhoodPins } from "@/lib/data/neighborhoods";
+import { NEIGHBORHOOD_ERA_LABELS } from "@/lib/content";
 
 type Props = { params: { slug: string } };
 
@@ -46,7 +47,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
           "Neighborhood"
         }
         title={neighborhood.label}
-        subtitle={`${neighborhood.parcelCount} properties. ${neighborhood.medianYear ? `Typical build year: ${neighborhood.medianYear}.` : ""}`}
+        subtitle={NEIGHBORHOOD_ERA_LABELS[slug] ?? `${neighborhood.parcelCount} properties. ${neighborhood.medianYear ? `Typical build year: ${neighborhood.medianYear}.` : ""}`}
       />
 
       <NeighborhoodDetailContent

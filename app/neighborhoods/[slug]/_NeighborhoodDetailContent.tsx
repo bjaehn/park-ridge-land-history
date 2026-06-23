@@ -12,7 +12,7 @@ import { getChangeSignal, formatNumber, formatCount } from "@/lib/formatters";
 import { getNeighborhoodDetail, fetchNeighborhoodPins } from "@/lib/data/neighborhoods";
 import { fetchBlockSalesByYear } from "@/lib/supabase/blockQueries";
 import type { BlockSalesByYear } from "@/lib/supabase/blockQueries";
-import { NEIGHBORHOOD_NARRATIVES } from "@/lib/content";
+import { NEIGHBORHOOD_NARRATIVES, NEIGHBORHOOD_ERA_LABELS } from "@/lib/content";
 import { SaleIcon } from "@/lib/icons";
 import type { HighlightGroup } from "@/components/ui/HighlightReel";
 
@@ -72,10 +72,21 @@ export function NeighborhoodDetailContent({ neighborhoodId, label, slug, mapSlot
   return (
     <div className="space-y-10">
       {narrative && (
-        <p className="text-text-secondary leading-relaxed max-w-prose">{narrative}</p>
+        <>
+          <p className="text-text-secondary leading-relaxed max-w-prose">{narrative}</p>
+          <InlineSourceNote>Historical summary based on Cook County Assessor build-year distributions and Cook County Recorder subdivision records. Era characterizations are interpretive summaries of the data. Confidence: Medium.</InlineSourceNote>
+        </>
       )}
 
       <StatGrid columns={(Math.max(2, Math.min(statItems.length, 4))) as 2 | 3 | 4} stats={statItems.slice(0, 4)} />
+
+      {signal !== "Dormant" && (
+        <p className="text-xs text-text-muted -mt-6">
+          {signal === "Reinvestment" && "Elevated permit activity relative to the city median, suggesting ongoing improvement work."}
+          {signal === "Turnover" && "Elevated sale frequency relative to the city median."}
+          {signal === "Rebuild pressure" && "Recent teardown or significant reconstruction activity detected."}
+        </p>
+      )}
 
       {mapSlot && (
         <div>
@@ -104,6 +115,11 @@ export function NeighborhoodDetailContent({ neighborhoodId, label, slug, mapSlot
 
       <div>
         <p className="section-heading">How {label} was built</p>
+        <p className="text-sm text-text-muted mb-4">
+          {NEIGHBORHOOD_ERA_LABELS[slug]
+            ? `The ${label} was built primarily during the ${NEIGHBORHOOD_ERA_LABELS[slug].toLowerCase()}.`
+            : "Construction in this neighborhood spanned multiple decades, as shown below."}
+        </p>
         <ConstructionByDecadeChart rows={detail.decadeRows} />
       </div>
 
