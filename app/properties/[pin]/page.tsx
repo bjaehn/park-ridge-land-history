@@ -63,19 +63,16 @@ export default async function PropertyDetailPage({ params }: Props) {
         subtitle={property.yearBuilt ? `Built ${property.yearBuilt}` : undefined}
       />
 
-      <div className="mb-8 grid grid-cols-1 lg:grid-cols-[55fr_45fr] gap-6 items-start">
-        <div>
-          <MapView
-            scope={{ kind: "property", pin, bbox: propertyBbox ?? undefined, lat: lat ?? undefined, lng: lng ?? undefined }}
-            height="480px"
-            showExpand
-            hideLensSelector
-          />
-        </div>
-        <div>
-          <PropertyDetailContent pin={pin} />
-        </div>
+      <div className="mb-8">
+        <MapView
+          scope={{ kind: "property", pin, bbox: propertyBbox ?? undefined, lat: lat ?? undefined, lng: lng ?? undefined }}
+          height="480px"
+          showExpand
+          hideLensSelector
+        />
       </div>
+
+      <PropertyDetailContent pin={pin} />
 
       <SourceNote
         sources={["assessor", "permits", "hargis", "recorder"]}

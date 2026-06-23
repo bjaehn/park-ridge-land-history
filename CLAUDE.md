@@ -22,7 +22,6 @@ All discovery pages (city, neighborhood, street, subdivision, PIN group) MUST fo
 12. Sub-entity lists (streets, sections, blocks, property grids)
 13. Source note
 
-The property page is exempt (2-column layout; map is the entire left column at top).
 
 ## UI Style Conventions
 
