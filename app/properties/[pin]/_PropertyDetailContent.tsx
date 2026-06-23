@@ -27,7 +27,9 @@ import {
   formatYear,
   formatCount,
   confidenceFor,
+  CONFIDENCE_TOOLTIP,
 } from "@/lib/formatters";
+import { NEIGHBORHOOD_ERA_LABELS } from "@/lib/content";
 import { getPropertyDetail } from "@/lib/data/properties";
 import type { PropertySale, PropertyPermit, HargisRecord, LandLineageEntry, AssessmentPoint } from "@/lib/data/properties";
 import { SalesPriceChart } from "./_SalesPriceChart";
@@ -135,7 +137,7 @@ function SaleHistorySection({ sales }: { sales: PropertySale[] }) {
           <div key={s.id} className="flex items-start justify-between gap-3 bg-surface-card border border-surface-border rounded-lg px-4 py-3">
             <div className="min-w-0">
               <p className="text-sm font-medium text-text-primary">
-                {s.sale_date ? new Date(s.sale_date).getFullYear() : s.sale_year ?? "\u2014"}
+                {s.sale_date ? new Date(s.sale_date).getFullYear() : s.sale_year ?? "-"}
                 {s.deed_type ? <span className="font-normal text-text-secondary"> · {s.deed_type}</span> : null}
               </p>
               {s.document_number && (
@@ -181,7 +183,7 @@ function PermitHistorySection({ permits }: { permits: PropertyPermit[] }) {
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-sm font-medium text-text-primary">
-                  {p.date_issued ? new Date(p.date_issued).getFullYear() : "\u2014"}
+                  {p.date_issued ? new Date(p.date_issued).getFullYear() : "-"}
                   {p.status ? <span className="font-normal text-text-secondary"> · {p.status}</span> : null}
                 </p>
                 {p.description && (
@@ -296,7 +298,16 @@ function LandLineageSection({ lineage }: { lineage: LandLineageEntry[] }) {
                 {entry.lots[0]?.source_type && (
                   <span>Source: {entry.lots[0].source_type}</span>
                 )}
-                <span>Confidence: {entry.subdivision.confidence_level}</span>
+                <span>
+                  Confidence: {entry.subdivision.confidence_level}
+                  <span
+                    className="ml-1 cursor-help select-none"
+                    title={CONFIDENCE_TOOLTIP}
+                    aria-label={`What does this mean? ${CONFIDENCE_TOOLTIP}`}
+                  >
+                    (?)
+                  </span>
+                </span>
               </div>
 
               {/* Quality warnings */}
@@ -326,11 +337,26 @@ function LandLineageSection({ lineage }: { lineage: LandLineageEntry[] }) {
   );
 }
 
+const NR_EVAL_LABELS: Record<string, string> = {
+  C: "Contributing structure",
+  NC: "Non-contributing structure",
+  IE: "Individually eligible",
+};
+
+const ARCH_CLASS_LABELS: Record<string, string> = {
+  A: "High architectural significance",
+  B: "Notable architectural significance",
+  C: "Moderate architectural significance",
+};
+
 function HargisSurveySection({ records }: { records: HargisRecord[] }) {
   if (!records.length) return null;
   return (
     <section>
-      <p className="section-heading">Historic survey (HARGIS)</p>
+      <p className="section-heading">Historic architecture survey</p>
+      <p className="text-xs text-text-muted mb-3">
+        From the Illinois Historic Architectural Resources Geographic Information System (HARGIS), Illinois State Historic Preservation Office.
+      </p>
       <div className="space-y-3">
         {records.map((r) => (
           <div key={r.id} className="bg-surface-card border border-surface-border rounded-lg px-4 py-3">
@@ -362,11 +388,17 @@ function HargisSurveySection({ records }: { records: HargisRecord[] }) {
                   </p>
                 )}
                 {r.arch_class && (
-                  <p className="text-xs text-text-secondary mt-0.5">{r.arch_class}</p>
+                  <p className="text-xs text-text-secondary mt-0.5">
+                    {ARCH_CLASS_LABELS[r.arch_class]
+                      ? `${ARCH_CLASS_LABELS[r.arch_class]} (class ${r.arch_class})`
+                      : `Architectural class: ${r.arch_class}`}
+                  </p>
                 )}
                 <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-1">
                   {r.nr_evaluation && (
-                    <span className="text-xs text-text-muted">NR eval: {r.nr_evaluation}</span>
+                    <span className="text-xs text-text-muted">
+                      National Register: {NR_EVAL_LABELS[r.nr_evaluation] ?? `Code ${r.nr_evaluation}`}
+                    </span>
                   )}
                   {r.begin_year && (
                     <span className="text-xs text-text-muted">Est. {r.begin_year}</span>
@@ -393,7 +425,7 @@ function HargisSurveySection({ records }: { records: HargisRecord[] }) {
           </div>
         ))}
       </div>
-      <InlineSourceNote className="mt-2">{"Illinois Historic Architectural Resources Geographic Information System (HARGIS), Illinois SHPO · Survey locations are approximate spatial matches; the surveyed structure may be adjacent to this parcel"}</InlineSourceNote>
+      <InlineSourceNote className="mt-2">Survey locations are approximate spatial matches; the surveyed structure may be adjacent to this parcel.</InlineSourceNote>
     </section>
   );
 }
@@ -418,9 +450,69 @@ function buildPropertyStory(
   return `This property is part of the ${subdivisionName} subdivision.`;
 }
 
+function getEraContextNote(
+  yearBuilt: number | null,
+  localSlug: string | null,
+  officialSlug: string | null,
+): string | null {
+  if (!yearBuilt) return null;
+  const slug = localSlug ?? officialSlug;
+  if (slug && NEIGHBORHOOD_ERA_LABELS[slug]) {
+    return `Built during the ${NEIGHBORHOOD_ERA_LABELS[slug].toLowerCase()}.`;
+  }
+  if (yearBuilt < 1890) return "Built during Park Ridge's pioneer era.";
+  if (yearBuilt < 1920) return "Built during Park Ridge's early growth period.";
+  if (yearBuilt < 1940) return "Built during Park Ridge's interwar period.";
+  if (yearBuilt < 1960) return "Built during the postwar era.";
+  if (yearBuilt < 1980) return "Built during the mid-century period.";
+  if (yearBuilt < 2000) return "Built in the late 20th century.";
+  return "Built in the modern era.";
+}
+
+function buildQuickSummary({
+  address,
+  yearBuilt,
+  buildingSqft,
+  latestSaleYear,
+  latestSalePrice,
+  subdivisionName,
+  neighborhoodLabel,
+}: {
+  address: string | null;
+  yearBuilt: number | null;
+  buildingSqft: number | null;
+  latestSaleYear: number | null;
+  latestSalePrice: number | null;
+  subdivisionName: string | null;
+  neighborhoodLabel: string | null;
+}): string | null {
+  if (!yearBuilt || !latestSaleYear) return null;
+  if (!subdivisionName && !neighborhoodLabel) return null;
+
+  const sqftPart = buildingSqft && buildingSqft > 0 ? `, ${formatSqft(buildingSqft)}` : "";
+  const firstLine = address
+    ? `${address}, built in ${yearBuilt}${sqftPart}.`
+    : `Built in ${yearBuilt}${sqftPart}.`;
+
+  const pricePart = latestSalePrice ? ` for ${formatCurrency(latestSalePrice)}` : "";
+  const saleLine = `Most recently sold in ${latestSaleYear}${pricePart}.`;
+
+  let locationLine = "";
+  if (subdivisionName && neighborhoodLabel) {
+    locationLine = `Part of the ${subdivisionName} subdivision in the ${neighborhoodLabel} neighborhood.`;
+  } else if (subdivisionName) {
+    locationLine = `Part of the ${subdivisionName} subdivision.`;
+  } else {
+    locationLine = `Located in the ${neighborhoodLabel} neighborhood.`;
+  }
+
+  return [firstLine, saleLine, locationLine].join("\n");
+}
+
 export function PropertyDetailContent({ pin }: Props) {
   const [detail, setDetail] = useState<Awaited<ReturnType<typeof getPropertyDetail>> | null>(null);
   const [loading, setLoading] = useState(true);
+  const [summaryCopied, setSummaryCopied] = useState(false);
 
   useEffect(() => {
     getPropertyDetail(pin)
@@ -457,7 +549,7 @@ export function PropertyDetailContent({ pin }: Props) {
     } catch { /* ignore parse errors */ }
   }
 
-  // Use actual event table counts and most-recent values \u2014 more complete than parcel aggregates
+  // Use actual event table counts and most-recent values; more complete than parcel aggregates
   const actualSaleCount = sales.length;
   const latestPermitYear = props.latest_permit_year as number | null;
   const mostRecentSale = sales[0] ?? null;
@@ -496,6 +588,22 @@ export function PropertyDetailContent({ pin }: Props) {
     ?? (props.official_planning_neighborhood_label as string | null)
   );
   const propertyStory = buildPropertyStory(yearBuilt, subdivisionName, neighborhoodLabel ?? null);
+  const eraContextNote = getEraContextNote(
+    yearBuilt,
+    (props.local_neighborhood_slug as string | null),
+    (props.official_planning_neighborhood_slug as string | null),
+  );
+  const quickSummaryText = (yearBuilt && sales.length > 0 && (subdivisionName || neighborhoodLabel))
+    ? buildQuickSummary({
+        address: props.address ? formatAddress(props.address as string) : null,
+        yearBuilt,
+        buildingSqft: props.building_sqft as number | null,
+        latestSaleYear,
+        latestSalePrice,
+        subdivisionName,
+        neighborhoodLabel: neighborhoodLabel ?? null,
+      })
+    : null;
 
   const whatThisMeansBullets: string[] = [];
   if (detail.comparisons && detail.comparisons.length > 0) {
@@ -540,11 +648,42 @@ export function PropertyDetailContent({ pin }: Props) {
     }
   }
 
+  const questionsToConsider: string[] = [];
+  if (permits.length === 0) {
+    questionsToConsider.push(
+      "No permits are in this dataset (records are available from 2018 onward). It may be worth asking about renovation history directly."
+    );
+  }
+  const currentYear = new Date().getFullYear();
+  const recentSaleCount = sales.filter((s) => {
+    const year = s.sale_date
+      ? new Date(s.sale_date).getFullYear()
+      : s.sale_year ?? 0;
+    return year >= currentYear - 10;
+  }).length;
+  if (recentSaleCount > 4) {
+    questionsToConsider.push(
+      "This property has sold frequently. It may be worth understanding the transaction history."
+    );
+  }
+  if (!yearBuilt) {
+    questionsToConsider.push(
+      "The build year is not recorded in county data. A title search or building department inquiry may fill this gap."
+    );
+  }
+
   return (
     <div className="space-y-10">
-      {/* Property story synthesis */}
-      {propertyStory && (
-        <p className="text-base text-text-secondary leading-relaxed">{propertyStory}</p>
+      {/* Property story synthesis and era context */}
+      {(propertyStory || eraContextNote) && (
+        <div className="space-y-1">
+          {propertyStory && (
+            <p className="text-base text-text-secondary leading-relaxed">{propertyStory}</p>
+          )}
+          {eraContextNote && (
+            <p className="text-sm text-text-muted">{eraContextNote}</p>
+          )}
+        </div>
       )}
 
       {/* Confidence + vitals */}
@@ -554,6 +693,34 @@ export function PropertyDetailContent({ pin }: Props) {
         </div>
         <IconRow items={vitals} />
       </section>
+
+      {/* Quick summary for agents and shareable use */}
+      {quickSummaryText && (
+        <section>
+          <div className="flex items-center gap-2 mb-2">
+            <p className="section-heading !mb-0">Quick summary</p>
+            <span className="text-[10px] font-semibold uppercase tracking-wider bg-accent-purple/10 text-accent-purple px-2 py-0.5 rounded">
+              Shareable
+            </span>
+          </div>
+          <div className="bg-surface-card border border-surface-border rounded-lg p-4">
+            <p className="text-sm text-text-secondary leading-relaxed whitespace-pre-line">
+              {quickSummaryText}
+            </p>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(quickSummaryText).then(() => {
+                  setSummaryCopied(true);
+                  setTimeout(() => setSummaryCopied(false), 2000);
+                });
+              }}
+              className="mt-3 text-xs text-accent-purple hover:underline"
+            >
+              {summaryCopied ? "Copied!" : "Copy to clipboard"}
+            </button>
+          </div>
+        </section>
+      )}
 
       {/* Street context link */}
       {props.street_name_normalized && (
@@ -724,6 +891,24 @@ export function PropertyDetailContent({ pin }: Props) {
           <InlineSourceNote className="mt-3">
             Missing records may be added as research progresses. If you know something about this property, contact us.
           </InlineSourceNote>
+        </section>
+      )}
+
+      {/* Questions to consider */}
+      {questionsToConsider.length > 0 && (
+        <section>
+          <p className="section-heading">Questions to consider (based on available records)</p>
+          <ul className="space-y-2">
+            {questionsToConsider.map((q, i) => (
+              <li key={i} className="flex items-start gap-2.5 text-sm text-text-secondary">
+                <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-text-muted shrink-0" aria-hidden="true" />
+                {q}
+              </li>
+            ))}
+          </ul>
+          <p className="text-xs text-text-muted mt-3 italic">
+            These are observations from county records, not legal or appraisal advice.
+          </p>
         </section>
       )}
 

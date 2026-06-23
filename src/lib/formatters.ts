@@ -293,3 +293,8 @@ export const CONFIDENCE_DESCRIPTION: Record<ConfidenceLevel, string> = {
   Medium: "Year and details are reasonable estimates.",
   Low: "Key facts are uncertain or flagged for review.",
 };
+
+export const CONFIDENCE_TOOLTIP =
+  "High: directly supported by official county records. " +
+  "Medium: inferred from multiple consistent sources. " +
+  "Low: plausible but not directly verified.";

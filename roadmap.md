@@ -907,13 +907,13 @@ For each task in each sprint:
 | Task 2.3: Add "What this means" buyer summary | 2 | Complete | Frontend/Content | Added section before What we don't know yet; generates bullets from comparisons data, assessment timeline, and sale count | 2026-06-23 |
 | Task 2.4: Add price comparison to neighborhood pages | 2 | Complete | Frontend/Data | Added fetchNeighborhoodPins + fetchBlockSalesByYear calls in NeighborhoodDetailContent; renders NeighborhoodPriceChart after map slot | 2026-06-23 |
 | Task 2.5: Improve homepage and reduce overload | 2 | Complete | Frontend | Removed ArchiveInventory and NeighborhoodCharts; merged key facts into hero; homepage now has exactly 4 sections | 2026-06-23 |
-| Task 3.1: Explain confidence levels at point of use | 3 | Not started | Frontend/Content | | |
-| Task 3.2: Explain HARGIS codes in plain English | 3 | Not started | Content/Frontend | | |
-| Task 3.3: Add construction era context | 3 | Not started | Frontend/Content | | |
-| Task 3.4: Add source citation to city narrative | 3 | Not started | Content | | |
-| Task 3.5: Add agent-friendly property summary block | 3 | Not started | Frontend | | |
-| Task 3.6: Improve Data Sources page with methodology | 3 | Not started | Content | | |
-| Task 3.7: Add "Questions to consider" buyer guidance | 3 | Not started | Frontend/Content | | |
+| Task 3.1: Explain confidence levels at point of use | 3 | Complete | Frontend/Content | Added (?) tooltip to ConfidenceBadge and subdivision ancestry confidence label; CONFIDENCE_TOOLTIP exported from formatters.ts | 2026-06-23 |
+| Task 3.2: Explain HARGIS codes in plain English | 3 | Complete | Content/Frontend | Renamed section to Historic architecture survey; added SHPO subtitle; NR eval and arch_class now show plain-English labels with lookup tables | 2026-06-23 |
+| Task 3.3: Add construction era context | 3 | Complete | Frontend/Content | Added getEraContextNote using NEIGHBORHOOD_ERA_LABELS with generic decade fallback; renders below property story synthesis | 2026-06-23 |
+| Task 3.4: Add source citation to city narrative | 3 | Complete | Content | Added InlineSourceNote below CITY_NARRATIVE in CityContent with Confidence: Medium attribution | 2026-06-23 |
+| Task 3.5: Add agent-friendly property summary block | 3 | Complete | Frontend | Added Quick summary section with Shareable badge and copy-to-clipboard; renders for properties with year built, sales, and subdivision or neighborhood | 2026-06-23 |
+| Task 3.6: Improve Data Sources page with methodology | 3 | Complete | Content | Added How we connect the data section and How confidence levels work section to sources page | 2026-06-23 |
+| Task 3.7: Add "Questions to consider" buyer guidance | 3 | Complete | Frontend/Content | Added Questions to consider section with three data-triggered bullets; includes disclaimer; does not render when no triggers present | 2026-06-23 |
 
 Statuses: Not started / In progress / Blocked / Complete / Deferred
 

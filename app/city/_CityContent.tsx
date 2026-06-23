@@ -12,6 +12,7 @@ import { EntityCard } from "@/components/ui/EntityCard";
 import { formatNumber } from "@/lib/formatters";
 import { getEraColor } from "@/lib/mapConfig";
 import { CITY_NARRATIVE } from "@/lib/content";
+import { InlineSourceNote } from "@/components/ui/SourceNote";
 import { SaleIcon, AssessmentIcon } from "@/lib/icons";
 import type { DecadeRow } from "@/components/ui/ConstructionByDecadeChart";
 import type { NeighborhoodSummary } from "@/lib/data/neighborhoods";
@@ -89,6 +90,9 @@ export function CityContent({ townships = [], mapSlot }: { townships?: CityTowns
   return (
     <div className="space-y-10">
       <p className="text-text-secondary leading-relaxed max-w-prose">{CITY_NARRATIVE}</p>
+      <InlineSourceNote className="mt-2">
+        Historical summary based on Cook County Assessor build-year distributions and Cook County Recorder subdivision records. Era characterizations are interpretive summaries of the data. Confidence: Medium.
+      </InlineSourceNote>
 
       <StatGrid columns={4} stats={statItems.slice(0, 4)} />
 
