@@ -92,7 +92,7 @@ function PinBreakdown({ props }: { props: Record<string, unknown> }) {
       {items.map(({ label, value, href }) => {
         const chip = (
           <div className={[
-            "flex-1 bg-surface-card border border-surface-border rounded-lg px-3 py-4 text-center",
+            "w-full bg-surface-card border border-surface-border rounded-lg px-3 py-4 text-center",
             href ? "hover:border-accent-purple/40 transition-colors" : "",
           ].join(" ")}>
             <p className="text-[10px] text-text-muted uppercase tracking-wider mb-1.5">{label}</p>
@@ -100,8 +100,8 @@ function PinBreakdown({ props }: { props: Record<string, unknown> }) {
           </div>
         );
         return href
-          ? <Link key={label} href={href}>{chip}</Link>
-          : <div key={label}>{chip}</div>;
+          ? <Link key={label} href={href} className="flex-1">{chip}</Link>
+          : <div key={label} className="flex-1">{chip}</div>;
       })}
     </div>
   );
