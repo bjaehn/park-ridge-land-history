@@ -47,7 +47,7 @@ export function SubdivisionCharts() {
               className="text-text-muted"
               aria-hidden="true"
             />
-            <p className="section-heading !mb-0">Plats recorded by decade</p>
+            <h2 className="section-heading !mb-0">Plats recorded by decade</h2>
           </div>
           <p className="text-sm text-text-muted mb-4">
             How many new subdivision plats were recorded at the Cook County Recorder each decade.
@@ -64,9 +64,9 @@ export function SubdivisionCharts() {
               className="text-text-muted"
               aria-hidden="true"
             />
-            <p className="section-heading !mb-0">
+            <h2 className="section-heading !mb-0">
               Longest wait: plat to first home built
-            </p>
+            </h2>
           </div>
           <p className="text-sm text-text-muted mb-4">
             Top 15 subdivisions by gap between when the plat was recorded and when the first home was built. Longer gaps often reflect the Depression or WWII stalling development.

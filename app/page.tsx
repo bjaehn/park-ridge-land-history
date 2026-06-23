@@ -57,7 +57,7 @@ export default function HomePage() {
       <section className="mt-10 mb-12">
         <div className="flex items-center gap-2 mb-4">
           <HighlightIcon size={14} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />
-          <p className="section-heading !mb-0">Notable properties</p>
+          <h2 className="section-heading !mb-0">Notable properties</h2>
         </div>
         <HighlightReel scope="city" scopeId="" groups={CITY_HIGHLIGHTS} limit={6} />
       </section>
@@ -68,9 +68,9 @@ export default function HomePage() {
       <section className="mt-10 mb-10">
         <div className="flex items-center gap-2 mb-4">
           <NeighborhoodIcon size={14} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />
-          <p className="section-heading !mb-0">Explore by neighborhood</p>
+          <h2 className="section-heading !mb-0">Explore by neighborhood</h2>
         </div>
-        <NeighborhoodsGrid />
+        <NeighborhoodsGrid teaser />
       </section>
     </div>
   );

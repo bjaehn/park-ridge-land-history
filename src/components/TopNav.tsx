@@ -32,6 +32,7 @@ export function TopNav() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [showResults, setShowResults] = useState(false);
+  const [focusedIndex, setFocusedIndex] = useState(-1);
   const searchRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -53,6 +54,7 @@ export function TopNav() {
 
   const handleSearch = useCallback((q: string) => {
     setQuery(q);
+    setFocusedIndex(-1);
     if (timerRef.current) clearTimeout(timerRef.current);
     if (q.trim().length < 2) {
       setResults([]);
@@ -76,14 +78,20 @@ export function TopNav() {
     setQuery("");
     setResults([]);
     setShowResults(false);
+    setFocusedIndex(-1);
     router.push(`/properties/${encodeURIComponent(pin)}`);
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Enter" && results.length > 0) {
-      selectResult(results[0].pin);
-    }
-    if (e.key === "Escape") {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setFocusedIndex((i) => (i < results.length - 1 ? i + 1 : i));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setFocusedIndex((i) => (i > 0 ? i - 1 : 0));
+    } else if (e.key === "Enter" && results.length > 0) {
+      selectResult(focusedIndex >= 0 ? results[focusedIndex].pin : results[0].pin);
+    } else if (e.key === "Escape") {
       setShowResults(false);
     }
   }
@@ -184,8 +192,8 @@ export function TopNav() {
               className="absolute top-full left-0 right-0 mt-1 bg-surface-card border border-surface-border rounded-lg shadow-xl overflow-hidden z-50"
               role="listbox"
             >
-              {results.map((r) => (
-                <li key={r.pin} role="option" aria-selected="false">
+              {results.map((r, index) => (
+                <li key={r.pin} role="option" aria-selected={focusedIndex === index}>
                   <button
                     type="button"
                     className="w-full text-left px-3 py-2.5 text-sm hover:bg-surface-raised transition-colors"

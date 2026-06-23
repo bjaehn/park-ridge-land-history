@@ -181,7 +181,7 @@ export function SubdivisionDetailContent({ subdivisionId, recordedYear, entityTy
 
       {mapSlot && (
         <div>
-          <p className="section-heading">Subdivision map</p>
+          <h2 className="section-heading">Subdivision map</h2>
           {mapSlot}
         </div>
       )}
@@ -189,7 +189,7 @@ export function SubdivisionDetailContent({ subdivisionId, recordedYear, entityTy
       {/* Sales activity */}
       {salesStats && salesStats.totalSales > 0 && (
         <section>
-          <p className="section-heading">Sales activity</p>
+          <h2 className="section-heading">Sales activity</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="bg-surface-card border border-surface-border rounded-lg p-4">
               <p className="text-2xl font-semibold text-text-primary tabular-nums">
@@ -224,7 +224,7 @@ export function SubdivisionDetailContent({ subdivisionId, recordedYear, entityTy
       {/* Assessment snapshot */}
       {assessmentStats?.medianAssessedValue != null && (
         <section>
-          <p className="section-heading">Assessment snapshot</p>
+          <h2 className="section-heading">Assessment snapshot</h2>
           <div className="bg-surface-card border border-surface-border rounded-lg p-4 inline-block">
             <p className="text-2xl font-semibold text-text-primary tabular-nums">
               {formatCurrency(assessmentStats.medianAssessedValue)}
@@ -246,13 +246,14 @@ export function SubdivisionDetailContent({ subdivisionId, recordedYear, entityTy
 
       {decadeRows.length > 0 && (
         <div>
-          <p className="section-heading">How this subdivision was built</p>
+          <h2 className="section-heading">How this subdivision was built</h2>
           <p className="text-sm text-text-muted mb-4">
             {earliestBuilt === latestBuilt
               ? `Construction in this plat took place in ${earliestBuilt}.`
               : `Construction in this plat began in ${earliestBuilt} and extended through ${latestBuilt}.`}
           </p>
           <ConstructionByDecadeChart rows={decadeRows} />
+          <InlineSourceNote className="mt-3">Cook County Assessor build-year data.</InlineSourceNote>
         </div>
       )}
 
@@ -261,7 +262,7 @@ export function SubdivisionDetailContent({ subdivisionId, recordedYear, entityTy
         <section>
           <div className="flex items-center gap-2 mb-3">
             <SaleIcon size={14} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />
-            <p className="section-heading !mb-0">Home sales in this subdivision</p>
+            <h2 className="section-heading !mb-0">Home sales in this subdivision</h2>
           </div>
           <p className="text-sm text-text-muted mb-4">
             Bars show annual sales volume. Line shows median sale price. Market sales only, $50K to $5M.
@@ -269,6 +270,7 @@ export function SubdivisionDetailContent({ subdivisionId, recordedYear, entityTy
           <div className="-mx-[clamp(1rem,4vw,3rem)]">
             <MarketHistoryChart data={marketHistory} />
           </div>
+          <InlineSourceNote className="mt-3">Cook County Recorder of Deeds.</InlineSourceNote>
         </section>
       )}
 
@@ -287,7 +289,7 @@ export function SubdivisionDetailContent({ subdivisionId, recordedYear, entityTy
         });
         return (
           <div>
-            <p className="section-heading">Known properties in this subdivision</p>
+            <h2 className="section-heading">Known properties in this subdivision</h2>
             <div className="space-y-8">
               {decades.map(([decade, group]) => {
                 const decadeYear = decade === "Unknown" ? null : parseInt(decade);

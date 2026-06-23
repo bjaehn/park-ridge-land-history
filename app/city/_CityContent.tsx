@@ -99,18 +99,19 @@ export function CityContent({ townships = [], mapSlot }: { townships?: CityTowns
       {mapSlot}
 
       <div>
-        <p className="section-heading">How Park Ridge was built</p>
+        <h2 className="section-heading">How Park Ridge was built</h2>
         <p className="text-sm text-text-muted mb-4">
           Park Ridge's housing stock reflects three distinct construction waves: the railroad-era 1870s-1880s, the interwar bungalow boom of the 1910s-1930s, and the postwar expansion of the 1940s-1960s.
         </p>
         <ConstructionByDecadeChart rows={rows} />
+        <InlineSourceNote className="mt-3">Cook County Assessor build-year data.</InlineSourceNote>
       </div>
 
       {/* Market history */}
       <section>
         <div className="flex items-center gap-2 mb-3">
           <SaleIcon size={14} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />
-          <p className="section-heading !mb-0">Park Ridge home sales, 2000 to 2025</p>
+          <h2 className="section-heading !mb-0">Park Ridge home sales, 2000 to 2025</h2>
         </div>
         <p className="text-sm text-text-muted mb-4">
           Bars show annual sales volume. Line shows median sale price. Market sales only, $50K to $5M.
@@ -118,13 +119,14 @@ export function CityContent({ townships = [], mapSlot }: { townships?: CityTowns
         <div className="-mx-[clamp(1rem,4vw,3rem)]">
           <MarketHistoryChart data={marketHistory} />
         </div>
+        <InlineSourceNote className="mt-3">Cook County Recorder of Deeds.</InlineSourceNote>
       </section>
 
       {/* Assessment trend */}
       <section>
         <div className="flex items-center gap-2 mb-3">
           <AssessmentIcon size={14} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />
-          <p className="section-heading !mb-0">Average assessed value, 1999 to 2025</p>
+          <h2 className="section-heading !mb-0">Average assessed value, 1999 to 2025</h2>
         </div>
         <p className="text-sm text-text-muted mb-4">
           Certified totals from Cook County. Dashed lines mark triennial reassessment years.
@@ -132,15 +134,17 @@ export function CityContent({ townships = [], mapSlot }: { townships?: CityTowns
         <div className="-mx-[clamp(1rem,4vw,3rem)]">
           <AssessmentTrendChart data={assessmentTrend} />
         </div>
+        <InlineSourceNote className="mt-3">Cook County Assessor certified totals.</InlineSourceNote>
       </section>
 
       {neighborhoods.length > 0 && (
         <div>
-          <p className="section-heading">Development by neighborhood</p>
+          <h2 className="section-heading">Development by neighborhood</h2>
           <p className="text-sm text-text-muted mb-4">
             Sorted from oldest to newest median build year.
           </p>
           <div className="bg-surface-card border border-surface-border rounded-lg overflow-hidden">
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-surface-border">
@@ -176,6 +180,7 @@ export function CityContent({ townships = [], mapSlot }: { townships?: CityTowns
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
       )}
@@ -183,7 +188,7 @@ export function CityContent({ townships = [], mapSlot }: { townships?: CityTowns
       {(subdivisions.length > 0 || platByDecade.length > 0) && (
         <section>
           <div className="flex items-center justify-between mb-4">
-            <p className="section-heading !mb-0">How Park Ridge was platted</p>
+            <h2 className="section-heading !mb-0">How Park Ridge was platted</h2>
             <Link href="/subdivisions" className="text-sm text-accent-purple hover:underline shrink-0">
               View all →
             </Link>
@@ -215,6 +220,7 @@ export function CityContent({ townships = [], mapSlot }: { townships?: CityTowns
                 Plats recorded by decade
               </p>
               <SubdivisionPlatChart data={platByDecade} />
+              <InlineSourceNote className="mt-3">Cook County Recorder of Deeds.</InlineSourceNote>
             </div>
           )}
         </section>
@@ -223,7 +229,7 @@ export function CityContent({ townships = [], mapSlot }: { townships?: CityTowns
       {/* Browse by section */}
       {townships.length > 0 && (
         <section>
-          <p className="section-heading">Browse by section</p>
+          <h2 className="section-heading">Browse by section</h2>
           <div className="space-y-8">
             {townships.map((twp) => (
               <div key={twp.prefix}>

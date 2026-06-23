@@ -1020,17 +1020,17 @@ For each task, before making any changes:
 | 1.7 Update neighborhood page subtitles with era labels | 1 | Frontend | Complete | | Imported NEIGHBORHOOD_ERA_LABELS; subtitle uses era label when available, falls back to count + year | 2026-06-23 |
 | 1.8 Rename Quick summary to Agent summary | 1 | Frontend | Complete | | Changed label in _PropertyDetailContent.tsx; Shareable badge and clipboard button unchanged | 2026-06-23 |
 | 1.9 Add (Inferred) label to era context notes | 1 | Frontend | Complete | | Appended span after eraContextNote text only; year built, sale price, assessment unchanged | 2026-06-23 |
-| 2.1 Enforce section order on neighborhood pages | 2 | Frontend | Not started | | Reordering only | |
-| 2.2 Add MarketHistoryChart to neighborhood pages | 2 | Frontend/Data | Not started | | Requires fetchSubdivisionMarketHistory with neighborhood pins | |
-| 2.3 Add framing note before property timeline | 2 | Frontend | Not started | | One sentence above PropertyTimeline component | |
-| 2.4 Add "Explore more" prompts | 2 | Frontend | Not started | | Property and neighborhood pages | |
-| 2.5 Convert section heading p to h2/h3 | 2 | Frontend | Not started | | All public pages | |
-| 2.6 Audit all chart sections for four required elements | 2 | Frontend | Not started | | City, neighborhood, subdivision, street pages | |
-| 2.7 Add overflow-x-auto to neighborhood table | 2 | Frontend | Not started | | City page neighborhood comparison table | |
-| 2.8 Add og:image and og:description metadata | 2 | Frontend | Not started | | Property and neighborhood pages | |
-| 2.9 Add footer to all public pages | 2 | Frontend | Not started | | Copyright, About, Data sources, contact links | |
-| 2.10 Reduce homepage neighborhood grid to teaser | 2 | Frontend | Not started | | 6 cards max plus See all link | |
-| 2.11 Fix aria-selected on search results | 2 | Frontend | Not started | | Update on keyboard focus change | |
+| 2.1 Enforce section order on neighborhood pages | 2 | Frontend | Complete | | Reordered: narrative, stats, map, price chart, construction chart, market chart, highlights, streets, explore more | 2026-06-23 |
+| 2.2 Add MarketHistoryChart to neighborhood pages | 2 | Frontend/Data | Complete | | fetchSubdivisionMarketHistory called after fetchNeighborhoodPins; renders when marketHistory.length >= 3 | 2026-06-23 |
+| 2.3 Add framing note before property timeline | 2 | Frontend | Complete | | Added p.text-sm.text-text-muted.mb-3 between h2 heading and PropertyTimeline | 2026-06-23 |
+| 2.4 Add "Explore more" prompts | 2 | Frontend | Complete | | Property: street + neighborhood links with conditional rendering; Neighborhood: search + city links | 2026-06-23 |
+| 2.5 Convert section heading p to h2/h3 | 2 | Frontend | Complete | | All public pages converted; h2 used for all (single h1 per page); admin pages skipped | 2026-06-23 |
+| 2.6 Audit all chart sections for four required elements | 2 | Frontend | Complete | | Added InlineSourceNotes to ConstructionByDecadeChart, MarketHistoryChart, AssessmentTrendChart, SubdivisionPlatChart on city page; description added to neighborhood price chart; InlineSourceNotes added to subdivision chart sections | 2026-06-23 |
+| 2.7 Add overflow-x-auto to neighborhood table | 2 | Frontend | Complete | | Added div.overflow-x-auto wrapper inside existing overflow-hidden container on city page | 2026-06-23 |
+| 2.8 Add og:image and og:description metadata | 2 | Frontend | Complete | | openGraph with title, description, type, images added to property and neighborhood generateMetadata; created public/og-default.png placeholder | 2026-06-23 |
+| 2.9 Add footer to all public pages | 2 | Frontend | Complete | | Added footer to app/layout.tsx with copyright year, About, Data sources, and mailto contact links | 2026-06-23 |
+| 2.10 Reduce homepage neighborhood grid to teaser | 2 | Frontend | Complete | | NeighborhoodsGrid accepts teaser prop; shows first 6 cards flat with See all link; homepage passes teaser | 2026-06-23 |
+| 2.11 Fix aria-selected on search results | 2 | Frontend | Complete | | Added focusedIndex state; ArrowDown/ArrowUp navigation implemented; aria-selected reflects current index | 2026-06-23 |
 | 3.1 Expand What this means on property pages | 3 | Frontend | Not started | | HARGIS, appeal, turnover bullets | |
 | 3.2 Expand Agent summary text | 3 | Frontend | Not started | | HARGIS status and assessment change | |
 | 3.3 Add methodology sections to sources page | 3 | Content | Not started | | "How records are linked" and "What to do if wrong" | |

@@ -33,7 +33,7 @@ export function NeighborhoodCharts() {
         <section>
           <div className="flex items-center gap-2 mb-3">
             <SaleIcon size={14} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />
-            <p className="section-heading !mb-0">Median sale price by neighborhood, 2015 vs. 2024</p>
+            <h2 className="section-heading !mb-0">Median sale price by neighborhood, 2015 vs. 2024</h2>
           </div>
           <NeighborhoodPriceChart data={priceData} />
         </section>
@@ -42,7 +42,7 @@ export function NeighborhoodCharts() {
         <section>
           <div className="flex items-center gap-2 mb-3">
             <YearBuiltIcon size={14} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />
-            <p className="section-heading !mb-0">Era portrait: when each neighborhood was built</p>
+            <h2 className="section-heading !mb-0">Era portrait: when each neighborhood was built</h2>
           </div>
           <p className="text-sm text-text-muted mb-3">
             Each bar shows 100% of homes with known build years, divided by era.

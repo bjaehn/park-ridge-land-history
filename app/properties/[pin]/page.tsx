@@ -15,9 +15,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const property = await getPropertyByPin(pin).catch(() => null);
   if (!property) return { title: "Property not found" };
   const address = formatAddress(property.address);
+  const description = property.yearBuilt
+    ? `Property history for ${address} in Park Ridge, Illinois. Built ${property.yearBuilt}.`
+    : `Property history for ${address} in Park Ridge, Illinois.`;
   return {
     title: address,
-    description: `Property history for ${address} in Park Ridge, Illinois.`,
+    description,
+    openGraph: {
+      title: address,
+      description,
+      type: "website",
+      images: ["/og-default.png"],
+    },
   };
 }
 

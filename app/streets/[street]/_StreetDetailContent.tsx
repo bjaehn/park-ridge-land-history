@@ -44,7 +44,7 @@ export function StreetDetailContent({ streetName, displayName, mapSlot }: Props)
 
       {mapSlot && (
         <div>
-          <p className="section-heading">Street map</p>
+          <h2 className="section-heading">Street map</h2>
           {mapSlot}
         </div>
       )}
@@ -58,7 +58,7 @@ export function StreetDetailContent({ streetName, displayName, mapSlot }: Props)
 
       {(detail.medianYear || detail.eraSpan) && (
         <div>
-          <p className="section-heading">How {displayName} was built</p>
+          <h2 className="section-heading">How {displayName} was built</h2>
           <p className="text-sm text-text-secondary">
             {detail.medianYear
               ? `Built primarily in the ${Math.floor(detail.medianYear / 10) * 10}s`
@@ -71,7 +71,7 @@ export function StreetDetailContent({ streetName, displayName, mapSlot }: Props)
       )}
 
       <div>
-        <p className="section-heading">All properties on {displayName}</p>
+        <h2 className="section-heading">All properties on {displayName}</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {detail.parcels.map((p) => {
             if (!p.address) {

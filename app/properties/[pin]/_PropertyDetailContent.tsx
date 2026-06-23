@@ -131,7 +131,7 @@ function SaleHistorySection({ sales, chartSlot }: { sales: PropertySale[]; chart
   const visible = expanded ? sales : sales.slice(0, 3);
   return (
     <section>
-      <p className="section-heading">Sale history</p>
+      <h2 className="section-heading">Sale history</h2>
       {chartSlot}
       <div className="space-y-2">
         {visible.map((s) => (
@@ -177,7 +177,7 @@ function PermitHistorySection({ permits }: { permits: PropertyPermit[] }) {
   const visible = expanded ? permits : permits.slice(0, 3);
   return (
     <section>
-      <p className="section-heading">Permit history ({permits.length} on record)</p>
+      <h2 className="section-heading">Permit history ({permits.length} on record)</h2>
       <div className="space-y-2">
         {visible.map((p) => (
           <div key={p.id} className="bg-surface-card border border-surface-border rounded-lg px-4 py-3">
@@ -220,7 +220,7 @@ function LandLineageSection({ lineage }: { lineage: LandLineageEntry[] }) {
   const legacyLineage = lineage.filter((entry) => !(entry.lineage_records?.length));
   return (
     <section>
-      <p className="section-heading">Subdivision ancestry</p>
+      <h2 className="section-heading">Subdivision ancestry</h2>
       <div className="space-y-3">
         {richLineage.map((record) => (
           <SubdivisionLineageCard key={record.lineage_key} lineage={record} showAddress />
@@ -354,7 +354,7 @@ function HargisSurveySection({ records }: { records: HargisRecord[] }) {
   if (!records.length) return null;
   return (
     <section>
-      <p className="section-heading">Historic architecture survey</p>
+      <h2 className="section-heading">Historic architecture survey</h2>
       <p className="text-xs text-text-muted mb-3">
         From the Illinois Historic Architectural Resources Geographic Information System (HARGIS), Illinois State Historic Preservation Office.
       </p>
@@ -588,6 +588,13 @@ export function PropertyDetailContent({ pin }: Props) {
     (props.local_neighborhood_label as string | null)
     ?? (props.official_planning_neighborhood_label as string | null)
   );
+  const neighborhoodSlug = (
+    (props.local_neighborhood_slug as string | null)
+    ?? (props.official_planning_neighborhood_slug as string | null)
+  );
+  const streetDisplayName = typeof props.street_name_normalized === "string"
+    ? (props.street_name_normalized as string).toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase())
+    : null;
   const propertyStory = buildPropertyStory(yearBuilt, subdivisionName, neighborhoodLabel ?? null);
   const eraContextNote = getEraContextNote(
     yearBuilt,
@@ -702,7 +709,7 @@ export function PropertyDetailContent({ pin }: Props) {
       {quickSummaryText && (
         <section>
           <div className="flex items-center gap-2 mb-2">
-            <p className="section-heading !mb-0">Agent summary</p>
+            <h2 className="section-heading !mb-0">Agent summary</h2>
             <span className="text-[10px] font-semibold uppercase tracking-wider bg-accent-purple/10 text-accent-purple px-2 py-0.5 rounded">
               Shareable
             </span>
@@ -741,7 +748,7 @@ export function PropertyDetailContent({ pin }: Props) {
 
       {/* PIN decomposition */}
       <section>
-        <p className="section-heading">Parcel ID (PIN)</p>
+        <h2 className="section-heading">Parcel ID (PIN)</h2>
         <PinBreakdown props={props as Record<string, unknown>} />
         <p className="text-xs text-text-muted mt-2">Cook County 14-digit PIN: township · section · block · parcel · unit</p>
       </section>
@@ -749,7 +756,7 @@ export function PropertyDetailContent({ pin }: Props) {
       {/* Neighborhoods */}
       {(props.official_planning_neighborhood_id || props.business_district_id || props.local_neighborhood_id) && (
         <section>
-          <p className="section-heading">Geographic context</p>
+          <h2 className="section-heading">Geographic context</h2>
           <p className="text-sm text-text-secondary mb-3">This property sits within overlapping planning districts, business areas, and local neighborhoods.</p>
           <div className="space-y-2">
             {props.official_planning_neighborhood_id && props.official_planning_neighborhood_slug && (
@@ -780,7 +787,8 @@ export function PropertyDetailContent({ pin }: Props) {
       {/* Property timeline */}
       {timeline.length > 0 && (
         <section>
-          <p className="section-heading">Property timeline</p>
+          <h2 className="section-heading">Property timeline</h2>
+          <p className="text-sm text-text-muted mb-3">Key moments in this property's recorded history, from the original plat to the most recent transaction.</p>
           <PropertyTimeline events={timeline} />
         </section>
       )}
@@ -794,7 +802,7 @@ export function PropertyDetailContent({ pin }: Props) {
       {/* Assessment value chart */}
       {assessmentTimeline.length >= 2 && (
         <section>
-          <p className="section-heading">Assessed value history</p>
+          <h2 className="section-heading">Assessed value history</h2>
           <AssessmentChart
               timeline={assessmentTimeline}
               appealYears={appealYears}
@@ -816,7 +824,7 @@ export function PropertyDetailContent({ pin }: Props) {
       ) : detail.subdivision ? (
         /* Fallback: simple recorded plat block when no lineage data yet */
         <section>
-          <p className="section-heading">Recorded plat</p>
+          <h2 className="section-heading">Recorded plat</h2>
           <div className="flex items-start gap-3 bg-surface-card border border-surface-border rounded-lg p-4">
             <SubdivisionIcon size={16} strokeWidth={1.8} className="text-text-muted shrink-0 mt-0.5" aria-hidden="true" />
             <div className="min-w-0">
@@ -840,7 +848,7 @@ export function PropertyDetailContent({ pin }: Props) {
       {/* Deed record */}
       {props.deed_notes && (
         <section>
-          <p className="section-heading">Deed Record</p>
+          <h2 className="section-heading">Deed Record</h2>
           <div className="bg-surface-card border border-surface-border rounded-lg p-4">
             <p className="text-sm text-text-secondary font-mono leading-relaxed whitespace-pre-wrap">
               {props.deed_notes}
@@ -854,7 +862,7 @@ export function PropertyDetailContent({ pin }: Props) {
         <section>
           <div className="flex items-center gap-2 mb-3">
             <ComparisonIcon size={14} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />
-            <p className="section-heading !mb-0">How this property compares</p>
+            <h2 className="section-heading !mb-0">How this property compares</h2>
           </div>
           <ComparisonList rows={detail.comparisons} />
         </section>
@@ -863,7 +871,7 @@ export function PropertyDetailContent({ pin }: Props) {
       {/* What this means */}
       {whatThisMeansBullets.length > 0 && (
         <section>
-          <p className="section-heading">What this means</p>
+          <h2 className="section-heading">What this means</h2>
           <ul className="space-y-2">
             {whatThisMeansBullets.map((b, i) => (
               <li key={i} className="flex items-start gap-2.5 text-sm text-text-secondary">
@@ -878,7 +886,7 @@ export function PropertyDetailContent({ pin }: Props) {
       {/* What we don't know yet */}
       {missingGaps.length > 0 && (
         <section>
-          <p className="section-heading">What we don't know yet</p>
+          <h2 className="section-heading">What we don't know yet</h2>
           <ul className="space-y-2">
             {missingGaps.map((gap) => (
               <li key={gap} className="flex items-start gap-2.5 text-sm text-text-muted">
@@ -896,7 +904,7 @@ export function PropertyDetailContent({ pin }: Props) {
       {/* Questions to consider */}
       {questionsToConsider.length > 0 && (
         <section>
-          <p className="section-heading">Questions to consider (based on available records)</p>
+          <h2 className="section-heading">Questions to consider (based on available records)</h2>
           <ul className="space-y-2">
             {questionsToConsider.map((q, i) => (
               <li key={i} className="flex items-start gap-2.5 text-sm text-text-secondary">
@@ -930,6 +938,35 @@ export function PropertyDetailContent({ pin }: Props) {
           </dl>
         </div>
       </details>
+
+      {/* Explore more */}
+      {(props.street_name_normalized || (neighborhoodSlug && neighborhoodLabel)) && (
+        <section>
+          <h2 className="section-heading">Explore more</h2>
+          <div className="space-y-2">
+            {props.street_name_normalized && (
+              <div>
+                <Link
+                  href={`/streets/${encodeURIComponent(props.street_name_normalized as string)}`}
+                  className="text-accent-purple hover:underline"
+                >
+                  View all properties on {streetDisplayName ?? (props.street_name_normalized as string)} →
+                </Link>
+              </div>
+            )}
+            {neighborhoodSlug && neighborhoodLabel && (
+              <div>
+                <Link
+                  href={`/neighborhoods/${encodeURIComponent(neighborhoodSlug)}`}
+                  className="text-accent-purple hover:underline"
+                >
+                  Learn about the {neighborhoodLabel} neighborhood →
+                </Link>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

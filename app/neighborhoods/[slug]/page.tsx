@@ -13,11 +13,22 @@ import { NEIGHBORHOOD_ERA_LABELS } from "@/lib/content";
 type Props = { params: { slug: string } };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const neighborhood = await getNeighborhoodBySlug(decodeURIComponent(params.slug)).catch(() => null);
+  const slug = decodeURIComponent(params.slug);
+  const neighborhood = await getNeighborhoodBySlug(slug).catch(() => null);
   if (!neighborhood) return { title: "Neighborhood not found" };
+  const eraLabel = NEIGHBORHOOD_ERA_LABELS[slug];
+  const description = eraLabel
+    ? `The ${neighborhood.label} neighborhood of Park Ridge. ${eraLabel}.`
+    : `Development history for the ${neighborhood.label} neighborhood of Park Ridge.`;
   return {
     title: neighborhood.label,
-    description: `Development history for the ${neighborhood.label} neighborhood of Park Ridge.`,
+    description,
+    openGraph: {
+      title: neighborhood.label,
+      description,
+      type: "website",
+      images: ["/og-default.png"],
+    },
   };
 }
 

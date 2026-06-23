@@ -39,7 +39,7 @@ function NeighborhoodSection({ title, items }: { title: string; items: Neighborh
   );
 }
 
-export function NeighborhoodsGrid() {
+export function NeighborhoodsGrid({ teaser }: { teaser?: boolean }) {
   const [neighborhoods, setNeighborhoods] = useState<NeighborhoodSummary[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -63,6 +63,37 @@ export function NeighborhoodsGrid() {
             </div>
           </div>
         ))}
+      </div>
+    );
+  }
+
+  if (teaser) {
+    const preview = neighborhoods.slice(0, 6);
+    return (
+      <div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {preview.map((n) => (
+            <EntityCard
+              key={n.id}
+              href={`/neighborhoods/${encodeURIComponent(n.slug)}`}
+              eyebrow={`${n.parcelCount} properties`}
+              title={n.label}
+              subtitle={NEIGHBORHOOD_ERA_LABELS[n.slug] ?? (n.medianYear ? `Typical build year: ${n.medianYear}` : undefined)}
+              signal={getChangeSignal({
+                permit_count: n.totalPermits,
+                sale_count: n.totalSales,
+                recent_teardown_count: n.recentTeardowns,
+              })}
+            />
+          ))}
+        </div>
+        {neighborhoods.length > 6 && (
+          <div className="mt-4">
+            <a href="/neighborhoods" className="text-sm text-accent-purple hover:underline">
+              See all neighborhoods →
+            </a>
+          </div>
+        )}
       </div>
     );
   }
