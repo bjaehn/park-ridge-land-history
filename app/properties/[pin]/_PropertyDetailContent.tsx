@@ -525,9 +525,9 @@ export function PropertyDetailContent({ pin }: Props) {
       {((permitCount && permitCount > 0) || actualSaleCount > 0) && (
         <section>
           <p className="section-heading">Activity record</p>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="flex gap-4">
             {permitCount != null && permitCount > 0 && (
-              <div className="bg-surface-card border border-surface-border rounded-lg p-4">
+              <div className="flex-1 bg-surface-card border border-surface-border rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <PermitIcon size={14} strokeWidth={1.8} className="text-confidence-medium" aria-hidden="true" />
                   <span className="text-xs font-semibold text-text-secondary uppercase tracking-wide">Permits</span>
@@ -539,7 +539,7 @@ export function PropertyDetailContent({ pin }: Props) {
               </div>
             )}
             {actualSaleCount > 0 && (
-              <div className="bg-surface-card border border-surface-border rounded-lg p-4">
+              <div className="flex-1 bg-surface-card border border-surface-border rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <SaleIcon size={14} strokeWidth={1.8} className="text-confidence-high" aria-hidden="true" />
                   <span className="text-xs font-semibold text-text-secondary uppercase tracking-wide">Sales</span>
