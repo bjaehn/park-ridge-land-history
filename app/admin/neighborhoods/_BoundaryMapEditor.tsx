@@ -1,7 +1,7 @@
 "use client";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore — mapbox-gl-draw CSS; Next.js bundles this for client components
+// @ts-ignore - mapbox-gl-draw CSS; Next.js bundles this for client components
 import "@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css";
 import { useEffect, useRef, useCallback, useImperativeHandle, forwardRef } from "react";
 import { buildMapStyle, MAP_CENTER, MAP_ZOOM_DEFAULT, GEOJSON_FALLBACK_URL } from "@/lib/mapConfig";
@@ -62,7 +62,7 @@ export const BoundaryMapEditor = forwardRef<BoundaryMapEditorHandle, Props>(
           map.fitBounds([[bbox[0], bbox[1]], [bbox[2], bbox[3]]], { padding: 60, maxZoom: 16 });
           onChangeRef.current(geojson);
         } catch {
-          // invalid JSON — ignore, textarea validation will catch it
+          // invalid JSON - ignore, textarea validation will catch it
         }
       },
     }));

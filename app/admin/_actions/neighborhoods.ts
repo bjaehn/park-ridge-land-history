@@ -75,7 +75,7 @@ export async function updateNeighborhoodGeometry(id: string, formData: FormData)
     return { error: "Invalid JSON - paste a valid GeoJSON geometry object." };
   }
 
-  // The geometry column is MultiPolygon — auto-upgrade a bare Polygon so users
+  // The geometry column is MultiPolygon - auto-upgrade a bare Polygon so users
   // don't have to manually wrap coordinates.
   if (parsed.type === "Polygon") {
     parsed = { type: "MultiPolygon", coordinates: [parsed.coordinates] };

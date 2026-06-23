@@ -18,7 +18,7 @@ Key streets for reference (approximate coordinates):
 - Devon Ave: runs east-west near lat 41.997
 - Dempster St: runs east-west near lat 42.043 (just north of Park Ridge)
 
-Given a neighborhood name and a plain-language boundary description, return ONLY a valid GeoJSON Geometry object (Polygon or MultiPolygon). No prose, no markdown, no explanation — just the raw JSON.
+Given a neighborhood name and a plain-language boundary description, return ONLY a valid GeoJSON Geometry object (Polygon or MultiPolygon). No prose, no markdown, no explanation - just the raw JSON.
 
 The polygon must:
 - Close (last coordinate = first coordinate)

@@ -14,6 +14,28 @@ async function getStats() {
   };
 }
 
+async function getNeedsAttention() {
+  const [nbhdSlugRes, subYearRes, parcelConfidenceRes] = await Promise.all([
+    adminSupabase
+      .from("neighborhoods")
+      .select("*", { count: "exact", head: true })
+      .or("slug.is.null,slug.eq."),
+    adminSupabase
+      .from("subdivisions")
+      .select("*", { count: "exact", head: true })
+      .is("recorded_year", null),
+    adminSupabase
+      .from("parcels")
+      .select("*", { count: "exact", head: true })
+      .is("year_built", null),
+  ]);
+  return {
+    neighborhoodsWithoutSlug: nbhdSlugRes.count ?? 0,
+    subdivisionsWithoutYear:  subYearRes.count ?? 0,
+    parcelsLowConfidence:     parcelConfidenceRes.count ?? 0,
+  };
+}
+
 const sections = [
   {
     href: "/admin/subdivisions",
@@ -39,11 +61,14 @@ const sections = [
 ];
 
 export default async function AdminDashboard() {
-  const stats = await getStats().catch(() => ({
-    subdivisions: 0,
-    parcels: 0,
-    neighborhoods: 0,
-  }));
+  const [stats, attention] = await Promise.all([
+    getStats().catch(() => ({ subdivisions: 0, parcels: 0, neighborhoods: 0 })),
+    getNeedsAttention().catch(() => ({
+      neighborhoodsWithoutSlug: 0,
+      subdivisionsWithoutYear: 0,
+      parcelsLowConfidence: 0,
+    })),
+  ]);
 
   return (
     <div>
@@ -72,6 +97,62 @@ export default async function AdminDashboard() {
             <p className="text-xs text-text-muted leading-relaxed">{s.description}</p>
           </Link>
         ))}
+      </div>
+
+      <div className="mt-10">
+        <h2 className="text-sm font-semibold text-text-primary mb-4">Needs attention</h2>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between bg-surface-raised border border-surface-border rounded-lg px-5 py-4">
+            <div>
+              <p className="text-sm text-text-primary">
+                Neighborhoods without a slug
+              </p>
+              <p className="text-xs text-text-muted mt-0.5">Slug is required for public neighborhood pages to load.</p>
+            </div>
+            <div className="flex items-center gap-4 shrink-0">
+              <span className={`text-lg font-bold tabular-nums ${attention.neighborhoodsWithoutSlug > 0 ? "text-amber-400" : "text-text-muted"}`}>
+                {attention.neighborhoodsWithoutSlug.toLocaleString()}
+              </span>
+              <Link href="/admin/neighborhoods" className="text-xs text-accent-teal hover:underline">
+                Review
+              </Link>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between bg-surface-raised border border-surface-border rounded-lg px-5 py-4">
+            <div>
+              <p className="text-sm text-text-primary">
+                Subdivisions without a recorded year
+              </p>
+              <p className="text-xs text-text-muted mt-0.5">Recorded year appears on subdivision pages and affects the timeline.</p>
+            </div>
+            <div className="flex items-center gap-4 shrink-0">
+              <span className={`text-lg font-bold tabular-nums ${attention.subdivisionsWithoutYear > 0 ? "text-amber-400" : "text-text-muted"}`}>
+                {attention.subdivisionsWithoutYear.toLocaleString()}
+              </span>
+              <Link href="/admin/subdivisions" className="text-xs text-accent-teal hover:underline">
+                Review
+              </Link>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between bg-surface-raised border border-surface-border rounded-lg px-5 py-4">
+            <div>
+              <p className="text-sm text-text-primary">
+                Properties with no build year (low confidence)
+              </p>
+              <p className="text-xs text-text-muted mt-0.5">Missing build year is the primary driver of Low confidence ratings.</p>
+            </div>
+            <div className="flex items-center gap-4 shrink-0">
+              <span className={`text-lg font-bold tabular-nums ${attention.parcelsLowConfidence > 0 ? "text-amber-400" : "text-text-muted"}`}>
+                {attention.parcelsLowConfidence.toLocaleString()}
+              </span>
+              <Link href="/admin/properties" className="text-xs text-accent-teal hover:underline">
+                Review
+              </Link>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -129,7 +129,7 @@ Your job is to return ONLY a single valid JSON object with no prose, no markdown
 }
 
 Rules:
-- "subdivision_links" is an ARRAY — one entry per named parcel in the deed. Most deeds have one parcel and will produce one entry. Deeds labeled "PARCEL ONE / PARCEL TWO" (or "PARCEL 1 / PARCEL 2", "TRACT A / TRACT B", etc.) are multi-parcel and must produce one entry per parcel.
+- "subdivision_links" is an ARRAY - one entry per named parcel in the deed. Most deeds have one parcel and will produce one entry. Deeds labeled "PARCEL ONE / PARCEL TWO" (or "PARCEL 1 / PARCEL 2", "TRACT A / TRACT B", etc.) are multi-parcel and must produce one entry per parcel.
 - "parcel_label" is the raw label from the deed if present (e.g. "PARCEL ONE", "PARCEL TWO", "TRACT A"). Leave null for single-parcel deeds.
 - Each subdivision_link entry is the innermost / most specific named plat for that parcel (e.g. "Kinsey's Park Ridge Subdivision", not the section/township description).
 - "lineage_records" captures each parent-child chain. Produce one record per parent-child relationship found, across ALL parcels. If the deed shows A was carved from B which was carved from C, produce two records: A→B and B→C.
@@ -137,7 +137,7 @@ Rules:
 - "development_chain" is an ordered array from oldest (county/section) to newest (the property), e.g. ["Cook County, IL", "Section 26, Township 41 North, Range 12 East", "Parent Subdivision", "Block X", "Lot Y", "Child Subdivision", "Lot Z", "526 N Washington Ave"].
 - Match subdivision names to the known list case-insensitively. If matched, set the _id field to the UUID from the list. If not matched, set _id to null and add the name to "new_subdivision_names".
 - "change_events": If the deed has MULTIPLE PARCELS (Parcel One, Parcel Two, etc.), always include a consolidation change event describing which lots were combined under one PIN. Also include events if the deed text explicitly mentions combining, splitting, or adjusting parcels. event_type must be one of: "consolidation", "subdivision", "resubdivision", "boundary_adj", "creation", "annexation".
-- "related_pins" will usually be empty — only populate if specific PIN numbers appear in the deed text.
+- "related_pins" will usually be empty - only populate if specific PIN numbers appear in the deed text.
 - If the deed text is not a standard legal description, return an empty subdivision_links array and empty arrays for everything else.`;
 
   const userPrompt = `Property: ${address ?? pin} (PIN: ${pin})

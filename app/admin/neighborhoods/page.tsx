@@ -102,7 +102,7 @@ export default async function NeighborhoodsListPage({
               </tr>
             )}
             {neighborhoods.map((n) => {
-              const typeLabel = TYPE_LABELS[n.neighborhood_type ?? ""] ?? n.neighborhood_type ?? "—";
+              const typeLabel = TYPE_LABELS[n.neighborhood_type ?? ""] ?? n.neighborhood_type ?? "-";
               const typeColor = TYPE_COLORS[n.neighborhood_type ?? ""] ?? "bg-surface-card text-text-muted";
               return (
                 <tr key={n.id} className="hover:bg-surface-card transition-colors">

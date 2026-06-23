@@ -183,7 +183,7 @@ export function MapView({
       const noopFilter: FilterSpecification = ["==", "1", "0"] as unknown as FilterSpecification;
       const scopeFilter = buildScopeFilter(scope) as FilterSpecification;
 
-      // Muted parcels (out of scope — city scope shows all, so muted is hidden)
+      // Muted parcels (out of scope - city scope shows all, so muted is hidden)
       map.addLayer({
         id: FILL_MUTED_LAYER,
         type: "fill",
@@ -931,7 +931,7 @@ function buildScopeFilter(scope: MapScope): unknown[] {
       if (scope.pins && scope.pins.length > 0) {
         return ["in", ["get", "pin_normalized"], ["literal", scope.pins]];
       }
-      return ["==", "1", "0"]; // no pins assigned — show nothing
+      return ["==", "1", "0"]; // no pins assigned - show nothing
     case "subdivision":
       if (scope.pins && scope.pins.length > 0) {
         return ["in", ["get", "pin_normalized"], ["literal", scope.pins]];

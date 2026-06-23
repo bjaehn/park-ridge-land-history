@@ -478,6 +478,8 @@ function buildQuickSummary({
   latestSalePrice,
   subdivisionName,
   neighborhoodLabel,
+  hargisCount,
+  assessmentTimeline,
 }: {
   address: string | null;
   yearBuilt: number | null;
@@ -486,6 +488,8 @@ function buildQuickSummary({
   latestSalePrice: number | null;
   subdivisionName: string | null;
   neighborhoodLabel: string | null;
+  hargisCount: number;
+  assessmentTimeline: AssessmentPoint[];
 }): string | null {
   if (!yearBuilt || !latestSaleYear) return null;
   if (!subdivisionName && !neighborhoodLabel) return null;
@@ -507,7 +511,22 @@ function buildQuickSummary({
     locationLine = `Located in the ${neighborhoodLabel} neighborhood.`;
   }
 
-  return [firstLine, saleLine, locationLine].join("\n");
+  const parts = [firstLine, saleLine, locationLine];
+
+  if (hargisCount > 0) {
+    parts.push("Documented in the Illinois Historic Architecture Survey.");
+  }
+  if (assessmentTimeline.length >= 2) {
+    const first = assessmentTimeline[0];
+    const last = assessmentTimeline[assessmentTimeline.length - 1];
+    if (first.value && last.value && first.year !== last.year) {
+      parts.push(
+        `Assessed value changed from ${formatCurrency(first.value)} to ${formatCurrency(last.value)} between ${first.year} and ${last.year}.`
+      );
+    }
+  }
+
+  return parts.join("\n");
 }
 
 export function PropertyDetailContent({ pin }: Props) {
@@ -610,8 +629,18 @@ export function PropertyDetailContent({ pin }: Props) {
         latestSalePrice,
         subdivisionName,
         neighborhoodLabel: neighborhoodLabel ?? null,
+        hargisCount: hargisRecords.length,
+        assessmentTimeline,
       })
     : null;
+
+  const currentYear = new Date().getFullYear();
+  const recentSaleCount = sales.filter((s) => {
+    const year = s.sale_date
+      ? new Date(s.sale_date).getFullYear()
+      : s.sale_year ?? 0;
+    return year >= currentYear - 10;
+  }).length;
 
   const whatThisMeansBullets: string[] = [];
   if (detail.comparisons && detail.comparisons.length > 0) {
@@ -656,19 +685,28 @@ export function PropertyDetailContent({ pin }: Props) {
     }
   }
 
+  if (hargisRecords.length > 0) {
+    whatThisMeansBullets.push(
+      "This property was documented in the Illinois Historic Architecture Survey, which noted its architectural significance."
+    );
+  }
+  if (appealYears.length > 2) {
+    whatThisMeansBullets.push(
+      `This property has had ${appealYears.length} assessment appeals on record. Assessment appeals are filed by owners who believe the assessed value is too high.`
+    );
+  }
+  if (recentSaleCount > 4) {
+    whatThisMeansBullets.push(
+      `This property has sold ${actualSaleCount} times since records began, which is above average for the area.`
+    );
+  }
+
   const questionsToConsider: string[] = [];
   if (permits.length === 0) {
     questionsToConsider.push(
       "No permits are in this dataset (records are available from 2018 onward). It may be worth asking about renovation history directly."
     );
   }
-  const currentYear = new Date().getFullYear();
-  const recentSaleCount = sales.filter((s) => {
-    const year = s.sale_date
-      ? new Date(s.sale_date).getFullYear()
-      : s.sale_year ?? 0;
-    return year >= currentYear - 10;
-  }).length;
   if (recentSaleCount > 4) {
     questionsToConsider.push(
       "This property has sold frequently. It may be worth understanding the transaction history."

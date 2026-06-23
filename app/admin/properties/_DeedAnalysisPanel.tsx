@@ -101,7 +101,7 @@ function SubdivisionLinkSection({
     startTransition(async () => {
       let resolvedId = subdivisionId;
       if (!resolvedId) {
-        // New subdivision — create it first
+        // New subdivision - create it first
         const r = await ensureSubdivision(link.subdivision_name, "subdivision");
         if (r.error) { setErr(r.error); return; }
         resolvedId = r.id ?? "";
@@ -617,7 +617,7 @@ export function DeedAnalysisPanel({
           {result.subdivision_links.some((_, i) => !dismissedLinks.has(i)) && (
             <div className="mb-5">
               <SectionHeader>
-                A — Subdivision {result.subdivision_links.length > 1 ? "Links" : "Link"}
+                A: Subdivision {result.subdivision_links.length > 1 ? "Links" : "Link"}
                 {result.subdivision_links.length > 1 && (
                   <span className="ml-2 text-[10px] font-normal text-text-muted normal-case tracking-normal">
                     {result.subdivision_links.length} parcels in deed
@@ -643,7 +643,7 @@ export function DeedAnalysisPanel({
           {/* Section B */}
           {result.lineage_records.some((_, i) => !dismissedLineage.has(i)) && (
             <div className="mb-5">
-              <SectionHeader>B — Subdivision Lineage</SectionHeader>
+              <SectionHeader>B: Subdivision Lineage</SectionHeader>
               {result.lineage_records.map((rec, i) =>
                 dismissedLineage.has(i) ? null : (
                   <LineageRecordCard
@@ -668,7 +668,7 @@ export function DeedAnalysisPanel({
           {/* Section C */}
           {result.change_events.some((_, i) => !dismissedChanges.has(i)) && (
             <div className="mb-5">
-              <SectionHeader>C — Boundary Changes</SectionHeader>
+              <SectionHeader>C: Boundary Changes</SectionHeader>
               {result.change_events.map((ev, i) =>
                 dismissedChanges.has(i) ? null : (
                   <ChangeEventCard

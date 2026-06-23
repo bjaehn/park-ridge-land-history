@@ -65,6 +65,21 @@ export default function SourcesPage() {
             Owner names are never displayed, even in raw data views. Internal data-quality flags are visible only in the raw data disclosure, not in primary property views.
           </p>
         </section>
+
+        <section>
+          <h2 className="text-base font-semibold text-text-primary mb-2">What to do if something looks wrong</h2>
+          <ul className="text-sm space-y-3 list-disc list-inside">
+            <li>
+              <strong className="text-text-primary">Year built looks wrong:</strong> The authoritative source is the Cook County Assessor parcel search at cookcountyassessor.com. Look up the PIN shown on the property page. If the assessor record shows a different year, the assessor is correct and this app may be displaying stale data.
+            </li>
+            <li>
+              <strong className="text-text-primary">Subdivision name looks wrong:</strong> The authoritative source for recorded plat names is the Cook County Recorder of Deeds. The plat name shown here is drawn from the legal description in deed records. Alternate names and shortened versions are common and both may be correct.
+            </li>
+            <li>
+              <strong className="text-text-primary">Something else looks wrong or is missing:</strong> Use the contact link on the <a href="/about" className="text-accent-purple hover:underline">About page</a> to report it. Include the property address or PIN and a description of what appears incorrect.
+            </li>
+          </ul>
+        </section>
       </div>
     </div>
   );

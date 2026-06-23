@@ -37,7 +37,7 @@
     @apply mb-1;
   }
 
-  /* MapLibre navigation control — dark theme override */
+  /* MapLibre navigation control - dark theme override */
   .maplibregl-ctrl-group {
     background: rgba(30, 30, 40, 0.95) !important;
     border: 1px solid #2a2a38 !important;

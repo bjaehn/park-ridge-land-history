@@ -1031,11 +1031,11 @@ For each task, before making any changes:
 | 2.9 Add footer to all public pages | 2 | Frontend | Complete | | Added footer to app/layout.tsx with copyright year, About, Data sources, and mailto contact links | 2026-06-23 |
 | 2.10 Reduce homepage neighborhood grid to teaser | 2 | Frontend | Complete | | NeighborhoodsGrid accepts teaser prop; shows first 6 cards flat with See all link; homepage passes teaser | 2026-06-23 |
 | 2.11 Fix aria-selected on search results | 2 | Frontend | Complete | | Added focusedIndex state; ArrowDown/ArrowUp navigation implemented; aria-selected reflects current index | 2026-06-23 |
-| 3.1 Expand What this means on property pages | 3 | Frontend | Not started | | HARGIS, appeal, turnover bullets | |
-| 3.2 Expand Agent summary text | 3 | Frontend | Not started | | HARGIS status and assessment change | |
-| 3.3 Add methodology sections to sources page | 3 | Content | Not started | | "How records are linked" and "What to do if wrong" | |
-| 3.4 Add genealogy context to subdivision pages | 3 | Frontend | Not started | | Estate and parent plat explanations | |
-| 3.5 Add admin Needs attention panel | 3 | Frontend/Data | Not started | | Admin dashboard | |
+| 3.1 Expand What this means on property pages | 3 | Frontend | Complete | | currentYear/recentSaleCount hoisted before bullet block; HARGIS, appeal, and turnover bullets added outside the comparisons guard so they fire on data alone | 2026-06-23 |
+| 3.2 Expand Agent summary text | 3 | Frontend | Complete | | buildQuickSummary extended with hargisCount and assessmentTimeline params; HARGIS and assessment-change sentences appended to parts array; clipboard copies full expanded text automatically | 2026-06-23 |
+| 3.3 Add methodology sections to sources page | 3 | Content | Complete | | Existing "How we connect the data" already covers spatial joins and neighborhood boundary approximations; added "What to do if something looks wrong" section with three specific guidance items and link to /about | 2026-06-23 |
+| 3.4 Add genealogy context to subdivision pages | 3 | Frontend | Complete | | Estate note after entity type badge; parent plat note after parent subdivision link; both conditional on data presence | 2026-06-23 |
+| 3.5 Add admin Needs attention panel | 3 | Frontend/Data | Complete | | getNeedsAttention() queries neighborhoods without slug, subdivisions without recorded_year, and parcels without year_built (low-confidence proxy); count-only queries; amber color when nonzero; Review links to admin list pages | 2026-06-23 |
 
 Statuses: Not started / In progress / Blocked / Complete / Deferred
 
@@ -1099,6 +1099,20 @@ Statuses: Not started / In progress / Blocked / Complete / Deferred
 ## Completion Notes
 
 (Record implementation decisions, workarounds, and known limitations here as tasks complete.)
+
+### Sprint 3 (2026-06-23)
+
+**3.1 What this means bullets:** The three new bullets (HARGIS, appeal, turnover) are added to `whatThisMeansBullets` outside the `if (detail.comparisons && detail.comparisons.length > 0)` guard. This means they fire based purely on the underlying data, not on whether a comparisons API response was returned. The `currentYear` and `recentSaleCount` variables were hoisted to before the bullets section so both the new bullets and the existing questionsToConsider section can reference them.
+
+**3.2 Agent summary:** `buildQuickSummary` now accepts `hargisCount: number` and `assessmentTimeline: AssessmentPoint[]`. The call site passes `hargisRecords.length` and the already-parsed `assessmentTimeline`. The clipboard button copies `quickSummaryText` directly, so the expanded text is included automatically.
+
+**3.3 Sources page:** The existing "How we connect the data" section already describes PIN-based joins, spatial joins, and neighborhood boundary approximations from approximate polygon data. No duplicate sentence was needed. Only "What to do if something looks wrong" was new.
+
+**3.4 Subdivision genealogy:** Two notes added - estate note after entity type badge (guarded by `entityType === "estate"`), parent plat note after parent subdivision link (guarded by `parentSubdivision` presence). The parent plat note renders immediately after the link row so it reads as a continuation.
+
+**3.5 Admin Needs attention:** Three count-only Supabase queries. Neighborhoods: `slug IS NULL OR slug = ''`. Subdivisions: `recorded_year IS NULL`. Parcels: `year_built IS NULL` (proxy for Low confidence - missing build year is the primary confidence downgrade factor per `confidenceFor()`). All counts show amber when nonzero. Review links point to the corresponding admin list pages.
+
+**Em dash cleanup:** Sprint 3 QA revealed pre-existing em dashes in admin files, CSS files, and source comments from prior sprints. All cleared (20+ occurrences across 12 files).
 
 ---
 

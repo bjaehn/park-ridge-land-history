@@ -35,7 +35,7 @@ export const GEOJSON_FALLBACK_URL = "/data/park_ridge_parcels_map.geojson";
 export const BOUNDARY_URL = "/data/park_ridge_boundary.geojson";
 
 // ---------------------------------------------------------------------------
-// Basemap tile URLs — CARTO raster tiles (no API key required)
+// Basemap tile URLs - CARTO raster tiles (no API key required)
 // Structure: base layer (no labels) → parcel layers → labels overlay
 // ---------------------------------------------------------------------------
 
@@ -98,7 +98,7 @@ export const ERA_ORDER = [
 ] as const;
 
 // ---------------------------------------------------------------------------
-// Neighborhood color palette (for "neighborhood" lens — uses neighborhood_id)
+// Neighborhood color palette (for "neighborhood" lens - uses neighborhood_id)
 // ---------------------------------------------------------------------------
 
 export const NEIGHBORHOOD_PALETTE: Record<string, string> = {
@@ -151,7 +151,7 @@ export const MAP_LENSES: Array<{ id: MapLens; label: string; description: string
 export const DEFAULT_LENS: MapLens = "era";
 
 // ---------------------------------------------------------------------------
-// Lens paint expressions — returned as MapLibre expression arrays
+// Lens paint expressions - returned as MapLibre expression arrays
 // ---------------------------------------------------------------------------
 
 export function eraFillExpression(): unknown[] {

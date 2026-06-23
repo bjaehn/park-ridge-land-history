@@ -160,7 +160,7 @@ export function ParcelForm({ parcel, officialPlanningNeighborhoods, businessDist
           <div>
             <label className={LABEL}>Official Planning Neighborhood</label>
             <select name="official_planning_neighborhood_id" defaultValue={parcel.official_planning_neighborhood_id ?? ""} className={SELECT}>
-              <option value="">— None —</option>
+              <option value="">(none)</option>
               {officialPlanningNeighborhoods.map((n) => (
                 <option key={n.id} value={n.id}>{n.label}</option>
               ))}
@@ -169,7 +169,7 @@ export function ParcelForm({ parcel, officialPlanningNeighborhoods, businessDist
           <div>
             <label className={LABEL}>Business District</label>
             <select name="business_district_id" defaultValue={parcel.business_district_id ?? ""} className={SELECT}>
-              <option value="">— None —</option>
+              <option value="">(none)</option>
               {businessDistrictNeighborhoods.map((n) => (
                 <option key={n.id} value={n.id}>{n.label}</option>
               ))}
@@ -178,7 +178,7 @@ export function ParcelForm({ parcel, officialPlanningNeighborhoods, businessDist
           <div>
             <label className={LABEL}>Local / Market Neighborhood</label>
             <select name="local_neighborhood_id" defaultValue={parcel.local_neighborhood_id ?? ""} className={SELECT}>
-              <option value="">— None —</option>
+              <option value="">(none)</option>
               {localMarketNeighborhoods.map((n) => (
                 <option key={n.id} value={n.id}>{n.label}</option>
               ))}

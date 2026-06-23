@@ -87,7 +87,7 @@ export function NeighborhoodForm({ neighborhood }: { neighborhood?: Neighborhood
               <>
                 <input type="hidden" name="neighborhood_type" value={neighborhood?.neighborhood_type ?? "official_planning"} />
                 <p className="text-sm text-text-secondary px-3 py-1.5 bg-surface-card border border-surface-border rounded">
-                  {NEIGHBORHOOD_TYPE_OPTIONS.find((o) => o.value === neighborhood?.neighborhood_type)?.label ?? neighborhood?.neighborhood_type ?? "—"}
+                  {NEIGHBORHOOD_TYPE_OPTIONS.find((o) => o.value === neighborhood?.neighborhood_type)?.label ?? neighborhood?.neighborhood_type ?? "-"}
                 </p>
               </>
             ) : (

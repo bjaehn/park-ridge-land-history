@@ -134,6 +134,9 @@ export function SubdivisionDetailContent({ subdivisionId, recordedYear, entityTy
           </Link>
         </div>
       )}
+      {parentSubdivision && (
+        <p className="text-sm text-text-secondary">This subdivision was carved from the {parentSubdivision.name} plat.</p>
+      )}
 
       {/* Entity type badge */}
       {entityLabel && (
@@ -142,6 +145,9 @@ export function SubdivisionDetailContent({ subdivisionId, recordedYear, entityTy
             {entityLabel}
           </span>
         </div>
+      )}
+      {entityType === "estate" && (
+        <p className="text-sm text-text-secondary">This land was originally part of a private estate before being subdivided for residential use.</p>
       )}
 
       {/* Quality warnings */}

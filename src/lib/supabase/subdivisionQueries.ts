@@ -585,7 +585,7 @@ export async function fetchSubdivisionMapData(
     ? [bboxData.minLng, bboxData.minLat, bboxData.maxLng, bboxData.maxLat]
     : null;
 
-  // No official boundary — compute a bbox from the linked parcel geometries so
+  // No official boundary - compute a bbox from the linked parcel geometries so
   // the map can still center on the actual properties.
   if (!bbox && pins.length > 0) {
     const { data: pb } = await supabase.rpc("pins_bbox", { pin_array: pins });
