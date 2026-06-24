@@ -60,6 +60,15 @@ const sections = [
   },
 ];
 
+const tools = [
+  {
+    href: "/admin/plat-mapping",
+    label: "Recorder Plat Index",
+    description:
+      "View Cook County Recorder plat index entries for T40N R12E. Link Recorder short names to subdivision records, or add notes for entries without a match.",
+  },
+];
+
 export default async function AdminDashboard() {
   const [stats, attention] = await Promise.all([
     getStats().catch(() => ({ subdivisions: 0, parcels: 0, neighborhoods: 0 })),
@@ -100,6 +109,25 @@ export default async function AdminDashboard() {
       </div>
 
       <div className="mt-10">
+        <h2 className="text-sm font-semibold text-text-primary mb-4">Tools</h2>
+        <div className="space-y-3 mb-10">
+          {tools.map((t) => (
+            <Link
+              key={t.href}
+              href={t.href}
+              className="flex items-start justify-between gap-4 bg-surface-raised border border-surface-border rounded-lg px-5 py-4 hover:border-accent-teal/40 transition-colors group"
+            >
+              <div>
+                <p className="text-sm font-semibold text-text-primary group-hover:text-accent-teal transition-colors">{t.label}</p>
+                <p className="text-xs text-text-muted mt-0.5 leading-relaxed">{t.description}</p>
+              </div>
+              <span className="text-xs text-accent-teal shrink-0 mt-0.5">Open →</span>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-0">
         <h2 className="text-sm font-semibold text-text-primary mb-4">Needs attention</h2>
         <div className="space-y-3">
           <div className="flex items-center justify-between bg-surface-raised border border-surface-border rounded-lg px-5 py-4">
