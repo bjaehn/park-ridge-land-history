@@ -7,7 +7,7 @@ import { ConfidenceBadge } from "@/components/ui/ConfidenceBadge";
 import { MapView } from "@/components/MapView";
 import { SubdivisionDetailContent } from "./_SubdivisionDetailContent";
 import { SubdivisionHistoryPanel } from "@/components/ui/SubdivisionHistoryPanel";
-import { fetchSubdivisionFullDetail, fetchSubdivisionMapData, fetchParentSubdivision } from "@/lib/supabase/subdivisionQueries";
+import { fetchSubdivisionFullDetail, fetchSubdivisionMapData, fetchParentSubdivision, fetchSubdivisionGisLots } from "@/lib/supabase/subdivisionQueries";
 import type { ConfidenceLevel } from "@/lib/formatters";
 
 type Props = { params: { id: string } };
@@ -23,11 +23,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function SubdivisionDetailPage({ params }: Props) {
   const id = decodeURIComponent(params.id);
-  const [subOrNull, mapData, parentSub] = await Promise.all([
+  const [subOrNull, mapData, parentSub, gisLots] = await Promise.all([
     fetchSubdivisionFullDetail(id).catch(() => null),
     fetchSubdivisionMapData(id).catch(() => ({ pins: [], bbox: null })),
     fetchParentSubdivision(id).catch(() => null),
+    fetchSubdivisionGisLots(id).catch(() => []),
   ]);
+
+  // Merge deed-verified PINs with GIS-matched PINs so the map shows all known parcels
+  const gisPins = gisLots.filter((l) => l.pin_normalized).map((l) => l.pin_normalized!);
+  const allPins = [...new Set([...mapData.pins, ...gisPins])];
 
   if (!subOrNull) notFound();
 
@@ -101,12 +106,12 @@ export default async function SubdivisionDetailPage({ params }: Props) {
         geometryStatus={(sub.geometry_status as string | null) ?? null}
         parentSubdivision={parentSub}
         mapSlot={
-          mapData.pins.length > 0 || mapData.bbox ? (
+          allPins.length > 0 || mapData.bbox ? (
             <MapView
               scope={{
                 kind: "subdivision",
                 subdivisionId: id,
-                pins: mapData.pins.length > 0 ? mapData.pins : undefined,
+                pins: allPins.length > 0 ? allPins : undefined,
                 bbox: mapData.bbox ?? undefined,
               }}
               height="560px"
