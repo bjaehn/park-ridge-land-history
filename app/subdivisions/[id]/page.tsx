@@ -7,7 +7,7 @@ import { ConfidenceBadge } from "@/components/ui/ConfidenceBadge";
 import { MapView } from "@/components/MapView";
 import { SubdivisionDetailContent } from "./_SubdivisionDetailContent";
 import { SubdivisionHistoryPanel } from "@/components/ui/SubdivisionHistoryPanel";
-import { fetchSubdivisionFullDetail, fetchSubdivisionMapData, fetchParentSubdivision, fetchSubdivisionGisLots } from "@/lib/supabase/subdivisionQueries";
+import { fetchSubdivisionFullDetail, fetchSubdivisionMapData, fetchParentSubdivision, fetchSubdivisionGisLots, fetchBboxForPins } from "@/lib/supabase/subdivisionQueries";
 import type { ConfidenceLevel } from "@/lib/formatters";
 
 type Props = { params: { id: string } };
@@ -33,6 +33,12 @@ export default async function SubdivisionDetailPage({ params }: Props) {
   // Merge deed-verified PINs with GIS-matched PINs so the map shows all known parcels
   const gisPins = gisLots.filter((l) => l.pin_normalized).map((l) => l.pin_normalized!);
   const allPins = [...new Set([...mapData.pins, ...gisPins])];
+
+  // Recompute bbox from all pins when GIS expands beyond deed-only coverage
+  const allBbox =
+    allPins.length > mapData.pins.length
+      ? await fetchBboxForPins(allPins).catch(() => mapData.bbox)
+      : mapData.bbox;
 
   if (!subOrNull) notFound();
 
@@ -106,13 +112,13 @@ export default async function SubdivisionDetailPage({ params }: Props) {
         geometryStatus={(sub.geometry_status as string | null) ?? null}
         parentSubdivision={parentSub}
         mapSlot={
-          allPins.length > 0 || mapData.bbox ? (
+          allPins.length > 0 || allBbox ? (
             <MapView
               scope={{
                 kind: "subdivision",
                 subdivisionId: id,
                 pins: allPins.length > 0 ? allPins : undefined,
-                bbox: mapData.bbox ?? undefined,
+                bbox: allBbox ?? undefined,
               }}
               height="560px"
               showExpand

@@ -222,122 +222,13 @@ export function SubdivisionDetailContent({ subdivisionId, recordedYear, entityTy
         </div>
       )}
 
-      {/* GIS lot table — from Cook County GIS Lots layer (only for subdivisions
-          whose PAGE_SUBREF has been resolved to a named subdivision_id) */}
-      {gisLots.length > 0 && (() => {
-        const matched = gisLots.filter((l) => l.pin_normalized);
-        const highConf = matched.filter((l) => l.match_confidence === "high").length;
-
-        // Group by block
-        const blockMap = new Map<string, GisLotRow[]>();
-        for (const lot of gisLots) {
-          const key = lot.block_number ?? "Unknown";
-          if (!blockMap.has(key)) blockMap.set(key, []);
-          blockMap.get(key)!.push(lot);
-        }
-        const sortedBlocks = [...blockMap.keys()].sort((a, b) => {
-          if (a === "Unknown") return 1;
-          if (b === "Unknown") return -1;
-          const na = parseInt(a, 10), nb = parseInt(b, 10);
-          if (!isNaN(na) && !isNaN(nb)) return na - nb;
-          return a.localeCompare(b);
-        });
-
-        return (
-          <section>
-            <h2 className="section-heading">GIS plat lots</h2>
-            <div className="flex flex-wrap gap-4 mb-4">
-              <div className="bg-surface-card border border-surface-border rounded-lg px-4 py-3">
-                <p className="text-xl font-semibold text-text-primary tabular-nums">{gisLots.length}</p>
-                <p className="text-xs text-text-muted mt-0.5">Lots in GIS layer</p>
-              </div>
-              <div className="bg-surface-card border border-surface-border rounded-lg px-4 py-3">
-                <p className="text-xl font-semibold text-text-primary tabular-nums">{matched.length}</p>
-                <p className="text-xs text-text-muted mt-0.5">Matched to current parcels</p>
-              </div>
-              {highConf > 0 && (
-                <div className="bg-surface-card border border-surface-border rounded-lg px-4 py-3">
-                  <p className="text-xl font-semibold text-text-primary tabular-nums">{highConf}</p>
-                  <p className="text-xs text-text-muted mt-0.5">High-confidence matches</p>
-                </div>
-              )}
-            </div>
-            <div className="overflow-x-auto rounded-lg border border-surface-border">
-              <table className="w-full text-xs text-left">
-                <thead>
-                  <tr className="border-b border-surface-border bg-surface-raised">
-                    <th className="px-3 py-2 font-semibold text-text-muted uppercase tracking-wider">Lot</th>
-                    <th className="px-3 py-2 font-semibold text-text-muted uppercase tracking-wider">Current PIN</th>
-                    <th className="px-3 py-2 font-semibold text-text-muted uppercase tracking-wider">Match</th>
-                    <th className="px-3 py-2 font-semibold text-text-muted uppercase tracking-wider text-right">Overlap</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedBlocks.map((blockKey) => {
-                    const lots = blockMap.get(blockKey)!;
-                    return (
-                      <Fragment key={blockKey}>
-                        <tr className="bg-surface-raised/60 border-y border-surface-border">
-                          <td colSpan={4} className="px-3 py-1.5">
-                            <span className="font-semibold text-text-secondary text-[11px] uppercase tracking-wider">
-                              {blockKey === "Unknown" ? "Unknown block" : `Block ${blockKey}`}
-                            </span>
-                            <span className="ml-2 text-text-muted">{lots.length} lots</span>
-                          </td>
-                        </tr>
-                        {lots.map((lot) => (
-                          <tr key={lot.id} className="border-b border-surface-border/40 hover:bg-surface-raised/50 transition-colors">
-                            <td className="px-3 py-2 text-text-secondary">{lot.lot_number ?? "—"}</td>
-                            <td className="px-3 py-2">
-                              {lot.pin_normalized ? (
-                                <Link
-                                  href={`/properties/${encodeURIComponent(lot.pin_normalized)}`}
-                                  className="font-mono text-accent-purple hover:underline"
-                                >
-                                  {lot.pin_normalized}
-                                </Link>
-                              ) : (
-                                <span className="text-text-muted italic">No match</span>
-                              )}
-                            </td>
-                            <td className="px-3 py-2">
-                              {lot.match_confidence ? (
-                                <span className={[
-                                  "px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider",
-                                  lot.match_confidence === "high"   ? "bg-emerald-900/30 text-emerald-400" :
-                                  lot.match_confidence === "medium" ? "bg-amber-900/30 text-amber-400" :
-                                  "bg-surface-raised text-text-muted",
-                                ].join(" ")}>
-                                  {lot.match_confidence}
-                                </span>
-                              ) : (
-                                <span className="text-text-muted">—</span>
-                              )}
-                            </td>
-                            <td className="px-3 py-2 text-right text-text-muted tabular-nums">
-                              {lot.overlap_pct_of_parcel != null ? `${lot.overlap_pct_of_parcel}%` : "—"}
-                            </td>
-                          </tr>
-                        ))}
-                      </Fragment>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-            <InlineSourceNote className="mt-2">
-              Cook County GIS Lots layer (2025) · Spatially matched using PostGIS
-            </InlineSourceNote>
-          </section>
-        );
-      })()}
-
       {mapSlot && (
         <div>
           <h2 className="section-heading">Subdivision map</h2>
           {mapSlot}
         </div>
       )}
+
 
       {/* Sales activity */}
       {salesStats && salesStats.totalSales > 0 && (
@@ -501,6 +392,114 @@ export function SubdivisionDetailContent({ subdivisionId, recordedYear, entityTy
               GIS-matched parcels and deed-verified lot records. Lot and block numbers from Cook County GIS Lots layer or deed research.
             </InlineSourceNote>
           </div>
+        );
+      })()}
+
+      {/* GIS plat lots — original plat lot-by-lot index from Cook County GIS layer */}
+      {gisLots.length > 0 && (() => {
+        const matched = gisLots.filter((l) => l.pin_normalized);
+        const highConf = matched.filter((l) => l.match_confidence === "high").length;
+
+        const blockMap = new Map<string, GisLotRow[]>();
+        for (const lot of gisLots) {
+          const key = lot.block_number ?? "Unknown";
+          if (!blockMap.has(key)) blockMap.set(key, []);
+          blockMap.get(key)!.push(lot);
+        }
+        const sortedBlocks = [...blockMap.keys()].sort((a, b) => {
+          if (a === "Unknown") return 1;
+          if (b === "Unknown") return -1;
+          const na = parseInt(a, 10), nb = parseInt(b, 10);
+          if (!isNaN(na) && !isNaN(nb)) return na - nb;
+          return a.localeCompare(b);
+        });
+
+        return (
+          <section>
+            <h2 className="section-heading">GIS plat lots</h2>
+            <div className="flex flex-wrap gap-4 mb-4">
+              <div className="bg-surface-card border border-surface-border rounded-lg px-4 py-3">
+                <p className="text-xl font-semibold text-text-primary tabular-nums">{gisLots.length}</p>
+                <p className="text-xs text-text-muted mt-0.5">Lots in GIS layer</p>
+              </div>
+              <div className="bg-surface-card border border-surface-border rounded-lg px-4 py-3">
+                <p className="text-xl font-semibold text-text-primary tabular-nums">{matched.length}</p>
+                <p className="text-xs text-text-muted mt-0.5">Matched to current parcels</p>
+              </div>
+              {highConf > 0 && (
+                <div className="bg-surface-card border border-surface-border rounded-lg px-4 py-3">
+                  <p className="text-xl font-semibold text-text-primary tabular-nums">{highConf}</p>
+                  <p className="text-xs text-text-muted mt-0.5">High-confidence matches</p>
+                </div>
+              )}
+            </div>
+            <div className="overflow-x-auto rounded-lg border border-surface-border">
+              <table className="w-full text-xs text-left">
+                <thead>
+                  <tr className="border-b border-surface-border bg-surface-raised">
+                    <th className="px-3 py-2 font-semibold text-text-muted uppercase tracking-wider">Lot</th>
+                    <th className="px-3 py-2 font-semibold text-text-muted uppercase tracking-wider">Current PIN</th>
+                    <th className="px-3 py-2 font-semibold text-text-muted uppercase tracking-wider">Match</th>
+                    <th className="px-3 py-2 font-semibold text-text-muted uppercase tracking-wider text-right">Overlap</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedBlocks.map((blockKey) => {
+                    const lots = blockMap.get(blockKey)!;
+                    return (
+                      <Fragment key={blockKey}>
+                        <tr className="bg-surface-raised/60 border-y border-surface-border">
+                          <td colSpan={4} className="px-3 py-1.5">
+                            <span className="font-semibold text-text-secondary text-[11px] uppercase tracking-wider">
+                              {blockKey === "Unknown" ? "Unknown block" : `Block ${blockKey}`}
+                            </span>
+                            <span className="ml-2 text-text-muted">{lots.length} lots</span>
+                          </td>
+                        </tr>
+                        {lots.map((lot) => (
+                          <tr key={lot.id} className="border-b border-surface-border/40 hover:bg-surface-raised/50 transition-colors">
+                            <td className="px-3 py-2 text-text-secondary">{lot.lot_number ?? "—"}</td>
+                            <td className="px-3 py-2">
+                              {lot.pin_normalized ? (
+                                <Link
+                                  href={`/properties/${encodeURIComponent(lot.pin_normalized)}`}
+                                  className="font-mono text-accent-purple hover:underline"
+                                >
+                                  {lot.pin_normalized}
+                                </Link>
+                              ) : (
+                                <span className="text-text-muted italic">No match</span>
+                              )}
+                            </td>
+                            <td className="px-3 py-2">
+                              {lot.match_confidence ? (
+                                <span className={[
+                                  "px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider",
+                                  lot.match_confidence === "high"   ? "bg-emerald-900/30 text-emerald-400" :
+                                  lot.match_confidence === "medium" ? "bg-amber-900/30 text-amber-400" :
+                                  "bg-surface-raised text-text-muted",
+                                ].join(" ")}>
+                                  {lot.match_confidence}
+                                </span>
+                              ) : (
+                                <span className="text-text-muted">—</span>
+                              )}
+                            </td>
+                            <td className="px-3 py-2 text-right text-text-muted tabular-nums">
+                              {lot.overlap_pct_of_parcel != null ? `${lot.overlap_pct_of_parcel}%` : "—"}
+                            </td>
+                          </tr>
+                        ))}
+                      </Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <InlineSourceNote className="mt-2">
+              Cook County GIS Lots layer (2025) · Spatially matched using PostGIS
+            </InlineSourceNote>
+          </section>
         );
       })()}
     </div>

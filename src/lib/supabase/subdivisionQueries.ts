@@ -651,6 +651,17 @@ export type SubdivisionParcelRow = {
   lot_count?: number;
 };
 
+/** Compute a lat/lng bounding box for an arbitrary list of PINs (uses pins_bbox RPC). */
+export async function fetchBboxForPins(
+  pins: string[]
+): Promise<[number, number, number, number] | null> {
+  if (!supabase || !pins.length) return null;
+  const { data } = await supabase.rpc("pins_bbox", { pin_array: pins });
+  const row = (data as Array<{ min_lng: number; min_lat: number; max_lng: number; max_lat: number }>)?.[0];
+  if (!row?.min_lng) return null;
+  return [row.min_lng, row.min_lat, row.max_lng, row.max_lat];
+}
+
 /** Fetch basic parcel data (address, year_built, etc.) for an arbitrary list of PINs. */
 export async function fetchParcelsForPins(pins: string[]): Promise<SubdivisionParcelRow[]> {
   if (!supabase || !pins.length) return [];
