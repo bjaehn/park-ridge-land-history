@@ -639,6 +639,38 @@ export async function fetchSubdivisionMarketHistory(pins: string[]): Promise<Mar
 }
 
 /** Fetch a subdivision for property page cross-links. */
+export type SubdivisionParcelRow = {
+  pin: string;
+  address?: string | null;
+  year_built?: number | null;
+  building_sqft?: number | null;
+  sale_count?: number | null;
+  permit_count?: number | null;
+  lot_number?: string | null;
+  block_number?: string | null;
+  lot_count?: number;
+};
+
+/** Fetch basic parcel data (address, year_built, etc.) for an arbitrary list of PINs. */
+export async function fetchParcelsForPins(pins: string[]): Promise<SubdivisionParcelRow[]> {
+  if (!supabase || !pins.length) return [];
+  const { data, error } = await supabase
+    .from("parcels")
+    .select("pin_normalized, address, year_built, building_sqft, sale_count, permit_count")
+    .in("pin_normalized", pins);
+  if (error || !data) return [];
+  return (data as Record<string, unknown>[]).map((p) => ({
+    pin: String(p.pin_normalized ?? ""),
+    address: (p.address as string | null) ?? null,
+    year_built: (p.year_built as number | null) ?? null,
+    building_sqft: (p.building_sqft as number | null) ?? null,
+    sale_count: (p.sale_count as number | null) ?? null,
+    permit_count: (p.permit_count as number | null) ?? null,
+    lot_number: null,
+    block_number: null,
+  }));
+}
+
 export type GisLotRow = {
   id: string;
   lot_number: string | null;

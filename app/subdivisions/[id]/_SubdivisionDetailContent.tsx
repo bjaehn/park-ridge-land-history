@@ -18,9 +18,10 @@ import {
   fetchSubdivisionAssessmentStats,
   fetchSubdivisionMarketHistory,
   fetchSubdivisionGisLots,
+  fetchParcelsForPins,
 } from "@/lib/supabase/subdivisionQueries";
 import { fetchBlockSalesStats } from "@/lib/supabase/blockQueries";
-import type { GisLotRow } from "@/lib/supabase/subdivisionQueries";
+import type { GisLotRow, SubdivisionParcelRow } from "@/lib/supabase/subdivisionQueries";
 import type { HighlightGroup } from "@/components/ui/HighlightReel";
 import type { DecadeRow } from "@/components/ui/ConstructionByDecadeChart";
 import type { BlockSalesStats, BlockAssessmentStats } from "@/lib/supabase/blockQueries";
@@ -42,7 +43,7 @@ type Props = {
 };
 
 export function SubdivisionDetailContent({ subdivisionId, recordedYear, entityType, geometryStatus, parentSubdivision, mapSlot }: Props) {
-  const [parcels, setParcels] = useState<Awaited<ReturnType<typeof fetchSubdivisionParcels>>>([]);
+  const [parcels, setParcels] = useState<SubdivisionParcelRow[]>([]);
   const [gisLots, setGisLots] = useState<GisLotRow[]>([]);
   const [salesStats, setSalesStats] = useState<BlockSalesStats | null>(null);
   const [assessmentStats, setAssessmentStats] = useState<BlockAssessmentStats | null>(null);
@@ -54,20 +55,49 @@ export function SubdivisionDetailContent({ subdivisionId, recordedYear, entityTy
       fetchSubdivisionParcels(subdivisionId),
       fetchSubdivisionGisLots(subdivisionId),
     ])
-      .then(([parcelRows, lotRows]) => {
-        setParcels(parcelRows);
+      .then(async ([deedRows, lotRows]) => {
         setGisLots(lotRows);
-        const pins = parcelRows.map((p) => p.pin).filter(Boolean);
-        if (!pins.length) return;
-        return Promise.all([
-          fetchBlockSalesStats(pins),
-          fetchSubdivisionAssessmentStats(pins),
-          fetchSubdivisionMarketHistory(pins),
-        ]).then(([sales, assessment, history]) => {
-          setSalesStats(sales);
-          setAssessmentStats(assessment);
-          setMarketHistory(history);
-        });
+
+        // Build the full PIN set: deed-verified + GIS-matched
+        const deedPinSet = new Set(deedRows.map((p) => p.pin).filter(Boolean));
+        const gisOnlyLots = lotRows.filter(
+          (l) => l.pin_normalized && !deedPinSet.has(l.pin_normalized)
+        );
+        const gisOnlyPins = gisOnlyLots.map((l) => l.pin_normalized!);
+        const allPins = [...deedPinSet, ...gisOnlyPins].filter(Boolean);
+
+        // Fetch parcel data for GIS-only PINs so we can show their address/year_built
+        const gisParcels = gisOnlyPins.length
+          ? await fetchParcelsForPins(gisOnlyPins)
+          : [];
+
+        // Merge: deed rows keep their deed lot/block; GIS-only rows get lot/block from gis_lots
+        const gisParcelMap = new Map(gisParcels.map((p) => [p.pin, p]));
+        const mergedExtra: SubdivisionParcelRow[] = gisOnlyLots.map((lot) => ({
+          ...(gisParcelMap.get(lot.pin_normalized!) ?? {
+            pin: lot.pin_normalized!,
+            address: null,
+            year_built: null,
+            building_sqft: null,
+            sale_count: null,
+            permit_count: null,
+          }),
+          pin: lot.pin_normalized!,
+          lot_number: lot.lot_number,
+          block_number: lot.block_number,
+        }));
+
+        setParcels([...deedRows, ...mergedExtra]);
+
+        if (!allPins.length) return;
+        const [sales, assessment, history] = await Promise.all([
+          fetchBlockSalesStats(allPins),
+          fetchSubdivisionAssessmentStats(allPins),
+          fetchSubdivisionMarketHistory(allPins),
+        ]);
+        setSalesStats(sales);
+        setAssessmentStats(assessment);
+        setMarketHistory(history);
       })
       .catch(() => null)
       .finally(() => setLoading(false));
@@ -99,7 +129,7 @@ export function SubdivisionDetailContent({ subdivisionId, recordedYear, entityTy
       : null;
 
   const statItems = [
-    { value: formatCount(parcels.length, "lot", "lots"), label: "Lots in this plat" },
+    { value: formatCount(gisLots.length > 0 ? gisLots.length : parcels.length, "lot", "lots"), label: "Lots in this plat" },
     earliestBuilt ? { value: String(earliestBuilt), label: "First home built" } : null,
     latestBuilt && latestBuilt !== earliestBuilt
       ? { value: String(latestBuilt), label: "Most recently built" }
@@ -412,7 +442,7 @@ export function SubdivisionDetailContent({ subdivisionId, recordedYear, entityTy
         });
         return (
           <div>
-            <h2 className="section-heading">Known properties in this subdivision</h2>
+            <h2 className="section-heading">Properties in this subdivision</h2>
             <div className="space-y-8">
               {decades.map(([decade, group]) => {
                 const decadeYear = decade === "Unknown" ? null : parseInt(decade);
@@ -468,7 +498,7 @@ export function SubdivisionDetailContent({ subdivisionId, recordedYear, entityTy
               })}
             </div>
             <InlineSourceNote className="mt-3">
-              Sourced from deed / legal descriptions. This list represents the current research sample and is not exhaustive.
+              GIS-matched parcels and deed-verified lot records. Lot and block numbers from Cook County GIS Lots layer or deed research.
             </InlineSourceNote>
           </div>
         );
