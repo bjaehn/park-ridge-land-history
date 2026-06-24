@@ -7,6 +7,7 @@ import { SourceEditor } from "../_SourceEditor";
 import { AliasEditor } from "../_AliasEditor";
 import { LotEditor } from "../_LotEditor";
 import { DeleteSubdivisionButton } from "../_DeleteButton";
+import { CandidatePropertiesPanel } from "../_CandidatePropertiesPanel";
 
 export default async function EditSubdivisionPage({ params }: { params: { id: string } }) {
   const { id } = params;
@@ -19,6 +20,7 @@ export default async function EditSubdivisionPage({ params }: { params: { id: st
     { data: lotsRaw },
     { data: allSubdivisionsRaw },
     { data: childrenRaw },
+    { data: platEntries },
   ] = await Promise.all([
     adminSupabase.from("subdivisions").select("*").eq("id", id).single(),
     adminSupabase
@@ -48,6 +50,12 @@ export default async function EditSubdivisionPage({ params }: { params: { id: st
       .select("id, name")
       .eq("parent_subdivision_id", id)
       .order("name"),
+    adminSupabase
+      .from("recorder_plat_index")
+      .select("gis_page_code")
+      .eq("subdivision_id", id)
+      .not("gis_page_code", "is", null)
+      .limit(1),
   ]);
 
   if (!subdivision) notFound();
@@ -58,6 +66,34 @@ export default async function EditSubdivisionPage({ params }: { params: { id: st
   const lots = lotsRaw ?? [];
   const allSubdivisions = allSubdivisionsRaw ?? [];
   const children = childrenRaw ?? [];
+  const gisPageCode = (platEntries ?? [])[0]?.gis_page_code ?? null;
+
+  // Fetch candidate parcels if a GIS page code is known
+  let candidateCount = 0;
+  let alreadyLinkedCount = 0;
+  let sampleAddresses: { address: string; pin_normalized: string }[] = [];
+  if (gisPageCode) {
+    const pageCodeValue = `Assessor subdivision area ${gisPageCode}`;
+    const [{ count: unlinkedCount, data: sample }, { count: linkedCount }] = await Promise.all([
+      adminSupabase
+        .from("parcels")
+        .select("address, pin_normalized", { count: "exact" })
+        .eq("municipality", "CITY OF PARK RIDGE")
+        .eq("subdivision_name", pageCodeValue)
+        .is("subdivision_id", null)
+        .order("address")
+        .limit(20),
+      adminSupabase
+        .from("parcels")
+        .select("*", { count: "exact", head: true })
+        .eq("municipality", "CITY OF PARK RIDGE")
+        .eq("subdivision_name", pageCodeValue)
+        .not("subdivision_id", "is", null),
+    ]);
+    candidateCount = unlinkedCount ?? 0;
+    alreadyLinkedCount = linkedCount ?? 0;
+    sampleAddresses = (sample ?? []) as { address: string; pin_normalized: string }[];
+  }
 
   return (
     <div>
@@ -87,6 +123,14 @@ export default async function EditSubdivisionPage({ params }: { params: { id: st
       <SourceEditor sources={sources} subdivisionId={id} />
       <AliasEditor aliases={aliases} subdivisionId={id} />
       <LotEditor lots={lots} subdivisionId={id} />
+
+      <CandidatePropertiesPanel
+        subdivisionId={id}
+        gisPageCode={gisPageCode}
+        candidateCount={candidateCount}
+        alreadyLinkedCount={alreadyLinkedCount}
+        sampleAddresses={sampleAddresses}
+      />
     </div>
   );
 }
