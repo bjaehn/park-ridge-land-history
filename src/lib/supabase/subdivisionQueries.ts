@@ -32,22 +32,13 @@ export async function fetchSubdivisionIndex(): Promise<SubdivisionSummary[]> {
     .from("subdivisions")
     .select(
       "id, name, normalized_name, recorded_year, confidence_level, confidence_reason, " +
-      "source_name, original_owner, developer, notes, parent_subdivision_id, " +
-      "parcels(count)"
+      "source_name, original_owner, developer, notes, parent_subdivision_id"
     )
     .order("recorded_year", { ascending: true, nullsFirst: false })
     .order("normalized_name", { ascending: true });
 
   if (error || !data) return [];
-
-  // Normalize the embedded parcel count into parcel_count
-  return (data as unknown as Array<Record<string, unknown>>).map((row) => {
-    const countArr = row.parcels as Array<{ count: number }> | null;
-    return {
-      ...row,
-      parcel_count: countArr?.[0]?.count ?? 0,
-    };
-  }) as unknown as SubdivisionSummary[];
+  return data as unknown as SubdivisionSummary[];
 }
 
 // ─── Subdivision detail ───────────────────────────────────────────────────────

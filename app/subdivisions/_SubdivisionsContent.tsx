@@ -78,9 +78,7 @@ export function SubdivisionsContent() {
                 const parentName = s.parent_subdivision_id
                   ? (nameById.get(s.parent_subdivision_id) ?? null)
                   : null;
-                const metaItems: MetaItem[] = s.parcel_count != null
-                  ? [{ icon: <SubdivisionIcon size={11} />, value: formatCount(s.parcel_count, "lot", "lots") }]
-                  : [];
+                const metaItems: MetaItem[] = [];
                 return (
                   <EntityCard
                     key={s.id}
