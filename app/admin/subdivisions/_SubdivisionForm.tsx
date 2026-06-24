@@ -129,10 +129,6 @@ export function SubdivisionForm({
               <option value="unknown">Unknown</option>
             </select>
           </div>
-          <div>
-            <label className={LABEL}>Parcel Count</label>
-            <input name="parcel_count" type="number" defaultValue={subdivision?.parcel_count ?? ""} className={INPUT} />
-          </div>
         </div>
 
         {/* Alternate Names */}

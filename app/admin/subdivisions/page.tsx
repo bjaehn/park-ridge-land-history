@@ -17,7 +17,7 @@ export default async function SubdivisionsListPage({
 
   let query = adminSupabase
     .from("subdivisions")
-    .select("id, name, entity_type, recorded_year, confidence_level, parcel_count, status")
+    .select("id, name, entity_type, recorded_year, confidence_level, status")
     .order("recorded_year", { ascending: true, nullsFirst: false })
     .order("name");
 
@@ -60,7 +60,7 @@ export default async function SubdivisionsListPage({
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-surface-border">
-              {["Name", "Type", "Year", "Confidence", "Parcels", "Status", ""].map((h) => (
+              {["Name", "Type", "Year", "Confidence", "Status", ""].map((h) => (
                 <th
                   key={h}
                   className="text-left px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider"
@@ -73,7 +73,7 @@ export default async function SubdivisionsListPage({
           <tbody className="divide-y divide-surface-border">
             {subdivisions.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-sm text-text-muted">
+                <td colSpan={6} className="px-4 py-8 text-center text-sm text-text-muted">
                   {q ? "No subdivisions match your search." : "No subdivisions yet."}
                 </td>
               </tr>
@@ -97,9 +97,6 @@ export default async function SubdivisionsListPage({
                   >
                     {s.confidence_level}
                   </span>
-                </td>
-                <td className="px-4 py-3 text-text-secondary tabular-nums">
-                  {s.parcel_count ?? 0}
                 </td>
                 <td className="px-4 py-3 text-text-secondary">
                   {s.status ?? <span className="text-text-muted">-</span>}
