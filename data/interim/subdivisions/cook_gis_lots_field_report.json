@@ -1,0 +1,44 @@
+{
+  "found_url": null,
+  "candidates_tried": [
+    {
+      "url": "https://gis.cookcountyil.gov/hosting/rest/services/Hosted/Lot/FeatureServer/0",
+      "status": "ok"
+    },
+    {
+      "url": "https://gis.cookcountyil.gov/hosting/rest/services/Hosted/Lots/FeatureServer/0",
+      "status": "ok"
+    },
+    {
+      "url": "https://gis.cookcountyil.gov/hosting/rest/services/Hosted/SubdivisionLots/FeatureServer/0",
+      "status": "ok"
+    },
+    {
+      "url": "https://gis.cookcountyil.gov/hosting/rest/services/Hosted/Subdivision_Lots/FeatureServer/0",
+      "status": "ok"
+    },
+    {
+      "url": "https://gis.cookcountyil.gov/hosting/rest/services/Hosted/PlattedLots/FeatureServer/0",
+      "status": "ok"
+    },
+    {
+      "url": "https://gis.cookcountyil.gov/hosting/rest/services/Hosted/Plat/FeatureServer/0",
+      "status": "ok"
+    },
+    {
+      "url": "https://gis.cookcountyil.gov/hosting/rest/services/Property/Lots/FeatureServer/0",
+      "status": "ok"
+    },
+    {
+      "url": "https://gis.cookcountyil.gov/hosting/rest/services/Property/SubdivisionLots/FeatureServer/0",
+      "status": "ok"
+    }
+  ],
+  "all_fields": [],
+  "lot_candidate_fields": [],
+  "sample_record": null,
+  "env_var_hint": "COOK_GIS_LOTS_SOURCE_URL",
+  "notes": [
+    "Automatic discovery failed. Set COOK_GIS_LOTS_SOURCE_URL in .env manually and re-run to validate fields."
+  ]
+}
