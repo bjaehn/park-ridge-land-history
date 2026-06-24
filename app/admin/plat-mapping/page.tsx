@@ -12,23 +12,13 @@ export default async function PlatMappingPage() {
         .order("section_ref")
         .order("full_name"),
       adminSupabase.from("subdivisions").select("id, name").order("name"),
-      adminSupabase
-        .from("parcels")
-        .select("subdivision_name")
-        .eq("municipality", "CITY OF PARK RIDGE")
-        .not("subdivision_name", "is", null)
-        .like("subdivision_name", "Assessor subdivision area %"),
+      adminSupabase.rpc("get_park_ridge_gis_page_codes"),
     ]);
 
-  // Aggregate page code counts client-side from raw rows
-  const codeMap = new Map<string, number>();
-  for (const row of rawPageCodes ?? []) {
-    const code = (row.subdivision_name as string).replace("Assessor subdivision area ", "");
-    codeMap.set(code, (codeMap.get(code) ?? 0) + 1);
-  }
-  const pageCodes = Array.from(codeMap.entries())
-    .map(([code, cnt]) => ({ code, cnt }))
-    .sort((a, b) => a.code.localeCompare(b.code));
+  const pageCodes = (rawPageCodes ?? []).map((r: { code: string; cnt: number }) => ({
+    code: r.code,
+    cnt: Number(r.cnt),
+  }));
 
   const entries = (rawEntries ?? []).map((e) => ({
     ...e,
