@@ -31,7 +31,7 @@ import {
 } from "@/lib/formatters";
 import { NEIGHBORHOOD_ERA_LABELS } from "@/lib/content";
 import { getPropertyDetail } from "@/lib/data/properties";
-import type { PropertySale, PropertyPermit, HargisRecord, LandLineageEntry, AssessmentPoint } from "@/lib/data/properties";
+import type { PropertySale, PropertyPermit, HargisRecord, LandLineageEntry, LandAncestryData, AssessmentPoint } from "@/lib/data/properties";
 import { SalesPriceChart } from "./_SalesPriceChart";
 import { AssessmentChart } from "./_AssessmentChart";
 import type { LucideIcon } from "lucide-react";
@@ -338,6 +338,81 @@ function LandLineageSection({ lineage }: { lineage: LandLineageEntry[] }) {
   );
 }
 
+const RELATIONSHIP_LABELS: Record<string, string> = {
+  exact_or_near_exact:        "Exact match",
+  parcel_contains_lot:        "Parcel contains lot",
+  lot_contains_parcel:        "Lot contains parcel",
+  parcel_part_of_lot:         "Partial match",
+  parcel_spans_multiple_lots: "Spans multiple lots",
+  ambiguous:                  "Approximate match",
+};
+
+function LandAncestryPanel({ data }: { data: LandAncestryData }) {
+  const lotLabel =
+    data.lot_number && data.block_number ? `Lot ${data.lot_number}, Block ${data.block_number}`
+    : data.lot_number                    ? `Lot ${data.lot_number}`
+    : data.block_number                  ? `Block ${data.block_number}`
+    : null;
+
+  // subdivision_id is non-null only when the PAGE_SUBREF has been resolved to a
+  // named subdivision. When null, subdivision_name holds the raw PAGE_SUBREF code.
+  const isResolved = Boolean(data.subdivision_id);
+  const overlapPct = data.overlap_pct_of_parcel != null
+    ? Math.round(data.overlap_pct_of_parcel * 10) / 10
+    : null;
+  const relLabel = data.relationship_type
+    ? (RELATIONSHIP_LABELS[data.relationship_type] ?? data.relationship_type)
+    : null;
+
+  return (
+    <section>
+      <h2 className="section-heading">Original plat lot</h2>
+      <div className="bg-surface-card border border-surface-border rounded-lg p-4">
+        <div className="flex items-start gap-3">
+          <SubdivisionIcon size={16} strokeWidth={1.8} className="text-text-muted shrink-0 mt-0.5" aria-hidden="true" />
+          <div className="min-w-0 flex-1">
+            {lotLabel && (
+              <p className="text-sm font-semibold text-text-primary mb-0.5">{lotLabel}</p>
+            )}
+
+            {isResolved && data.subdivision_id ? (
+              <Link
+                href={`/subdivisions/${encodeURIComponent(data.subdivision_id)}`}
+                className="text-sm text-accent-purple hover:underline"
+              >
+                {data.subdivision_name}
+              </Link>
+            ) : data.subdivision_name ? (
+              <p className="text-sm text-text-secondary">
+                Plat book ref: <span className="font-mono">{data.normalized_subdivision_name ?? data.subdivision_name}</span>
+              </p>
+            ) : null}
+
+            <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-2 text-xs text-text-muted">
+              {overlapPct != null && (
+                <span>{overlapPct}% of parcel covered by this lot</span>
+              )}
+              {relLabel && <span>{relLabel}</span>}
+              {data.match_confidence && (
+                <span>Confidence: {data.match_confidence}</span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+      <InlineSourceNote className="mt-2">
+        {[
+          data.source_name ?? "Cook County GIS Lots layer",
+          "Spatially matched using PostGIS",
+          !isResolved && data.normalized_subdivision_name
+            ? "Subdivision name pending Cook County Recorder lookup"
+            : null,
+        ].filter(Boolean).join(" · ")}
+      </InlineSourceNote>
+    </section>
+  );
+}
+
 const NR_EVAL_LABELS: Record<string, string> = {
   C: "Contributing structure",
   NC: "Non-contributing structure",
@@ -557,6 +632,7 @@ export function PropertyDetailContent({ pin }: Props) {
   const permits = detail.permits ?? [];
   const hargisRecords = detail.hargisRecords ?? [];
   const landLineage = detail.landLineage ?? [];
+  const landAncestry = detail.landAncestry ?? null;
   const appealYears = detail.appealYears ?? [];
 
   // Parse assessed_value_timeline JSONB (may be pre-parsed object or string)
@@ -882,6 +958,9 @@ export function PropertyDetailContent({ pin }: Props) {
           </div>
         </section>
       ) : null}
+
+      {/* GIS plat lot — spatial match from Cook County GIS Lots layer */}
+      {landAncestry && <LandAncestryPanel data={landAncestry} />}
 
       {/* Deed record */}
       {props.deed_notes && (

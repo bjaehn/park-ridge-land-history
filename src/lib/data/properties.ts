@@ -109,6 +109,20 @@ export type HargisRecord = {
   pdf_url: string | null;
 };
 
+export type LandAncestryData = {
+  lot_id: string;
+  lot_number: string | null;
+  block_number: string | null;
+  subdivision_name: string | null;
+  normalized_subdivision_name: string | null;
+  subdivision_id: string | null;
+  relationship_type: string | null;
+  match_confidence: string | null;
+  overlap_pct_of_parcel: number | null;
+  overlap_pct_of_lot: number | null;
+  source_name: string | null;
+};
+
 export type PropertyDetailData = {
   properties: ParcelProperties;
   subdivision?: {
@@ -119,6 +133,7 @@ export type PropertyDetailData = {
     source_reference?: string | null;
   } | null;
   landLineage?: LandLineageEntry[];
+  landAncestry?: LandAncestryData | null;
   comparisons?: ComparisonRow[];
   sales?: PropertySale[];
   permits?: PropertyPermit[];
@@ -184,6 +199,7 @@ export async function getPropertyDetail(pin: string): Promise<PropertyDetailData
     permitsResult,
     hargisResult,
     appealYearsResult,
+    landAncestryResult,
   ] = await Promise.allSettled([
     loadSubdivision(pin),
     loadLandLineage(pin),
@@ -192,12 +208,14 @@ export async function getPropertyDetail(pin: string): Promise<PropertyDetailData
     loadPermits(pin),
     loadHargisRecords(pin),
     loadAppealYears(pin, props.latest_appeal_year as number | null),
+    loadLandAncestry(pin),
   ]);
 
   return {
     properties: props,
     subdivision: subdivisionResult.status === "fulfilled" ? subdivisionResult.value : null,
     landLineage: landLineageResult.status === "fulfilled" ? landLineageResult.value : [],
+    landAncestry: landAncestryResult.status === "fulfilled" ? landAncestryResult.value : null,
     comparisons: comparisonsResult.status === "fulfilled" ? comparisonsResult.value : undefined,
     sales: salesResult.status === "fulfilled" ? salesResult.value : [],
     permits: permitsResult.status === "fulfilled" ? permitsResult.value : [],
@@ -404,6 +422,30 @@ async function loadLandLineage(pin: string): Promise<LandLineageEntry[]> {
       year: (link.year as number | null) ?? null,
     };
   });
+}
+
+async function loadLandAncestry(pin: string): Promise<LandAncestryData | null> {
+  if (!supabase) return null;
+  try {
+    const { data } = await supabase.rpc("get_land_ancestry_for_pin", { p_pin: pin });
+    if (!data || !(data as unknown[]).length) return null;
+    const row = (data as Record<string, unknown>[])[0];
+    return {
+      lot_id: String(row.lot_id ?? ""),
+      lot_number: (row.lot_number as string | null) ?? null,
+      block_number: (row.block_number as string | null) ?? null,
+      subdivision_name: (row.subdivision_name as string | null) ?? null,
+      normalized_subdivision_name: (row.normalized_subdivision_name as string | null) ?? null,
+      subdivision_id: (row.subdivision_id as string | null) ?? null,
+      relationship_type: (row.relationship_type as string | null) ?? null,
+      match_confidence: (row.match_confidence as string | null) ?? null,
+      overlap_pct_of_parcel: row.overlap_pct_of_parcel != null ? Number(row.overlap_pct_of_parcel) : null,
+      overlap_pct_of_lot: row.overlap_pct_of_lot != null ? Number(row.overlap_pct_of_lot) : null,
+      source_name: (row.source_name as string | null) ?? null,
+    };
+  } catch {
+    return null;
+  }
 }
 
 async function loadPropertyProps(pin: string): Promise<ParcelProperties | null> {
