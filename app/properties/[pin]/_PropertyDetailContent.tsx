@@ -526,6 +526,16 @@ function buildPropertyStory(
   return `This property is part of the ${subdivisionName} subdivision.`;
 }
 
+// Decade ranges within which the neighborhood era label is meaningful for a specific property.
+// A home built outside these bounds should fall through to the year-based fallbacks below.
+const NEIGHBORHOOD_ERA_YEAR_RANGE: Record<string, [number, number]> = {
+  uptown_park_ridge: [1860, 1939],
+  northeast:         [1900, 1949],
+  central:           [1910, 1969],
+  northwest_park:    [1930, 1979],
+  south_park:        [1940, 1989],
+};
+
 function getEraContextNote(
   yearBuilt: number | null,
   localSlug: string | null,
@@ -534,7 +544,10 @@ function getEraContextNote(
   if (!yearBuilt) return null;
   const slug = localSlug ?? officialSlug;
   if (slug && NEIGHBORHOOD_ERA_LABELS[slug]) {
-    return `Built during the ${NEIGHBORHOOD_ERA_LABELS[slug].toLowerCase()}.`;
+    const range = NEIGHBORHOOD_ERA_YEAR_RANGE[slug];
+    if (!range || (yearBuilt >= range[0] && yearBuilt <= range[1])) {
+      return `Built during the ${NEIGHBORHOOD_ERA_LABELS[slug].toLowerCase()}.`;
+    }
   }
   if (yearBuilt < 1890) return "Built during Park Ridge's pioneer era.";
   if (yearBuilt < 1920) return "Built during Park Ridge's early growth period.";
