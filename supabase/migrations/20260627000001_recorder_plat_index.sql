@@ -19,6 +19,8 @@ CREATE INDEX IF NOT EXISTS recorder_plat_index_subdivision_idx  ON recorder_plat
 CREATE INDEX IF NOT EXISTS recorder_plat_index_section_idx      ON recorder_plat_index (section_ref);
 
 ALTER TABLE recorder_plat_index ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "recorder_plat_index_admin_only" ON recorder_plat_index;
 CREATE POLICY "recorder_plat_index_admin_only" ON recorder_plat_index FOR ALL USING (false) WITH CHECK (false);
 
 CREATE OR REPLACE FUNCTION recorder_plat_index_set_updated_at()
@@ -26,6 +28,7 @@ RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN NEW.updated_at = now(); RETURN NEW; END;
 $$;
 
+DROP TRIGGER IF EXISTS recorder_plat_index_updated_at ON recorder_plat_index;
 CREATE TRIGGER recorder_plat_index_updated_at
   BEFORE UPDATE ON recorder_plat_index
   FOR EACH ROW EXECUTE FUNCTION recorder_plat_index_set_updated_at();
