@@ -17,8 +17,10 @@ import {
   fetchSubdivisionParcels,
   fetchSubdivisionAssessmentStats,
   fetchSubdivisionMarketHistory,
+  fetchSubdivisionGisLots,
 } from "@/lib/supabase/subdivisionQueries";
 import { fetchBlockSalesStats } from "@/lib/supabase/blockQueries";
+import type { GisLotRow } from "@/lib/supabase/subdivisionQueries";
 import type { HighlightGroup } from "@/components/ui/HighlightReel";
 import type { DecadeRow } from "@/components/ui/ConstructionByDecadeChart";
 import type { BlockSalesStats, BlockAssessmentStats } from "@/lib/supabase/blockQueries";
@@ -41,15 +43,21 @@ type Props = {
 
 export function SubdivisionDetailContent({ subdivisionId, recordedYear, entityType, geometryStatus, parentSubdivision, mapSlot }: Props) {
   const [parcels, setParcels] = useState<Awaited<ReturnType<typeof fetchSubdivisionParcels>>>([]);
+  const [gisLots, setGisLots] = useState<GisLotRow[]>([]);
+  const [showAllLots, setShowAllLots] = useState(false);
   const [salesStats, setSalesStats] = useState<BlockSalesStats | null>(null);
   const [assessmentStats, setAssessmentStats] = useState<BlockAssessmentStats | null>(null);
   const [marketHistory, setMarketHistory] = useState<MarketHistoryRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchSubdivisionParcels(subdivisionId)
-      .then((parcelRows) => {
+    Promise.all([
+      fetchSubdivisionParcels(subdivisionId),
+      fetchSubdivisionGisLots(subdivisionId),
+    ])
+      .then(([parcelRows, lotRows]) => {
         setParcels(parcelRows);
+        setGisLots(lotRows);
         const pins = parcelRows.map((p) => p.pin).filter(Boolean);
         if (!pins.length) return;
         return Promise.all([
@@ -184,6 +192,97 @@ export function SubdivisionDetailContent({ subdivisionId, recordedYear, entityTy
           </p>
         </div>
       )}
+
+      {/* GIS lot table — from Cook County GIS Lots layer (only for subdivisions
+          whose PAGE_SUBREF has been resolved to a named subdivision_id) */}
+      {gisLots.length > 0 && (() => {
+        const matched = gisLots.filter((l) => l.pin_normalized);
+        const highConf = matched.filter((l) => l.match_confidence === "high").length;
+        const visible = showAllLots ? gisLots : gisLots.slice(0, 20);
+        return (
+          <section>
+            <h2 className="section-heading">GIS plat lots</h2>
+            <div className="flex flex-wrap gap-4 mb-4">
+              <div className="bg-surface-card border border-surface-border rounded-lg px-4 py-3">
+                <p className="text-xl font-semibold text-text-primary tabular-nums">{gisLots.length}</p>
+                <p className="text-xs text-text-muted mt-0.5">Lots in GIS layer</p>
+              </div>
+              <div className="bg-surface-card border border-surface-border rounded-lg px-4 py-3">
+                <p className="text-xl font-semibold text-text-primary tabular-nums">{matched.length}</p>
+                <p className="text-xs text-text-muted mt-0.5">Matched to current parcels</p>
+              </div>
+              {highConf > 0 && (
+                <div className="bg-surface-card border border-surface-border rounded-lg px-4 py-3">
+                  <p className="text-xl font-semibold text-text-primary tabular-nums">{highConf}</p>
+                  <p className="text-xs text-text-muted mt-0.5">High-confidence matches</p>
+                </div>
+              )}
+            </div>
+            <div className="overflow-x-auto rounded-lg border border-surface-border">
+              <table className="w-full text-xs text-left">
+                <thead>
+                  <tr className="border-b border-surface-border bg-surface-raised">
+                    <th className="px-3 py-2 font-semibold text-text-muted uppercase tracking-wider">Block</th>
+                    <th className="px-3 py-2 font-semibold text-text-muted uppercase tracking-wider">Lot</th>
+                    <th className="px-3 py-2 font-semibold text-text-muted uppercase tracking-wider">Current PIN</th>
+                    <th className="px-3 py-2 font-semibold text-text-muted uppercase tracking-wider">Match</th>
+                    <th className="px-3 py-2 font-semibold text-text-muted uppercase tracking-wider text-right">Overlap</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visible.map((lot) => (
+                    <tr key={lot.id} className="border-b border-surface-border/50 hover:bg-surface-raised/50 transition-colors">
+                      <td className="px-3 py-2 text-text-secondary">{lot.block_number ?? "—"}</td>
+                      <td className="px-3 py-2 text-text-secondary">{lot.lot_number ?? "—"}</td>
+                      <td className="px-3 py-2">
+                        {lot.pin_normalized ? (
+                          <Link
+                            href={`/properties/${encodeURIComponent(lot.pin_normalized)}`}
+                            className="font-mono text-accent-purple hover:underline"
+                          >
+                            {lot.pin_normalized}
+                          </Link>
+                        ) : (
+                          <span className="text-text-muted italic">No match</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2">
+                        {lot.match_confidence ? (
+                          <span className={[
+                            "px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider",
+                            lot.match_confidence === "high"   ? "bg-emerald-900/30 text-emerald-400" :
+                            lot.match_confidence === "medium" ? "bg-amber-900/30 text-amber-400" :
+                            "bg-surface-raised text-text-muted",
+                          ].join(" ")}>
+                            {lot.match_confidence}
+                          </span>
+                        ) : (
+                          <span className="text-text-muted">—</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2 text-right text-text-muted tabular-nums">
+                        {lot.overlap_pct_of_parcel != null ? `${lot.overlap_pct_of_parcel}%` : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {gisLots.length > 20 && (
+              <button
+                type="button"
+                onClick={() => setShowAllLots((v) => !v)}
+                className="mt-2 text-xs text-text-secondary hover:text-text-primary transition-colors"
+              >
+                {showAllLots ? "Show fewer" : `Show all ${gisLots.length} lots`}
+              </button>
+            )}
+            <InlineSourceNote className="mt-2">
+              Cook County GIS Lots layer (2025) · Spatially matched using PostGIS
+            </InlineSourceNote>
+          </section>
+        );
+      })()}
 
       {mapSlot && (
         <div>

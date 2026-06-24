@@ -639,6 +639,37 @@ export async function fetchSubdivisionMarketHistory(pins: string[]): Promise<Mar
 }
 
 /** Fetch a subdivision for property page cross-links. */
+export type GisLotRow = {
+  id: string;
+  lot_number: string | null;
+  block_number: string | null;
+  pin_normalized: string | null;
+  relationship_type: string | null;
+  overlap_pct_of_parcel: number | null;
+  match_confidence: string | null;
+};
+
+export async function fetchSubdivisionGisLots(subdivisionId: string): Promise<GisLotRow[]> {
+  if (!supabase) return [];
+  try {
+    const { data, error } = await supabase.rpc("get_gis_lots_for_subdivision", {
+      p_subdivision_id: subdivisionId,
+    });
+    if (error || !data) return [];
+    return (data as Record<string, unknown>[]).map((row) => ({
+      id: String(row.id ?? ""),
+      lot_number: (row.lot_number as string | null) ?? null,
+      block_number: (row.block_number as string | null) ?? null,
+      pin_normalized: (row.pin_normalized as string | null) ?? null,
+      relationship_type: (row.relationship_type as string | null) ?? null,
+      overlap_pct_of_parcel: row.overlap_pct_of_parcel != null ? Number(row.overlap_pct_of_parcel) : null,
+      match_confidence: (row.match_confidence as string | null) ?? null,
+    }));
+  } catch {
+    return [];
+  }
+}
+
 export async function fetchSubdivisionForPin(
   pin: string
 ): Promise<{ id: string; name: string; recorded_year?: number | null } | null> {
