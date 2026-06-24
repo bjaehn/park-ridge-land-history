@@ -21,29 +21,32 @@ export async function savePlatIndexNotes(id: string, notes: string) {
   revalidatePath("/admin/plat-mapping");
 }
 
-export async function savePlatIndexGisCode(id: string, gisPageCode: string | null) {
+export async function savePlatIndexGisCodes(id: string, codes: string[]) {
   const { error } = await adminSupabase
     .from("recorder_plat_index")
-    .update({ gis_page_code: gisPageCode || null })
+    .update({ gis_page_codes: codes.length > 0 ? codes : null })
     .eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/admin/plat-mapping");
 }
 
-export async function bulkLinkParcelsByPageCode(
+export async function bulkLinkParcelsByPageCodes(
   subdivisionId: string,
-  gisPageCode: string
+  gisPageCodes: string[]
 ): Promise<number> {
+  if (!gisPageCodes.length) return 0;
+  const subdivisionNames = gisPageCodes.map((c) => `Assessor subdivision area ${c}`);
+
   const { data, error } = await adminSupabase
     .from("parcels")
     .update({
       subdivision_id: subdivisionId,
       subdivision_match_method: "gis_page_code",
       subdivision_confidence: "high",
-      subdivision_source: `Cook County Assessor GIS plat page ${gisPageCode}`,
+      subdivision_source: `Cook County Assessor GIS plat page${gisPageCodes.length > 1 ? "s" : ""} ${gisPageCodes.join(", ")}`,
     })
     .eq("municipality", "CITY OF PARK RIDGE")
-    .eq("subdivision_name", `Assessor subdivision area ${gisPageCode}`)
+    .in("subdivision_name", subdivisionNames)
     .is("subdivision_id", null)
     .select("pin_normalized");
 

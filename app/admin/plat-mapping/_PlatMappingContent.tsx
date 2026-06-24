@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   linkPlatIndexEntry,
   savePlatIndexNotes,
-  savePlatIndexGisCode,
+  savePlatIndexGisCodes,
 } from "../_actions/platMapping";
 
 type PlatEntry = {
@@ -14,7 +14,7 @@ type PlatEntry = {
   short_name: string;
   full_name: string;
   subdivision_id: string | null;
-  gis_page_code: string | null;
+  gis_page_codes: string[] | null;
   notes: string | null;
   subdivisions: { id: string; name: string } | null;
 };
@@ -59,16 +59,16 @@ export function PlatMappingContent({
     [entries]
   );
   const linked = prEntries.filter((e) => e.subdivision_id).length;
-  const withGisCode = prEntries.filter((e) => e.gis_page_code).length;
+  const withGisCodes = prEntries.filter((e) => e.gis_page_codes?.length).length;
 
   function handleLink(id: string, subdivisionId: string) {
     startTransition(async () => {
       await linkPlatIndexEntry(id, subdivisionId || null);
     });
   }
-  function handleGisCode(id: string, code: string) {
+  function handleGisCodes(id: string, codes: string[]) {
     startTransition(async () => {
-      await savePlatIndexGisCode(id, code || null);
+      await savePlatIndexGisCodes(id, codes);
     });
   }
   function handleNotes(id: string, notes: string) {
@@ -95,8 +95,8 @@ export function PlatMappingContent({
               {linked} / {prEntries.length}
             </span>{" "}
             Park Ridge entries linked to a subdivision ·{" "}
-            <span className="text-accent-teal font-medium">{withGisCode}</span> with a GIS
-            page code set.
+            <span className="text-accent-teal font-medium">{withGisCodes}</span> with GIS page
+            codes set.
           </p>
         </div>
       </div>
@@ -160,7 +160,7 @@ export function PlatMappingContent({
                 Recorder full name
               </th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider w-64">
-                Subdivision · GIS page code
+                Subdivision · GIS page codes
               </th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider w-40">
                 Notes
@@ -177,12 +177,12 @@ export function PlatMappingContent({
             )}
             {filtered.map((entry) => (
               <PlatRow
-                key={`${entry.id}-${entry.subdivision_id ?? "none"}-${entry.gis_page_code ?? "none"}`}
+                key={`${entry.id}-${entry.subdivision_id ?? "none"}-${(entry.gis_page_codes ?? []).join(",")}`}
                 entry={entry}
                 subdivisions={subdivisions}
                 pageCodes={pageCodes}
                 onLink={handleLink}
-                onGisCode={handleGisCode}
+                onGisCodes={handleGisCodes}
                 onNotes={handleNotes}
                 globalPending={isPending}
               />
@@ -204,7 +204,7 @@ function PlatRow({
   subdivisions,
   pageCodes,
   onLink,
-  onGisCode,
+  onGisCodes,
   onNotes,
   globalPending,
 }: {
@@ -212,15 +212,23 @@ function PlatRow({
   subdivisions: SubOption[];
   pageCodes: PageCode[];
   onLink: (id: string, subdivisionId: string) => void;
-  onGisCode: (id: string, code: string) => void;
+  onGisCodes: (id: string, codes: string[]) => void;
   onNotes: (id: string, notes: string) => void;
   globalPending: boolean;
 }) {
   const [editingNotes, setEditingNotes] = useState(false);
   const [notesValue, setNotesValue] = useState(entry.notes ?? "");
 
-  const isLinked = !!entry.subdivision_id;
-  const hasGisCode = !!entry.gis_page_code;
+  const currentCodes = entry.gis_page_codes ?? [];
+  const availableCodes = pageCodes.filter((pc) => !currentCodes.includes(pc.code));
+
+  function addCode(code: string) {
+    if (!code) return;
+    onGisCodes(entry.id, [...currentCodes, code]);
+  }
+  function removeCode(code: string) {
+    onGisCodes(entry.id, currentCodes.filter((c) => c !== code));
+  }
 
   return (
     <tr
@@ -234,13 +242,13 @@ function PlatRow({
       </td>
       <td className="px-4 py-2.5 text-text-primary">{entry.full_name}</td>
 
-      {/* Subdivision + GIS page code stacked */}
+      {/* Subdivision + GIS page codes stacked */}
       <td className="px-4 py-2.5 space-y-1.5">
         <select
           defaultValue={entry.subdivision_id ?? ""}
           onChange={(e) => onLink(entry.id, e.target.value)}
           className={`w-full bg-surface-base border rounded px-2 py-1 text-xs focus:outline-none focus:border-accent-teal/60 transition-colors ${
-            isLinked
+            entry.subdivision_id
               ? "border-accent-teal/40 text-accent-teal"
               : "border-surface-border text-text-muted"
           }`}
@@ -253,19 +261,37 @@ function PlatRow({
           ))}
         </select>
 
+        {/* Existing codes as chips */}
+        {currentCodes.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {currentCodes.map((code) => (
+              <span
+                key={code}
+                className="inline-flex items-center gap-1 bg-accent-teal/10 border border-accent-teal/20 rounded px-1.5 py-0.5 text-[10px] font-mono text-accent-teal"
+              >
+                {code}
+                <button
+                  onClick={() => removeCode(code)}
+                  className="hover:text-red-400 transition-colors leading-none"
+                  aria-label={`Remove ${code}`}
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Add another code */}
         <select
-          defaultValue={entry.gis_page_code ?? ""}
-          onChange={(e) => onGisCode(entry.id, e.target.value)}
-          className={`w-full bg-surface-base border rounded px-2 py-1 text-[11px] focus:outline-none focus:border-accent-teal/60 transition-colors ${
-            hasGisCode
-              ? "border-accent-teal/20 text-accent-teal/80"
-              : "border-surface-border text-text-muted"
-          }`}
+          value=""
+          onChange={(e) => { addCode(e.target.value); e.currentTarget.value = ""; }}
+          className="w-full bg-surface-base border border-surface-border rounded px-2 py-1 text-[11px] text-text-muted focus:outline-none focus:border-accent-teal/60 transition-colors"
         >
-          <option value="">— GIS page code —</option>
-          {pageCodes.map((pc) => (
+          <option value="">+ Add GIS page code…</option>
+          {availableCodes.map((pc) => (
             <option key={pc.code} value={pc.code}>
-              {pc.code} ({pc.cnt} parcels)
+              {pc.code} ({pc.cnt})
             </option>
           ))}
         </select>

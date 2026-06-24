@@ -8,7 +8,7 @@ export default async function PlatMappingPage() {
     await Promise.all([
       adminSupabase
         .from("recorder_plat_index")
-        .select("id, section_ref, short_name, full_name, subdivision_id, gis_page_code, notes, subdivisions(id, name)")
+        .select("id, section_ref, short_name, full_name, subdivision_id, gis_page_codes, notes, subdivisions(id, name)")
         .order("section_ref")
         .order("full_name"),
       adminSupabase.from("subdivisions").select("id, name").order("name"),

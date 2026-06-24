@@ -2,17 +2,17 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { bulkLinkParcelsByPageCode } from "../_actions/platMapping";
+import { bulkLinkParcelsByPageCodes } from "../_actions/platMapping";
 
 export function CandidatePropertiesPanel({
   subdivisionId,
-  gisPageCode,
+  gisPageCodes,
   candidateCount,
   alreadyLinkedCount,
   sampleAddresses,
 }: {
   subdivisionId: string;
-  gisPageCode: string | null;
+  gisPageCodes: string[];
   candidateCount: number;
   alreadyLinkedCount: number;
   sampleAddresses: { address: string; pin_normalized: string }[];
@@ -21,9 +21,8 @@ export function CandidatePropertiesPanel({
   const [linkedCount, setLinkedCount] = useState<number | null>(null);
 
   function handleBulkLink() {
-    if (!gisPageCode) return;
     startTransition(async () => {
-      const count = await bulkLinkParcelsByPageCode(subdivisionId, gisPageCode);
+      const count = await bulkLinkParcelsByPageCodes(subdivisionId, gisPageCodes);
       setLinkedCount(count);
     });
   }
@@ -34,43 +33,44 @@ export function CandidatePropertiesPanel({
         Candidate Properties via GIS
       </h2>
 
-      {!gisPageCode ? (
+      {gisPageCodes.length === 0 ? (
         <div className="bg-surface-raised border border-surface-border rounded-lg px-5 py-4">
           <p className="text-xs text-text-muted">
-            No GIS page code linked to this subdivision yet.{" "}
-            <Link
-              href="/admin/plat-mapping"
-              className="text-accent-teal hover:underline"
-            >
+            No GIS page codes linked to this subdivision yet.{" "}
+            <Link href="/admin/plat-mapping" className="text-accent-teal hover:underline">
               Open the Recorder Plat Index
             </Link>{" "}
-            to find the matching plat entry and set its GIS page code.
+            to find the matching plat entry and set its GIS page codes.
           </p>
         </div>
       ) : (
         <div className="bg-surface-raised border border-surface-border rounded-lg overflow-hidden">
           <div className="px-5 py-4 border-b border-surface-border flex items-center justify-between gap-4 flex-wrap">
             <div>
-              <p className="text-xs text-text-muted">
-                GIS plat page{" "}
-                <span className="font-mono font-semibold text-text-secondary">
-                  {gisPageCode}
-                </span>
-              </p>
-              <p className="text-sm text-text-primary mt-0.5">
+              <div className="flex flex-wrap gap-1 mb-1">
+                {gisPageCodes.map((c) => (
+                  <span
+                    key={c}
+                    className="inline-block font-mono text-[10px] bg-accent-teal/10 border border-accent-teal/20 rounded px-1.5 py-0.5 text-accent-teal"
+                  >
+                    {c}
+                  </span>
+                ))}
+              </div>
+              <p className="text-sm text-text-primary">
                 {linkedCount !== null ? (
                   <span className="text-accent-teal font-medium">
                     {linkedCount} {linkedCount === 1 ? "property" : "properties"} linked.
                   </span>
                 ) : candidateCount === 0 ? (
                   <span className="text-text-muted">
-                    All {alreadyLinkedCount} parcels for this code are already linked.
+                    All {alreadyLinkedCount} parcels for {gisPageCodes.length === 1 ? "this code are" : "these codes are"} already linked.
                   </span>
                 ) : (
                   <>
                     <span className="font-semibold text-amber-400">{candidateCount}</span>{" "}
-                    {candidateCount === 1 ? "property" : "properties"} match this GIS code
-                    and aren't linked to any subdivision yet.
+                    {candidateCount === 1 ? "property" : "properties"} match{candidateCount === 1 ? "es" : ""} and{" "}
+                    {candidateCount === 1 ? "isn't" : "aren't"} linked to any subdivision yet.
                     {alreadyLinkedCount > 0 && (
                       <span className="text-text-muted ml-1">
                         ({alreadyLinkedCount} already linked to another subdivision)
@@ -97,7 +97,10 @@ export function CandidatePropertiesPanel({
           {sampleAddresses.length > 0 && linkedCount === null && (
             <ul className="divide-y divide-surface-border">
               {sampleAddresses.map((p) => (
-                <li key={p.pin_normalized} className="px-5 py-2 flex items-center justify-between gap-4">
+                <li
+                  key={p.pin_normalized}
+                  className="px-5 py-2 flex items-center justify-between gap-4"
+                >
                   <span className="text-xs text-text-primary">{p.address}</span>
                   <Link
                     href={`/properties/${p.pin_normalized}`}

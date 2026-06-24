@@ -52,9 +52,9 @@ export default async function EditSubdivisionPage({ params }: { params: { id: st
       .order("name"),
     adminSupabase
       .from("recorder_plat_index")
-      .select("gis_page_code")
+      .select("gis_page_codes")
       .eq("subdivision_id", id)
-      .not("gis_page_code", "is", null)
+      .not("gis_page_codes", "is", null)
       .limit(1),
   ]);
 
@@ -66,20 +66,20 @@ export default async function EditSubdivisionPage({ params }: { params: { id: st
   const lots = lotsRaw ?? [];
   const allSubdivisions = allSubdivisionsRaw ?? [];
   const children = childrenRaw ?? [];
-  const gisPageCode = (platEntries ?? [])[0]?.gis_page_code ?? null;
+  const gisPageCodes: string[] = (platEntries ?? [])[0]?.gis_page_codes ?? [];
 
-  // Fetch candidate parcels if a GIS page code is known
+  // Fetch candidate parcels for all GIS page codes
   let candidateCount = 0;
   let alreadyLinkedCount = 0;
   let sampleAddresses: { address: string; pin_normalized: string }[] = [];
-  if (gisPageCode) {
-    const pageCodeValue = `Assessor subdivision area ${gisPageCode}`;
+  if (gisPageCodes.length > 0) {
+    const subdivisionNames = gisPageCodes.map((c) => `Assessor subdivision area ${c}`);
     const [{ count: unlinkedCount, data: sample }, { count: linkedCount }] = await Promise.all([
       adminSupabase
         .from("parcels")
         .select("address, pin_normalized", { count: "exact" })
         .eq("municipality", "CITY OF PARK RIDGE")
-        .eq("subdivision_name", pageCodeValue)
+        .in("subdivision_name", subdivisionNames)
         .is("subdivision_id", null)
         .order("address")
         .limit(20),
@@ -87,7 +87,7 @@ export default async function EditSubdivisionPage({ params }: { params: { id: st
         .from("parcels")
         .select("*", { count: "exact", head: true })
         .eq("municipality", "CITY OF PARK RIDGE")
-        .eq("subdivision_name", pageCodeValue)
+        .in("subdivision_name", subdivisionNames)
         .not("subdivision_id", "is", null),
     ]);
     candidateCount = unlinkedCount ?? 0;
@@ -126,7 +126,7 @@ export default async function EditSubdivisionPage({ params }: { params: { id: st
 
       <CandidatePropertiesPanel
         subdivisionId={id}
-        gisPageCode={gisPageCode}
+        gisPageCodes={gisPageCodes}
         candidateCount={candidateCount}
         alreadyLinkedCount={alreadyLinkedCount}
         sampleAddresses={sampleAddresses}
