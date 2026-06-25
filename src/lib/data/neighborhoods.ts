@@ -78,8 +78,30 @@ export async function getNeighborhoodBySlug(slug: string): Promise<NeighborhoodS
       }
     } catch { /* fall through */ }
 
-    // Slug column is NULL in DB — fall back to derived-slug match in summaries
-    // (fetchNeighborhoodSummaries derives slug as id.split(':').slice(1).join(':'))
+    // Slug column is NULL — try common ID prefixes derived from the slug directly
+    for (const prefix of ["official_planning", "business_district", "local_market", "neighborhood"]) {
+      try {
+        const { data: byId } = await supabase
+          .from("neighborhoods")
+          .select("id, label, slug, neighborhood_type")
+          .eq("id", `${prefix}:${slug}`)
+          .maybeSingle();
+        if (byId) {
+          const d = byId as { id: string; label: string; slug: string | null; neighborhood_type: string | null };
+          const all = await fetchNeighborhoodSummaries();
+          const found = all.find((n) => n.id === d.id);
+          return found ?? {
+            id: d.id,
+            slug: d.slug ?? slug,
+            label: d.label,
+            neighborhoodType: (d.neighborhood_type as NeighborhoodType) ?? null,
+            parcelCount: 0,
+          };
+        }
+      } catch { /* try next prefix */ }
+    }
+
+    // Last resort: match by derived slug in summaries
     try {
       const all = await fetchNeighborhoodSummaries();
       const found = all.find((n) => n.slug === slug);
