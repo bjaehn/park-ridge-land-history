@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "data:runtime": "node scripts/export_runtime_data.mjs",
-    "data:tiles": "echo 'Run: tippecanoe -o public/tiles/parcels.pmtiles -z14 -Z10 --drop-densest-as-needed data/processed/park_ridge_parcels_map.geojson'"
+    "data:tiles": "echo 'Run: tippecanoe -o public/tiles/parcels.pmtiles -z14 -Z10 --drop-densest-as-needed data/processed/park_ridge_parcels_map.geojson'",
+    "data:buildings": "python3 scripts/build_building_footprints.py"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.105.0",
