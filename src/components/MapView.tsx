@@ -23,6 +23,10 @@ import {
   PARCEL_FILL_OPACITY_MUTED,
   PMTILES_URL,
   GEOJSON_FALLBACK_URL,
+  BUILDINGS_GEOJSON_URL,
+  GIS_BUILDINGS_STROKE_COLOR,
+  GIS_BUILDINGS_STROKE_WIDTH,
+  GIS_BUILDINGS_STROKE_OPACITY,
   MAP_CENTER,
   MAP_ZOOM_DEFAULT,
   MAP_ZOOM_PROPERTY,
@@ -66,6 +70,7 @@ type LayerToggles = {
   boundary: boolean;
   permitHeatmap: boolean;
   gisLots: boolean;
+  gisBuildings: boolean;
 };
 
 type Props = {
@@ -92,6 +97,8 @@ const LABELS_LAYER = "labels-overlay";
 const GIS_LOTS_SOURCE = "gis-lots";
 const GIS_LOTS_FILL_LAYER = "gis-lots-fill";
 const GIS_LOTS_STROKE_LAYER = "gis-lots-stroke";
+const GIS_BUILDINGS_SOURCE = "gis-buildings";
+const GIS_BUILDINGS_LAYER = "gis-buildings-stroke";
 
 // ---------------------------------------------------------------------------
 // Main component
@@ -123,8 +130,10 @@ export function MapView({
     boundary: true,
     permitHeatmap: false,
     gisLots: false,
+    gisBuildings: scope.kind === "property",
   });
   const gisLotsAddedRef = useRef(false);
+  const gisBuildingsAddedRef = useRef(false);
   const [eraFilter, setEraFilter] = useState<[number, number] | null>(null);
   const [stats, setStats] = useState<MapStats | null>(null);
   const [noDataLens, setNoDataLens] = useState(false);
@@ -478,6 +487,37 @@ export function MapView({
     }
   }, [layerToggles.gisLots, isLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // GIS buildings overlay (all scopes — lazy-loaded on first enable)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !isLoaded) return;
+    const vis = (v: boolean) => (v ? "visible" : "none") as "visible" | "none";
+
+    if (layerToggles.gisBuildings && !gisBuildingsAddedRef.current) {
+      map.addSource(GIS_BUILDINGS_SOURCE, {
+        type: "geojson",
+        data: BUILDINGS_GEOJSON_URL,
+      });
+      map.addLayer(
+        {
+          id: GIS_BUILDINGS_LAYER,
+          type: "line",
+          source: GIS_BUILDINGS_SOURCE,
+          paint: {
+            "line-color": GIS_BUILDINGS_STROKE_COLOR,
+            "line-width": GIS_BUILDINGS_STROKE_WIDTH,
+            "line-opacity": GIS_BUILDINGS_STROKE_OPACITY,
+          },
+        } as LayerSpecification,
+        LABELS_LAYER
+      );
+      gisBuildingsAddedRef.current = true;
+    } else if (gisBuildingsAddedRef.current) {
+      if (map.getLayer(GIS_BUILDINGS_LAYER))
+        map.setLayoutProperty(GIS_BUILDINGS_LAYER, "visibility", vis(layerToggles.gisBuildings));
+    }
+  }, [layerToggles.gisBuildings, isLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
@@ -601,6 +641,11 @@ export function MapView({
                     label="Permit activity"
                     checked={layerToggles.permitHeatmap}
                     onChange={(v) => setLayerToggles((t) => ({ ...t, permitHeatmap: v }))}
+                  />
+                  <LayerToggle
+                    label="Building outlines"
+                    checked={layerToggles.gisBuildings}
+                    onChange={(v) => setLayerToggles((t) => ({ ...t, gisBuildings: v }))}
                   />
                   {scope.kind === "subdivision" && (
                     <LayerToggle
