@@ -59,19 +59,22 @@ jobs:
       - uses: actions/checkout@v4
       - name: Validate migration timestamps are strictly ascending
         run: |
-          prev_ts=0
-          for f in $(ls supabase/migrations/*.sql | sort); do
-            ts=$(basename "$f" | grep -oE '^[0-9]{14}' || true)
-            if [ -z "$ts" ]; then
-              echo "SKIP (no timestamp prefix): $(basename $f)"
-              continue
-            fi
-            if [ "$ts" -le "$prev_ts" ]; then
-              echo "ERROR: $(basename $f) has timestamp $ts, which is not after previous $prev_ts"
-              echo "Rename the file to use a timestamp greater than $prev_ts"
-              exit 1
-            fi
-            echo "OK: $ts  $(basename $f)"
-            prev_ts=$ts
-          done
-          echo "All migration timestamps are in ascending order."
+          python3 << 'PYEOF'
+          import os, sys, re
+          files = sorted(f for f in os.listdir("supabase/migrations") if f.endswith(".sql"))
+          prev = 0
+          for f in files:
+              m = re.match(r"^(\d{14})", f)
+              if not m:
+                  print("SKIP:", f)
+                  continue
+              ts = int(m.group(1))
+              if ts <= prev:
+                  print("ERROR:", f)
+                  print("  timestamp", ts, "is not after", prev)
+                  print("  rename to use a timestamp >", prev)
+                  sys.exit(1)
+              print("OK:", ts, f)
+              prev = ts
+          print("All migration timestamps are in ascending order.")
+          PYEOF
