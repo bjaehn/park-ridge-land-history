@@ -1,9 +1,5 @@
--- Fixes highlight_parcels subdivision scope to include GIS-bulk-linked parcels.
---
--- Previously, the subdivision scope only checked property_subdivision_links (deed-
--- researched links), missing parcels linked via parcels.subdivision_id (GIS bulk
--- import). This caused only 1 property to appear per category for most subdivisions.
--- The fix mirrors fetchSubdivisionParcels(), which unions both sources.
+-- Fix highlight_parcels subdivision scope to also include parcels linked via
+-- parcels.subdivision_id (GIS bulk-link), not only property_subdivision_links.
 
 CREATE OR REPLACE FUNCTION highlight_parcels(
   p_scope     text,

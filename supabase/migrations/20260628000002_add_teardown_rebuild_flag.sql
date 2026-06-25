@@ -1,44 +1,18 @@
--- Adds teardown/rebuild detection columns to parcels.
---
--- Detection logic:
---   Medium confidence: year_built >= 1990 AND first_assessed_year IS NOT NULL
---                      AND (year_built - first_assessed_year) >= 20
---   High confidence:   medium PLUS a permit record on that PIN whose description
---                      contains new-construction keywords
-
--- ── 1. Add columns ────────────────────────────────────────────────────────────
+-- Add teardown/rebuild detection columns to parcels.
+-- is_teardown_rebuild: true when build year >= 1990 and (year_built - first_assessed_year) >= 20
+-- teardown_confidence: 'medium' or 'high'
 
 ALTER TABLE parcels
-  ADD COLUMN IF NOT EXISTS is_teardown_rebuild  BOOLEAN NOT NULL DEFAULT FALSE,
-  ADD COLUMN IF NOT EXISTS teardown_confidence  TEXT
-    CHECK (teardown_confidence IN ('high', 'medium'));
+  ADD COLUMN IF NOT EXISTS is_teardown_rebuild boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS teardown_confidence  text;
 
-CREATE INDEX IF NOT EXISTS idx_parcels_teardown_rebuild
-  ON parcels (is_teardown_rebuild) WHERE is_teardown_rebuild = TRUE;
-
--- ── 2. Populate medium confidence (gap logic) ─────────────────────────────────
-
+-- Populate based on detection logic
 UPDATE parcels
 SET
-  is_teardown_rebuild = TRUE,
+  is_teardown_rebuild = true,
   teardown_confidence = 'medium'
-WHERE year_built >= 1990
+WHERE
+  year_built >= 1990
   AND first_assessed_year IS NOT NULL
-  AND (year_built - first_assessed_year) >= 20;
-
--- ── 3. Upgrade to high confidence where a new-build permit exists ──────────────
-
-UPDATE parcels p
-SET teardown_confidence = 'high'
-WHERE p.is_teardown_rebuild = TRUE
-  AND EXISTS (
-    SELECT 1 FROM permits pm
-    WHERE pm.pin = p.pin_normalized
-      AND (
-        pm.description ILIKE '%new house%'
-        OR pm.description ILIKE '%new build%'
-        OR pm.description ILIKE '%new construction%'
-        OR pm.description ILIKE '%new home%'
-        OR pm.description ILIKE '%new single%'
-      )
-  );
+  AND (year_built - first_assessed_year) >= 20
+  AND (is_teardown_rebuild IS NULL OR is_teardown_rebuild = false);

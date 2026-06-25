@@ -1,4 +1,5 @@
--- Extends highlight_parcels RPC with a "largest" category (ordered by building_sqft DESC).
+-- Add 'largest' highlight category to highlight_parcels.
+-- Surfaces properties by building_sqft DESC.
 
 CREATE OR REPLACE FUNCTION highlight_parcels(
   p_scope     text,
@@ -23,7 +24,7 @@ BEGIN
     WHEN 'neighborhood' THEN format('p.neighborhood_id = %L', p_scope_id)
     WHEN 'street'       THEN format('p.street_name_normalized = %L', p_scope_id)
     WHEN 'subdivision'  THEN format(
-      'p.pin_normalized IN (SELECT psl.pin FROM property_subdivision_links psl WHERE psl.subdivision_id = %L)',
+      'p.pin_normalized IN (SELECT psl.pin FROM property_subdivision_links psl WHERE psl.subdivision_id = %L::uuid)',
       p_scope_id
     )
     ELSE 'TRUE'

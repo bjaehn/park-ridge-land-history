@@ -1,9 +1,6 @@
--- Fix highlight_parcels neighborhood scope to use the typed FK columns
+-- Fix highlight_parcels neighborhood scope to use the three typed FK columns
 -- instead of the legacy neighborhood_id column.
---
--- The new neighborhood model uses official_planning_neighborhood_id,
--- business_district_id, and local_neighborhood_id. The old neighborhood_id
--- column is no longer populated for new neighborhoods (e.g. official_planning:south_park).
+-- Supersedes 20260628000003 which was the same fix (both are idempotent).
 
 CREATE OR REPLACE FUNCTION highlight_parcels(
   p_scope     text,
