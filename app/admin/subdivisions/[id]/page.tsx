@@ -126,6 +126,8 @@ export default async function EditSubdivisionPage({ params }: { params: { id: st
 
       <CandidatePropertiesPanel
         subdivisionId={id}
+        subdivisionName={subdivision.name}
+        alternateNames={(subdivision.alternate_names as string[] | null) ?? []}
         gisPageCodes={gisPageCodes}
         candidateCount={candidateCount}
         alreadyLinkedCount={alreadyLinkedCount}

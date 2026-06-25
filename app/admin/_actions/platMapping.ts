@@ -82,6 +82,102 @@ ${subdivisionList || "  (none loaded)"}`;
   }
 }
 
+// ─── Reverse suggestion: subdivision → plat entries ──────────────────────────
+
+export type PlatEntrySuggestion = {
+  entryId: string;
+  shortName: string;
+  fullName: string;
+  sectionRef: string;
+  hasGisCodes: boolean;
+  confidence: "high" | "medium" | "low";
+  reason: string;
+};
+
+const PR_SECTIONS = ["01-40-12", "02-40-12", "11-40-12", "12-40-12"];
+
+export async function suggestPlatEntriesForSubdivision(
+  subdivisionId: string,
+  subdivisionName: string,
+  alternateNames: string[]
+): Promise<{ suggestions?: PlatEntrySuggestion[]; error?: string }> {
+  const { data: entries, error: dbError } = await adminSupabase
+    .from("recorder_plat_index")
+    .select("id, short_name, full_name, section_ref, gis_page_codes")
+    .is("subdivision_id", null)
+    .in("section_ref", PR_SECTIONS)
+    .order("full_name");
+
+  if (dbError) return { error: dbError.message };
+  if (!entries?.length) return { suggestions: [] };
+
+  const client = new Anthropic();
+
+  const altStr = alternateNames.length > 0 ? ` (also known as: ${alternateNames.join(", ")})` : "";
+  const entryList = entries
+    .map(
+      (e, i) =>
+        `${i + 1}. ${e.id} | ${e.short_name} | ${e.full_name} | section: ${e.section_ref} | has GIS codes: ${e.gis_page_codes?.length ? "yes" : "no"}`
+    )
+    .join("\n");
+
+  const systemPrompt = `You are finding Cook County Recorder of Deeds plat entries that correspond to a given Park Ridge, IL subdivision. The recorder uses abbreviated uppercase names; subdivision records use full names.
+
+Return ONLY valid JSON — no prose, no markdown fences:
+{"matches":[{"entry_id":"uuid-here","short_name":"...","full_name":"...","confidence":"high","reason":"one sentence"}]}
+
+Return up to 3 matches ordered most to least confident. If nothing matches well, return {"matches":[]}.
+Confidence: "high" = clear name match; "medium" = plausible; "low" = weak signal only.`;
+
+  const userPrompt = `Find recorder plat entries for this subdivision:
+  Name: ${subdivisionName}${altStr}
+
+Unlinked recorder plat entries (uuid | short_name | full_name | section | has GIS codes):
+${entryList}`;
+
+  try {
+    const message = await client.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 512,
+      system: systemPrompt,
+      messages: [{ role: "user", content: userPrompt }],
+    });
+
+    const rawText = message.content
+      .filter((b) => b.type === "text")
+      .map((b) => (b as { type: "text"; text: string }).text)
+      .join("");
+    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("No JSON found in response");
+    const parsed = JSON.parse(jsonMatch[0]) as {
+      matches: Array<{ entry_id: string; short_name: string; full_name: string; confidence: string; reason: string }>;
+    };
+
+    const entryMap = new Map(entries.map((e) => [e.id, e]));
+    const suggestions: PlatEntrySuggestion[] = parsed.matches
+      .map((m) => {
+        const entry = entryMap.get(m.entry_id);
+        if (!entry) return null;
+        return {
+          entryId: m.entry_id,
+          shortName: entry.short_name,
+          fullName: entry.full_name,
+          sectionRef: entry.section_ref,
+          hasGisCodes: !!(entry.gis_page_codes?.length),
+          confidence: (["high", "medium", "low"].includes(m.confidence)
+            ? m.confidence
+            : "low") as PlatEntrySuggestion["confidence"],
+          reason: m.reason,
+        };
+      })
+      .filter((s): s is PlatEntrySuggestion => s !== null);
+
+    return { suggestions };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
 // ─── Mark entry as having no match ───────────────────────────────────────────
 
 export async function markNoMatch(id: string): Promise<{ error?: string }> {
