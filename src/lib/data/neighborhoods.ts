@@ -182,8 +182,10 @@ export async function fetchNeighborhoodBbox(
   try {
     const { data, error } = await supabase.rpc("neighborhood_bbox", { p_neighborhood_id: neighborhoodId });
     if (error || !data) return null;
-    const b = data as Record<string, number>;
-    if (b.minLng == null) return null;
+    // PostgREST wraps scalar RPCs: [{neighborhood_bbox: {minLng, ...}}]
+    const arr = data as Array<{ neighborhood_bbox: { minLng: number; minLat: number; maxLng: number; maxLat: number } | null }>;
+    const b = arr[0]?.neighborhood_bbox;
+    if (!b || b.minLng == null) return null;
     return [b.minLng, b.minLat, b.maxLng, b.maxLat];
   } catch {
     return null;
