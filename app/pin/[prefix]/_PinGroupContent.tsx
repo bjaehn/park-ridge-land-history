@@ -408,6 +408,8 @@ export function PinGroupContent({ prefix, initialDetail, mapSlot }: Props) {
                               p.permitCount  ? { icon: <PermitIcon size={11} />,   value: `${p.permitCount} permits` } : null,
                             ].filter((x): x is MetaItem => x !== null)}
                             eraSwatch={getEraColor(p.yearBuilt)}
+                            isTeardownRebuild={p.isTeardownRebuild}
+                            teardownConfidence={p.teardownConfidence}
                           />
                         );
                       })}
@@ -476,6 +478,8 @@ export function PinGroupContent({ prefix, initialDetail, mapSlot }: Props) {
                               p.permitCount  ? { icon: <PermitIcon size={11} />,   value: `${p.permitCount} permits` } : null,
                             ].filter((x): x is MetaItem => x !== null)}
                             eraSwatch={getEraColor(p.yearBuilt)}
+                            isTeardownRebuild={p.isTeardownRebuild}
+                            teardownConfidence={p.teardownConfidence}
                           />
                         );
                       })}

@@ -332,9 +332,18 @@ export function SubdivisionDetailContent({ subdivisionId, recordedYear, entityTy
           if (b === "Unknown") return -1;
           return a.localeCompare(b);
         });
+        const teardownCount = parcels.filter((p) => p.is_teardown_rebuild).length;
         return (
           <div>
             <h2 className="section-heading">Properties in this subdivision</h2>
+            {teardownCount > 0 && (
+              <div className="mb-4 flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700">
+                <span aria-hidden="true">🔥</span>
+                <span>
+                  <strong>{teardownCount}</strong> of {parcels.length} lots in this subdivision {teardownCount === 1 ? "has" : "have"} been torn down and rebuilt since 1990.
+                </span>
+              </div>
+            )}
             <div className="space-y-8">
               {decades.map(([decade, group]) => {
                 const decadeYear = decade === "Unknown" ? null : parseInt(decade);
@@ -381,6 +390,8 @@ export function SubdivisionDetailContent({ subdivisionId, recordedYear, entityTy
                               p.permit_count  ? { icon: <PermitIcon size={11} />,   value: `${p.permit_count} permits` } : null,
                             ].filter((x): x is MetaItem => x !== null)}
                             eraSwatch={getEraColor(p.year_built)}
+                            isTeardownRebuild={p.is_teardown_rebuild}
+                            teardownConfidence={p.teardown_confidence}
                           />
                         );
                       })}

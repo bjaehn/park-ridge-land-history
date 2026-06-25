@@ -52,6 +52,8 @@ export type ParcelProperties = {
   lng?: number | null;
   decade_built?: string | null;
   deed_notes?: string | null;
+  is_teardown_rebuild?: boolean | null;
+  teardown_confidence?: string | null;
 };
 
 export type PropertyPageData = {
