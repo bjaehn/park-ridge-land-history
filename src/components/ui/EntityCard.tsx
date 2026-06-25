@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ChangeSignal } from "@/lib/formatters";
 import { SIGNAL_DESCRIPTION } from "@/lib/formatters";
+import { TeardownBadge } from "./TeardownBadge";
 
 
 export type MetaItem = { icon: React.ReactElement; value: string };
@@ -15,6 +16,8 @@ type Props = {
   signal?: ChangeSignal;
   eraSwatch?: string;
   onClick?: () => void;
+  isTeardownRebuild?: boolean | null;
+  teardownConfidence?: string | null;
 };
 
 const SIGNAL_STYLES: Record<ChangeSignal, string> = {
@@ -41,6 +44,8 @@ export function EntityCard({
   metaItems,
   signal,
   eraSwatch,
+  isTeardownRebuild,
+  teardownConfidence,
 }: Props) {
   const inner = (
     <div className="relative flex flex-col gap-2 bg-surface-card border border-surface-border rounded-lg p-4 h-full transition-colors hover:border-accent-purple/50">
@@ -61,6 +66,11 @@ export function EntityCard({
       </h3>
       {subtitle && (
         <p className="text-sm text-text-secondary leading-relaxed">{subtitle}</p>
+      )}
+      {isTeardownRebuild && (
+        <div className="mt-auto pt-2">
+          <TeardownBadge confidence={teardownConfidence} />
+        </div>
       )}
       {(signal || meta || (metaItems && metaItems.length > 0)) && (
         <div className="flex flex-col gap-1 mt-auto pt-2">

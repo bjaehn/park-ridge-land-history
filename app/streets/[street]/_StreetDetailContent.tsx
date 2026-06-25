@@ -117,6 +117,8 @@ export function StreetDetailContent({ streetName, displayName, mapSlot }: Props)
                             title={formatAddress(p.address)}
                             meta={p.yearBuilt ? `Built ${p.yearBuilt}` : undefined}
                             eraSwatch={getEraColor(p.yearBuilt)}
+                            isTeardownRebuild={p.isTeardownRebuild}
+                            teardownConfidence={p.teardownConfidence}
                           />
                         );
                       })}

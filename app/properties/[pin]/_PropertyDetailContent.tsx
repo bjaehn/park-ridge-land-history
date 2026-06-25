@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { ConfidenceBadge } from "@/components/ui/ConfidenceBadge";
+import { TeardownBadge } from "@/components/ui/TeardownBadge";
 import { ComparisonList } from "@/components/ui/ComparisonList";
 import { LoadingSkeleton } from "@/components/ui/EmptyState";
 import { InlineSourceNote } from "@/components/ui/SourceNote";
@@ -826,8 +827,11 @@ export function PropertyDetailContent({ pin }: Props) {
 
       {/* Confidence + vitals */}
       <section>
-        <div className="mb-4">
+        <div className="mb-4 flex flex-wrap items-start gap-3">
           <ConfidenceBadge level={confidence} showDescription />
+          {props.is_teardown_rebuild && (
+            <TeardownBadge confidence={props.teardown_confidence} />
+          )}
         </div>
         <IconRow items={vitals} />
       </section>
