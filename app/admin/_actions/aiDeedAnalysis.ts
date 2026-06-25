@@ -295,15 +295,10 @@ export async function extractPdfText(
   if (file.size > 20 * 1024 * 1024) return { error: "File too large. Maximum 20 MB." };
 
   try {
-    const buffer = Buffer.from(await file.arrayBuffer());
-    // Dynamic import avoids pdf-parse's test-file initialization crash at module load time
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const pdfParse: (buf: Buffer) => Promise<{ text: string }> = await import("pdf-parse").then((m) => (m as any).default ?? m);
-    const result = await pdfParse(buffer);
-    const extracted = result.text
-      .replace(/\s+/g, " ")
-      .trim()
-      .slice(0, 3000);
+    const uint8 = new Uint8Array(await file.arrayBuffer());
+    const { extractText } = await import("unpdf");
+    const { text } = await extractText(uint8, { mergePages: true });
+    const extracted = text.replace(/\s+/g, " ").trim().slice(0, 3000);
     return { text: extracted };
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Failed to read PDF." };
