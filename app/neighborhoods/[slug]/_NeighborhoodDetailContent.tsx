@@ -24,6 +24,7 @@ const NEIGHBORHOOD_HIGHLIGHTS: readonly HighlightGroup[] = [
   { heading: "Oldest homes in this neighborhood", category: "oldest" },
   { heading: "Most active properties", category: "most_active" },
   { heading: "Most recently sold", category: "most_recent_sale" },
+  { heading: "Largest homes in this neighborhood", category: "largest" },
 ];
 
 type Props = { neighborhoodId: string; label: string; slug: string; mapSlot?: React.ReactNode };

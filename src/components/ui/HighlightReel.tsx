@@ -12,6 +12,7 @@ const CATEGORY_ACCENT: Record<HighlightCategory, { border: string; heading: stri
   most_active:      { border: "#4fb6a8", heading: "#4fb6a8" },
   newest:           { border: "#8b7ff0", heading: "#8b7ff0" },
   most_recent_sale: { border: "#c96a70", heading: "#c96a70" },
+  largest:          { border: "#4a90d9", heading: "#4a90d9" },
 };
 
 export type HighlightGroup = {

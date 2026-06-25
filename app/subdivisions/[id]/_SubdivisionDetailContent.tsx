@@ -31,6 +31,7 @@ const SUBDIVISION_HIGHLIGHTS: readonly HighlightGroup[] = [
   { heading: "Oldest surviving lots", category: "oldest" },
   { heading: "Most renovated", category: "most_active" },
   { heading: "Most recently sold", category: "most_recent_sale" },
+  { heading: "Largest homes in this subdivision", category: "largest" },
 ];
 
 type Props = {

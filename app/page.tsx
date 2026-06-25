@@ -20,6 +20,7 @@ const CITY_HIGHLIGHTS: readonly HighlightGroup[] = [
   { heading: "Oldest surviving homes", category: "oldest" },
   { heading: "Most active properties", category: "most_active" },
   { heading: "Built since 2000", category: "newest" },
+  { heading: "Largest homes", category: "largest" },
 ];
 
 export default function HomePage() {

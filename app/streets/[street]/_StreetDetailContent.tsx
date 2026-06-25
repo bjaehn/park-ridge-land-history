@@ -14,6 +14,7 @@ const STREET_HIGHLIGHTS: readonly HighlightGroup[] = [
   { heading: "Oldest homes on this street", category: "oldest" },
   { heading: "Most permit activity", category: "most_active" },
   { heading: "Most recently sold", category: "most_recent_sale" },
+  { heading: "Largest homes on this street", category: "largest" },
 ];
 
 type Props = { streetName: string; displayName: string; mapSlot?: React.ReactNode };

@@ -9,7 +9,7 @@ export type HighlightParcel = {
   permitCount: number | null;
 };
 
-export type HighlightCategory = "oldest" | "most_active" | "newest" | "most_recent_sale";
+export type HighlightCategory = "oldest" | "most_active" | "newest" | "most_recent_sale" | "largest";
 export type HighlightScope = "city" | "neighborhood" | "street" | "subdivision";
 
 export async function fetchHighlights(
