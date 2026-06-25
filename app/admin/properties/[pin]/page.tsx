@@ -70,7 +70,17 @@ export default async function EditPropertyPage({ params }: { params: { pin: stri
             Properties
           </Link>
         </p>
-        <h1 className="text-2xl font-bold text-text-primary font-mono">{pin}</h1>
+        <div className="flex items-center gap-4 flex-wrap">
+          <h1 className="text-2xl font-bold text-text-primary font-mono">{pin}</h1>
+          <a
+            href={`https://crs.cookcountyclerkil.gov/Search/ResultByPin?id1=${pin}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-blue-400 hover:underline"
+          >
+            Cook County Recorder ↗
+          </a>
+        </div>
         {parcel.address && (
           <p className="text-sm text-text-secondary mt-1">{parcel.address}</p>
         )}

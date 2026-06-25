@@ -20,7 +20,6 @@ import {
   ComparisonIcon,
   MissingIcon,
   StreetIcon,
-  ExternalLinkIcon,
 } from "@/lib/icons";
 import {
   formatAddress,
@@ -882,20 +881,7 @@ export function PropertyDetailContent({ pin }: Props) {
       <section>
         <h2 className="section-heading">Parcel ID (PIN)</h2>
         <PinBreakdown props={props as Record<string, unknown>} />
-        <div className="mt-2 flex items-center justify-between flex-wrap gap-2">
-          <p className="text-xs text-text-muted">Cook County 14-digit PIN: township · section · block · parcel · unit</p>
-          {props.pin_normalized && (
-            <a
-              href={`https://crs.cookcountyclerkil.gov/Search/ResultByPin?id1=${props.pin_normalized}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs text-accent-purple hover:underline shrink-0"
-            >
-              <ExternalLinkIcon size={11} strokeWidth={1.8} aria-hidden="true" />
-              Cook County Recorder
-            </a>
-          )}
-        </div>
+        <p className="text-xs text-text-muted mt-2">Cook County 14-digit PIN: township · section · block · parcel · unit</p>
       </section>
 
       {/* Neighborhoods */}
