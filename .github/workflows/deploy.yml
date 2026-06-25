@@ -16,9 +16,7 @@ jobs:
 
       - name: Push migrations to Supabase
         run: |
-          # --include-all records every local file into migration history so an
-          # out-of-sequence file never blocks the link step.
-          supabase link --project-ref ${{ vars.SUPABASE_PROJECT_REF }} --include-all
+          supabase link --project-ref ${{ vars.SUPABASE_PROJECT_REF }}
           # If the remote has migrations applied out-of-band (e.g. via MCP tools),
           # those versions won't have matching local files and db push will fail.
           # Auto-repair: remove orphan remote versions from migration history, then push.
