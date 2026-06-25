@@ -65,8 +65,9 @@ ${subdivisionList || "  (none loaded)"}`;
       .filter((b) => b.type === "text")
       .map((b) => (b as { type: "text"; text: string }).text)
       .join("");
-    const jsonText = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
-    const parsed = JSON.parse(jsonText) as { matches: Array<{ subdivision_id: string; name: string; confidence: string; reason: string }> };
+    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("No JSON object found in response");
+    const parsed = JSON.parse(jsonMatch[0]) as { matches: Array<{ subdivision_id: string; name: string; confidence: string; reason: string }> };
 
     const suggestions: PlatMatchSuggestion[] = parsed.matches.map((m) => ({
       subdivisionId: m.subdivision_id,
