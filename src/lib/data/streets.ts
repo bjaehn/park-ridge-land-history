@@ -21,6 +21,7 @@ export type StreetParcelRow = {
   permitCount?: number | null;
   isTeardownRebuild?: boolean | null;
   teardownConfidence?: string | null;
+  hasDeedNotes?: boolean | null;
 };
 
 export type StreetDetail = StreetSummary & {
@@ -80,7 +81,7 @@ export async function getStreetDetail(normalizedName: string): Promise<StreetDet
   try {
     const { data, error } = await supabase
       .from("parcels")
-      .select("pin_normalized, pin_original, address, year_built, decade_built, permit_count, is_teardown_rebuild, teardown_confidence")
+      .select("pin_normalized, pin_original, address, year_built, decade_built, permit_count, is_teardown_rebuild, teardown_confidence, has_deed_notes")
       .eq("street_name_normalized", normalized)
       .order("address", { ascending: true });
 
@@ -92,6 +93,7 @@ export async function getStreetDetail(normalizedName: string): Promise<StreetDet
         permitCount: r.permit_count as number | null,
         isTeardownRebuild: (r.is_teardown_rebuild as boolean | null) ?? null,
         teardownConfidence: (r.teardown_confidence as string | null) ?? null,
+        hasDeedNotes: (r.has_deed_notes as boolean | null) ?? null,
       }));
 
       const countsByDecade: Record<string, number> = {};

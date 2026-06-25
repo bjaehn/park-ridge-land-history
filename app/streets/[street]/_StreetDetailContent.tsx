@@ -119,6 +119,7 @@ export function StreetDetailContent({ streetName, displayName, mapSlot }: Props)
                             eraSwatch={getEraColor(p.yearBuilt)}
                             isTeardownRebuild={p.isTeardownRebuild}
                             teardownConfidence={p.teardownConfidence}
+                            hasDeedNotes={p.hasDeedNotes}
                           />
                         );
                       })}

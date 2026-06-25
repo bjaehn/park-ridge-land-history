@@ -410,6 +410,7 @@ export function PinGroupContent({ prefix, initialDetail, mapSlot }: Props) {
                             eraSwatch={getEraColor(p.yearBuilt)}
                             isTeardownRebuild={p.isTeardownRebuild}
                             teardownConfidence={p.teardownConfidence}
+                            hasDeedNotes={p.hasDeedNotes}
                           />
                         );
                       })}
@@ -480,6 +481,7 @@ export function PinGroupContent({ prefix, initialDetail, mapSlot }: Props) {
                             eraSwatch={getEraColor(p.yearBuilt)}
                             isTeardownRebuild={p.isTeardownRebuild}
                             teardownConfidence={p.teardownConfidence}
+                            hasDeedNotes={p.hasDeedNotes}
                           />
                         );
                       })}

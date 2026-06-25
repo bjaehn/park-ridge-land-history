@@ -4,10 +4,12 @@ import Link from "next/link";
 import { logoutAction } from "./_actions/auth";
 
 const navLinks = [
-  { href: "/admin",               label: "Dashboard" },
-  { href: "/admin/subdivisions",  label: "Subdivisions" },
-  { href: "/admin/properties",    label: "Properties" },
-  { href: "/admin/neighborhoods", label: "Neighborhoods" },
+  { href: "/admin",                    label: "Dashboard" },
+  { href: "/admin/subdivisions",       label: "Subdivisions" },
+  { href: "/admin/properties",         label: "Properties" },
+  { href: "/admin/neighborhoods",      label: "Neighborhoods" },
+  { href: "/admin/plat-mapping",       label: "Plat Index" },
+  { href: "/admin/research-queue",     label: "Research Queue" },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

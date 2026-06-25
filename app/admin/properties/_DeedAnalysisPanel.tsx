@@ -6,6 +6,7 @@ import {
   analyzeDeedWithAI,
   ensureSubdivision,
   saveLineageRecord,
+  extractPdfText,
   type AIDeedSubdivisionLink,
   type AIDeedLineageRecord,
   type AIDeedChangeEvent,
@@ -518,10 +519,35 @@ export function DeedAnalysisPanel({
   const [result, setResult] = useState<DeedAnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // PDF upload state
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfMsg, setPdfMsg] = useState<string | null>(null);
+
   // Track dismissed cards
   const [dismissedLinks, setDismissedLinks] = useState<Set<number>>(new Set());
   const [dismissedLineage, setDismissedLineage] = useState<Set<number>>(new Set());
   const [dismissedChanges, setDismissedChanges] = useState<Set<number>>(new Set());
+
+  async function handlePdfUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPdfLoading(true);
+    setPdfMsg(null);
+    const fd = new FormData();
+    fd.append("file", file);
+    const { text, error: pdfErr } = await extractPdfText(fd);
+    setPdfLoading(false);
+    if (pdfErr) { setPdfMsg(`Error: ${pdfErr}`); return; }
+    if (text) {
+      const textarea = document.querySelector<HTMLTextAreaElement>('textarea[name="deed_notes"]');
+      if (textarea) {
+        textarea.value = text;
+        textarea.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+      setPdfMsg("Text extracted — review and click Analyze Deed.");
+    }
+    e.target.value = "";
+  }
 
   async function analyze() {
     // Read live text from the textarea so this works even if the server prop hasn't refreshed yet
@@ -569,15 +595,30 @@ export function DeedAnalysisPanel({
             Extract subdivision lineage and boundary changes from deed text
           </p>
         </div>
-        <button
-          type="button"
-          onClick={analyze}
-          disabled={loading}
-          className="text-xs bg-accent-teal text-surface-base font-semibold px-4 py-1.5 rounded hover:opacity-90 transition-opacity disabled:opacity-50"
-        >
-          {loading ? "Analyzing…" : result ? "Re-analyze" : "Analyze Deed"}
-        </button>
+        <div className="flex items-center gap-2">
+          <label className={`text-xs border border-surface-border text-text-muted font-medium px-3 py-1.5 rounded cursor-pointer hover:text-text-primary hover:border-accent-teal/40 transition-colors ${pdfLoading ? "opacity-50 pointer-events-none" : ""}`}>
+            {pdfLoading ? "Reading…" : "Upload PDF"}
+            <input
+              type="file"
+              accept=".pdf"
+              className="sr-only"
+              onChange={handlePdfUpload}
+            />
+          </label>
+          <button
+            type="button"
+            onClick={analyze}
+            disabled={loading}
+            className="text-xs bg-accent-teal text-surface-base font-semibold px-4 py-1.5 rounded hover:opacity-90 transition-opacity disabled:opacity-50"
+          >
+            {loading ? "Analyzing…" : result ? "Re-analyze" : "Analyze Deed"}
+          </button>
+        </div>
       </div>
+
+      {pdfMsg && (
+        <p className="text-xs text-accent-teal mb-3">{pdfMsg}</p>
+      )}
 
       {loading && (
         <div className="flex items-center gap-2 text-xs text-text-muted py-4">

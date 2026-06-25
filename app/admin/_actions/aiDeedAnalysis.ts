@@ -1,8 +1,12 @@
 "use server";
 
 import Anthropic from "@anthropic-ai/sdk";
+import * as pdfParseModule from "pdf-parse";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const pdfParse = (pdfParseModule as any).default ?? pdfParseModule;
 import { revalidatePath } from "next/cache";
 import { adminSupabase } from "@/lib/supabase/adminClient";
+import { refreshResearchQueue } from "./researchQueue";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -277,5 +281,31 @@ export async function saveLineageRecord(
 
   revalidatePath(`/admin/properties/${encodeURIComponent(pin)}`);
   revalidatePath("/subdivisions");
+
+  // Fire-and-forget: rebuild the spatial research queue now that a new anchor exists
+  refreshResearchQueue().catch(() => {});
+
   return {};
+}
+
+// ─── PDF text extraction ──────────────────────────────────────────────────────
+
+export async function extractPdfText(
+  formData: FormData
+): Promise<{ text?: string; error?: string }> {
+  const file = formData.get("file");
+  if (!file || !(file instanceof Blob)) return { error: "No file provided." };
+  if (file.size > 20 * 1024 * 1024) return { error: "File too large. Maximum 20 MB." };
+
+  try {
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const result = await pdfParse(buffer);
+    const extracted = result.text
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 3000);
+    return { text: extracted };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Failed to read PDF." };
+  }
 }

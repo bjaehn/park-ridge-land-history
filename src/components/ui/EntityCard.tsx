@@ -18,6 +18,7 @@ type Props = {
   onClick?: () => void;
   isTeardownRebuild?: boolean | null;
   teardownConfidence?: string | null;
+  hasDeedNotes?: boolean | null;
 };
 
 const SIGNAL_STYLES: Record<ChangeSignal, string> = {
@@ -46,6 +47,7 @@ export function EntityCard({
   eraSwatch,
   isTeardownRebuild,
   teardownConfidence,
+  hasDeedNotes,
 }: Props) {
   const inner = (
     <div className="relative flex flex-col gap-2 bg-surface-card border border-surface-border rounded-lg p-4 h-full transition-colors hover:border-accent-purple/50">
@@ -72,7 +74,7 @@ export function EntityCard({
           <TeardownBadge confidence={teardownConfidence} />
         </div>
       )}
-      {(signal || meta || (metaItems && metaItems.length > 0)) && (
+      {(signal || meta || (metaItems && metaItems.length > 0) || hasDeedNotes) && (
         <div className="flex flex-col gap-1 mt-auto pt-2">
           {metaItems && metaItems.length > 0 && (
             <div className="flex flex-wrap gap-x-3 gap-y-1">
@@ -84,9 +86,14 @@ export function EntityCard({
               ))}
             </div>
           )}
-          {(meta || signal) && (
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              {meta && <p className="text-xs text-text-muted">{meta}</p>}
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            {meta && <p className="text-xs text-text-muted">{meta}</p>}
+            <div className="flex items-center gap-2">
+              {hasDeedNotes && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-accent-teal/10 border border-accent-teal/20 text-accent-teal uppercase tracking-wide">
+                  deed
+                </span>
+              )}
               {signal && (
                 <span
                   className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded ${SIGNAL_STYLES[signal]}`}
@@ -96,7 +103,7 @@ export function EntityCard({
                 </span>
               )}
             </div>
-          )}
+          </div>
         </div>
       )}
     </div>
