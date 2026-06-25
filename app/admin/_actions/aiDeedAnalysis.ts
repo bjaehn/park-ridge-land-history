@@ -296,34 +296,37 @@ export async function extractPdfText(
 
   try {
     const buffer = Buffer.from(await file.arrayBuffer());
+    const base64 = buffer.toString("base64");
 
-    // pdf2json is a pure Node.js PDF parser — no browser APIs, no web workers,
-    // no DOMMatrix. It wraps a Node.js-specific fork of pdf.js from 2014.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { default: PDFParser } = await import("pdf2json") as any;
-
-    const rawText = await new Promise<string>((resolve, reject) => {
-      const parser = new PDFParser();
-      parser.on("pdfParser_dataError", (e: { parserError: Error }) =>
-        reject(e.parserError ?? new Error("PDF parse error"))
-      );
-      parser.on("pdfParser_dataReady", () => {
-        try {
-          resolve(parser.getRawTextContent() as string);
-        } catch (e) {
-          reject(e);
-        }
-      });
-      parser.parseBuffer(buffer);
+    // Cook County deed PDFs are scanned images — no text layer exists.
+    // Send directly to Claude as a document; it reads the image natively.
+    const client = new Anthropic();
+    const message = await client.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 1024,
+      messages: [{
+        role: "user",
+        content: [
+          {
+            type: "document",
+            source: { type: "base64", media_type: "application/pdf", data: base64 },
+          },
+          {
+            type: "text",
+            text: "Extract the complete legal property description from this deed or mortgage document. The legal description typically begins with 'LOT' or 'PARCEL' and includes subdivision names, section/township/range information. Return only the legal description text exactly as written — no commentary, no header.",
+          },
+        ],
+      }],
     });
 
-    const extracted = rawText
-      .replace(/\f/g, " ")   // pdf2json uses \f as a page separator
-      .replace(/\s+/g, " ")
+    const extracted = message.content
+      .filter((b) => b.type === "text")
+      .map((b) => (b as { type: "text"; text: string }).text)
+      .join("")
       .trim()
       .slice(0, 3000);
 
-    if (!extracted) return { error: "No text found — file may be a scanned image without a text layer." };
+    if (!extracted) return { error: "No legal description found in this document." };
     return { text: extracted };
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Failed to read PDF." };

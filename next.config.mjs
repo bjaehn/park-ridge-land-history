@@ -6,9 +6,6 @@ const nextConfig = {
     config.resolve.alias = {
       ...config.resolve.alias,
       "maplibre-gl": "maplibre-gl/dist/maplibre-gl.js",
-      // pdfjs-dist optionally imports canvas for page rendering; stub it out
-      // since we only need text extraction (no canvas available server-side)
-      canvas: false,
     };
     return config;
   },
