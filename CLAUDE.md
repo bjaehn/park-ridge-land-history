@@ -40,3 +40,29 @@ Structure:
 - Era colors: `getEraColor()` from `src/lib/mapConfig.ts`
 - Decade key: `p.year_built ? \`${Math.floor(p.year_built / 10) * 10}s\` : "Unknown"`
 - Sort: chronological ascending, `"Unknown"` always last
+
+### Teardown/rebuild badge
+Properties with `is_teardown_rebuild = true` display a `<TeardownBadge>` (amber/flame).
+- **Detection**: `year_built >= 1990 AND (year_built - first_assessed_year) >= 20` → `medium`; upgraded to `high` if a matching new-build permit keyword exists
+- **Badge component**: `src/components/ui/TeardownBadge.tsx` — pass `confidence` prop
+- **EntityCard**: accepts `isTeardownRebuild` and `teardownConfidence` props; renders badge automatically
+- **Property detail page**: badge shown alongside `ConfidenceBadge` in the vitals section
+- **Subdivision page**: amber callout above the property grid when ≥ 1 teardown exists
+- **Migrations**: `20260628000002_add_teardown_rebuild_flag.sql` adds columns; populate via `UPDATE` after running the migration
+
+### Neighborhood model (three-taxonomy)
+The old `parcels.neighborhood_id` TEXT column is preserved but superseded by three typed FKs:
+- `official_planning_neighborhood_id` — city planning districts (primary; use this for all RPCs)
+- `business_district_id` — commercial zones (optional)
+- `local_neighborhood_id` — informal/realtor names (optional)
+
+New neighborhoods are assigned via `assign_parcels_by_geometry()` (admin function).
+Legacy parcels are backfilled by migration `20260628000000_backfill_neighborhood_typed_ids.sql`.
+
+### highlight_parcels RPC — subdivision scope
+The subdivision scope in `highlight_parcels` unions **both** link sources:
+```sql
+(p.pin_normalized IN (SELECT psl.pin FROM property_subdivision_links psl WHERE psl.subdivision_id = %L::uuid)
+ OR p.subdivision_id::text = %L)
+```
+This mirrors `fetchSubdivisionParcels()`. Always keep these in sync.
