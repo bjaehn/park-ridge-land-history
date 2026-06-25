@@ -61,7 +61,7 @@ jobs:
         run: |
           prev_ts=0
           for f in $(ls supabase/migrations/*.sql | sort); do
-            ts=$(basename "$f" | grep -oE '^[0-9]{14}')
+            ts=$(basename "$f" | grep -oE '^[0-9]{14}' || true)
             if [ -z "$ts" ]; then
               echo "SKIP (no timestamp prefix): $(basename $f)"
               continue
