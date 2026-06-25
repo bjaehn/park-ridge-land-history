@@ -197,6 +197,7 @@ export async function linkPlatIndexEntry(id: string, subdivisionId: string | nul
     .eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/admin/plat-mapping");
+  if (subdivisionId) revalidatePath(`/admin/subdivisions/${subdivisionId}`);
 }
 
 export async function savePlatIndexNotes(id: string, notes: string) {

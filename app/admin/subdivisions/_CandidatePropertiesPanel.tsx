@@ -40,6 +40,7 @@ export function CandidatePropertiesPanel({
   const [suggestLoading, setSuggestLoading] = useState(false);
   const [suggestError, setSuggestError] = useState<string | null>(null);
   const [linkingId, setLinkingId] = useState<string | null>(null);
+  const [linkError, setLinkError] = useState<string | null>(null);
 
   function handleBulkLink() {
     startTransition(async () => {
@@ -64,9 +65,15 @@ export function CandidatePropertiesPanel({
 
   function handleLinkEntry(entryId: string) {
     setLinkingId(entryId);
+    setLinkError(null);
     startTransition(async () => {
-      await linkPlatIndexEntry(entryId, subdivisionId);
-      setLinkingId(null);
+      try {
+        await linkPlatIndexEntry(entryId, subdivisionId);
+      } catch (err) {
+        setLinkError(err instanceof Error ? err.message : String(err));
+      } finally {
+        setLinkingId(null);
+      }
     });
   }
 
@@ -143,6 +150,9 @@ export function CandidatePropertiesPanel({
                   </button>
                 </div>
               ))}
+              {linkError && (
+                <p className="text-xs text-red-400 pt-1">{linkError}</p>
+              )}
               <p className="text-[10px] text-text-muted pt-1">
                 <Link href="/admin/plat-mapping" className="text-accent-teal hover:underline">
                   Open Plat Index
