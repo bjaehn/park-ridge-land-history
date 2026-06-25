@@ -297,11 +297,14 @@ export async function extractPdfText(
   try {
     const uint8 = new Uint8Array(await file.arrayBuffer());
 
-    // pdfjs-dist 3.x (legacy build) runs inline in Node.js without DOM APIs.
-    // The 4.x series introduced a DOMMatrix requirement; 3.x predates it.
+    // pdfjs-dist must NOT be webpack-bundled (serverExternalPackages in next.config).
+    // Use createRequire so the worker resolves to its real node_modules path, not
+    // a webpack chunk — otherwise pdfjs fails to spawn its Node worker_thread.
+    const { createRequire } = await import("module");
+    const req = createRequire(import.meta.url);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.js") as any;
-    pdfjsLib.GlobalWorkerOptions.workerSrc = ""; // no worker thread needed server-side
+    const pdfjsLib = req("pdfjs-dist/legacy/build/pdf.js") as any;
+    pdfjsLib.GlobalWorkerOptions.workerSrc = req.resolve("pdfjs-dist/legacy/build/pdf.worker.js");
 
     const pdf = await pdfjsLib.getDocument({ data: uint8, useWorkerFetch: false, isEvalSupported: false }).promise;
     const pageTexts: string[] = [];

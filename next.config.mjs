@@ -2,6 +2,8 @@
 const nextConfig = {
   output: "standalone",
   eslint: { ignoreDuringBuilds: true },
+  // Keep pdfjs-dist out of webpack so its worker file paths stay intact at runtime
+  serverExternalPackages: ["pdfjs-dist"],
   webpack(config) {
     config.resolve.alias = {
       ...config.resolve.alias,
