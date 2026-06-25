@@ -77,6 +77,14 @@ export async function getNeighborhoodBySlug(slug: string): Promise<NeighborhoodS
         };
       }
     } catch { /* fall through */ }
+
+    // Slug column is NULL in DB — fall back to derived-slug match in summaries
+    // (fetchNeighborhoodSummaries derives slug as id.split(':').slice(1).join(':'))
+    try {
+      const all = await fetchNeighborhoodSummaries();
+      const found = all.find((n) => n.slug === slug);
+      if (found) return found;
+    } catch { /* fall through */ }
   }
   throw new Error(`Unknown neighborhood slug: ${slug}`);
 }
