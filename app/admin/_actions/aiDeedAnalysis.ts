@@ -295,28 +295,35 @@ export async function extractPdfText(
   if (file.size > 20 * 1024 * 1024) return { error: "File too large. Maximum 20 MB." };
 
   try {
-    const uint8 = new Uint8Array(await file.arrayBuffer());
+    const buffer = Buffer.from(await file.arrayBuffer());
 
-    // pdfjs-dist must NOT be webpack-bundled (serverExternalPackages in next.config).
-    // Use createRequire so the worker resolves to its real node_modules path, not
-    // a webpack chunk — otherwise pdfjs fails to spawn its Node worker_thread.
-    const { createRequire } = await import("module");
-    const req = createRequire(import.meta.url);
+    // pdf2json is a pure Node.js PDF parser — no browser APIs, no web workers,
+    // no DOMMatrix. It wraps a Node.js-specific fork of pdf.js from 2014.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const pdfjsLib = req("pdfjs-dist/legacy/build/pdf.js") as any;
-    pdfjsLib.GlobalWorkerOptions.workerSrc = req.resolve("pdfjs-dist/legacy/build/pdf.worker.js");
+    const { default: PDFParser } = await import("pdf2json") as any;
 
-    const pdf = await pdfjsLib.getDocument({ data: uint8, useWorkerFetch: false, isEvalSupported: false }).promise;
-    const pageTexts: string[] = [];
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      pageTexts.push(content.items.map((item: any) => item.str ?? "").join(" "));
-    }
+    const rawText = await new Promise<string>((resolve, reject) => {
+      const parser = new PDFParser();
+      parser.on("pdfParser_dataError", (e: { parserError: Error }) =>
+        reject(e.parserError ?? new Error("PDF parse error"))
+      );
+      parser.on("pdfParser_dataReady", () => {
+        try {
+          resolve(parser.getRawTextContent() as string);
+        } catch (e) {
+          reject(e);
+        }
+      });
+      parser.parseBuffer(buffer);
+    });
 
-    const extracted = pageTexts.join(" ").replace(/\s+/g, " ").trim().slice(0, 3000);
-    if (!extracted) return { error: "No text found in PDF — the file may be a scanned image without a text layer." };
+    const extracted = rawText
+      .replace(/\f/g, " ")   // pdf2json uses \f as a page separator
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 3000);
+
+    if (!extracted) return { error: "No text found — file may be a scanned image without a text layer." };
     return { text: extracted };
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Failed to read PDF." };
