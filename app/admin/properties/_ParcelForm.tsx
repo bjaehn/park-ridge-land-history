@@ -11,7 +11,7 @@ const SELECT = "w-full bg-surface-card border border-surface-border rounded px-3
 
 function DeedNotesField({ defaultValue }: { defaultValue: string }) {
   const [val, setVal] = useState(defaultValue);
-  const max = 3000;
+  const max = 5000;
   return (
     <div>
       <label className={LABEL}>Deed legal description</label>
