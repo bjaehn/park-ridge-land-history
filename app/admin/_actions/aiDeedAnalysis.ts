@@ -296,9 +296,24 @@ export async function extractPdfText(
 
   try {
     const uint8 = new Uint8Array(await file.arrayBuffer());
-    const { extractText } = await import("unpdf");
-    const { text } = await extractText(uint8, { mergePages: true });
-    const extracted = text.replace(/\s+/g, " ").trim().slice(0, 3000);
+
+    // pdfjs-dist 3.x (legacy build) runs inline in Node.js without DOM APIs.
+    // The 4.x series introduced a DOMMatrix requirement; 3.x predates it.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.js") as any;
+    pdfjsLib.GlobalWorkerOptions.workerSrc = ""; // no worker thread needed server-side
+
+    const pdf = await pdfjsLib.getDocument({ data: uint8, useWorkerFetch: false, isEvalSupported: false }).promise;
+    const pageTexts: string[] = [];
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      pageTexts.push(content.items.map((item: any) => item.str ?? "").join(" "));
+    }
+
+    const extracted = pageTexts.join(" ").replace(/\s+/g, " ").trim().slice(0, 3000);
+    if (!extracted) return { error: "No text found in PDF — the file may be a scanned image without a text layer." };
     return { text: extracted };
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Failed to read PDF." };
