@@ -32,7 +32,7 @@ export async function fetchSubdivisionIndex(): Promise<SubdivisionSummary[]> {
     .from("subdivisions")
     .select(
       "id, name, normalized_name, recorded_year, confidence_level, confidence_reason, " +
-      "source_name, original_owner, developer, notes, parent_subdivision_id"
+      "source_name, original_owner, developer, parcel_count, notes, parent_subdivision_id, entity_type"
     )
     .order("recorded_year", { ascending: true, nullsFirst: false })
     .order("normalized_name", { ascending: true });
@@ -102,7 +102,7 @@ export async function searchSubdivisions(
     .from("subdivisions")
     .select(
       "id, name, normalized_name, recorded_year, confidence_level, confidence_reason, " +
-      "source_name, original_owner, developer, parcel_count, notes, parent_subdivision_id"
+      "source_name, original_owner, developer, parcel_count, notes, parent_subdivision_id, entity_type"
     )
     .ilike("normalized_name", `%${q}%`)
     .order("recorded_year", { ascending: true, nullsFirst: false })
@@ -752,6 +752,52 @@ export async function fetchSubdivisionGisLots(subdivisionId: string): Promise<Gi
       overlap_pct_of_parcel: row.overlap_pct_of_parcel != null ? Number(row.overlap_pct_of_parcel) : null,
       match_confidence: (row.match_confidence as string | null) ?? null,
     }));
+  } catch {
+    return [];
+  }
+}
+
+// ─── Neighborhoods linked to a subdivision ────────────────────────────────────
+
+export type SubdivisionNeighborhoodLink = {
+  linkId: string;
+  neighborhoodId: string;
+  neighborhoodName: string;
+  neighborhoodSlug: string | null;
+  relationshipType: string | null;
+};
+
+/** Fetch neighborhoods that are linked to a subdivision via neighborhood_subdivision_links. */
+export async function fetchNeighborhoodsForSubdivision(
+  subdivisionId: string
+): Promise<SubdivisionNeighborhoodLink[]> {
+  if (!supabase || !subdivisionId) return [];
+  try {
+    const { data, error } = await supabase
+      .from("neighborhood_subdivision_links")
+      .select("id, relationship_type, neighborhoods(id, label, slug)")
+      .eq("subdivision_id", subdivisionId)
+      .order("id");
+    if (error || !data) return [];
+
+    type RawRow = {
+      id: string;
+      relationship_type: string | null;
+      neighborhoods: { id: string; label: string; slug: string | null } | null;
+    };
+
+    return (data as unknown as RawRow[])
+      .filter(
+        (row): row is RawRow & { neighborhoods: NonNullable<RawRow["neighborhoods"]> } =>
+          row.neighborhoods !== null
+      )
+      .map((row) => ({
+        linkId: row.id,
+        neighborhoodId: row.neighborhoods.id,
+        neighborhoodName: row.neighborhoods.label,
+        neighborhoodSlug: row.neighborhoods.slug,
+        relationshipType: row.relationship_type,
+      }));
   } catch {
     return [];
   }

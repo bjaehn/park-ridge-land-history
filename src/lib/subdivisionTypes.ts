@@ -168,6 +168,7 @@ export type SubdivisionSummary = Pick<
   | "parcel_count"
   | "notes"
   | "parent_subdivision_id"
+  | "entity_type"
 >;
 
 /** Result of looking up subdivision for a property. */
