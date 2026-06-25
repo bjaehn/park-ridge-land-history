@@ -508,11 +508,13 @@ export function DeedAnalysisPanel({
   address,
   deedNotes,
   allSubdivisions,
+  onDeedNotesExtracted,
 }: {
   pin: string;
   address: string | null;
   deedNotes: string | null;
   allSubdivisions: { id: string; name: string }[];
+  onDeedNotesExtracted?: (text: string) => void;
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -539,11 +541,7 @@ export function DeedAnalysisPanel({
     setPdfLoading(false);
     if (pdfErr) { setPdfMsg(`Error: ${pdfErr}`); return; }
     if (text) {
-      const textarea = document.querySelector<HTMLTextAreaElement>('textarea[name="deed_notes"]');
-      if (textarea) {
-        textarea.value = text;
-        textarea.dispatchEvent(new Event("input", { bubbles: true }));
-      }
+      onDeedNotesExtracted?.(text);
       setPdfMsg("Text extracted — review and click Analyze Deed.");
     }
     e.target.value = "";

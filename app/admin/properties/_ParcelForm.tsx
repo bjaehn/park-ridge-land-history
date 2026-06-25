@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useTransition, useState } from "react";
 import { useRouter } from "next/navigation";
 import { updateParcel } from "../_actions/properties";
 
@@ -9,8 +9,7 @@ const LABEL = "block text-xs font-semibold text-text-muted uppercase tracking-wi
 const SECTION = "bg-surface-raised rounded-lg border border-surface-border p-5 mb-5";
 const SELECT = "w-full bg-surface-card border border-surface-border rounded px-3 py-1.5 text-sm text-text-primary focus:outline-none focus:border-accent-teal/60 transition-colors";
 
-function DeedNotesField({ defaultValue }: { defaultValue: string }) {
-  const [val, setVal] = useState(defaultValue);
+function DeedNotesField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const max = 5000;
   return (
     <div>
@@ -19,12 +18,12 @@ function DeedNotesField({ defaultValue }: { defaultValue: string }) {
         name="deed_notes"
         rows={4}
         maxLength={max}
-        value={val}
-        onChange={(e) => setVal(e.target.value)}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
         placeholder="Paste deed legal description here…"
         className={`${INPUT} resize-y`}
       />
-      <p className="text-xs text-text-muted mt-1 text-right">{val.length} / {max}</p>
+      <p className="text-xs text-text-muted mt-1 text-right">{value.length} / {max}</p>
     </div>
   );
 }
@@ -55,9 +54,11 @@ type Props = {
   officialPlanningNeighborhoods: Neighborhood[];
   businessDistrictNeighborhoods: Neighborhood[];
   localMarketNeighborhoods: Neighborhood[];
+  deedNotes: string;
+  onDeedNotesChange: (v: string) => void;
 };
 
-export function ParcelForm({ parcel, officialPlanningNeighborhoods, businessDistrictNeighborhoods, localMarketNeighborhoods }: Props) {
+export function ParcelForm({ parcel, officialPlanningNeighborhoods, businessDistrictNeighborhoods, localMarketNeighborhoods, deedNotes, onDeedNotesChange }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -66,6 +67,8 @@ export function ParcelForm({ parcel, officialPlanningNeighborhoods, businessDist
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
+    // Explicitly set from React state so deed_notes is never lost due to uncontrolled/DOM desync
+    fd.set("deed_notes", deedNotes);
     setError(null);
     setSaved(false);
     startTransition(() => {
@@ -150,7 +153,7 @@ export function ParcelForm({ parcel, officialPlanningNeighborhoods, businessDist
       {/* Deed Record */}
       <div className={SECTION}>
         <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-4">Deed Record</h3>
-        <DeedNotesField defaultValue={parcel.deed_notes ?? ""} />
+        <DeedNotesField value={deedNotes} onChange={onDeedNotesChange} />
       </div>
 
       {/* Neighborhood Assignment */}

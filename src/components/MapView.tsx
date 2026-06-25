@@ -130,7 +130,7 @@ export function MapView({
     boundary: true,
     permitHeatmap: false,
     gisLots: false,
-    gisBuildings: scope.kind === "property",
+    gisBuildings: true,
   });
   const gisLotsAddedRef = useRef(false);
   const gisBuildingsAddedRef = useRef(false);
