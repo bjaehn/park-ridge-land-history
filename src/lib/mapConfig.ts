@@ -33,6 +33,10 @@ export const MAP_ZOOM_CITY = 12;
 export const PMTILES_URL = process.env.NEXT_PUBLIC_PMTILES_URL ?? "";
 export const GEOJSON_FALLBACK_URL = "/data/park_ridge_parcels_map.geojson";
 export const BOUNDARY_URL = "/data/park_ridge_boundary.geojson";
+export const BUILDINGS_GEOJSON_URL = "/data/park_ridge_building_footprints.geojson";
+export const GIS_BUILDINGS_STROKE_COLOR = "#ffffff";
+export const GIS_BUILDINGS_STROKE_WIDTH = 0.9;
+export const GIS_BUILDINGS_STROKE_OPACITY = 0.55;
 
 // ---------------------------------------------------------------------------
 // Basemap tile URLs - CARTO raster tiles (no API key required)
