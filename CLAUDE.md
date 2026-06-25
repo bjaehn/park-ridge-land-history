@@ -43,12 +43,13 @@ Structure:
 
 ### Teardown/rebuild badge
 Properties with `is_teardown_rebuild = true` display a `<TeardownBadge>` (amber/flame).
-- **Detection**: `year_built >= 1990 AND (year_built - first_assessed_year) >= 20` → `medium`; upgraded to `high` if a matching new-build permit keyword exists
+- **Detection (medium)**: `year_built >= 1990 AND (year_built - first_assessed_year) >= 20`
+- **Detection (high)**: permit `description` matches deconstruction/demolition of a residence, OR new single-family construction with new utility connections. Patterns: `ILIKE '%deconstruction%residence%'`, `ILIKE '%deconstruction%single family%'`, `ILIKE '%demolition%residence%'`, `ILIKE '%demolition%single family%'`, or (`ILIKE '%new%single family%'` AND `ILIKE '%new utility%'`). Applied via `20260630000001_teardown_permit_detection.sql`.
 - **Badge component**: `src/components/ui/TeardownBadge.tsx` — pass `confidence` prop
 - **EntityCard**: accepts `isTeardownRebuild` and `teardownConfidence` props; renders badge automatically
 - **Property detail page**: badge shown alongside `ConfidenceBadge` in the vitals section
 - **Subdivision page**: amber callout above the property grid when ≥ 1 teardown exists
-- **Migrations**: `20260628000002_add_teardown_rebuild_flag.sql` adds columns; populate via `UPDATE` after running the migration
+- **Migrations**: `20260628000002_add_teardown_rebuild_flag.sql` adds columns; `20260630000001_teardown_permit_detection.sql` upgrades matched permits to `high`
 
 ### Neighborhood model (three-taxonomy)
 The old `parcels.neighborhood_id` TEXT column is preserved but superseded by three typed FKs:
