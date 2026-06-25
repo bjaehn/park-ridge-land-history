@@ -1,9 +1,6 @@
 "use server";
 
 import Anthropic from "@anthropic-ai/sdk";
-import * as pdfParseModule from "pdf-parse";
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const pdfParse = (pdfParseModule as any).default ?? pdfParseModule;
 import { revalidatePath } from "next/cache";
 import { adminSupabase } from "@/lib/supabase/adminClient";
 import { refreshResearchQueue } from "./researchQueue";
@@ -299,6 +296,9 @@ export async function extractPdfText(
 
   try {
     const buffer = Buffer.from(await file.arrayBuffer());
+    // Dynamic import avoids pdf-parse's test-file initialization crash at module load time
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const pdfParse: (buf: Buffer) => Promise<{ text: string }> = await import("pdf-parse").then((m) => (m as any).default ?? m);
     const result = await pdfParse(buffer);
     const extracted = result.text
       .replace(/\s+/g, " ")
