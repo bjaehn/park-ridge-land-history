@@ -11,7 +11,7 @@ export default async function PlatMappingPage() {
         .select("id, section_ref, short_name, full_name, subdivision_id, gis_page_codes, notes, subdivisions(id, name)")
         .order("section_ref")
         .order("full_name"),
-      adminSupabase.from("subdivisions").select("id, name").order("name"),
+      adminSupabase.from("subdivisions").select("id, name, normalized_name, alternate_names").order("name"),
       adminSupabase.rpc("get_park_ridge_gis_page_codes"),
     ]);
 

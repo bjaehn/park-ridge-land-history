@@ -7,6 +7,7 @@ import {
   savePlatIndexNotes,
   savePlatIndexGisCodes,
 } from "../_actions/platMapping";
+import { SuggestionQueue } from "./_SuggestionQueue";
 
 type PlatEntry = {
   id: string;
@@ -19,7 +20,7 @@ type PlatEntry = {
   subdivisions: { id: string; name: string } | null;
 };
 
-type SubOption = { id: string; name: string };
+type SubOption = { id: string; name: string; normalized_name: string; alternate_names: string[] | null };
 type PageCode = { code: string; cnt: number };
 
 const PR_SECTIONS = ["01-40-12", "02-40-12", "11-40-12", "12-40-12"];
@@ -77,6 +78,12 @@ export function PlatMappingContent({
     });
   }
 
+  const queueEntries = useMemo(
+    () =>
+      prEntries.filter((e) => !e.subdivision_id && e.notes !== "no_match_found"),
+    [prEntries]
+  );
+
   return (
     <div>
       <div className="flex items-start justify-between gap-4 mb-8">
@@ -100,6 +107,8 @@ export function PlatMappingContent({
           </p>
         </div>
       </div>
+
+      <SuggestionQueue unlinkedEntries={queueEntries} allSubdivisions={subdivisions} />
 
       <div className="flex flex-wrap gap-3 mb-5">
         <div className="flex rounded border border-surface-border overflow-hidden text-xs">
