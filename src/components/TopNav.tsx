@@ -244,7 +244,62 @@ export function TopNav() {
           className="md:hidden bg-surface-raised border-b border-surface-border"
           aria-label="Mobile navigation"
         >
-          <ul className="max-w-content mx-auto px-page-x py-3 flex flex-col gap-1">
+          <div className="max-w-content mx-auto px-page-x pt-3 pb-2">
+            <div className="relative" role="search">
+              <label htmlFor="mobile-search" className="sr-only">
+                Search an address
+              </label>
+              <svg
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none"
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                aria-hidden="true"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <input
+                id="mobile-search"
+                type="search"
+                autoComplete="off"
+                value={query}
+                onChange={(e) => handleSearch(e.target.value)}
+                onFocus={() => query.length >= 2 && setShowResults(results.length > 0)}
+                onKeyDown={handleKeyDown}
+                placeholder="Search address"
+                className="w-full pl-8 pr-3 py-2 text-sm bg-surface-card border border-surface-border rounded text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-purple/60 transition-colors"
+              />
+              {showResults && (
+                <ul
+                  className="absolute top-full left-0 right-0 mt-1 bg-surface-card border border-surface-border rounded-lg shadow-xl overflow-hidden z-50"
+                  role="listbox"
+                >
+                  {results.map((r, index) => (
+                    <li key={r.pin} role="option" aria-selected={focusedIndex === index}>
+                      <button
+                        type="button"
+                        className="w-full text-left px-3 py-2.5 text-sm hover:bg-surface-raised transition-colors"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          selectResult(r.pin);
+                        }}
+                      >
+                        <span className="text-text-primary block leading-snug">{r.address}</span>
+                        {r.yearBuilt && (
+                          <span className="text-xs text-text-muted">Built {r.yearBuilt}</span>
+                        )}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+          <ul className="max-w-content mx-auto px-page-x pb-3 flex flex-col gap-1">
             {NAV_LINKS.map((link) => {
               const active = link.isActive ? link.isActive(pathname) : pathname.startsWith(link.href);
               return (

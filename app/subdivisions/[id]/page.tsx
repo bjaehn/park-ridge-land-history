@@ -27,9 +27,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   ).catch(() => null);
   if (!sub) return { title: "Subdivision not found" };
   const year = sub.recorded_year ? ` (${sub.recorded_year})` : "";
+  const title = sub.display_name ?? sub.name;
+  const description = `Land history of the ${sub.name} subdivision plat in Park Ridge, Illinois${year}. View matched properties, plat records, and historical facts.`;
   return {
-    title: sub.display_name ?? sub.name,
-    description: `Land history of the ${sub.name} subdivision plat in Park Ridge, Illinois${year}. View matched properties, plat records, and historical facts.`,
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      images: ["/og-default.png"],
+    },
   };
 }
 
