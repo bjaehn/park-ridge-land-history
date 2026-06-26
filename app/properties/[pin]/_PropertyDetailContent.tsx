@@ -840,9 +840,9 @@ export function PropertyDetailContent({ pin }: Props) {
       {quickSummaryText && (
         <section>
           <div className="flex items-center gap-2 mb-2">
-            <h2 className="section-heading !mb-0">Agent summary</h2>
+            <h2 className="section-heading !mb-0">Property summary</h2>
             <span className="text-[10px] font-semibold uppercase tracking-wider bg-accent-purple/10 text-accent-purple px-2 py-0.5 rounded">
-              Shareable
+              Copy for sharing
             </span>
           </div>
           <div className="bg-surface-card border border-surface-border rounded-lg p-4">

@@ -29,7 +29,7 @@ export default async function CityPage() {
         townships={townships}
         mapSlot={
           <div className="map-full-bleed">
-            <MapView scope={{ kind: "city" }} height="700px" showExpand />
+            <MapView scope={{ kind: "city" }} height="min(700px, 65vh)" showExpand />
           </div>
         }
       />

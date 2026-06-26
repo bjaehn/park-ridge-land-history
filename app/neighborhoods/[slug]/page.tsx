@@ -119,7 +119,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
           pins: mapData.pins,
           bbox: mapData.bbox ?? undefined,
         }}
-        height="580px"
+        height="min(580px, 60vh)"
         showExpand
       />
     ) : undefined;

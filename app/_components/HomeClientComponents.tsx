@@ -19,11 +19,13 @@ export function HomeSearch() {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [focused, setFocused] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [focusedIndex, setFocusedIndex] = useState(-1);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const search = useCallback((q: string) => {
     setQuery(q);
+    setFocusedIndex(-1);
     if (timerRef.current) clearTimeout(timerRef.current);
     if (q.trim().length < 2) { setResults([]); setSearched(false); return; }
     timerRef.current = setTimeout(async () => {
@@ -40,16 +42,35 @@ export function HomeSearch() {
     setQuery("");
     setResults([]);
     setSearched(false);
+    setFocusedIndex(-1);
     router.push(`/properties/${encodeURIComponent(pin)}`);
   };
 
   const showDropdown = focused && results.length > 0 && query.trim().length >= 2;
   const showEmptyState = focused && searched && results.length === 0 && query.trim().length >= 3;
 
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setFocusedIndex((i) => (i < results.length - 1 ? i + 1 : i));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setFocusedIndex((i) => (i > 0 ? i - 1 : 0));
+    } else if (e.key === "Enter") {
+      if (results.length > 0) {
+        select(focusedIndex >= 0 ? results[focusedIndex].pin : results[0].pin);
+      }
+    } else if (e.key === "Escape") {
+      setResults([]);
+      setSearched(false);
+      setFocusedIndex(-1);
+    }
+  }
+
   return (
     <div className="space-y-3">
       <div className="relative">
-        <label htmlFor="hero-search" className="sr-only">Search an address or PIN</label>
+        <label htmlFor="hero-search" className="sr-only">Search a street address</label>
         <div className="relative">
           <svg
             className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none"
@@ -73,14 +94,8 @@ export function HomeSearch() {
             onChange={(e) => search(e.target.value)}
             onFocus={() => setFocused(true)}
             onBlur={() => setTimeout(() => setFocused(false), 150)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && results[0]) select(results[0].pin);
-              if (e.key === "Enter" && results.length === 0 && query.trim().length >= 3) {
-                router.push(`/search?q=${encodeURIComponent(query.trim())}`);
-              }
-              if (e.key === "Escape") { setResults([]); setSearched(false); }
-            }}
-            placeholder="Type an address or Cook County PIN..."
+            onKeyDown={handleKeyDown}
+            placeholder="Type a street address..."
             className="w-full pl-10 pr-4 py-3 text-base bg-surface-card border border-surface-border rounded-lg text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-purple/60 transition-colors"
           />
         </div>
@@ -89,11 +104,14 @@ export function HomeSearch() {
             className="absolute top-full left-0 right-0 mt-1 bg-surface-card border border-surface-border rounded-lg shadow-xl overflow-hidden z-50"
             role="listbox"
           >
-            {results.map((r) => (
-              <li key={r.pin} role="option" aria-selected="false">
+            {results.map((r, index) => (
+              <li key={r.pin} role="option" aria-selected={focusedIndex === index}>
                 <button
                   type="button"
-                  className="w-full text-left px-4 py-3 hover:bg-surface-raised transition-colors"
+                  className={[
+                    "w-full text-left px-4 py-3 transition-colors",
+                    focusedIndex === index ? "bg-surface-raised" : "hover:bg-surface-raised",
+                  ].join(" ")}
                   onMouseDown={(e) => { e.preventDefault(); select(r.pin); }}
                 >
                   <span className="text-text-primary block">{r.address}</span>
@@ -105,7 +123,7 @@ export function HomeSearch() {
         )}
         {showEmptyState && (
           <p className="absolute top-full left-0 right-0 mt-1 px-4 py-3 bg-surface-card border border-surface-border rounded-lg text-sm text-text-muted z-50">
-            No properties found for &ldquo;{query}&rdquo;. Try an address, street name, or 14-digit PIN.
+            No properties found for &ldquo;{query}&rdquo;. Try a different address or street name.
           </p>
         )}
       </div>
