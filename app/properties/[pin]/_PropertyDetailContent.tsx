@@ -117,7 +117,7 @@ function SaleHistorySection({ sales, chartSlot }: { sales: PropertySale[]; chart
                 <p className="text-xs text-text-muted mt-0.5">Doc #{s.document_number}</p>
               )}
               {!s.is_market_sale && (
-                <p className="text-xs text-text-muted mt-0.5 italic">Non-market transfer</p>
+                <p className="text-xs text-text-muted mt-0.5 italic">Non-market transfer &mdash; deed transfer between related parties (e.g., estate, family gift), not an arm&#x2011;s&#x2011;length sale</p>
               )}
             </div>
             <div className="text-right shrink-0">
@@ -150,6 +150,10 @@ function PermitHistorySection({ permits }: { permits: PropertyPermit[] }) {
   return (
     <section>
       <h2 className="section-heading">Permit history ({permits.length} on record)</h2>
+      <div className="flex items-start gap-2 mb-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700">
+        <span className="shrink-0 mt-0.5" aria-hidden="true">!</span>
+        <span>Records shown are from 2018 onward only. Earlier permit history may exist but is not in this dataset. Do not rely on this list as a complete renovation record.</span>
+      </div>
       <div className="space-y-2">
         {visible.map((p) => (
           <div key={p.id} className="bg-surface-card border border-surface-border rounded-lg px-4 py-3">
@@ -794,6 +798,9 @@ export function PropertyDetailContent({ pin, initialProps }: Props) {
   const streetDisplayName = typeof props.street_name_normalized === "string"
     ? (props.street_name_normalized as string).toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase())
     : null;
+  const blockPrefix = typeof props.pin_normalized === "string" && (props.pin_normalized as string).length >= 7
+    ? (props.pin_normalized as string).slice(0, 7)
+    : null;
   const eraContextNote = getEraContextNote(
     yearBuilt,
     (props.local_neighborhood_slug as string | null),
@@ -1140,10 +1147,20 @@ export function PropertyDetailContent({ pin, initialProps }: Props) {
       </details>
 
       {/* Explore more */}
-      {(props.street_name_normalized || (neighborhoodSlug && neighborhoodLabel)) && (
+      {(props.street_name_normalized || (neighborhoodSlug && neighborhoodLabel) || blockPrefix) && (
         <section>
           <h2 className="section-heading">Explore more</h2>
           <div className="space-y-2">
+            {blockPrefix && (
+              <div>
+                <Link
+                  href={`/pin/${encodeURIComponent(blockPrefix)}`}
+                  className="text-accent-purple hover:underline"
+                >
+                  View all properties on this block →
+                </Link>
+              </div>
+            )}
             {props.street_name_normalized && (
               <div>
                 <Link
