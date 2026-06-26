@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { NeighborhoodPriceChart } from "@/components/ui/NeighborhoodPriceChart";
 import { EraPortraitChart } from "@/components/ui/EraPortraitChart";
-import { LoadingSkeleton } from "@/components/ui/EmptyState";
+import { LoadingSkeleton, EmptyState } from "@/components/ui/EmptyState";
 import { SaleIcon, YearBuiltIcon } from "@/lib/icons";
 import {
   fetchNeighborhoodPriceComparison,
@@ -14,6 +14,7 @@ export function NeighborhoodCharts() {
   const [priceData, setPriceData] = useState<NeighborhoodPriceRow[]>([]);
   const [eraData, setEraData] = useState<NeighborhoodEraRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     Promise.all([fetchNeighborhoodPriceComparison(), fetchNeighborhoodEraDistribution()])
@@ -21,11 +22,12 @@ export function NeighborhoodCharts() {
         setPriceData(prices);
         setEraData(eras);
       })
-      .catch(() => null)
+      .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, []);
 
   if (loading) return <LoadingSkeleton rows={2} />;
+  if (error) return <EmptyState heading="Unable to load neighborhood charts" body="Try refreshing the page." />;
 
   return (
     <div className="space-y-10">

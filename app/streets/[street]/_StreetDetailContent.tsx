@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { StatGrid } from "@/components/ui/StatGrid";
 import { EntityCard, UnresolvableEntityCard } from "@/components/ui/EntityCard";
-import { LoadingSkeleton } from "@/components/ui/EmptyState";
+import { LoadingSkeleton, EmptyState } from "@/components/ui/EmptyState";
 import { HighlightReel } from "@/components/ui/HighlightReel";
 import { formatNumber, formatAddress } from "@/lib/formatters";
 import { getEraColor } from "@/lib/mapConfig";
@@ -22,15 +22,17 @@ type Props = { streetName: string; displayName: string; mapSlot?: React.ReactNod
 export function StreetDetailContent({ streetName, displayName, mapSlot }: Props) {
   const [detail, setDetail] = useState<Awaited<ReturnType<typeof getStreetDetail>> | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     getStreetDetail(streetName)
       .then(setDetail)
-      .catch(() => null)
+      .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, [streetName]);
 
   if (loading) return <LoadingSkeleton rows={3} />;
+  if (error) return <EmptyState heading="Unable to load street data" body="Try refreshing the page." />;
   if (!detail) return null;
 
   const statItems = [

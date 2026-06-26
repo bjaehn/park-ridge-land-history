@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ConfidenceBadge } from "@/components/ui/ConfidenceBadge";
 import { TeardownBadge } from "@/components/ui/TeardownBadge";
 import { ComparisonList } from "@/components/ui/ComparisonList";
-import { LoadingSkeleton } from "@/components/ui/EmptyState";
+import { LoadingSkeleton, EmptyState } from "@/components/ui/EmptyState";
 import { InlineSourceNote } from "@/components/ui/SourceNote";
 import { PropertyTimeline, buildTimelineEvents } from "@/components/ui/PropertyTimeline";
 import { SubdivisionLineageCard } from "@/components/ui/SubdivisionLineageCard";
@@ -677,12 +677,13 @@ function PropertySummaryCard({
 export function PropertyDetailContent({ pin, initialProps }: Props) {
   const [detail, setDetail] = useState<Awaited<ReturnType<typeof getPropertyDetail>> | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [summaryCopied, setSummaryCopied] = useState(false);
 
   useEffect(() => {
     getPropertyDetail(pin)
       .then(setDetail)
-      .catch(() => null)
+      .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, [pin]);
 
@@ -722,7 +723,8 @@ export function PropertyDetailContent({ pin, initialProps }: Props) {
     }
     return <LoadingSkeleton rows={5} />;
   }
-  if (!detail) return <p className="text-text-secondary">Property record not found.</p>;
+  if (error) return <EmptyState heading="Unable to load property data" body="Try refreshing the page." />;
+  if (!detail) return <EmptyState heading="Property record not found" body="This PIN may not exist in our dataset yet." />;
 
   const props = detail.properties;
   const confidence = confidenceFor({

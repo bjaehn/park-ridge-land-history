@@ -6,7 +6,7 @@ import { ConstructionByDecadeChart } from "@/components/ui/ConstructionByDecadeC
 import { MarketHistoryChart } from "@/components/ui/MarketHistoryChart";
 import { AssessmentTrendChart } from "@/components/ui/AssessmentTrendChart";
 import Link from "next/link";
-import { LoadingSkeleton } from "@/components/ui/EmptyState";
+import { LoadingSkeleton, EmptyState } from "@/components/ui/EmptyState";
 import { SubdivisionPlatChart } from "@/components/ui/SubdivisionPlatChart";
 import { EntityCard } from "@/components/ui/EntityCard";
 import { formatNumber } from "@/lib/formatters";
@@ -40,6 +40,7 @@ export function CityContent({ mapSlot }: { mapSlot?: React.ReactNode }) {
   const [subdivisions, setSubdivisions] = useState<Array<{ id: string; name: string; normalizedName: string; earliestBuilt: number | null }>>([]);
   const [platByDecade, setPlatByDecade] = useState<Array<{ decade: number; platCount: number }>>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -62,11 +63,12 @@ export function CityContent({ mapSlot }: { mapSlot?: React.ReactNode }) {
         setSubdivisions(subdivList);
         setPlatByDecade(platDecade);
       })
-      .catch(() => null)
+      .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, []);
 
   if (loading) return <LoadingSkeleton rows={4} />;
+  if (error) return <EmptyState heading="Unable to load city data" body="Try refreshing the page." />;
   if (!stats) return null;
 
   const statItems = [
