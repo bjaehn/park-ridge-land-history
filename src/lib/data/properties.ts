@@ -1,6 +1,7 @@
 import { supabase } from "../supabase/client";
 import type { ComparisonRow } from "../../components/ui/ComparisonList";
-import type { ComparisonScope } from "../formatters";
+import type { ComparisonScope, ConfidenceLevel } from "../formatters";
+import { confidenceFor } from "../formatters";
 import type { LandLineageEntry, LandLot } from "../subdivisionTypes";
 import { fetchLineageForPin } from "../supabase/subdivisionQueries";
 
@@ -61,6 +62,14 @@ export type PropertyPageData = {
   lat?: number;
   lng?: number;
   yearBuilt?: number | null;
+  buildingSqft?: number | null;
+  landSqft?: number | null;
+  latestAssessedTotal?: number | null;
+  latestSaleYear?: number | null;
+  latestSalePrice?: number | null;
+  isTeardownRebuild?: boolean | null;
+  teardownConfidence?: string | null;
+  confidence?: ConfidenceLevel;
   neighborhoodLabel?: string | null;
   neighborhoodSlug?: string | null;
   officialPlanningNeighborhoodLabel?: string | null;
@@ -174,6 +183,14 @@ export async function getPropertyByPin(pin: string): Promise<PropertyPageData> {
     lat,
     lng,
     yearBuilt: props.year_built,
+    buildingSqft: (props.building_sqft as number | undefined) ?? null,
+    landSqft: (props.land_sqft as number | undefined) ?? null,
+    latestAssessedTotal: (props.latest_assessed_total as number | undefined) ?? null,
+    latestSaleYear: (props.latest_sale_year as number | undefined) ?? null,
+    latestSalePrice: (props.latest_sale_price as number | undefined) ?? null,
+    isTeardownRebuild: (props.is_teardown_rebuild as boolean | undefined) ?? null,
+    teardownConfidence: (props.teardown_confidence as string | undefined) ?? null,
+    confidence: confidenceFor(props),
     neighborhoodLabel: (props.neighborhood_label as string | undefined) ?? null,
     neighborhoodSlug: neighborhoodId?.replace("neighborhood:", "") ?? null,
     officialPlanningNeighborhoodLabel: (props.official_planning_neighborhood_label as string | undefined) ?? null,

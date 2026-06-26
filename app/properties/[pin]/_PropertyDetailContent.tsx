@@ -28,11 +28,11 @@ import {
 import type { ConfidenceLevel } from "@/lib/formatters";
 import { NEIGHBORHOOD_ERA_LABELS } from "@/lib/content";
 import { getPropertyDetail } from "@/lib/data/properties";
-import type { PropertySale, PropertyPermit, HargisRecord, LandLineageEntry, LandAncestryData, AssessmentPoint } from "@/lib/data/properties";
+import type { PropertySale, PropertyPermit, HargisRecord, LandLineageEntry, LandAncestryData, AssessmentPoint, PropertyPageData } from "@/lib/data/properties";
 import { SalesPriceChart } from "./_SalesPriceChart";
 import { AssessmentChart } from "./_AssessmentChart";
 
-type Props = { pin: string };
+type Props = { pin: string; initialProps?: PropertyPageData };
 
 type PinParts = { township: string; section: string; block: string; parcel: string; unit: string };
 
@@ -674,7 +674,7 @@ function PropertySummaryCard({
   );
 }
 
-export function PropertyDetailContent({ pin }: Props) {
+export function PropertyDetailContent({ pin, initialProps }: Props) {
   const [detail, setDetail] = useState<Awaited<ReturnType<typeof getPropertyDetail>> | null>(null);
   const [loading, setLoading] = useState(true);
   const [summaryCopied, setSummaryCopied] = useState(false);
@@ -686,7 +686,42 @@ export function PropertyDetailContent({ pin }: Props) {
       .finally(() => setLoading(false));
   }, [pin]);
 
-  if (loading) return <LoadingSkeleton rows={5} />;
+  // While the full detail loads, show the summary card from SSR data immediately
+  if (loading) {
+    if (initialProps) {
+      const ipNeighborhoodLabel = initialProps.localNeighborhoodLabel ?? initialProps.officialPlanningNeighborhoodLabel ?? null;
+      const ipNeighborhoodSlug = initialProps.localNeighborhoodSlug ?? initialProps.officialPlanningNeighborhoodSlug ?? null;
+      const ipEraNote = initialProps.yearBuilt
+        ? getEraContextNote(
+            initialProps.yearBuilt,
+            initialProps.localNeighborhoodSlug ?? null,
+            initialProps.officialPlanningNeighborhoodSlug ?? null,
+          )
+        : null;
+      return (
+        <div className="space-y-10">
+          <PropertySummaryCard
+            yearBuilt={initialProps.yearBuilt ?? null}
+            eraNote={ipEraNote}
+            buildingSqft={initialProps.buildingSqft ?? null}
+            landSqft={initialProps.landSqft ?? null}
+            latestAssessedTotal={initialProps.latestAssessedTotal ?? null}
+            latestSaleYear={initialProps.latestSaleYear ?? null}
+            latestSalePrice={initialProps.latestSalePrice ?? null}
+            neighborhoodLabel={ipNeighborhoodLabel}
+            neighborhoodSlug={ipNeighborhoodSlug}
+            subdivisionName={initialProps.subdivision?.name ?? null}
+            subdivisionId={initialProps.subdivision?.id ?? null}
+            confidence={initialProps.confidence ?? "Medium"}
+            isTeardownRebuild={initialProps.isTeardownRebuild ?? null}
+            teardownConfidence={initialProps.teardownConfidence ?? null}
+          />
+          <LoadingSkeleton rows={4} />
+        </div>
+      );
+    }
+    return <LoadingSkeleton rows={5} />;
+  }
   if (!detail) return <p className="text-text-secondary">Property record not found.</p>;
 
   const props = detail.properties;
