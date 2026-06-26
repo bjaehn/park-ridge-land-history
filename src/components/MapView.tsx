@@ -99,6 +99,9 @@ const GIS_LOTS_FILL_LAYER = "gis-lots-fill";
 const GIS_LOTS_STROKE_LAYER = "gis-lots-stroke";
 const GIS_BUILDINGS_SOURCE = "gis-buildings";
 const GIS_BUILDINGS_LAYER = "gis-buildings-stroke";
+const NEIGHBORHOOD_BOUNDARY_SOURCE = "neighborhood-boundary";
+const NEIGHBORHOOD_BOUNDARY_FILL_LAYER = "neighborhood-boundary-fill";
+const NEIGHBORHOOD_BOUNDARY_STROKE_LAYER = "neighborhood-boundary-stroke";
 
 // ---------------------------------------------------------------------------
 // Main component
@@ -134,6 +137,7 @@ export function MapView({
   });
   const gisLotsAddedRef = useRef(false);
   const gisBuildingsAddedRef = useRef(false);
+  const neighborhoodBoundaryAddedRef = useRef(false);
   const [eraFilter, setEraFilter] = useState<[number, number] | null>(null);
   const [stats, setStats] = useState<MapStats | null>(null);
   const [noDataLens, setNoDataLens] = useState(false);
@@ -517,6 +521,43 @@ export function MapView({
         map.setLayoutProperty(GIS_BUILDINGS_LAYER, "visibility", vis(layerToggles.gisBuildings));
     }
   }, [layerToggles.gisBuildings, isLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Neighborhood boundary overlay — auto-loaded when scope is "neighborhood"
+  const neighborhoodId = scope.kind === "neighborhood" ? scope.neighborhoodId : null;
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !isLoaded || !neighborhoodId) return;
+    if (neighborhoodBoundaryAddedRef.current) return;
+
+    map.addSource(NEIGHBORHOOD_BOUNDARY_SOURCE, {
+      type: "geojson",
+      data: `/api/neighborhood-boundary?id=${encodeURIComponent(neighborhoodId)}`,
+    });
+    map.addLayer(
+      {
+        id: NEIGHBORHOOD_BOUNDARY_FILL_LAYER,
+        type: "fill",
+        source: NEIGHBORHOOD_BOUNDARY_SOURCE,
+        paint: { "fill-color": "#8b5cf6", "fill-opacity": 0.07 },
+      } as LayerSpecification,
+      FILL_MUTED_LAYER
+    );
+    map.addLayer(
+      {
+        id: NEIGHBORHOOD_BOUNDARY_STROKE_LAYER,
+        type: "line",
+        source: NEIGHBORHOOD_BOUNDARY_SOURCE,
+        paint: {
+          "line-color": "#8b5cf6",
+          "line-width": 1.5,
+          "line-opacity": 0.5,
+          "line-dasharray": [4, 3],
+        },
+      } as LayerSpecification,
+      FILL_LAYER
+    );
+    neighborhoodBoundaryAddedRef.current = true;
+  }, [isLoaded, neighborhoodId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---------------------------------------------------------------------------
   // Render
