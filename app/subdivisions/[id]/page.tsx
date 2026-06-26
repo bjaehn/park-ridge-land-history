@@ -180,7 +180,7 @@ export default async function SubdivisionDetailPage({ params }: Props) {
                 pins: allPins.length > 0 ? allPins : undefined,
                 bbox: allBbox ?? undefined,
               }}
-              height="560px"
+              height="min(560px, 60vh)"
               showExpand
             />
           ) : null

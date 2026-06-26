@@ -59,7 +59,7 @@ export default async function StreetDetailPage({ params }: Props) {
         mapSlot={
           <MapView
             scope={{ kind: "street", streetName: street.normalizedName, bbox: streetBbox ?? undefined }}
-            height="560px"
+            height="min(560px, 60vh)"
             showExpand
           />
         }
