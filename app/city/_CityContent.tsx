@@ -20,7 +20,6 @@ import type {
   MarketHistoryRow,
   AssessmentTrendRow,
 } from "@/lib/supabase/cityQueries";
-import type { CityTownship } from "@/lib/data/pinGroups";
 
 type HomeStatsSnapshot = {
   totalProperties: number;
@@ -32,7 +31,7 @@ type HomeStatsSnapshot = {
   yearBuiltPct: number;
 };
 
-export function CityContent({ townships = [], mapSlot }: { townships?: CityTownship[]; mapSlot?: React.ReactNode }) {
+export function CityContent({ mapSlot }: { mapSlot?: React.ReactNode }) {
   const [stats, setStats] = useState<HomeStatsSnapshot | null>(null);
   const [rows, setRows] = useState<DecadeRow[]>([]);
   const [neighborhoods, setNeighborhoods] = useState<NeighborhoodSummary[]>([]);
@@ -226,49 +225,6 @@ export function CityContent({ townships = [], mapSlot }: { townships?: CityTowns
         </section>
       )}
 
-      {/* Browse by section */}
-      {townships.length > 0 && (
-        <section>
-          <h2 className="section-heading">Browse by section</h2>
-          <div className="space-y-8">
-            {townships.map((twp) => (
-              <div key={twp.prefix}>
-                <div className="flex items-center gap-3 mb-3">
-                  <Link
-                    href={`/pin/${twp.prefix}`}
-                    className="text-sm font-semibold text-text-primary hover:text-accent-purple transition-colors"
-                  >
-                    Township {twp.prefix}
-                  </Link>
-                  <span className="text-xs text-text-muted">
-                    {twp.parcelCount.toLocaleString()} properties
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
-                  {twp.sections.map((sec) => (
-                    <Link
-                      key={sec.sectionPrefix}
-                      href={`/pin/${sec.sectionPrefix}`}
-                      className="bg-surface-card border border-surface-border rounded-lg p-4 hover:border-accent-purple/40 transition-colors block"
-                    >
-                      <p className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
-                        Section {sec.sectionSegment}
-                      </p>
-                      <p className="text-base font-semibold text-text-primary tabular-nums leading-tight">
-                        {sec.count.toLocaleString()}
-                      </p>
-                      <p className="text-xs text-text-muted">properties</p>
-                      {sec.oldestYear && (
-                        <p className="text-xs text-text-muted mt-1">Est. {sec.oldestYear}</p>
-                      )}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
     </div>
   );
 }

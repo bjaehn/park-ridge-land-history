@@ -4,7 +4,6 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { MapView } from "@/components/MapView";
 import { CityContent } from "./_CityContent";
-import { getCityTownships } from "@/lib/data/pinGroups";
 
 export const metadata: Metadata = {
   title: "City history",
@@ -12,8 +11,6 @@ export const metadata: Metadata = {
 };
 
 export default async function CityPage() {
-  const townships = await getCityTownships().catch(() => []);
-
   return (
     <div className="page-shell">
       <Breadcrumb
@@ -26,7 +23,6 @@ export default async function CityPage() {
       />
 
       <CityContent
-        townships={townships}
         mapSlot={
           <div className="map-full-bleed">
             <MapView scope={{ kind: "city" }} height="min(700px, 65vh)" showExpand />
