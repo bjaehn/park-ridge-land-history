@@ -22,7 +22,10 @@ export function SparklinePermitCard() {
   const currentYear = new Date().getFullYear();
   const completeData = data.filter((r) => r.permitYear < currentYear);
   const latest = completeData.length ? completeData[completeData.length - 1] : data[data.length - 1];
-  const earliest = data[0];
+  const prev = completeData.length >= 2 ? completeData[completeData.length - 2] : null;
+  const yoy = prev && prev.total > 0
+    ? Math.round(((latest.total - prev.total) / prev.total) * 100)
+    : null;
   const peak = data.reduce((best, r) => (r.total > best.total ? r : best), data[0]);
 
   return (
@@ -33,6 +36,11 @@ export function SparklinePermitCard() {
       </p>
       <p className="text-xs text-text-secondary mt-1">
         Permits in {latest.permitYear}
+        {yoy !== null && (
+          <span className={yoy >= 0 ? "text-emerald-400" : "text-red-400"}>
+            {" "}{yoy >= 0 ? "+" : ""}{yoy}% vs prior year
+          </span>
+        )}
       </p>
       <div className="mt-3 h-14">
         <ResponsiveContainer width="100%" height="100%">

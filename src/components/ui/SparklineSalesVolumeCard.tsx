@@ -16,6 +16,10 @@ export function SparklineSalesVolumeCard() {
   const currentYear = new Date().getFullYear();
   const completeData = data.filter((r) => r.saleYear < currentYear);
   const latest = completeData.length ? completeData[completeData.length - 1] : data[data.length - 1];
+  const prev = completeData.length >= 2 ? completeData[completeData.length - 2] : null;
+  const yoy = prev && prev.saleCount > 0
+    ? Math.round(((latest.saleCount - prev.saleCount) / prev.saleCount) * 100)
+    : null;
   const peak = data.reduce((best, r) => (r.saleCount > best.saleCount ? r : best), data[0]);
 
   return (
@@ -26,6 +30,11 @@ export function SparklineSalesVolumeCard() {
       </p>
       <p className="text-xs text-text-secondary mt-1">
         Sales in {latest.saleYear}
+        {yoy !== null && (
+          <span className={yoy >= 0 ? "text-emerald-400" : "text-red-400"}>
+            {" "}{yoy >= 0 ? "+" : ""}{yoy}% vs prior year
+          </span>
+        )}
       </p>
       <div className="mt-3 h-14">
         <ResponsiveContainer width="100%" height="100%">
