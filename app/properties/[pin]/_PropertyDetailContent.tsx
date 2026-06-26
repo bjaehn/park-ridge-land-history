@@ -933,6 +933,17 @@ export function PropertyDetailContent({ pin, initialProps }: Props) {
         </section>
       )}
 
+      {/* How this property compares — placed early so users see it */}
+      {detail.comparisons && detail.comparisons.length > 0 && (
+        <section>
+          <div className="flex items-center gap-2 mb-3">
+            <ComparisonIcon size={14} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />
+            <h2 className="section-heading !mb-0">How this property compares</h2>
+          </div>
+          <ComparisonList rows={detail.comparisons} />
+        </section>
+      )}
+
       {/* Sale history */}
       <SaleHistorySection
         sales={sales}
@@ -1024,17 +1035,6 @@ export function PropertyDetailContent({ pin, initialProps }: Props) {
               />
             )}
           </div>
-        </section>
-      )}
-
-      {/* How this property compares */}
-      {detail.comparisons && detail.comparisons.length > 0 && (
-        <section>
-          <div className="flex items-center gap-2 mb-3">
-            <ComparisonIcon size={14} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />
-            <h2 className="section-heading !mb-0">How this property compares</h2>
-          </div>
-          <ComparisonList rows={detail.comparisons} />
         </section>
       )}
 
