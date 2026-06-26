@@ -10,11 +10,6 @@ import { InlineSourceNote } from "@/components/ui/SourceNote";
 import { PropertyTimeline, buildTimelineEvents } from "@/components/ui/PropertyTimeline";
 import { SubdivisionLineageCard } from "@/components/ui/SubdivisionLineageCard";
 import {
-  YearBuiltIcon,
-  SizeIcon,
-  LotIcon,
-  AssessmentIcon,
-  PermitIcon,
   SaleIcon,
   SubdivisionIcon,
   ComparisonIcon,
@@ -30,38 +25,14 @@ import {
   confidenceFor,
   CONFIDENCE_TOOLTIP,
 } from "@/lib/formatters";
+import type { ConfidenceLevel } from "@/lib/formatters";
 import { NEIGHBORHOOD_ERA_LABELS } from "@/lib/content";
 import { getPropertyDetail } from "@/lib/data/properties";
 import type { PropertySale, PropertyPermit, HargisRecord, LandLineageEntry, LandAncestryData, AssessmentPoint } from "@/lib/data/properties";
 import { SalesPriceChart } from "./_SalesPriceChart";
 import { AssessmentChart } from "./_AssessmentChart";
-import type { LucideIcon } from "lucide-react";
 
 type Props = { pin: string };
-
-type IconRowItem = {
-  icon: LucideIcon;
-  label: string;
-  value: string | null;
-};
-
-function IconRow({ items }: { items: IconRowItem[] }) {
-  const filtered = items.filter((i) => i.value !== null && i.value !== "");
-  if (!filtered.length) return null;
-  return (
-    <dl className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-4">
-      {filtered.map((item) => (
-        <div key={item.label} className="flex items-start gap-2.5">
-          <item.icon size={15} strokeWidth={1.8} className="text-text-muted mt-0.5 shrink-0" aria-hidden="true" />
-          <div className="min-w-0">
-            <dt className="text-xs text-text-muted">{item.label}</dt>
-            <dd className="text-sm font-medium text-text-primary">{item.value}</dd>
-          </div>
-        </div>
-      ))}
-    </dl>
-  );
-}
 
 type PinParts = { township: string; section: string; block: string; parcel: string; unit: string };
 
@@ -507,26 +478,6 @@ function HargisSurveySection({ records }: { records: HargisRecord[] }) {
   );
 }
 
-function buildPropertyStory(
-  yearBuilt: number | null,
-  subdivisionName: string | null,
-  neighborhoodLabel: string | null,
-): string | null {
-  if (!yearBuilt && !subdivisionName) return null;
-
-  if (yearBuilt) {
-    if (subdivisionName) {
-      return `This home was built in ${yearBuilt} in the ${subdivisionName} subdivision.`;
-    }
-    if (neighborhoodLabel) {
-      return `This home was built in ${yearBuilt} in the ${neighborhoodLabel} neighborhood.`;
-    }
-    return `This home was built in ${yearBuilt}.`;
-  }
-
-  return `This property is part of the ${subdivisionName} subdivision.`;
-}
-
 // Decade ranges within which the neighborhood era label is meaningful for a specific property.
 // A home built outside these bounds should fall through to the year-based fallbacks below.
 const NEIGHBORHOOD_ERA_YEAR_RANGE: Record<string, [number, number]> = {
@@ -618,6 +569,111 @@ function buildQuickSummary({
   return parts.join("\n");
 }
 
+function PropertySummaryCard({
+  yearBuilt,
+  eraNote,
+  buildingSqft,
+  landSqft,
+  latestAssessedTotal,
+  latestSaleYear,
+  latestSalePrice,
+  neighborhoodLabel,
+  neighborhoodSlug,
+  subdivisionName,
+  subdivisionId,
+  confidence,
+  isTeardownRebuild,
+  teardownConfidence,
+}: {
+  yearBuilt: number | null;
+  eraNote: string | null;
+  buildingSqft: number | null;
+  landSqft: number | null;
+  latestAssessedTotal: number | null;
+  latestSaleYear: number | null;
+  latestSalePrice: number | null;
+  neighborhoodLabel: string | null;
+  neighborhoodSlug: string | null;
+  subdivisionName: string | null;
+  subdivisionId: string | null;
+  confidence: ConfidenceLevel;
+  isTeardownRebuild: boolean | null;
+  teardownConfidence: string | null;
+}) {
+  const vitals = [
+    yearBuilt ? { label: "Year built", value: String(yearBuilt), note: eraNote } : null,
+    buildingSqft ? { label: "Building", value: formatSqft(buildingSqft) ?? "", note: null } : null,
+    landSqft ? { label: "Lot", value: formatSqft(landSqft) ?? "", note: null } : null,
+    latestAssessedTotal ? { label: "Assessed", value: formatCurrency(latestAssessedTotal) ?? "", note: null } : null,
+  ].filter((v): v is { label: string; value: string; note: string | null } => v !== null);
+
+  return (
+    <div className="bg-surface-card border border-surface-border rounded-xl p-5 space-y-4">
+      {/* Badges */}
+      <div className="flex flex-wrap items-start gap-2">
+        <ConfidenceBadge level={confidence} showDescription />
+        {isTeardownRebuild && <TeardownBadge confidence={teardownConfidence} />}
+      </div>
+
+      {/* Vitals */}
+      {vitals.length > 0 && (
+        <dl className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3">
+          {vitals.map((v) => (
+            <div key={v.label}>
+              <dt className="text-xs text-text-muted mb-0.5">{v.label}</dt>
+              <dd className="text-sm font-semibold text-text-primary">{v.value}</dd>
+              {v.note && (
+                <dd className="text-xs text-text-muted mt-0.5">{v.note}</dd>
+              )}
+            </div>
+          ))}
+        </dl>
+      )}
+
+      {/* Key links */}
+      {(latestSaleYear || neighborhoodLabel || subdivisionName) && (
+        <div className="flex flex-wrap gap-x-6 gap-y-2 pt-4 border-t border-surface-border text-sm">
+          {latestSaleYear && (
+            <div>
+              <span className="text-text-muted text-xs">Last sold </span>
+              <span className="text-text-primary font-medium">{latestSaleYear}</span>
+              {latestSalePrice && (
+                <span className="text-text-secondary"> · {formatCurrency(latestSalePrice)}</span>
+              )}
+            </div>
+          )}
+          {neighborhoodLabel && neighborhoodSlug && (
+            <div>
+              <span className="text-text-muted text-xs">Neighborhood </span>
+              <Link
+                href={`/neighborhoods/${encodeURIComponent(neighborhoodSlug)}`}
+                className="text-accent-purple hover:underline font-medium"
+              >
+                {neighborhoodLabel} →
+              </Link>
+            </div>
+          )}
+          {subdivisionName && (
+            <div>
+              <span className="text-text-muted text-xs">Original plat </span>
+              {subdivisionId ? (
+                <Link
+                  href={`/subdivisions/${encodeURIComponent(subdivisionId)}`}
+                  className="text-accent-purple hover:underline font-medium"
+                >
+                  {subdivisionName} →
+                </Link>
+              ) : (
+                <span className="text-text-primary font-medium">{subdivisionName}</span>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function PropertyDetailContent({ pin }: Props) {
   const [detail, setDetail] = useState<Awaited<ReturnType<typeof getPropertyDetail>> | null>(null);
   const [loading, setLoading] = useState(true);
@@ -676,12 +732,6 @@ export function PropertyDetailContent({ pin }: Props) {
   };
   const timeline = buildTimelineEvents(propsForTimeline, detail.subdivision, detail.sales, detail.permits);
 
-  const vitals: IconRowItem[] = [
-    { icon: YearBuiltIcon, label: "Year built", value: formatYear(props.year_built) },
-    { icon: SizeIcon,      label: "Building size", value: formatSqft(props.building_sqft) },
-    { icon: LotIcon,       label: "Lot size", value: formatSqft(props.land_sqft) },
-    { icon: AssessmentIcon, label: "Latest assessed value", value: formatCurrency(props.latest_assessed_total) },
-  ];
 
   const missingGaps: string[] = [];
   if (!props.year_built) missingGaps.push("Build year not in assessor records");
@@ -692,6 +742,9 @@ export function PropertyDetailContent({ pin }: Props) {
   const yearBuilt = props.year_built as number | null;
   const subdivisionName = detail.subdivision?.name
     ?? landLineage[0]?.subdivision?.name
+    ?? null;
+  const subdivisionId = detail.subdivision?.id
+    ?? landLineage[0]?.subdivision?.id
     ?? null;
   const neighborhoodLabel = (
     (props.local_neighborhood_label as string | null)
@@ -704,7 +757,6 @@ export function PropertyDetailContent({ pin }: Props) {
   const streetDisplayName = typeof props.street_name_normalized === "string"
     ? (props.street_name_normalized as string).toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase())
     : null;
-  const propertyStory = buildPropertyStory(yearBuilt, subdivisionName, neighborhoodLabel ?? null);
   const eraContextNote = getEraContextNote(
     yearBuilt,
     (props.local_neighborhood_slug as string | null),
@@ -810,81 +862,97 @@ export function PropertyDetailContent({ pin }: Props) {
 
   return (
     <div className="space-y-10">
-      {/* Property story synthesis and era context */}
-      {(propertyStory || eraContextNote) && (
-        <div className="space-y-1">
-          {propertyStory && (
-            <p className="text-base text-text-secondary leading-relaxed">{propertyStory}</p>
-          )}
-          {eraContextNote && (
-            <p className="text-sm text-text-muted">
-              {eraContextNote}
-              <span className="text-xs text-text-muted ml-1">(Inferred)</span>
-            </p>
-          )}
-        </div>
+      {/* Summary card — key facts above the fold */}
+      <PropertySummaryCard
+        yearBuilt={yearBuilt}
+        eraNote={eraContextNote}
+        buildingSqft={props.building_sqft as number | null}
+        landSqft={props.land_sqft as number | null}
+        latestAssessedTotal={props.latest_assessed_total as number | null}
+        latestSaleYear={latestSaleYear}
+        latestSalePrice={latestSalePrice}
+        neighborhoodLabel={neighborhoodLabel ?? null}
+        neighborhoodSlug={neighborhoodSlug}
+        subdivisionName={subdivisionName}
+        subdivisionId={subdivisionId}
+        confidence={confidence}
+        isTeardownRebuild={props.is_teardown_rebuild as boolean | null}
+        teardownConfidence={props.teardown_confidence as string | null}
+      />
+
+      {/* Property timeline */}
+      {timeline.length > 0 && (
+        <section>
+          <h2 className="section-heading">Property timeline</h2>
+          <p className="text-sm text-text-muted mb-3">Key moments in this property's recorded history, from the original plat to the most recent transaction.</p>
+          <PropertyTimeline events={timeline} />
+        </section>
       )}
 
-      {/* Confidence + vitals */}
-      <section>
-        <div className="mb-4 flex flex-wrap items-start gap-3">
-          <ConfidenceBadge level={confidence} showDescription />
-          {props.is_teardown_rebuild && (
-            <TeardownBadge confidence={props.teardown_confidence} />
-          )}
-        </div>
-        <IconRow items={vitals} />
-      </section>
+      {/* Sale history */}
+      <SaleHistorySection
+        sales={sales}
+        chartSlot={sales.some((s) => s.sale_price != null && s.sale_price > 0) ? <SalesPriceChart sales={sales} /> : undefined}
+      />
 
-      {/* Quick summary for agents and shareable use */}
-      {quickSummaryText && (
+      {/* Assessment value chart */}
+      {assessmentTimeline.length >= 2 && (
         <section>
-          <div className="flex items-center gap-2 mb-2">
-            <h2 className="section-heading !mb-0">Property summary</h2>
-            <span className="text-[10px] font-semibold uppercase tracking-wider bg-accent-purple/10 text-accent-purple px-2 py-0.5 rounded">
-              Copy for sharing
-            </span>
+          <h2 className="section-heading">Assessed value history</h2>
+          <AssessmentChart
+            timeline={assessmentTimeline}
+            appealYears={appealYears}
+            totalReduction={props.total_assessment_reduction as number | null}
+          />
+          <InlineSourceNote className="mt-2">Cook County Assessor certified totals by assessment year</InlineSourceNote>
+        </section>
+      )}
+
+      {/* Permit history */}
+      <PermitHistorySection permits={permits} />
+
+      {/* HARGIS survey records */}
+      <HargisSurveySection records={hargisRecords} />
+
+      {/* Land lineage (deed-sourced) or recorded plat fallback */}
+      {landLineage.length > 0 ? (
+        <LandLineageSection lineage={landLineage} />
+      ) : detail.subdivision ? (
+        <section>
+          <h2 className="section-heading">Recorded plat</h2>
+          <div className="flex items-start gap-3 bg-surface-card border border-surface-border rounded-lg p-4">
+            <SubdivisionIcon size={16} strokeWidth={1.8} className="text-text-muted shrink-0 mt-0.5" aria-hidden="true" />
+            <div className="min-w-0">
+              <Link
+                href={`/subdivisions/${encodeURIComponent(detail.subdivision.id)}`}
+                className="text-sm font-semibold text-text-primary hover:text-accent-purple transition-colors"
+              >
+                {detail.subdivision.name}
+              </Link>
+              <p className="text-xs text-text-secondary mt-0.5">
+                {detail.subdivision.recorded_year
+                  ? `Recorded ${detail.subdivision.recorded_year}${detail.subdivision.original_owner ? `. Developer: ${detail.subdivision.original_owner}` : ""}`
+                  : "Recording date uncertain"}
+              </p>
+              <p className="text-xs text-text-muted mt-0.5">Cook County Recorder of Deeds</p>
+            </div>
           </div>
+        </section>
+      ) : null}
+
+      {/* Deed record */}
+      {props.deed_notes && (
+        <section>
+          <h2 className="section-heading">Deed Record</h2>
           <div className="bg-surface-card border border-surface-border rounded-lg p-4">
-            <p className="text-sm text-text-secondary leading-relaxed whitespace-pre-line">
-              {quickSummaryText}
+            <p className="text-sm text-text-secondary font-mono leading-relaxed whitespace-pre-wrap">
+              {props.deed_notes}
             </p>
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(quickSummaryText).then(() => {
-                  setSummaryCopied(true);
-                  setTimeout(() => setSummaryCopied(false), 2000);
-                });
-              }}
-              className="mt-3 text-xs text-accent-purple hover:underline"
-            >
-              {summaryCopied ? "Copied!" : "Copy to clipboard"}
-            </button>
           </div>
         </section>
       )}
 
-      {/* Street context link */}
-      {props.street_name_normalized && (
-        <div>
-          <Link
-            href={`/streets/${encodeURIComponent(props.street_name_normalized as string)}`}
-            className="inline-flex items-center gap-1.5 text-sm text-accent-purple hover:underline"
-          >
-            <StreetIcon size={13} strokeWidth={1.8} aria-hidden="true" />
-            View all properties on this street
-          </Link>
-        </div>
-      )}
-
-      {/* PIN decomposition */}
-      <section>
-        <h2 className="section-heading">Parcel ID (PIN)</h2>
-        <PinBreakdown props={props as Record<string, unknown>} />
-        <p className="text-xs text-text-muted mt-2">Cook County 14-digit PIN: township · section · block · parcel · unit</p>
-      </section>
-
-      {/* Neighborhoods */}
+      {/* Geographic context */}
       {(props.official_planning_neighborhood_id || props.business_district_id || props.local_neighborhood_id) && (
         <section>
           <h2 className="section-heading">Geographic context</h2>
@@ -911,82 +979,6 @@ export function PropertyDetailContent({ pin }: Props) {
                 typeLabel="Local Name"
               />
             )}
-          </div>
-        </section>
-      )}
-
-      {/* Property timeline */}
-      {timeline.length > 0 && (
-        <section>
-          <h2 className="section-heading">Property timeline</h2>
-          <p className="text-sm text-text-muted mb-3">Key moments in this property's recorded history, from the original plat to the most recent transaction.</p>
-          <PropertyTimeline events={timeline} />
-        </section>
-      )}
-
-      {/* Sale history - combined chart and list */}
-      <SaleHistorySection
-        sales={sales}
-        chartSlot={sales.some((s) => s.sale_price != null && s.sale_price > 0) ? <SalesPriceChart sales={sales} /> : undefined}
-      />
-
-      {/* Assessment value chart */}
-      {assessmentTimeline.length >= 2 && (
-        <section>
-          <h2 className="section-heading">Assessed value history</h2>
-          <AssessmentChart
-              timeline={assessmentTimeline}
-              appealYears={appealYears}
-              totalReduction={props.total_assessment_reduction as number | null}
-            />
-          <InlineSourceNote className="mt-2">Cook County Assessor certified totals by assessment year</InlineSourceNote>
-        </section>
-      )}
-
-      {/* Individual permit events */}
-      <PermitHistorySection permits={permits} />
-
-      {/* HARGIS historic survey records */}
-      <HargisSurveySection records={hargisRecords} />
-
-      {/* Land lineage (deed-sourced lot/block/subdivision data) */}
-      {landLineage.length > 0 ? (
-        <LandLineageSection lineage={landLineage} />
-      ) : detail.subdivision ? (
-        /* Fallback: simple recorded plat block when no lineage data yet */
-        <section>
-          <h2 className="section-heading">Recorded plat</h2>
-          <div className="flex items-start gap-3 bg-surface-card border border-surface-border rounded-lg p-4">
-            <SubdivisionIcon size={16} strokeWidth={1.8} className="text-text-muted shrink-0 mt-0.5" aria-hidden="true" />
-            <div className="min-w-0">
-              <Link
-                href={`/subdivisions/${encodeURIComponent(detail.subdivision.id)}`}
-                className="text-sm font-semibold text-text-primary hover:text-accent-purple transition-colors"
-              >
-                {detail.subdivision.name}
-              </Link>
-              <p className="text-xs text-text-secondary mt-0.5">
-                {detail.subdivision.recorded_year
-                  ? `Recorded ${detail.subdivision.recorded_year}${detail.subdivision.original_owner ? `. Developer: ${detail.subdivision.original_owner}` : ""}`
-                  : "Recording date uncertain"}
-              </p>
-              <p className="text-xs text-text-muted mt-0.5">Cook County Recorder of Deeds</p>
-            </div>
-          </div>
-        </section>
-      ) : null}
-
-      {/* GIS plat lot — spatial match from Cook County GIS Lots layer */}
-      {landAncestry && <LandAncestryPanel data={landAncestry} />}
-
-      {/* Deed record */}
-      {props.deed_notes && (
-        <section>
-          <h2 className="section-heading">Deed Record</h2>
-          <div className="bg-surface-card border border-surface-border rounded-lg p-4">
-            <p className="text-sm text-text-secondary font-mono leading-relaxed whitespace-pre-wrap">
-              {props.deed_notes}
-            </p>
           </div>
         </section>
       )}
@@ -1053,23 +1045,60 @@ export function PropertyDetailContent({ pin }: Props) {
         </section>
       )}
 
-      {/* Raw assessor data */}
+      {/* Property summary for sharing */}
+      {quickSummaryText && (
+        <section>
+          <div className="flex items-center gap-2 mb-2">
+            <h2 className="section-heading !mb-0">Property summary</h2>
+            <span className="text-[10px] font-semibold uppercase tracking-wider bg-accent-purple/10 text-accent-purple px-2 py-0.5 rounded">
+              Copy for sharing
+            </span>
+          </div>
+          <div className="bg-surface-card border border-surface-border rounded-lg p-4">
+            <p className="text-sm text-text-secondary leading-relaxed whitespace-pre-line">
+              {quickSummaryText}
+            </p>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(quickSummaryText).then(() => {
+                  setSummaryCopied(true);
+                  setTimeout(() => setSummaryCopied(false), 2000);
+                });
+              }}
+              className="mt-3 text-xs text-accent-purple hover:underline"
+            >
+              {summaryCopied ? "Copied!" : "Copy to clipboard"}
+            </button>
+          </div>
+        </section>
+      )}
+
+      {/* Technical details — PIN, GIS plat lot, raw assessor record */}
       <details className="border border-surface-border rounded-lg overflow-hidden">
         <summary className="px-4 py-3 text-sm text-text-secondary cursor-pointer hover:text-text-primary hover:bg-surface-raised transition-colors">
-          Raw assessor record
+          Technical details
         </summary>
-        <div className="px-4 pb-4 pt-2">
-          <InlineSourceNote>
-            Raw fields from the Cook County assessor dataset. Owner names are omitted.
-          </InlineSourceNote>
-          <dl className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs">
-            <div><dt className="text-text-muted">PIN</dt><dd className="font-mono text-text-secondary">{props.pin_normalized ?? props.pin_original}</dd></div>
-            <div><dt className="text-text-muted">Year built</dt><dd className="text-text-secondary">{formatYear(props.year_built)}</dd></div>
-            <div><dt className="text-text-muted">Municipality</dt><dd className="text-text-secondary">{(props.municipality as string | null) ?? "Not recorded"}</dd></div>
-            <div><dt className="text-text-muted">Property class</dt><dd className="text-text-secondary">{(props.property_class as string | null) ?? "Not recorded"}</dd></div>
-            <div><dt className="text-text-muted">Improvement count</dt><dd className="text-text-secondary">{formatCount(props.improvement_count as number | null ?? 0, "improvement", "improvements")}</dd></div>
-            <div><dt className="text-text-muted">Source note</dt><dd className="text-text-secondary">{(props.source_note as string | null) ?? "None"}</dd></div>
-          </dl>
+        <div className="px-4 pb-4 pt-2 space-y-6">
+          <section>
+            <h2 className="section-heading">Parcel ID (PIN)</h2>
+            <PinBreakdown props={props as Record<string, unknown>} />
+            <p className="text-xs text-text-muted mt-2">Cook County 14-digit PIN: township · section · block · parcel · unit</p>
+          </section>
+          {landAncestry && <LandAncestryPanel data={landAncestry} />}
+          <section>
+            <h2 className="section-heading">Raw assessor record</h2>
+            <InlineSourceNote>
+              Raw fields from the Cook County assessor dataset. Owner names are omitted.
+            </InlineSourceNote>
+            <dl className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs">
+              <div><dt className="text-text-muted">PIN</dt><dd className="font-mono text-text-secondary">{props.pin_normalized ?? props.pin_original}</dd></div>
+              <div><dt className="text-text-muted">Year built</dt><dd className="text-text-secondary">{formatYear(props.year_built)}</dd></div>
+              <div><dt className="text-text-muted">Municipality</dt><dd className="text-text-secondary">{(props.municipality as string | null) ?? "Not recorded"}</dd></div>
+              <div><dt className="text-text-muted">Property class</dt><dd className="text-text-secondary">{(props.property_class as string | null) ?? "Not recorded"}</dd></div>
+              <div><dt className="text-text-muted">Improvement count</dt><dd className="text-text-secondary">{formatCount(props.improvement_count as number | null ?? 0, "improvement", "improvements")}</dd></div>
+              <div><dt className="text-text-muted">Source note</dt><dd className="text-text-secondary">{(props.source_note as string | null) ?? "None"}</dd></div>
+            </dl>
+          </section>
         </div>
       </details>
 
