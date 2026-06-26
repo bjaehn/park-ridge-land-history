@@ -25,9 +25,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const prefix = decodeURIComponent(params.prefix);
   const summary = await getPinGroupSummary(prefix).catch(() => null);
   if (!summary) return { title: "PIN group not found" };
+  const description = `${summary.parcelCount} properties in ${summary.levelLabel} (PIN prefix ${prefix}) in Park Ridge, Illinois.`;
   return {
     title: `PIN ${prefix}`,
-    description: `${summary.parcelCount} properties in ${summary.levelLabel} (PIN prefix ${prefix}) in Park Ridge, Illinois.`,
+    description,
+    openGraph: {
+      title: `PIN ${prefix} — Park Ridge Land History`,
+      description,
+      type: "website",
+      images: ["/og-default.png"],
+    },
   };
 }
 

@@ -11,9 +11,16 @@ type Props = { params: { street: string } };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const name = decodeURIComponent(params.street);
+  const description = `Property history for ${name} in Park Ridge, Illinois. Browse all homes, build years, and sale history on this street.`;
   return {
     title: name,
-    description: `Property history for ${name} in Park Ridge.`,
+    description,
+    openGraph: {
+      title: name,
+      description,
+      type: "website",
+      images: ["/og-default.png"],
+    },
   };
 }
 
