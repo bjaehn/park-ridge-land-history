@@ -11,7 +11,7 @@ import { HighlightReel } from "@/components/ui/HighlightReel";
 import { InlineSourceNote } from "@/components/ui/SourceNote";
 import { getChangeSignal, formatNumber, formatCount } from "@/lib/formatters";
 import { SaleIcon } from "@/lib/icons";
-import { COVERAGE_DISCLAIMER, NEIGHBORHOOD_BOUNDARY_DISCLAIMER } from "@/lib/content";
+import { COVERAGE_DISCLAIMER, NEIGHBORHOOD_BOUNDARY_DISCLAIMER, NEIGHBORHOOD_NARRATIVES } from "@/lib/content";
 import type { NeighborhoodPageData } from "@/lib/data/neighborhoodPage";
 import type { HighlightGroup } from "@/components/ui/HighlightReel";
 
@@ -61,8 +61,15 @@ export function NeighborhoodPage({ data, eraLabel, mapSlot }: Props) {
       ? [{ label: meta.label, ...priceSummary }]
       : [];
 
+  const narrative = NEIGHBORHOOD_NARRATIVES[meta.slug];
+
   return (
     <div className="space-y-10">
+      {/* Neighborhood narrative */}
+      {narrative && (
+        <p className="text-sm text-text-secondary leading-relaxed max-w-prose">{narrative}</p>
+      )}
+
       {/* Stat grid */}
       {statItems.length > 0 && (
         <>
