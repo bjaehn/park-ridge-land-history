@@ -81,7 +81,7 @@ export default async function PropertyDetailPage({ params }: Props) {
         />
       </div>
 
-      <PropertyDetailContent pin={pin} />
+      <PropertyDetailContent pin={pin} initialProps={property} />
 
       <SourceNote
         sources={["assessor", "permits", "hargis", "recorder"]}
