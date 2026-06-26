@@ -13,12 +13,12 @@ import type { HighlightGroup } from "@/components/ui/HighlightReel";
 export const metadata: Metadata = {
   title: "Park Ridge Land History",
   description:
-    "Find your property's story. Park Ridge Land History traces 13,381 properties from recorded plat to today.",
+    "Find your property's story. Park Ridge Land History traces every property in Park Ridge, Illinois from its recorded plat to today.",
 };
 
 const CITY_HIGHLIGHTS: readonly HighlightGroup[] = [
   { heading: "Oldest surviving homes", category: "oldest" },
-  { heading: "Most active properties", category: "most_active" },
+  { heading: "Most renovated properties", category: "most_active" },
   { heading: "Built since 2000", category: "newest" },
   { heading: "Largest homes", category: "largest" },
 ];
