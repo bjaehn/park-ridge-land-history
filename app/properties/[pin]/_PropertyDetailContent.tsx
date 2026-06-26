@@ -26,11 +26,12 @@ import {
   CONFIDENCE_TOOLTIP,
 } from "@/lib/formatters";
 import type { ConfidenceLevel } from "@/lib/formatters";
-import { NEIGHBORHOOD_ERA_LABELS } from "@/lib/content";
+import { NEIGHBORHOOD_ERA_LABELS, NEIGHBORHOOD_ERA_YEAR_RANGE } from "@/lib/content";
 import { getPropertyDetail } from "@/lib/data/properties";
 import type { PropertySale, PropertyPermit, HargisRecord, LandLineageEntry, LandAncestryData, AssessmentPoint, PropertyPageData } from "@/lib/data/properties";
 import { SalesPriceChart } from "./_SalesPriceChart";
 import { AssessmentChart } from "./_AssessmentChart";
+import { ScrollToTop } from "@/components/ui/ScrollToTop";
 
 type Props = { pin: string; initialProps?: PropertyPageData };
 
@@ -481,16 +482,6 @@ function HargisSurveySection({ records }: { records: HargisRecord[] }) {
     </section>
   );
 }
-
-// Decade ranges within which the neighborhood era label is meaningful for a specific property.
-// A home built outside these bounds should fall through to the year-based fallbacks below.
-const NEIGHBORHOOD_ERA_YEAR_RANGE: Record<string, [number, number]> = {
-  uptown_park_ridge: [1860, 1939],
-  northeast:         [1900, 1949],
-  central:           [1910, 1969],
-  northwest_park:    [1930, 1979],
-  south_park:        [1940, 1989],
-};
 
 function getEraContextNote(
   yearBuilt: number | null,
@@ -1205,6 +1196,7 @@ export function PropertyDetailContent({ pin, initialProps }: Props) {
           </div>
         </div>
       </section>
+      <ScrollToTop />
     </div>
   );
 }

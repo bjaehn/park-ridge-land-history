@@ -5,13 +5,20 @@ import { EntityCard } from "@/components/ui/EntityCard";
 import { LoadingSkeleton, EmptyState } from "@/components/ui/EmptyState";
 import { getChangeSignal } from "@/lib/formatters";
 import { fetchNeighborhoodSummaries } from "@/lib/data/neighborhoods";
-import type { NeighborhoodSummary } from "@/lib/data/neighborhoods";
+import type { NeighborhoodSummary, NeighborhoodType } from "@/lib/data/neighborhoods";
 import { NEIGHBORHOOD_ERA_LABELS } from "@/lib/content";
 
 const TYPE_SECTIONS = [
   { type: "official_planning" as const, title: "Official Planning Neighborhoods" },
   { type: "business_district" as const, title: "Business Districts" },
   { type: "local_market" as const, title: "Local / Market Neighborhoods" },
+];
+
+const FILTER_CHIPS: { value: NeighborhoodType | "all"; label: string }[] = [
+  { value: "all",               label: "All" },
+  { value: "official_planning", label: "Official Planning" },
+  { value: "business_district", label: "Business Districts" },
+  { value: "local_market",      label: "Local Names" },
 ];
 
 type SortKey = "type" | "oldest" | "newest" | "properties" | "active";
@@ -80,6 +87,7 @@ export function NeighborhoodsGrid({ teaser }: { teaser?: boolean }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [sort, setSort] = useState<SortKey>("type");
+  const [filterType, setFilterType] = useState<NeighborhoodType | "all">("all");
 
   useEffect(() => {
     fetchNeighborhoodSummaries()
@@ -138,13 +146,18 @@ export function NeighborhoodsGrid({ teaser }: { teaser?: boolean }) {
     );
   }
 
+  const handleSortChange = (newSort: SortKey) => {
+    setSort(newSort);
+    if (newSort === "type") setFilterType("all");
+  };
+
   const sortControl = (
-    <div className="flex items-center gap-2 mb-6">
+    <div className="flex items-center gap-2 mb-4">
       <label htmlFor="neighborhood-sort" className="text-sm text-text-muted">Sort:</label>
       <select
         id="neighborhood-sort"
         value={sort}
-        onChange={(e) => setSort(e.target.value as SortKey)}
+        onChange={(e) => handleSortChange(e.target.value as SortKey)}
         className="text-sm bg-surface-card border border-surface-border rounded px-2 py-1 text-text-primary focus:outline-none focus:ring-1 focus:ring-accent-purple"
       >
         {SORT_OPTIONS.map((o) => (
@@ -155,26 +168,50 @@ export function NeighborhoodsGrid({ teaser }: { teaser?: boolean }) {
   );
 
   if (sort !== "type") {
-    const sorted = sortedNeighborhoods(neighborhoods, sort);
+    const filtered = filterType === "all"
+      ? neighborhoods
+      : neighborhoods.filter((n) => n.neighborhoodType === filterType);
+    const sorted = sortedNeighborhoods(filtered, sort);
+
     return (
       <div>
         {sortControl}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {sorted.map((n) => (
-            <EntityCard
-              key={n.id}
-              href={`/neighborhoods/${encodeURIComponent(n.slug)}`}
-              eyebrow={`${n.parcelCount} properties`}
-              title={n.label}
-              subtitle={NEIGHBORHOOD_ERA_LABELS[n.slug] ?? (n.medianYear ? `Typical build year: ${n.medianYear}` : undefined)}
-              signal={getChangeSignal({
-                permit_count: n.totalPermits,
-                sale_count: n.totalSales,
-                recent_teardown_count: n.recentTeardowns,
-              })}
-            />
+        <div className="flex flex-wrap gap-2 mb-6">
+          {FILTER_CHIPS.map((chip) => (
+            <button
+              key={chip.value}
+              type="button"
+              onClick={() => setFilterType(chip.value)}
+              className={`text-xs px-3 py-1 rounded-full border transition-colors ${
+                filterType === chip.value
+                  ? "bg-accent-purple/15 border-accent-purple/30 text-accent-purple"
+                  : "bg-surface-raised border-surface-border text-text-muted hover:text-text-secondary hover:border-surface-border"
+              }`}
+            >
+              {chip.label}
+            </button>
           ))}
         </div>
+        {sorted.length === 0 ? (
+          <p className="text-sm text-text-muted">No neighborhoods in this category.</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {sorted.map((n) => (
+              <EntityCard
+                key={n.id}
+                href={`/neighborhoods/${encodeURIComponent(n.slug)}`}
+                eyebrow={`${n.parcelCount} properties`}
+                title={n.label}
+                subtitle={NEIGHBORHOOD_ERA_LABELS[n.slug] ?? (n.medianYear ? `Typical build year: ${n.medianYear}` : undefined)}
+                signal={getChangeSignal({
+                  permit_count: n.totalPermits,
+                  sale_count: n.totalSales,
+                  recent_teardown_count: n.recentTeardowns,
+                })}
+              />
+            ))}
+          </div>
+        )}
       </div>
     );
   }

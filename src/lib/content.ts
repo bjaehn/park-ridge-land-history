@@ -71,6 +71,16 @@ export const NEIGHBORHOOD_NARRATIVES: Record<string, string> = {
     "that came first.",
 };
 
+// Year ranges that define each neighborhood's "primary era" -- used to generate
+// the era context note on property pages. Add a new entry when a new neighborhood slug is created.
+export const NEIGHBORHOOD_ERA_YEAR_RANGE: Record<string, [number, number]> = {
+  uptown_park_ridge: [1860, 1939],
+  northeast:         [1900, 1949],
+  central:           [1910, 1969],
+  northwest_park:    [1930, 1979],
+  south_park:        [1940, 1989],
+};
+
 // ---------------------------------------------------------------------------
 // Coverage and disclaimers
 // ---------------------------------------------------------------------------
