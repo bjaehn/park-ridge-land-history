@@ -60,6 +60,36 @@ export default function SourcesPage() {
         </section>
 
         <section>
+          <h2 className="text-base font-semibold text-text-primary mb-2">How development signals work</h2>
+          <p className="text-sm mb-3">
+            Each property, block, and neighborhood is assigned a development signal that summarizes recent activity. The signal is calculated from permit count, sale count, and teardown count using fixed thresholds.
+          </p>
+          <ul className="text-sm space-y-2 list-disc list-inside">
+            <li><strong className="text-text-primary">Rebuild pressure:</strong> One or more recent teardowns detected, or three or more recent permits on record. Indicates active redevelopment or high construction concentration.</li>
+            <li><strong className="text-text-primary">Reinvestment:</strong> Two or more total permits on record and no teardown detected. Suggests ongoing improvement activity.</li>
+            <li><strong className="text-text-primary">Turnover:</strong> Four or more recorded sales and no teardown or high-permit activity. Indicates a property that has changed hands frequently.</li>
+            <li><strong className="text-text-primary">Dormant:</strong> Fewer than two permits and three or fewer sales. No detected teardown or active permit work.</li>
+          </ul>
+          <p className="text-sm mt-3">
+            These signals are computed automatically from available data. They are interpretive labels, not official designations. Permit records before 2018 are incomplete, which may cause some properties to show Dormant when earlier activity exists.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="text-base font-semibold text-text-primary mb-2">What is not yet in the record</h2>
+          <p className="text-sm mb-3">
+            The following historical sources would improve the depth and accuracy of this dataset but have not yet been integrated. They represent the gap between what is documented here and the full historical record of Park Ridge.
+          </p>
+          <ul className="text-sm space-y-2 list-disc list-inside">
+            <li><strong className="text-text-primary">Park Ridge city directories (1900s to 1970s):</strong> Annual or biennial directories listing residents by address. These would allow tracing occupancy history and first-occupancy dates independent of assessor records.</li>
+            <li><strong className="text-text-primary">Sanborn fire insurance maps:</strong> Detailed block-by-block building footprint maps published for Park Ridge from approximately the 1890s to 1950s. These would allow verifying construction dates and original building forms.</li>
+            <li><strong className="text-text-primary">Historic newspaper archives (Park Ridge Herald and predecessors):</strong> Local newspaper coverage of subdivision announcements, home completions, and neighborhood developments would add primary-source narrative to subdivision records.</li>
+            <li><strong className="text-text-primary">Cook County deed chain records pre-1970:</strong> Grantor-grantee deed index going back to the 1870s would allow tracing land transfers before the assessor sale record begins in the 1990s.</li>
+            <li><strong className="text-text-primary">Permit records before 2018:</strong> The City of Park Ridge permit data available here begins in 2018. Earlier permit records exist at City Hall but have not been digitized or integrated.</li>
+          </ul>
+        </section>
+
+        <section>
           <h2 className="text-base font-semibold text-text-primary mb-2">What is not shown</h2>
           <p className="text-sm">
             Owner names are never displayed, even in raw data views. Internal data-quality flags are visible only in the raw data disclosure, not in primary property views.
