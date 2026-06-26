@@ -12,7 +12,12 @@ export function SubdivisionBuildGapChart({ data }: Props) {
   if (!data.length) return null;
   const max = Math.max(...data.map((d) => d.gapYears));
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-3">
+      <p className="text-xs text-text-muted">
+        Years between plat recording and first construction. Longer gaps often reflect
+        subdivisions platted speculatively before demand existed.
+      </p>
+      <div className="space-y-1.5">
       {data.slice(0, 15).map((row) => (
         <div key={row.name} className="flex items-center gap-2">
           <div className="w-48 shrink-0">
@@ -32,6 +37,7 @@ export function SubdivisionBuildGapChart({ data }: Props) {
           </div>
         </div>
       ))}
+      </div>
     </div>
   );
 }
