@@ -1147,43 +1147,64 @@ export function PropertyDetailContent({ pin, initialProps }: Props) {
       </details>
 
       {/* Explore more */}
-      {(props.street_name_normalized || (neighborhoodSlug && neighborhoodLabel) || blockPrefix) && (
-        <section>
-          <h2 className="section-heading">Explore more</h2>
-          <div className="space-y-2">
-            {blockPrefix && (
-              <div>
-                <Link
-                  href={`/pin/${encodeURIComponent(blockPrefix)}`}
-                  className="text-accent-purple hover:underline"
-                >
-                  View all properties on this block →
-                </Link>
-              </div>
-            )}
-            {props.street_name_normalized && (
-              <div>
-                <Link
-                  href={`/streets/${encodeURIComponent(props.street_name_normalized as string)}`}
-                  className="text-accent-purple hover:underline"
-                >
-                  View all properties on {streetDisplayName ?? (props.street_name_normalized as string)} →
-                </Link>
-              </div>
-            )}
-            {neighborhoodSlug && neighborhoodLabel && (
-              <div>
-                <Link
-                  href={`/neighborhoods/${encodeURIComponent(neighborhoodSlug)}`}
-                  className="text-accent-purple hover:underline"
-                >
-                  Learn about the {neighborhoodLabel} neighborhood →
-                </Link>
-              </div>
-            )}
+      <section>
+        <h2 className="section-heading">Explore more</h2>
+        <div className="space-y-2">
+          {blockPrefix && (
+            <div>
+              <Link
+                href={`/pin/${encodeURIComponent(blockPrefix)}`}
+                className="text-accent-purple hover:underline"
+              >
+                View all properties on this block →
+              </Link>
+            </div>
+          )}
+          {props.street_name_normalized && (
+            <div>
+              <Link
+                href={`/streets/${encodeURIComponent(props.street_name_normalized as string)}`}
+                className="text-accent-purple hover:underline"
+              >
+                View all properties on {streetDisplayName ?? (props.street_name_normalized as string)} →
+              </Link>
+            </div>
+          )}
+          {neighborhoodSlug && neighborhoodLabel && (
+            <div>
+              <Link
+                href={`/neighborhoods/${encodeURIComponent(neighborhoodSlug)}`}
+                className="text-accent-purple hover:underline"
+              >
+                Learn about the {neighborhoodLabel} neighborhood →
+              </Link>
+            </div>
+          )}
+          <div className="pt-2 border-t border-surface-border space-y-2">
+            <p className="text-xs text-text-muted">External records for this parcel:</p>
+            <div>
+              <a
+                href={`https://www.cookcountyassessor.com/pin/${encodeURIComponent(pin)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-accent-purple hover:underline text-sm"
+              >
+                Cook County Assessor — view full assessment record ↗
+              </a>
+            </div>
+            <div>
+              <a
+                href={`https://crs.cookcountyclerkil.gov/Search/ResultByPin?id1=${encodeURIComponent(pin)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-accent-purple hover:underline text-sm"
+              >
+                Cook County Recorder — search deed history ↗
+              </a>
+            </div>
           </div>
-        </section>
-      )}
+        </div>
+      </section>
     </div>
   );
 }
