@@ -183,7 +183,7 @@ export function TopNav() {
               onChange={(e) => handleSearch(e.target.value)}
               onFocus={() => query.length >= 2 && setShowResults(results.length > 0)}
               onKeyDown={handleKeyDown}
-              placeholder="Search address or PIN"
+              placeholder="Search address..."
               className="w-full pl-8 pr-3 py-1.5 text-sm bg-surface-raised border border-surface-border rounded text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-purple/60 transition-colors"
             />
           </div>

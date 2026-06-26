@@ -75,7 +75,7 @@ export default async function PropertyDetailPage({ params }: Props) {
       <div className="mb-8">
         <MapView
           scope={{ kind: "property", pin, bbox: propertyBbox ?? undefined, lat: lat ?? undefined, lng: lng ?? undefined }}
-          height="480px"
+          height="min(480px, 55vh)"
           showExpand
           hideLensSelector
         />

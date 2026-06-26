@@ -38,7 +38,7 @@ export function SparklinePermitCard() {
         Permits in {latest.permitYear}
         {yoy !== null && (
           <span className={yoy >= 0 ? "text-emerald-400" : "text-red-400"}>
-            {" "}{yoy >= 0 ? "+" : ""}{yoy}% vs prior year
+            {" "}{yoy >= 0 ? "↑" : "↓"} {yoy >= 0 ? "+" : ""}{yoy}% vs prior year
           </span>
         )}
       </p>

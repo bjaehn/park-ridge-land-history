@@ -44,12 +44,21 @@ export function EraPortraitChart({ data }: Props) {
             {ERA_SEGMENTS.map((seg) => {
               const pct = row.total > 0 ? (row[seg.key] / row.total) * 100 : 0;
               if (pct < 0.5) return null;
+              const pctRounded = Math.round(pct);
               return (
                 <div
                   key={seg.key}
-                  title={`${seg.label}: ${Math.round(pct)}%`}
+                  title={`${seg.label}: ${pctRounded}%`}
+                  aria-label={`${seg.label}: ${pctRounded}%`}
+                  className="relative flex items-center justify-center overflow-hidden"
                   style={{ width: `${pct}%`, background: seg.color }}
-                />
+                >
+                  {pct >= 12 && (
+                    <span className="text-[10px] font-semibold text-white/80 tabular-nums select-none">
+                      {pctRounded}%
+                    </span>
+                  )}
+                </div>
               );
             })}
           </div>

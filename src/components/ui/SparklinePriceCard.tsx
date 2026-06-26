@@ -34,8 +34,8 @@ export function SparklinePriceCard() {
         {formatPrice(latest.medianPrice)}
       </p>
       {pctChange !== null && (
-        <p className="text-xs text-text-secondary mt-1">
-          {pctChange >= 0 ? "+" : ""}{pctChange}% since {earliest.saleYear}
+        <p className={`text-xs mt-1 font-medium ${pctChange >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+          {pctChange >= 0 ? "↑" : "↓"} {pctChange >= 0 ? "+" : ""}{pctChange}% since {earliest.saleYear}
         </p>
       )}
       <div className="mt-3 h-14">
