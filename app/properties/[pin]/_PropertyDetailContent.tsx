@@ -798,6 +798,9 @@ export function PropertyDetailContent({ pin, initialProps }: Props) {
   const streetDisplayName = typeof props.street_name_normalized === "string"
     ? (props.street_name_normalized as string).toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase())
     : null;
+  const blockPrefix = typeof props.pin_normalized === "string" && (props.pin_normalized as string).length >= 7
+    ? (props.pin_normalized as string).slice(0, 7)
+    : null;
   const eraContextNote = getEraContextNote(
     yearBuilt,
     (props.local_neighborhood_slug as string | null),
@@ -1144,10 +1147,20 @@ export function PropertyDetailContent({ pin, initialProps }: Props) {
       </details>
 
       {/* Explore more */}
-      {(props.street_name_normalized || (neighborhoodSlug && neighborhoodLabel)) && (
+      {(props.street_name_normalized || (neighborhoodSlug && neighborhoodLabel) || blockPrefix) && (
         <section>
           <h2 className="section-heading">Explore more</h2>
           <div className="space-y-2">
+            {blockPrefix && (
+              <div>
+                <Link
+                  href={`/pin/${encodeURIComponent(blockPrefix)}`}
+                  className="text-accent-purple hover:underline"
+                >
+                  View all properties on this block →
+                </Link>
+              </div>
+            )}
             {props.street_name_normalized && (
               <div>
                 <Link
