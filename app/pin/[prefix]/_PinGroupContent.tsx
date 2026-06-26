@@ -29,6 +29,7 @@ export function PinGroupContent({ prefix, initialDetail, mapSlot }: Props) {
   const [permitStats, setPermitStats] = useState<BlockPermitStats | null>(null);
   const [salesByYear, setSalesByYear] = useState<BlockSalesByYear | null>(null);
   const [loading, setLoading] = useState(!initialDetail);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     const base = initialDetail
@@ -52,11 +53,12 @@ export function PinGroupContent({ prefix, initialDetail, mapSlot }: Props) {
         setPermitStats(permits);
         setSalesByYear(salesYr);
       })
-      .catch(() => null)
+      .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, [prefix]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) return <LoadingSkeleton rows={3} />;
+  if (error) return <EmptyState heading="Unable to load block data" body="Try refreshing the page." />;
   if (!detail || detail.parcels.length === 0) {
     return <EmptyState heading="No properties found" body={`No parcels match PIN prefix ${prefix}.`} />;
   }

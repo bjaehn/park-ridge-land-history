@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { EntityCard } from "@/components/ui/EntityCard";
-import { LoadingSkeleton } from "@/components/ui/EmptyState";
+import { LoadingSkeleton, EmptyState } from "@/components/ui/EmptyState";
 import { getChangeSignal } from "@/lib/formatters";
 import { fetchNeighborhoodSummaries } from "@/lib/data/neighborhoods";
 import type { NeighborhoodSummary } from "@/lib/data/neighborhoods";
@@ -42,11 +42,12 @@ function NeighborhoodSection({ title, items }: { title: string; items: Neighborh
 export function NeighborhoodsGrid({ teaser }: { teaser?: boolean }) {
   const [neighborhoods, setNeighborhoods] = useState<NeighborhoodSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     fetchNeighborhoodSummaries()
       .then(setNeighborhoods)
-      .catch(() => null)
+      .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, []);
 
@@ -66,6 +67,8 @@ export function NeighborhoodsGrid({ teaser }: { teaser?: boolean }) {
       </div>
     );
   }
+
+  if (error) return <EmptyState heading="Unable to load neighborhoods" body="Try refreshing the page." />;
 
   if (teaser) {
     const preview = neighborhoods.slice(0, 6);

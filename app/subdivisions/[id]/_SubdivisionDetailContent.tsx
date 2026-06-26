@@ -81,6 +81,7 @@ export function SubdivisionDetailContent({
   const [marketHistory, setMarketHistory] = useState<MarketHistoryRow[]>([]);
   const [neighborhoods, setNeighborhoods] = useState<SubdivisionNeighborhoodLink[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -130,7 +131,7 @@ export function SubdivisionDetailContent({
         setAssessmentStats(assessment);
         setMarketHistory(history);
       })
-      .catch(() => null)
+      .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, [subdivisionId]);
 
@@ -143,6 +144,7 @@ export function SubdivisionDetailContent({
       </div>
     );
   }
+  if (error) return <EmptyState heading="Unable to load subdivision data" body="Try refreshing the page." />;
 
   const yearsKnown = parcels
     .map((p) => p.year_built)
