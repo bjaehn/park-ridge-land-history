@@ -363,22 +363,42 @@ async function loadHargisRecords(pin: string): Promise<HargisRecord[]> {
 
 async function loadPropertyNotes(pin: string): Promise<PropertyNote[]> {
   if (!supabase) return [];
-  const { data } = await supabase
+  // source_id is a plain text source_key, not a UUID FK, so PostgREST embedded
+  // joins don't work. Fetch notes then look up sources separately.
+  const { data: notes } = await supabase
     .from("property_events")
-    .select("id, event_type, event_year, title, description, source_registry(source_name, source_url)")
+    .select("id, event_type, event_year, title, description, source_id")
     .eq("pin", pin)
     .order("event_year", { ascending: true, nullsFirst: false });
-  if (!data) return [];
-  return (data as Array<Record<string, unknown>>).map((row) => {
-    const src = row.source_registry as Record<string, unknown> | null;
+  if (!notes || notes.length === 0) return [];
+
+  const sourceKeys = [...new Set(
+    (notes as Array<Record<string, unknown>>)
+      .map((n) => n.source_id as string | null)
+      .filter((k): k is string => !!k)
+  )];
+  const sourceMap: Record<string, { source_name: string; source_url: string | null }> = {};
+  if (sourceKeys.length > 0) {
+    const { data: sources } = await supabase
+      .from("source_registry")
+      .select("source_key, source_name, source_url")
+      .in("source_key", sourceKeys);
+    for (const s of sources ?? []) {
+      const row = s as { source_key: string; source_name: string; source_url: string | null };
+      sourceMap[row.source_key] = { source_name: row.source_name, source_url: row.source_url };
+    }
+  }
+
+  return (notes as Array<Record<string, unknown>>).map((row) => {
+    const src = sourceMap[row.source_id as string] ?? null;
     return {
       id: String(row.id),
       event_type: String(row.event_type ?? "note"),
       event_year: (row.event_year as number | null) ?? null,
       title: String(row.title ?? ""),
       description: (row.description as string | null) ?? null,
-      source_name: (src?.source_name as string | null) ?? null,
-      source_url: (src?.source_url as string | null) ?? null,
+      source_name: src?.source_name ?? null,
+      source_url: src?.source_url ?? null,
     };
   });
 }
