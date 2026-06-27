@@ -501,6 +501,8 @@ function ChangeEventCard({
   );
 }
 
+const INPUT_TEXTAREA = "w-full bg-surface-card border border-surface-border rounded px-3 py-1.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-teal/60 transition-colors resize-y";
+
 // ─── Main panel ───────────────────────────────────────────────────────────────
 
 export function DeedAnalysisPanel({
@@ -508,13 +510,13 @@ export function DeedAnalysisPanel({
   address,
   deedNotes,
   allSubdivisions,
-  onDeedNotesExtracted,
+  onDeedNotesChange,
 }: {
   pin: string;
   address: string | null;
-  deedNotes: string | null;
+  deedNotes: string;
   allSubdivisions: { id: string; name: string }[];
-  onDeedNotesExtracted?: (text: string) => void;
+  onDeedNotesChange: (text: string) => void;
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -530,6 +532,8 @@ export function DeedAnalysisPanel({
   const [dismissedLineage, setDismissedLineage] = useState<Set<number>>(new Set());
   const [dismissedChanges, setDismissedChanges] = useState<Set<number>>(new Set());
 
+  const max = 5000;
+
   async function handlePdfUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -541,18 +545,16 @@ export function DeedAnalysisPanel({
     setPdfLoading(false);
     if (pdfErr) { setPdfMsg(`Error: ${pdfErr}`); return; }
     if (text) {
-      onDeedNotesExtracted?.(text);
-      setPdfMsg("Text extracted — review and click Analyze Deed.");
+      onDeedNotesChange(text);
+      setPdfMsg("Text extracted from PDF — review below and click Analyze.");
     }
     e.target.value = "";
   }
 
   async function analyze() {
-    // Read live text from the textarea so this works even if the server prop hasn't refreshed yet
-    const textarea = document.querySelector<HTMLTextAreaElement>('textarea[name="deed_notes"]');
-    const liveText = textarea?.value?.trim() || deedNotes?.trim() || "";
+    const liveText = deedNotes.trim();
     if (!liveText) {
-      setError("Enter a deed legal description in the Deed Record field above first.");
+      setError("Paste or upload a deed legal description first.");
       return;
     }
     setLoading(true);
@@ -586,37 +588,47 @@ export function DeedAnalysisPanel({
 
   return (
     <section className="bg-surface-raised rounded-lg border border-surface-border p-5 mb-5">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h3 className="text-sm font-semibold text-text-primary">AI Deed Analysis</h3>
-          <p className="text-xs text-text-muted mt-0.5">
-            Extract subdivision lineage and boundary changes from deed text
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <label className={`text-xs border border-surface-border text-text-muted font-medium px-3 py-1.5 rounded cursor-pointer hover:text-text-primary hover:border-accent-teal/40 transition-colors ${pdfLoading ? "opacity-50 pointer-events-none" : ""}`}>
-            {pdfLoading ? "Reading…" : "Upload PDF"}
-            <input
-              type="file"
-              accept=".pdf"
-              className="sr-only"
-              onChange={handlePdfUpload}
-            />
-          </label>
-          <button
-            type="button"
-            onClick={analyze}
-            disabled={loading}
-            className="text-xs bg-accent-teal text-surface-base font-semibold px-4 py-1.5 rounded hover:opacity-90 transition-opacity disabled:opacity-50"
-          >
-            {loading ? "Analyzing…" : result ? "Re-analyze" : "Analyze Deed"}
-          </button>
-        </div>
+      {/* Section header */}
+      <div className="mb-4">
+        <h3 className="text-sm font-semibold text-text-primary">Deed Legal Description</h3>
+        <p className="text-xs text-text-muted mt-0.5">
+          Paste the deed legal description or upload a PDF. Then click Analyze to extract subdivision, lot, and lineage data.
+        </p>
       </div>
 
-      {pdfMsg && (
-        <p className="text-xs text-accent-teal mb-3">{pdfMsg}</p>
-      )}
+      {/* Deed textarea */}
+      <textarea
+        name="deed_notes"
+        rows={5}
+        maxLength={max}
+        value={deedNotes}
+        onChange={(e) => onDeedNotesChange(e.target.value)}
+        placeholder="Paste deed legal description here…"
+        className={INPUT_TEXTAREA}
+      />
+      <p className="text-xs text-text-muted mt-1 mb-3 text-right">{deedNotes.length} / {max}</p>
+
+      {/* Action row: Upload PDF + Analyze */}
+      <div className="flex items-center gap-2 mb-4">
+        <label className={`text-xs border border-surface-border text-text-muted font-medium px-3 py-1.5 rounded cursor-pointer hover:text-text-primary hover:border-accent-teal/40 transition-colors ${pdfLoading ? "opacity-50 pointer-events-none" : ""}`}>
+          {pdfLoading ? "Reading PDF…" : "Upload PDF"}
+          <input
+            type="file"
+            accept=".pdf"
+            className="sr-only"
+            onChange={handlePdfUpload}
+          />
+        </label>
+        <button
+          type="button"
+          onClick={analyze}
+          disabled={loading}
+          className="text-xs bg-accent-teal text-surface-base font-semibold px-4 py-1.5 rounded hover:opacity-90 transition-opacity disabled:opacity-50"
+        >
+          {loading ? "Analyzing…" : result ? "Re-analyze" : "Analyze Deed"}
+        </button>
+        {pdfMsg && <p className="text-xs text-accent-teal">{pdfMsg}</p>}
+      </div>
 
       {loading && (
         <div className="flex items-center gap-2 text-xs text-text-muted py-4">

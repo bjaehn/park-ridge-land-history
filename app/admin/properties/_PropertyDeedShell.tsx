@@ -70,23 +70,17 @@ export function PropertyDeedShell({
 
   return (
     <form onSubmit={handleSubmit}>
-      {/* PIN / Core Fields / Deed Record */}
-      <ParcelForm
-        parcel={parcel}
-        deedNotes={deedNotes}
-        onDeedNotesChange={setDeedNotes}
-      />
+      {/* PIN / Core Fields */}
+      <ParcelForm parcel={parcel} />
 
-      {/* AI Deed Analysis — not a form input, just rendered inside the form */}
-      <div className="mt-8">
+      {/* Deed Legal Description + Analyze — combined section */}
       <DeedAnalysisPanel
         pin={parcel.pin_normalized}
         address={parcel.address}
         deedNotes={deedNotes}
         allSubdivisions={allSubdivisions}
-        onDeedNotesExtracted={setDeedNotes}
+        onDeedNotesChange={setDeedNotes}
       />
-      </div>
 
       {/* Neighborhood Assignment */}
       <div className={SECTION}>

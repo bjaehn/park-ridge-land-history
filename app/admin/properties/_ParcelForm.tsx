@@ -3,28 +3,6 @@
 const INPUT = "w-full bg-surface-card border border-surface-border rounded px-3 py-1.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-teal/60 transition-colors";
 const LABEL = "block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1";
 const SECTION = "bg-surface-raised rounded-lg border border-surface-border p-5 mb-5";
-const SELECT = "w-full bg-surface-card border border-surface-border rounded px-3 py-1.5 text-sm text-text-primary focus:outline-none focus:border-accent-teal/60 transition-colors";
-
-function DeedNotesField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const max = 5000;
-  return (
-    <div>
-      <label className={LABEL}>Deed legal description</label>
-      <textarea
-        name="deed_notes"
-        rows={4}
-        maxLength={max}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder="Paste deed legal description here…"
-        className={`${INPUT} resize-y`}
-      />
-      <p className="text-xs text-text-muted mt-1 text-right">{value.length} / {max}</p>
-    </div>
-  );
-}
-
-type Neighborhood = { id: string; label: string };
 
 type Parcel = {
   pin_normalized: string;
@@ -47,14 +25,11 @@ type Parcel = {
 
 type Props = {
   parcel: Parcel;
-  deedNotes: string;
-  onDeedNotesChange: (v: string) => void;
 };
 
-// Renders field sections only — no <form> wrapper, no submit button.
-// The parent (PropertyDeedShell) owns the form so neighborhood fields
-// and the save button can be positioned after the AI analysis panel.
-export function ParcelForm({ parcel, deedNotes, onDeedNotesChange }: Props) {
+// Renders PIN and core field sections only — no form wrapper, no deed textarea.
+// The deed textarea lives inside DeedAnalysisPanel so the Analyze button sits right next to it.
+export function ParcelForm({ parcel }: Props) {
   return (
     <div className="space-y-5">
       {/* PIN Decomposition */}
@@ -124,11 +99,6 @@ export function ParcelForm({ parcel, deedNotes, onDeedNotesChange }: Props) {
         </div>
       </div>
 
-      {/* Deed Record */}
-      <div className={SECTION}>
-        <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-4">Deed Record</h3>
-        <DeedNotesField value={deedNotes} onChange={onDeedNotesChange} />
-      </div>
     </div>
   );
 }
