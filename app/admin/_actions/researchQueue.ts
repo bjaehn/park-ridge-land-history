@@ -101,8 +101,19 @@ ${candidateList}`,
     }
   }
 
-  // Upsert all candidates into deed_research_queue
-  const upsertRows = rows.map((c) => ({
+  // Upsert all candidates into deed_research_queue.
+  // Deduplicate by pin first — a pin can appear as a candidate for multiple
+  // subdivisions, and ON CONFLICT DO UPDATE cannot affect the same row twice
+  // in a single statement.
+  const pinBest = new Map<string, Candidate>();
+  for (const c of rows) {
+    const existing = pinBest.get(c.candidate_pin);
+    if (!existing || c.neighbor_count > existing.neighbor_count) {
+      pinBest.set(c.candidate_pin, c);
+    }
+  }
+
+  const upsertRows = Array.from(pinBest.values()).map((c) => ({
     pin: c.candidate_pin,
     address: c.candidate_address,
     suspected_subdivision_id: c.suspected_subdivision_id,
