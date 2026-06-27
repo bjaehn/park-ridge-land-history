@@ -78,6 +78,7 @@ export function PropertyDeedShell({
       />
 
       {/* AI Deed Analysis — not a form input, just rendered inside the form */}
+      <div className="mt-8">
       <DeedAnalysisPanel
         pin={parcel.pin_normalized}
         address={parcel.address}
@@ -85,6 +86,7 @@ export function PropertyDeedShell({
         allSubdivisions={allSubdivisions}
         onDeedNotesExtracted={setDeedNotes}
       />
+      </div>
 
       {/* Neighborhood Assignment */}
       <div className={SECTION}>
