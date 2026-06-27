@@ -28,7 +28,7 @@ import {
 import type { ConfidenceLevel } from "@/lib/formatters";
 import { NEIGHBORHOOD_ERA_LABELS, NEIGHBORHOOD_ERA_YEAR_RANGE } from "@/lib/content";
 import { getPropertyDetail } from "@/lib/data/properties";
-import type { PropertySale, PropertyPermit, HargisRecord, LandLineageEntry, LandAncestryData, AssessmentPoint, PropertyPageData } from "@/lib/data/properties";
+import type { PropertySale, PropertyPermit, HargisRecord, LandLineageEntry, LandAncestryData, AssessmentPoint, PropertyPageData, PropertyNote } from "@/lib/data/properties";
 import { SalesPriceChart } from "./_SalesPriceChart";
 import { AssessmentChart } from "./_AssessmentChart";
 import { ScrollToTop } from "@/components/ui/ScrollToTop";
@@ -736,6 +736,7 @@ export function PropertyDetailContent({ pin, initialProps }: Props) {
   const landLineage = detail.landLineage ?? [];
   const landAncestry = detail.landAncestry ?? null;
   const appealYears = detail.appealYears ?? [];
+  const propertyNotes = detail.propertyNotes ?? [];
 
   // Parse assessed_value_timeline JSONB (may be pre-parsed object or string)
   let assessmentTimeline: AssessmentPoint[] = [];
@@ -914,6 +915,11 @@ export function PropertyDetailContent({ pin, initialProps }: Props) {
         isTeardownRebuild={props.is_teardown_rebuild as boolean | null}
         teardownConfidence={props.teardown_confidence as string | null}
       />
+
+      {/* Historical notes (curated research from cited sources) */}
+      {propertyNotes.length > 0 && (
+        <HistoricalNotesSection notes={propertyNotes} />
+      )}
 
       {/* Property timeline */}
       {timeline.length > 0 && (
@@ -1198,5 +1204,46 @@ export function PropertyDetailContent({ pin, initialProps }: Props) {
       </section>
       <ScrollToTop />
     </div>
+  );
+}
+
+function HistoricalNotesSection({ notes }: { notes: PropertyNote[] }) {
+  if (notes.length === 0) return null;
+  return (
+    <section>
+      <h2 className="section-heading">Historical notes</h2>
+      <div className="space-y-3">
+        {notes.map((note) => (
+          <div key={note.id} className="bg-surface-card border border-surface-border rounded-lg p-4">
+            <div className="flex items-start justify-between gap-3 mb-1">
+              <p className="text-sm font-semibold text-text-primary">{note.title}</p>
+              {note.event_year != null && (
+                <span className="text-xs text-text-muted tabular-nums shrink-0">{note.event_year}</span>
+              )}
+            </div>
+            {note.description && (
+              <p className="text-sm text-text-secondary leading-relaxed">{note.description}</p>
+            )}
+            {note.source_name && (
+              <p className="text-xs text-text-muted mt-2">
+                Source:{" "}
+                {note.source_url ? (
+                  <a
+                    href={note.source_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline hover:text-accent-purple transition-colors"
+                  >
+                    {note.source_name}
+                  </a>
+                ) : (
+                  note.source_name
+                )}
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
