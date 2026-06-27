@@ -225,8 +225,8 @@ export async function fetchSubdivisionParcels(
 ): Promise<Array<{ pin: string; address?: string | null; year_built?: number | null; building_sqft?: number | null; sale_count?: number | null; permit_count?: number | null; lot_number?: string | null; block_number?: string | null; lot_count?: number; is_teardown_rebuild?: boolean | null; teardown_confidence?: string | null }>> {
   if (!supabase) return [];
 
-  // Fetch both sources in parallel
-  const [{ data: links }, { data: gisLinked }] = await Promise.all([
+  // Fetch all three sources in parallel
+  const [{ data: links }, { data: gisLinked }, { data: gisLotIds }] = await Promise.all([
     supabase
       .from("property_subdivision_links")
       .select("pin, lot_number, block_number")
@@ -237,7 +237,26 @@ export async function fetchSubdivisionParcels(
       .select("pin_normalized, address, year_built, building_sqft, sale_count, permit_count, is_teardown_rebuild, teardown_confidence, has_deed_notes")
       .eq("subdivision_id", subdivisionId)
       .limit(1000),
+    supabase
+      .from("gis_lots")
+      .select("id")
+      .eq("subdivision_id", subdivisionId)
+      .limit(200),
   ]);
+
+  // Third source: parcel_lot_relationships → gis_lots
+  const lotIds = (gisLotIds ?? []).map((l) => (l as Record<string, unknown>).id as string);
+  let plrPins: string[] = [];
+  if (lotIds.length > 0) {
+    const { data: plrRows } = await supabase
+      .from("parcel_lot_relationships")
+      .select("pin_normalized")
+      .in("lot_id", lotIds)
+      .limit(500);
+    plrPins = (plrRows ?? [])
+      .map((r) => (r as Record<string, unknown>).pin_normalized as string)
+      .filter(Boolean);
+  }
 
   const deedLinks = (links ?? []) as Array<{ pin: string; lot_number: string | null; block_number: string | null }>;
   const deedPinSet = new Set(deedLinks.map((r) => r.pin));
@@ -246,8 +265,22 @@ export async function fetchSubdivisionParcels(
   const gisOnlyRows = (gisLinked ?? []).filter(
     (p) => !deedPinSet.has((p as Record<string, unknown>).pin_normalized as string)
   ) as Array<{ pin_normalized: string; address: string | null; year_built: number | null; building_sqft: number | null; sale_count: number | null; permit_count: number | null; is_teardown_rebuild: boolean | null; teardown_confidence: string | null; has_deed_notes: boolean | null }>;
+  const gisPinSet = new Set(gisOnlyRows.map((r) => r.pin_normalized));
 
-  if (deedLinks.length === 0 && gisOnlyRows.length === 0) return [];
+  // PLR-linked parcels not already covered by either deed or GIS links
+  const plrOnlyPins = plrPins.filter((pin) => !deedPinSet.has(pin) && !gisPinSet.has(pin));
+
+  if (deedLinks.length === 0 && gisOnlyRows.length === 0 && plrOnlyPins.length === 0) return [];
+
+  // Fetch parcel data for PLR-only pins
+  let plrParcelRows: Array<{ pin_normalized: string; address: string | null; year_built: number | null; building_sqft: number | null; sale_count: number | null; permit_count: number | null; is_teardown_rebuild: boolean | null; teardown_confidence: string | null; has_deed_notes: boolean | null }> = [];
+  if (plrOnlyPins.length > 0) {
+    const { data: plrParcels } = await supabase
+      .from("parcels")
+      .select("pin_normalized, address, year_built, building_sqft, sale_count, permit_count, is_teardown_rebuild, teardown_confidence, has_deed_notes")
+      .in("pin_normalized", plrOnlyPins);
+    plrParcelRows = (plrParcels ?? []) as typeof plrParcelRows;
+  }
 
   // Fetch lot-level detail from subdivision_lots for deed pins
   const lotsMap = new Map<string, Array<{ lot_number: string | null; block_number: string | null }>>();
@@ -309,7 +342,21 @@ export async function fetchSubdivisionParcels(
     has_deed_notes: p.has_deed_notes,
   }));
 
-  return [...deedRows, ...gisRows];
+  const plrRows = plrParcelRows.map((p) => ({
+    pin: p.pin_normalized,
+    address: p.address,
+    year_built: p.year_built,
+    building_sqft: p.building_sqft,
+    sale_count: p.sale_count,
+    permit_count: p.permit_count,
+    lot_number: null,
+    block_number: null,
+    is_teardown_rebuild: p.is_teardown_rebuild,
+    teardown_confidence: p.teardown_confidence,
+    has_deed_notes: p.has_deed_notes,
+  }));
+
+  return [...deedRows, ...gisRows, ...plrRows];
 }
 
 /** Parent subdivision for a given subdivision, if set. */
