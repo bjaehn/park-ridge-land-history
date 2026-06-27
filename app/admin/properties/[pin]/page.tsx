@@ -34,7 +34,8 @@ export default async function EditPropertyPage({ params }: { params: { pin: stri
       .order("event_year", { ascending: false, nullsFirst: false }),
     adminSupabase
       .from("parcel_change_events")
-      .select("id, event_type, event_date, event_year, date_precision, description, plat_book, plat_page, document_number, confidence_level, notes, parcel_lineage_edges(id, pin, side, notes)")
+      .select("id, event_type, event_date, event_year, date_precision, description, plat_book, plat_page, document_number, confidence_level, notes, parcel_lineage_edges!inner(id, pin, side, notes)")
+      .eq("parcel_lineage_edges.pin", pin)
       .order("event_year", { ascending: false, nullsFirst: false }),
     adminSupabase.from("subdivisions").select("id, name").order("name"),
     adminSupabase.from("neighborhoods").select("id, label, neighborhood_type").order("label"),

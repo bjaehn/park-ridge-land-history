@@ -1,9 +1,5 @@
 "use client";
 
-import { useTransition, useState } from "react";
-import { useRouter } from "next/navigation";
-import { updateParcel } from "../_actions/properties";
-
 const INPUT = "w-full bg-surface-card border border-surface-border rounded px-3 py-1.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-teal/60 transition-colors";
 const LABEL = "block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1";
 const SECTION = "bg-surface-raised rounded-lg border border-surface-border p-5 mb-5";
@@ -51,38 +47,16 @@ type Parcel = {
 
 type Props = {
   parcel: Parcel;
-  officialPlanningNeighborhoods: Neighborhood[];
-  businessDistrictNeighborhoods: Neighborhood[];
-  localMarketNeighborhoods: Neighborhood[];
   deedNotes: string;
   onDeedNotesChange: (v: string) => void;
 };
 
-export function ParcelForm({ parcel, officialPlanningNeighborhoods, businessDistrictNeighborhoods, localMarketNeighborhoods, deedNotes, onDeedNotesChange }: Props) {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
-
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    // Explicitly set from React state so deed_notes is never lost due to uncontrolled/DOM desync
-    fd.set("deed_notes", deedNotes);
-    setError(null);
-    setSaved(false);
-    startTransition(() => {
-      updateParcel(parcel.pin_normalized, fd).then((r) => {
-        if (r?.error) { setError(r.error); return; }
-        setSaved(true);
-        setTimeout(() => setSaved(false), 3000);
-        router.refresh();
-      });
-    });
-  }
-
+// Renders field sections only — no <form> wrapper, no submit button.
+// The parent (PropertyDeedShell) owns the form so neighborhood fields
+// and the save button can be positioned after the AI analysis panel.
+export function ParcelForm({ parcel, deedNotes, onDeedNotesChange }: Props) {
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <div className="space-y-5">
       {/* PIN Decomposition */}
       <div className={SECTION}>
         <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">PIN Decomposition</h3>
@@ -155,52 +129,6 @@ export function ParcelForm({ parcel, officialPlanningNeighborhoods, businessDist
         <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-4">Deed Record</h3>
         <DeedNotesField value={deedNotes} onChange={onDeedNotesChange} />
       </div>
-
-      {/* Neighborhood Assignment */}
-      <div className={SECTION}>
-        <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-4">Neighborhood Assignment</h3>
-        <div className="space-y-4">
-          <div>
-            <label className={LABEL}>Official Planning Neighborhood</label>
-            <select name="official_planning_neighborhood_id" defaultValue={parcel.official_planning_neighborhood_id ?? ""} className={SELECT}>
-              <option value="">(none)</option>
-              {officialPlanningNeighborhoods.map((n) => (
-                <option key={n.id} value={n.id}>{n.label}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className={LABEL}>Business District</label>
-            <select name="business_district_id" defaultValue={parcel.business_district_id ?? ""} className={SELECT}>
-              <option value="">(none)</option>
-              {businessDistrictNeighborhoods.map((n) => (
-                <option key={n.id} value={n.id}>{n.label}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className={LABEL}>Local / Market Neighborhood</label>
-            <select name="local_neighborhood_id" defaultValue={parcel.local_neighborhood_id ?? ""} className={SELECT}>
-              <option value="">(none)</option>
-              {localMarketNeighborhoods.map((n) => (
-                <option key={n.id} value={n.id}>{n.label}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-3">
-        <button
-          type="submit"
-          disabled={isPending}
-          className="bg-accent-teal text-surface-base font-semibold px-5 py-2 rounded text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
-        >
-          {isPending ? "Saving…" : "Save Changes"}
-        </button>
-        {error && <p className="text-accent-red text-sm">{error}</p>}
-        {saved && <p className="text-confidence-high text-sm">Saved!</p>}
-      </div>
-    </form>
+    </div>
   );
 }
