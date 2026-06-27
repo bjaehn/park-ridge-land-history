@@ -25,7 +25,7 @@ export function SubdivisionsHero({ totalCount }: Props) {
         </div>
       </div>
 
-      <div className="space-y-3 max-w-prose mb-6">
+      <div className="space-y-3 mb-6">
         <p className="text-sm text-text-secondary leading-relaxed">
           A subdivision plat is a legal document filed at the Cook County Recorder of Deeds. It
           divides a larger piece of land into the named lots, numbered blocks, and dedicated

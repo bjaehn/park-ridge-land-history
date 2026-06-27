@@ -169,7 +169,9 @@ export type SubdivisionSummary = Pick<
   | "notes"
   | "parent_subdivision_id"
   | "entity_type"
->;
+> & {
+  earliest_year_built: number | null;
+};
 
 /** Result of looking up subdivision for a property. */
 export type PropertySubdivisionDNA = {

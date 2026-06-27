@@ -266,6 +266,18 @@ export function SubdivisionsContent({ subdivisions }: Props) {
                             value: `Recorded ${s.recorded_year}`,
                           }
                         : null,
+                      s.earliest_year_built
+                        ? {
+                            icon: (
+                              <YearBuiltIcon
+                                size={11}
+                                strokeWidth={1.8}
+                                aria-hidden="true"
+                              />
+                            ),
+                            value: `First built ${s.earliest_year_built}`,
+                          }
+                        : null,
                       s.parcel_count && s.parcel_count > 0
                         ? {
                             icon: (

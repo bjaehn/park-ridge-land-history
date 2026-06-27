@@ -29,10 +29,10 @@ import type {
 export async function fetchSubdivisionIndex(): Promise<SubdivisionSummary[]> {
   if (!supabase) return [];
   const { data, error } = await supabase
-    .from("subdivisions")
+    .from("subdivision_index_view")
     .select(
       "id, name, normalized_name, recorded_year, confidence_level, confidence_reason, " +
-      "source_name, original_owner, developer, parcel_count, notes, parent_subdivision_id, entity_type"
+      "source_name, original_owner, developer, parcel_count, notes, parent_subdivision_id, entity_type, earliest_year_built"
     )
     .order("recorded_year", { ascending: true, nullsFirst: false })
     .order("normalized_name", { ascending: true });
