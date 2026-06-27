@@ -644,7 +644,7 @@ export function MapView({
         {/* Lens tabs (top-left) */}
         {isLoaded && !hideLensSelector && (
           <div className="absolute top-3 left-3 z-10">
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap items-center gap-1">
               {MAP_LENSES.map((l) => (
                 <button
                   key={l.id}
@@ -664,30 +664,33 @@ export function MapView({
                 </button>
               ))}
               {scope.kind === "city" && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (animMode) {
-                      setAnimMode(false);
-                      setAnimPlaying(false);
-                    } else {
-                      setAnimMode(true);
-                      setAnimYear(ERA_FILTER_MIN);
-                      setAnimPlaying(false);
-                      setLens("era");
-                      setEraFilter(null);
-                    }
-                  }}
-                  title="Watch Park Ridge build out over time"
-                  className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-full border transition-colors shadow-sm ${
-                    animMode
-                      ? "bg-amber-500/20 text-amber-300 border-amber-500/40 font-medium"
-                      : "bg-surface-card/95 text-text-secondary border-surface-border hover:text-text-primary hover:border-amber-500/30"
-                  }`}
-                >
-                  <AnimateIcon />
-                  Animate
-                </button>
+                <>
+                  <span className="w-px h-3.5 bg-white/20 mx-0.5 shrink-0" aria-hidden="true" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (animMode) {
+                        setAnimMode(false);
+                        setAnimPlaying(false);
+                      } else {
+                        setAnimMode(true);
+                        setAnimYear(ERA_FILTER_MIN);
+                        setAnimPlaying(false);
+                        setLens("era");
+                        setEraFilter(null);
+                      }
+                    }}
+                    title="Watch Park Ridge build out over time"
+                    className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-full border transition-colors shadow-sm ${
+                      animMode
+                        ? "bg-amber-500/20 text-amber-300 border-amber-500/40 font-medium"
+                        : "bg-surface-card/95 text-text-secondary border-surface-border hover:text-text-primary hover:border-amber-500/30"
+                    }`}
+                  >
+                    <AnimateIcon />
+                    Timeline
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -795,6 +798,16 @@ export function MapView({
               PIN {hoverFeature.pin}
             </p>
             <p className="text-xs text-accent-purple mt-1">View property →</p>
+          </div>
+        )}
+
+        {/* Timeline mode badge — bottom-center of canvas */}
+        {isLoaded && animMode && (
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-[5] pointer-events-none">
+            <div className="flex items-center gap-1.5 bg-amber-500/15 border border-amber-500/30 rounded-full px-3 py-1 text-[11px] text-amber-300 font-medium backdrop-blur-sm shadow">
+              <AnimateIcon />
+              Build-out Timeline
+            </div>
           </div>
         )}
 
