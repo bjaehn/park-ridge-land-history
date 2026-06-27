@@ -1,13 +1,10 @@
 import type { Metadata } from "next";
-import { HOME_HERO_HEADLINE, HOME_HERO_SUBHEAD, COVERAGE_DISCLAIMER } from "@/lib/content";
+import Link from "next/link";
+import { HOME_HERO_HEADLINE, HOME_HERO_SUBHEAD, COVERAGE_DISCLAIMER, CITY_NARRATIVE } from "@/lib/content";
 import { InlineSourceNote } from "@/components/ui/SourceNote";
 import { HighlightReel } from "@/components/ui/HighlightReel";
 import { HomeSearch, HomeStats } from "./_components/HomeClientComponents";
-import { NeighborhoodsGrid } from "./neighborhoods/_NeighborhoodsGrid";
-import { SparklinePriceCard } from "@/components/ui/SparklinePriceCard";
-import { SparklineSalesVolumeCard } from "@/components/ui/SparklineSalesVolumeCard";
-import { SparklinePermitCard } from "@/components/ui/SparklinePermitCard";
-import { NeighborhoodIcon, HighlightIcon } from "@/lib/icons";
+import { HighlightIcon } from "@/lib/icons";
 import type { HighlightGroup } from "@/components/ui/HighlightReel";
 
 export const metadata: Metadata = {
@@ -43,13 +40,19 @@ export default function HomePage() {
 
       <hr className="border-surface-border" />
 
-      {/* City trends */}
+      {/* City story teaser */}
       <section className="mt-10 mb-10">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <SparklinePriceCard />
-          <SparklineSalesVolumeCard />
-          <SparklinePermitCard />
-        </div>
+        <Link
+          href="/city"
+          className="block group bg-surface-card border border-surface-border rounded-lg px-5 py-4 hover:border-accent-purple/40 transition-colors"
+        >
+          <p className="text-sm text-text-secondary leading-relaxed group-hover:text-text-primary transition-colors">
+            {CITY_NARRATIVE}
+          </p>
+          <span className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-accent-purple">
+            Explore city history →
+          </span>
+        </Link>
       </section>
 
       <hr className="border-surface-border" />
@@ -61,17 +64,6 @@ export default function HomePage() {
           <h2 className="section-heading !mb-0">Notable properties</h2>
         </div>
         <HighlightReel scope="city" scopeId="" groups={CITY_HIGHLIGHTS} limit={6} />
-      </section>
-
-      <hr className="border-surface-border" />
-
-      {/* Neighborhoods */}
-      <section className="mt-10 mb-10">
-        <div className="flex items-center gap-2 mb-4">
-          <NeighborhoodIcon size={14} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />
-          <h2 className="section-heading !mb-0">Explore by neighborhood</h2>
-        </div>
-        <NeighborhoodsGrid teaser />
       </section>
     </div>
   );
