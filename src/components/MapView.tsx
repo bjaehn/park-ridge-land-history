@@ -141,6 +141,10 @@ export function MapView({
   const [eraFilter, setEraFilter] = useState<[number, number] | null>(null);
   const [stats, setStats] = useState<MapStats | null>(null);
   const [noDataLens, setNoDataLens] = useState(false);
+  const [animMode, setAnimMode] = useState(false);
+  const [animYear, setAnimYear] = useState<number>(ERA_FILTER_MIN);
+  const [animPlaying, setAnimPlaying] = useState(false);
+  const [animSpeed, setAnimSpeed] = useState<"slow" | "normal" | "fast">("normal");
 
   const router = useRouter();
   const isPropertyScope = scope.kind === "property";
@@ -416,30 +420,70 @@ export function MapView({
   }, [basemap, isLoaded]);
 
   // ---------------------------------------------------------------------------
-  // Era range filter
+  // Era range filter + animation filter (unified)
   // ---------------------------------------------------------------------------
 
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !isLoaded) return;
-    const base = buildScopeFilter(scope) as FilterSpecification;
-    let combined: FilterSpecification;
-    if (eraFilter) {
-      const [lo, hi] = eraFilter;
-      combined = [
+
+    if (animMode) {
+      // Animation: show known-year parcels built up to animYear; unknown-year in muted grey
+      const animFilter = [
         "all",
-        base,
-        [">=", ["get", "year_built"], lo],
-        ["<=", ["get", "year_built"], hi],
+        ["!=", ["get", "decade_built"], "Unknown"],
+        ["<=", ["get", "year_built"], animYear],
       ] as unknown as FilterSpecification;
+      if (map.getLayer(FILL_LAYER)) map.setFilter(FILL_LAYER, animFilter);
+      if (map.getLayer(STROKE_LAYER)) map.setFilter(STROKE_LAYER, animFilter);
+      if (map.getLayer(FILL_MUTED_LAYER)) {
+        map.setFilter(FILL_MUTED_LAYER, ["==", ["get", "decade_built"], "Unknown"] as unknown as FilterSpecification);
+        map.setPaintProperty(FILL_MUTED_LAYER, "fill-opacity", 0.3);
+      }
     } else {
-      combined = base;
+      // Normal era range filter
+      const base = buildScopeFilter(scope) as FilterSpecification;
+      let combined: FilterSpecification;
+      if (eraFilter) {
+        const [lo, hi] = eraFilter;
+        combined = [
+          "all",
+          base,
+          [">=", ["get", "year_built"], lo],
+          ["<=", ["get", "year_built"], hi],
+        ] as unknown as FilterSpecification;
+      } else {
+        combined = base;
+      }
+      if (map.getLayer(FILL_LAYER)) map.setFilter(FILL_LAYER, combined);
+      if (map.getLayer(STROKE_LAYER)) map.setFilter(STROKE_LAYER, combined);
+      // Restore muted layer for city scope (opacity 0 = invisible)
+      if (map.getLayer(FILL_MUTED_LAYER) && scope.kind === "city") {
+        map.setFilter(FILL_MUTED_LAYER, null);
+        map.setPaintProperty(FILL_MUTED_LAYER, "fill-opacity", 0);
+      }
+      statsCallbackRef.current?.();
     }
-    if (map.getLayer(FILL_LAYER)) map.setFilter(FILL_LAYER, combined);
-    if (map.getLayer(STROKE_LAYER)) map.setFilter(STROKE_LAYER, combined);
-    // Recompute stats after filter change
-    statsCallbackRef.current?.();
-  }, [eraFilter, isLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [animMode, animYear, eraFilter, isLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ---------------------------------------------------------------------------
+  // Animation playback
+  // ---------------------------------------------------------------------------
+
+  useEffect(() => {
+    if (!animPlaying || !animMode) return;
+    const ms = animSpeed === "slow" ? 200 : animSpeed === "fast" ? 20 : 80;
+    const id = setInterval(() => {
+      setAnimYear((y) => {
+        if (y >= ERA_FILTER_MAX) {
+          setAnimPlaying(false);
+          return y;
+        }
+        return y + 1;
+      });
+    }, ms);
+    return () => clearInterval(id);
+  }, [animPlaying, animMode, animSpeed]);
 
   // ---------------------------------------------------------------------------
   // Layer toggles
@@ -605,10 +649,10 @@ export function MapView({
                 <button
                   key={l.id}
                   type="button"
-                  onClick={() => setLens(l.id)}
+                  onClick={() => { setAnimMode(false); setAnimPlaying(false); setLens(l.id); }}
                   title={l.description}
                   className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-full border transition-colors shadow-sm ${
-                    lens === l.id
+                    !animMode && lens === l.id
                       ? "bg-accent-purple text-white border-accent-purple/50 font-medium"
                       : l.hasData
                       ? "bg-surface-card/95 text-text-secondary border-surface-border hover:text-text-primary hover:border-accent-purple/40"
@@ -619,6 +663,32 @@ export function MapView({
                   {l.label}
                 </button>
               ))}
+              {scope.kind === "city" && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (animMode) {
+                      setAnimMode(false);
+                      setAnimPlaying(false);
+                    } else {
+                      setAnimMode(true);
+                      setAnimYear(ERA_FILTER_MIN);
+                      setAnimPlaying(false);
+                      setLens("era");
+                      setEraFilter(null);
+                    }
+                  }}
+                  title="Watch Park Ridge build out over time"
+                  className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-full border transition-colors shadow-sm ${
+                    animMode
+                      ? "bg-amber-500/20 text-amber-300 border-amber-500/40 font-medium"
+                      : "bg-surface-card/95 text-text-secondary border-surface-border hover:text-text-primary hover:border-amber-500/30"
+                  }`}
+                >
+                  <AnimateIcon />
+                  Animate
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -730,23 +800,32 @@ export function MapView({
 
       </div>
 
-      {/* Below-map: era filter + legend bar + stats (non-property scopes only) */}
+      {/* Below-map: animation controls OR era filter + legend bar + stats */}
       {showBelowMap && (
         <div className="mt-3 space-y-3">
-          {/* Era range filter */}
-          <EraRangeFilter
-            eraFilter={eraFilter}
-            onFilter={setEraFilter}
-          />
-
-          {/* Legend bar (era lens only) */}
-          {lens === "era" && (
-            <MapLegendBar byDecade={stats?.byDecade ?? {}} eraFilter={eraFilter} />
-          )}
-
-          {/* Stats panel */}
-          {stats && stats.total > 0 && (
-            <MapStatsPanel stats={stats} />
+          {animMode ? (
+            <BuildoutAnimationControls
+              year={animYear}
+              playing={animPlaying}
+              speed={animSpeed}
+              onYearChange={(y) => { setAnimYear(y); setAnimPlaying(false); }}
+              onPlayPause={() => setAnimPlaying((p) => !p)}
+              onReset={() => { setAnimYear(ERA_FILTER_MIN); setAnimPlaying(false); }}
+              onSpeedChange={setAnimSpeed}
+            />
+          ) : (
+            <>
+              <EraRangeFilter
+                eraFilter={eraFilter}
+                onFilter={setEraFilter}
+              />
+              {lens === "era" && (
+                <MapLegendBar byDecade={stats?.byDecade ?? {}} eraFilter={eraFilter} />
+              )}
+              {stats && stats.total > 0 && (
+                <MapStatsPanel stats={stats} />
+              )}
+            </>
           )}
         </div>
       )}
@@ -834,6 +913,122 @@ function EraRangeFilter({
           />
         </div>
         <span className="text-xs text-text-secondary w-10 shrink-0 tabular-nums text-right">{hi}</span>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Buildout animation controls
+// ---------------------------------------------------------------------------
+
+function BuildoutAnimationControls({
+  year,
+  playing,
+  speed,
+  onYearChange,
+  onPlayPause,
+  onReset,
+  onSpeedChange,
+}: {
+  year: number;
+  playing: boolean;
+  speed: "slow" | "normal" | "fast";
+  onYearChange: (y: number) => void;
+  onPlayPause: () => void;
+  onReset: () => void;
+  onSpeedChange: (s: "slow" | "normal" | "fast") => void;
+}) {
+  const totalRange = ERA_FILTER_MAX - ERA_FILTER_MIN;
+  const percent = ((year - ERA_FILTER_MIN) / totalRange) * 100;
+  const atEnd = year >= ERA_FILTER_MAX;
+
+  return (
+    <div className="px-3 py-2.5 rounded-lg border bg-amber-500/5 border-amber-500/25 text-sm">
+      <div className="flex items-center justify-between gap-2 mb-2.5">
+        <span className="text-xs font-semibold text-amber-300 tracking-wide">Build-out timeline</span>
+        <div className="flex items-center gap-1">
+          {(["slow", "normal", "fast"] as const).map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => onSpeedChange(s)}
+              className={`text-[10px] px-1.5 py-0.5 rounded border transition-colors capitalize ${
+                speed === s
+                  ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
+                  : "text-text-muted border-surface-border hover:text-text-secondary"
+              }`}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex items-baseline gap-2 mb-2">
+        <span className="text-2xl font-bold text-text-primary tabular-nums">{year}</span>
+        <span className="text-xs text-text-muted">and earlier</span>
+      </div>
+
+      <div className="relative flex items-center gap-3 mb-2.5">
+        <div className="relative flex-1 h-5 flex items-center">
+          <div className="absolute w-full h-1.5 rounded-full bg-surface-border">
+            <div
+              className="absolute h-full rounded-full bg-amber-500/60"
+              style={{ width: `${percent}%` }}
+            />
+          </div>
+          <input
+            type="range"
+            min={ERA_FILTER_MIN}
+            max={ERA_FILTER_MAX}
+            step={1}
+            value={year}
+            onChange={(e) => onYearChange(+e.target.value)}
+            className="map-range-input absolute w-full"
+            aria-label="Animation year"
+          />
+        </div>
+        <span className="text-xs text-text-muted w-10 text-right tabular-nums shrink-0">{ERA_FILTER_MAX}</span>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={onReset}
+          className="text-[10px] px-2 py-1 rounded border border-surface-border text-text-muted hover:text-text-secondary transition-colors"
+          aria-label="Reset to earliest year"
+        >
+          ↺ Reset
+        </button>
+        <button
+          type="button"
+          onClick={onPlayPause}
+          disabled={atEnd}
+          className={`flex items-center gap-1.5 text-xs px-3 py-1 rounded border transition-colors font-medium ${
+            atEnd
+              ? "opacity-40 cursor-not-allowed border-surface-border text-text-muted"
+              : playing
+              ? "bg-amber-500/20 border-amber-500/40 text-amber-300 hover:bg-amber-500/30"
+              : "bg-amber-500/15 border-amber-500/30 text-amber-300 hover:bg-amber-500/25"
+          }`}
+          aria-label={playing ? "Pause animation" : "Play animation"}
+        >
+          {playing ? (
+            <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+              <rect x="3" y="3" width="4" height="10" rx="1" />
+              <rect x="9" y="3" width="4" height="10" rx="1" />
+            </svg>
+          ) : (
+            <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+              <polygon points="4,2 14,8 4,14" />
+            </svg>
+          )}
+          {playing ? "Pause" : atEnd ? "Done" : "Play"}
+        </button>
+        <span className="text-[10px] text-text-muted ml-auto">
+          Properties with unknown build date shown in grey
+        </span>
       </div>
     </div>
   );
@@ -1051,6 +1246,14 @@ function LayersIcon() {
   return (
     <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
       <path d="M8 1 L15 5 L8 9 L1 5 Z" /><path d="M1 9 L8 13 L15 9" /><path d="M1 12 L8 16 L15 12" />
+    </svg>
+  );
+}
+
+function AnimateIcon() {
+  return (
+    <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+      <polygon points="4,2 13,8 4,14" />
     </svg>
   );
 }
