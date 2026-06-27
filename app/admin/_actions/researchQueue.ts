@@ -16,19 +16,12 @@ type Candidate = {
   anchor_addresses: string[] | null;
 };
 
-// ─── Queue refresh ────────────────────────────────────────────────────────────
+// ─── Shared processing logic ──────────────────────────────────────────────────
 
-export async function refreshResearchQueue(): Promise<{ added: number; error?: string }> {
-  const { data: candidates, error: rpcError } = await adminSupabase.rpc(
-    "find_research_candidates"
-  );
-
-  if (rpcError) return { added: 0, error: rpcError.message };
-  if (!candidates?.length) return { added: 0 };
-
-  const rows = candidates as Candidate[];
-
-  // Group by suspected subdivision so we call Claude once per subdivision context
+async function processAndUpsertCandidates(
+  rows: Candidate[]
+): Promise<{ added: number; error?: string }> {
+  // Group by subdivision so Claude is called once per subdivision context
   const bySubdivision = new Map<string, Candidate[]>();
   for (const c of rows) {
     const key = c.suspected_subdivision_id ?? "unknown";
@@ -44,12 +37,8 @@ export async function refreshResearchQueue(): Promise<{ added: number; error?: s
     const anchors = group[0];
     const anchorContext = [
       anchors.anchor_addresses?.join(", ") ?? "nearby properties",
-      anchors.anchor_lots?.length
-        ? `Lots ${anchors.anchor_lots.join(", ")}`
-        : null,
-      anchors.anchor_blocks?.length
-        ? `Block ${anchors.anchor_blocks[0]}`
-        : null,
+      anchors.anchor_lots?.length ? `Lots ${anchors.anchor_lots.join(", ")}` : null,
+      anchors.anchor_blocks?.length ? `Block ${anchors.anchor_blocks[0]}` : null,
     ]
       .filter(Boolean)
       .join(" · ");
@@ -86,25 +75,23 @@ ${candidateList}`,
         items: Array<{ address: string; reasoning: string }>;
       };
 
-      // Map by address (best effort; fall back to index order)
       parsed.items.forEach((item, i) => {
-        const candidate = group.find(
-          (c) =>
-            (c.candidate_address ?? c.candidate_pin)
-              .toLowerCase()
-              .includes(item.address.toLowerCase().slice(0, 10))
-        ) ?? group[i];
+        const candidate =
+          group.find(
+            (c) =>
+              (c.candidate_address ?? c.candidate_pin)
+                .toLowerCase()
+                .includes(item.address.toLowerCase().slice(0, 10))
+          ) ?? group[i];
         if (candidate) reasoningMap.set(candidate.candidate_pin, item.reasoning);
       });
     } catch {
-      // Skip AI for this group; we'll still upsert with empty reasoning
+      // Skip AI for this group; upsert proceeds with empty reasoning
     }
   }
 
-  // Upsert all candidates into deed_research_queue.
-  // Deduplicate by pin first — a pin can appear as a candidate for multiple
-  // subdivisions, and ON CONFLICT DO UPDATE cannot affect the same row twice
-  // in a single statement.
+  // Deduplicate by PIN — a PIN may appear as a candidate for multiple subdivisions.
+  // ON CONFLICT DO UPDATE cannot affect the same row twice in one statement.
   const pinBest = new Map<string, Candidate>();
   for (const c of rows) {
     const existing = pinBest.get(c.candidate_pin);
@@ -126,16 +113,42 @@ ${candidateList}`,
 
   const { data: inserted, error: upsertError } = await adminSupabase
     .from("deed_research_queue")
-    .upsert(upsertRows, {
-      onConflict: "pin",
-      ignoreDuplicates: false,
-    })
+    .upsert(upsertRows, { onConflict: "pin", ignoreDuplicates: false })
     .select("id");
 
   if (upsertError) return { added: 0, error: upsertError.message };
 
   revalidatePath("/admin/research-queue");
   return { added: inserted?.length ?? 0 };
+}
+
+// ─── Refresh entire queue ─────────────────────────────────────────────────────
+
+export async function refreshResearchQueue(): Promise<{ added: number; error?: string }> {
+  const { data: candidates, error: rpcError } = await adminSupabase.rpc(
+    "find_research_candidates"
+  );
+
+  if (rpcError) return { added: 0, error: rpcError.message };
+  if (!candidates?.length) return { added: 0 };
+
+  return processAndUpsertCandidates(candidates as Candidate[]);
+}
+
+// ─── Refresh one subdivision ──────────────────────────────────────────────────
+
+export async function refreshSubdivisionQueue(
+  subdivisionId: string
+): Promise<{ added: number; error?: string }> {
+  const { data: candidates, error: rpcError } = await adminSupabase.rpc(
+    "find_research_candidates_for_subdivision",
+    { p_subdivision_id: subdivisionId }
+  );
+
+  if (rpcError) return { added: 0, error: rpcError.message };
+  if (!candidates?.length) return { added: 0 };
+
+  return processAndUpsertCandidates(candidates as Candidate[]);
 }
 
 // ─── Status update ────────────────────────────────────────────────────────────

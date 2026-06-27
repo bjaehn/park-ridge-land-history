@@ -1,9 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { refreshResearchQueue, updateQueueStatus } from "../_actions/researchQueue";
+import {
+  refreshResearchQueue,
+  refreshSubdivisionQueue,
+  updateQueueStatus,
+} from "../_actions/researchQueue";
 
 type QueueEntry = {
   id: string;
@@ -32,14 +36,44 @@ export function ResearchQueueContent({
   const [refreshMsg, setRefreshMsg] = useState<string | null>(null);
   const [localStatus, setLocalStatus] = useState<Record<string, string>>({});
 
-  const displayed = initialEntries.filter((e) => {
-    const status = localStatus[e.id] ?? e.status;
-    if (filter === "pending") return status === "pending";
-    if (filter === "skipped") return status === "skipped";
-    return true;
-  });
+  const filtered = useMemo(
+    () =>
+      initialEntries.filter((e) => {
+        const status = localStatus[e.id] ?? e.status;
+        if (filter === "pending") return status === "pending";
+        if (filter === "skipped") return status === "skipped";
+        return true;
+      }),
+    [initialEntries, filter, localStatus]
+  );
 
-  function handleStatus(id: string, status: "pending" | "researched" | "not_found" | "skipped") {
+  // Group by subdivision, sort groups by highest priority_score first
+  const grouped = useMemo(() => {
+    const map = new Map<
+      string,
+      { name: string; id: string | null; entries: QueueEntry[] }
+    >();
+    for (const e of filtered) {
+      const key = e.suspected_subdivision_id ?? "__none__";
+      if (!map.has(key)) {
+        map.set(key, {
+          name: e.suspected_subdivision_name ?? "Unknown subdivision",
+          id: e.suspected_subdivision_id ?? null,
+          entries: [],
+        });
+      }
+      map.get(key)!.entries.push(e);
+    }
+    return Array.from(map.values()).sort(
+      (a, b) =>
+        (b.entries[0]?.priority_score ?? 0) - (a.entries[0]?.priority_score ?? 0)
+    );
+  }, [filtered]);
+
+  function handleStatus(
+    id: string,
+    status: "pending" | "researched" | "not_found" | "skipped"
+  ) {
     setLocalStatus((prev) => ({ ...prev, [id]: status }));
     startTransition(async () => {
       await updateQueueStatus(id, status);
@@ -58,6 +92,7 @@ export function ResearchQueueContent({
             ? `Added ${added} new ${added === 1 ? "entry" : "entries"} to the queue.`
             : "Queue is up to date — no new properties found."
         );
+        setLocalStatus({});
         router.refresh();
       }
     });
@@ -65,6 +100,7 @@ export function ResearchQueueContent({
 
   return (
     <div>
+      {/* Top controls */}
       <div className="flex flex-wrap items-center gap-3 mb-6">
         <button
           onClick={handleRefresh}
@@ -95,7 +131,7 @@ export function ResearchQueueContent({
         )}
       </div>
 
-      {displayed.length === 0 ? (
+      {grouped.length === 0 ? (
         <div className="bg-surface-raised border border-surface-border rounded-lg px-6 py-10 text-center">
           <p className="text-text-muted text-sm">
             {filter === "pending"
@@ -104,107 +140,123 @@ export function ResearchQueueContent({
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {displayed.map((entry) => {
-            const status = localStatus[entry.id] ?? entry.status;
-            const isDone = status !== "pending";
-            return (
-              <div
-                key={entry.id}
-                className={`bg-surface-raised border rounded-lg px-5 py-4 transition-opacity ${
-                  isDone ? "opacity-40 border-surface-border" : "border-surface-border"
-                }`}
-              >
-                <div className="flex items-start justify-between gap-4 flex-wrap">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <h3 className="text-sm font-semibold text-text-primary">
-                        {entry.address ?? entry.pin}
-                      </h3>
-                      <PriorityDots score={entry.priority_score} />
-                      {isDone && (
-                        <span className="text-[10px] font-semibold uppercase tracking-wide text-text-muted px-1.5 py-0.5 border border-surface-border rounded">
-                          {status.replace("_", " ")}
-                        </span>
-                      )}
-                    </div>
-
-                    {entry.suspected_subdivision_name && (
-                      <p className="text-xs text-accent-teal mb-1.5">
-                        Suspected:{" "}
-                        {entry.suspected_subdivision_id ? (
-                          <Link
-                            href={`/admin/subdivisions/${entry.suspected_subdivision_id}`}
-                            className="hover:underline"
-                          >
-                            {entry.suspected_subdivision_name}
-                          </Link>
-                        ) : (
-                          entry.suspected_subdivision_name
-                        )}
-                      </p>
-                    )}
-
-                    {entry.ai_reasoning && (
-                      <p className="text-xs text-text-secondary italic mb-2 leading-relaxed">
-                        "{entry.ai_reasoning}"
-                      </p>
-                    )}
-
-                    {entry.source_pins && entry.source_pins.length > 0 && (
-                      <p className="text-[10px] text-text-muted">
-                        Based on {entry.source_pins.length} researched neighbor
-                        {entry.source_pins.length !== 1 ? "s" : ""}
-                      </p>
-                    )}
-                  </div>
-
-                  {!isDone && (
-                    <div className="flex flex-wrap gap-2 shrink-0">
-                      <Link
-                        href={`/admin/properties/${entry.pin}`}
-                        target="_blank"
-                        className="px-3 py-1.5 text-xs border border-surface-border text-text-secondary rounded hover:text-text-primary hover:border-text-muted transition-colors"
-                      >
-                        Open in admin ↗
-                      </Link>
-                      <button
-                        onClick={() => handleStatus(entry.id, "researched")}
-                        disabled={isPending}
-                        className="px-3 py-1.5 text-xs bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded hover:bg-emerald-500/20 disabled:opacity-50 transition-colors"
-                      >
-                        Mark researched
-                      </button>
-                      <button
-                        onClick={() => handleStatus(entry.id, "not_found")}
-                        disabled={isPending}
-                        className="px-3 py-1.5 text-xs border border-surface-border text-text-muted rounded hover:text-text-secondary transition-colors"
-                      >
-                        Not found
-                      </button>
-                      <button
-                        onClick={() => handleStatus(entry.id, "skipped")}
-                        disabled={isPending}
-                        className="px-3 py-1.5 text-xs text-text-muted hover:text-text-secondary transition-colors"
-                      >
-                        Skip
-                      </button>
-                    </div>
-                  )}
-
-                  {isDone && (
-                    <button
-                      onClick={() => handleStatus(entry.id, "pending")}
-                      disabled={isPending}
-                      className="text-[10px] text-text-muted hover:text-text-secondary transition-colors shrink-0"
+        <div className="space-y-10">
+          {grouped.map((group) => (
+            <div key={group.id ?? "__none__"}>
+              {/* Subdivision group header */}
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-sm font-semibold text-text-secondary shrink-0">
+                  {group.id ? (
+                    <Link
+                      href={`/admin/subdivisions/${group.id}`}
+                      className="hover:text-text-primary transition-colors"
                     >
-                      Undo
-                    </button>
+                      {group.name}
+                    </Link>
+                  ) : (
+                    group.name
                   )}
-                </div>
+                </span>
+                <div className="flex-1 border-t border-surface-border" />
+                <span className="text-xs text-text-muted shrink-0">
+                  {group.entries.length} candidate{group.entries.length !== 1 ? "s" : ""}
+                </span>
+                {group.id && (
+                  <RefreshSubdivisionButton subdivisionId={group.id} />
+                )}
               </div>
-            );
-          })}
+
+              {/* Entry cards */}
+              <div className="space-y-3">
+                {group.entries.map((entry) => {
+                  const status = localStatus[entry.id] ?? entry.status;
+                  const isDone = status !== "pending";
+                  return (
+                    <div
+                      key={entry.id}
+                      className={`bg-surface-raised border rounded-lg px-5 py-4 transition-opacity ${
+                        isDone
+                          ? "opacity-40 border-surface-border"
+                          : "border-surface-border"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-4 flex-wrap">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                            <h3 className="text-sm font-semibold text-text-primary">
+                              {entry.address ?? entry.pin}
+                            </h3>
+                            <PriorityDots score={entry.priority_score} />
+                            {isDone && (
+                              <span className="text-[10px] font-semibold uppercase tracking-wide text-text-muted px-1.5 py-0.5 border border-surface-border rounded">
+                                {status.replace("_", " ")}
+                              </span>
+                            )}
+                          </div>
+
+                          {entry.ai_reasoning && (
+                            <p className="text-xs text-text-secondary italic mb-2 leading-relaxed">
+                              &ldquo;{entry.ai_reasoning}&rdquo;
+                            </p>
+                          )}
+
+                          {entry.source_pins && entry.source_pins.length > 0 && (
+                            <p className="text-[10px] text-text-muted">
+                              Based on {entry.source_pins.length} researched neighbor
+                              {entry.source_pins.length !== 1 ? "s" : ""}
+                            </p>
+                          )}
+                        </div>
+
+                        {!isDone && (
+                          <div className="flex flex-wrap gap-2 shrink-0">
+                            <Link
+                              href={`/admin/properties/${entry.pin}`}
+                              target="_blank"
+                              className="px-3 py-1.5 text-xs border border-surface-border text-text-secondary rounded hover:text-text-primary hover:border-text-muted transition-colors"
+                            >
+                              Open in admin ↗
+                            </Link>
+                            <button
+                              onClick={() => handleStatus(entry.id, "researched")}
+                              disabled={isPending}
+                              className="px-3 py-1.5 text-xs bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded hover:bg-emerald-500/20 disabled:opacity-50 transition-colors"
+                            >
+                              Mark researched
+                            </button>
+                            <button
+                              onClick={() => handleStatus(entry.id, "not_found")}
+                              disabled={isPending}
+                              className="px-3 py-1.5 text-xs border border-surface-border text-text-muted rounded hover:text-text-secondary transition-colors"
+                            >
+                              Not found
+                            </button>
+                            <button
+                              onClick={() => handleStatus(entry.id, "skipped")}
+                              disabled={isPending}
+                              className="px-3 py-1.5 text-xs text-text-muted hover:text-text-secondary transition-colors"
+                            >
+                              Skip
+                            </button>
+                          </div>
+                        )}
+
+                        {isDone && (
+                          <button
+                            onClick={() => handleStatus(entry.id, "pending")}
+                            disabled={isPending}
+                            className="text-[10px] text-text-muted hover:text-text-secondary transition-colors shrink-0"
+                          >
+                            Undo
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -214,7 +266,10 @@ export function ResearchQueueContent({
 function PriorityDots({ score }: { score: number }) {
   const filled = Math.min(5, Math.round(score));
   return (
-    <span className="flex items-center gap-0.5" title={`Priority: ${score} neighboring anchors`}>
+    <span
+      className="flex items-center gap-0.5"
+      title={`Priority: ${score} neighboring anchors`}
+    >
       {Array.from({ length: 5 }).map((_, i) => (
         <span
           key={i}
@@ -224,5 +279,38 @@ function PriorityDots({ score }: { score: number }) {
         />
       ))}
     </span>
+  );
+}
+
+function RefreshSubdivisionButton({ subdivisionId }: { subdivisionId: string }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [msg, setMsg] = useState<string | null>(null);
+
+  function handleClick() {
+    setMsg(null);
+    startTransition(async () => {
+      const { added, error } = await refreshSubdivisionQueue(subdivisionId);
+      if (error) {
+        setMsg(`Error: ${error}`);
+      } else {
+        setMsg(added > 0 ? `+${added} added` : "Up to date");
+        router.refresh();
+      }
+    });
+  }
+
+  return (
+    <div className="flex items-center gap-2 shrink-0">
+      <button
+        type="button"
+        onClick={handleClick}
+        disabled={isPending}
+        className="text-xs border border-surface-border text-text-muted px-2.5 py-1 rounded hover:text-text-primary hover:border-text-muted transition-colors disabled:opacity-50"
+      >
+        {isPending ? "Refreshing…" : "Refresh"}
+      </button>
+      {msg && <span className="text-xs text-text-muted">{msg}</span>}
+    </div>
   );
 }
