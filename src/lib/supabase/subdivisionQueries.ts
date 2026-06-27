@@ -262,13 +262,36 @@ export async function fetchSubdivisionParcels(
   const deedPinSet = new Set(deedLinks.map((r) => r.pin));
 
   // GIS-linked parcels not already covered by deed links
-  const gisOnlyRows = (gisLinked ?? []).filter(
+  const gisOnlyRowsRaw = (gisLinked ?? []).filter(
     (p) => !deedPinSet.has((p as Record<string, unknown>).pin_normalized as string)
   ) as Array<{ pin_normalized: string; address: string | null; year_built: number | null; building_sqft: number | null; sale_count: number | null; permit_count: number | null; is_teardown_rebuild: boolean | null; teardown_confidence: string | null; has_deed_notes: boolean | null }>;
-  const gisPinSet = new Set(gisOnlyRows.map((r) => r.pin_normalized));
+  const gisPinSet = new Set(gisOnlyRowsRaw.map((r) => r.pin_normalized));
 
   // PLR-linked parcels not already covered by either deed or GIS links
-  const plrOnlyPins = plrPins.filter((pin) => !deedPinSet.has(pin) && !gisPinSet.has(pin));
+  const plrOnlyPinsRaw = plrPins.filter((pin) => !deedPinSet.has(pin) && !gisPinSet.has(pin));
+
+  // Deed-priority exclusion: fallback paths (GIS direct FK, PLR) must not include
+  // parcels that are deed-verified to a DIFFERENT subdivision. Those parcels belong
+  // exclusively to the subdivision confirmed by their deed_legal_description link.
+  const fallbackCandidates = [
+    ...gisOnlyRowsRaw.map((r) => r.pin_normalized),
+    ...plrOnlyPinsRaw,
+  ];
+  const deedVerifiedElsewhere = new Set<string>();
+  if (fallbackCandidates.length > 0) {
+    const { data: conflicting } = await supabase
+      .from("property_subdivision_links")
+      .select("pin")
+      .in("pin", fallbackCandidates)
+      .eq("match_method", "deed_legal_description")
+      .neq("subdivision_id", subdivisionId);
+    (conflicting ?? []).forEach((r) =>
+      deedVerifiedElsewhere.add((r as Record<string, unknown>).pin as string)
+    );
+  }
+
+  const gisOnlyRows = gisOnlyRowsRaw.filter((r) => !deedVerifiedElsewhere.has(r.pin_normalized));
+  const plrOnlyPins = plrOnlyPinsRaw.filter((pin) => !deedVerifiedElsewhere.has(pin));
 
   if (deedLinks.length === 0 && gisOnlyRows.length === 0 && plrOnlyPins.length === 0) return [];
 
