@@ -134,6 +134,16 @@ export type LandAncestryData = {
   source_name: string | null;
 };
 
+export type PropertyNote = {
+  id: string;
+  event_type: string;
+  event_year: number | null;
+  title: string;
+  description: string | null;
+  source_name: string | null;
+  source_url: string | null;
+};
+
 export type PropertyDetailData = {
   properties: ParcelProperties;
   subdivision?: {
@@ -150,6 +160,7 @@ export type PropertyDetailData = {
   permits?: PropertyPermit[];
   hargisRecords?: HargisRecord[];
   appealYears?: number[];
+  propertyNotes?: PropertyNote[];
 };
 
 export type { LandLineageEntry, LandLot };
@@ -219,6 +230,7 @@ export async function getPropertyDetail(pin: string): Promise<PropertyDetailData
     hargisResult,
     appealYearsResult,
     landAncestryResult,
+    propertyNotesResult,
   ] = await Promise.allSettled([
     loadSubdivision(pin),
     loadLandLineage(pin),
@@ -228,6 +240,7 @@ export async function getPropertyDetail(pin: string): Promise<PropertyDetailData
     loadHargisRecords(pin),
     loadAppealYears(pin, props.latest_appeal_year as number | null),
     loadLandAncestry(pin),
+    loadPropertyNotes(pin),
   ]);
 
   return {
@@ -240,6 +253,7 @@ export async function getPropertyDetail(pin: string): Promise<PropertyDetailData
     permits: permitsResult.status === "fulfilled" ? permitsResult.value : [],
     hargisRecords: hargisResult.status === "fulfilled" ? hargisResult.value : [],
     appealYears: appealYearsResult.status === "fulfilled" ? appealYearsResult.value : [],
+    propertyNotes: propertyNotesResult.status === "fulfilled" ? propertyNotesResult.value : [],
   };
 }
 
@@ -345,6 +359,28 @@ async function loadHargisRecords(pin: string): Promise<HargisRecord[]> {
     .order("refnum");
   if (!data) return [];
   return data as HargisRecord[];
+}
+
+async function loadPropertyNotes(pin: string): Promise<PropertyNote[]> {
+  if (!supabase) return [];
+  const { data } = await supabase
+    .from("property_events")
+    .select("id, event_type, event_year, title, description, source_registry(source_name, source_url)")
+    .eq("pin", pin)
+    .order("event_year", { ascending: true, nullsFirst: false });
+  if (!data) return [];
+  return (data as Array<Record<string, unknown>>).map((row) => {
+    const src = row.source_registry as Record<string, unknown> | null;
+    return {
+      id: String(row.id),
+      event_type: String(row.event_type ?? "note"),
+      event_year: (row.event_year as number | null) ?? null,
+      title: String(row.title ?? ""),
+      description: (row.description as string | null) ?? null,
+      source_name: (src?.source_name as string | null) ?? null,
+      source_url: (src?.source_url as string | null) ?? null,
+    };
+  });
 }
 
 async function loadLandLineage(pin: string): Promise<LandLineageEntry[]> {
