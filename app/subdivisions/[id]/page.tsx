@@ -12,8 +12,6 @@ import {
   fetchSubdivisionFullDetail,
   fetchSubdivisionMapData,
   fetchParentSubdivision,
-  fetchSubdivisionGisLots,
-  fetchBboxForPins,
   fetchSubdivisionLineage,
 } from "@/lib/supabase/subdivisionQueries";
 import { statusLabel } from "@/lib/subdivisionTypes";
@@ -44,28 +42,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function SubdivisionDetailPage({ params }: Props) {
   const id = decodeURIComponent(params.id);
 
-  const [subOrNull, mapData, parentSub, gisLots, lineage] = await Promise.all([
+  const [subOrNull, mapData, parentSub, lineage] = await Promise.all([
     fetchSubdivisionFullDetail(id).catch(() => null),
     fetchSubdivisionMapData(id).catch(() => ({ pins: [], bbox: null })),
     fetchParentSubdivision(id).catch(() => null),
-    fetchSubdivisionGisLots(id).catch(() => []),
     fetchSubdivisionLineage(id).catch(() => []),
   ]);
 
   if (!subOrNull) notFound();
   const sub = subOrNull;
 
-  // Merge deed-verified PINs with GIS-matched PINs so the map shows all known parcels
-  const gisPins = gisLots
-    .filter((l) => l.pin_normalized)
-    .map((l) => l.pin_normalized!);
-  const allPins = [...new Set([...mapData.pins, ...gisPins])];
-
-  // Recompute bbox when GIS expands beyond deed-only coverage
-  const allBbox =
-    allPins.length > mapData.pins.length
-      ? await fetchBboxForPins(allPins).catch(() => mapData.bbox)
-      : mapData.bbox;
+  const allPins = mapData.pins;
+  const allBbox = mapData.bbox;
 
   const confidence = sub.confidence_level as ConfidenceLevel;
 

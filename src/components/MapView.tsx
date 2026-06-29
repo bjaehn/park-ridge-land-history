@@ -69,7 +69,6 @@ export type MapStats = {
 type LayerToggles = {
   boundary: boolean;
   permitHeatmap: boolean;
-  gisLots: boolean;
   gisBuildings: boolean;
 };
 
@@ -95,9 +94,6 @@ const SELECTED_FILL_LAYER = "parcel-fill-selected";
 const SELECTED_STROKE_LAYER = "parcel-stroke-selected";
 const PERMIT_HEATMAP_LAYER = "permit-heatmap";
 const LABELS_LAYER = "labels-overlay";
-const GIS_LOTS_SOURCE = "gis-lots";
-const GIS_LOTS_FILL_LAYER = "gis-lots-fill";
-const GIS_LOTS_STROKE_LAYER = "gis-lots-stroke";
 const GIS_BUILDINGS_SOURCE = "gis-buildings";
 const GIS_BUILDINGS_LAYER = "gis-buildings-stroke";
 const NEIGHBORHOOD_BOUNDARY_SOURCE = "neighborhood-boundary";
@@ -134,10 +130,8 @@ export function MapView({
   const [layerToggles, setLayerToggles] = useState<LayerToggles>({
     boundary: true,
     permitHeatmap: false,
-    gisLots: false,
     gisBuildings: true,
   });
-  const gisLotsAddedRef = useRef(false);
   const gisBuildingsAddedRef = useRef(false);
   const neighborhoodBoundaryAddedRef = useRef(false);
   const [eraFilter, setEraFilter] = useState<[number, number] | null>(null);
@@ -500,43 +494,6 @@ export function MapView({
     if (map.getLayer(PERMIT_HEATMAP_LAYER)) map.setLayoutProperty(PERMIT_HEATMAP_LAYER, "visibility", vis(layerToggles.permitHeatmap));
   }, [layerToggles, isLoaded]);
 
-  // GIS lots overlay (subdivision scope only — lazy-loaded on first enable)
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !isLoaded) return;
-    if (scope.kind !== "subdivision") return;
-    const vis = (v: boolean) => (v ? "visible" : "none") as "visible" | "none";
-
-    if (layerToggles.gisLots && !gisLotsAddedRef.current) {
-      map.addSource(GIS_LOTS_SOURCE, {
-        type: "geojson",
-        data: `/api/lots-geojson?subdivisionId=${scope.subdivisionId}`,
-      });
-      map.addLayer(
-        {
-          id: GIS_LOTS_FILL_LAYER,
-          type: "fill",
-          source: GIS_LOTS_SOURCE,
-          paint: { "fill-color": "#8b5cf6", "fill-opacity": 0.2 },
-        } as LayerSpecification,
-        STROKE_LAYER
-      );
-      map.addLayer(
-        {
-          id: GIS_LOTS_STROKE_LAYER,
-          type: "line",
-          source: GIS_LOTS_SOURCE,
-          paint: { "line-color": "#8b5cf6", "line-width": 1.2, "line-opacity": 0.85 },
-        } as LayerSpecification,
-        STROKE_LAYER
-      );
-      gisLotsAddedRef.current = true;
-    } else if (gisLotsAddedRef.current) {
-      if (map.getLayer(GIS_LOTS_FILL_LAYER)) map.setLayoutProperty(GIS_LOTS_FILL_LAYER, "visibility", vis(layerToggles.gisLots));
-      if (map.getLayer(GIS_LOTS_STROKE_LAYER)) map.setLayoutProperty(GIS_LOTS_STROKE_LAYER, "visibility", vis(layerToggles.gisLots));
-    }
-  }, [layerToggles.gisLots, isLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
-
   // GIS buildings overlay (all scopes — lazy-loaded on first enable)
   useEffect(() => {
     const map = mapRef.current;
@@ -763,13 +720,6 @@ export function MapView({
                     checked={layerToggles.gisBuildings}
                     onChange={(v) => setLayerToggles((t) => ({ ...t, gisBuildings: v }))}
                   />
-                  {scope.kind === "subdivision" && (
-                    <LayerToggle
-                      label="Plat lots"
-                      checked={layerToggles.gisLots}
-                      onChange={(v) => setLayerToggles((t) => ({ ...t, gisLots: v }))}
-                    />
-                  )}
                 </div>
               </div>
             )}

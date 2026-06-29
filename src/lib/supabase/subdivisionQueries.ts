@@ -216,122 +216,47 @@ export async function fetchSubdivisionsByDecade(
 /** Alias for fetchSubdivisionIndex -- used by the Next.js SubdivisionsContent component. */
 export const fetchSubdivisions = fetchSubdivisionIndex;
 
-/** Parcels belonging to a specific subdivision, with historical lot detail.
- *  Merges two sources: deed-researched property_subdivision_links (with lot/block)
- *  and GIS-bulk-linked parcels (parcels.subdivision_id), deduplicating by PIN.
+/** Parcels belonging to a specific subdivision, sourced exclusively from
+ *  deed-researched property_subdivision_links.
  */
 export async function fetchSubdivisionParcels(
   subdivisionId: string
 ): Promise<Array<{ pin: string; address?: string | null; year_built?: number | null; building_sqft?: number | null; sale_count?: number | null; permit_count?: number | null; lot_number?: string | null; block_number?: string | null; lot_count?: number; is_teardown_rebuild?: boolean | null; teardown_confidence?: string | null }>> {
   if (!supabase) return [];
 
-  // Fetch all three sources in parallel
-  const [{ data: links }, { data: gisLinked }, { data: gisLotIds }] = await Promise.all([
-    supabase
-      .from("property_subdivision_links")
-      .select("pin, lot_number, block_number")
-      .eq("subdivision_id", subdivisionId)
-      .limit(500),
-    supabase
-      .from("parcels")
-      .select("pin_normalized, address, year_built, building_sqft, sale_count, permit_count, is_teardown_rebuild, teardown_confidence, has_deed_research")
-      .eq("subdivision_id", subdivisionId)
-      .limit(1000),
-    supabase
-      .from("gis_lots")
-      .select("id")
-      .eq("subdivision_id", subdivisionId)
-      .limit(200),
-  ]);
-
-  // Third source: parcel_lot_relationships → gis_lots
-  const lotIds = (gisLotIds ?? []).map((l) => (l as Record<string, unknown>).id as string);
-  let plrPins: string[] = [];
-  if (lotIds.length > 0) {
-    const { data: plrRows } = await supabase
-      .from("parcel_lot_relationships")
-      .select("pin_normalized")
-      .in("lot_id", lotIds)
-      .limit(500);
-    plrPins = (plrRows ?? [])
-      .map((r) => (r as Record<string, unknown>).pin_normalized as string)
-      .filter(Boolean);
-  }
+  const { data: links } = await supabase
+    .from("property_subdivision_links")
+    .select("pin, lot_number, block_number")
+    .eq("subdivision_id", subdivisionId)
+    .limit(500);
 
   const deedLinks = (links ?? []) as Array<{ pin: string; lot_number: string | null; block_number: string | null }>;
-  const deedPinSet = new Set(deedLinks.map((r) => r.pin));
+  if (deedLinks.length === 0) return [];
 
-  // GIS-linked parcels not already covered by deed links
-  const gisOnlyRowsRaw = (gisLinked ?? []).filter(
-    (p) => !deedPinSet.has((p as Record<string, unknown>).pin_normalized as string)
-  ) as Array<{ pin_normalized: string; address: string | null; year_built: number | null; building_sqft: number | null; sale_count: number | null; permit_count: number | null; is_teardown_rebuild: boolean | null; teardown_confidence: string | null; has_deed_research: boolean | null }>;
-  const gisPinSet = new Set(gisOnlyRowsRaw.map((r) => r.pin_normalized));
-
-  // PLR-linked parcels not already covered by either deed or GIS links
-  const plrOnlyPinsRaw = plrPins.filter((pin) => !deedPinSet.has(pin) && !gisPinSet.has(pin));
-
-  // Deed-priority exclusion: fallback paths (GIS direct FK, PLR) must not include
-  // parcels that are deed-verified to a DIFFERENT subdivision. Those parcels belong
-  // exclusively to the subdivision confirmed by their deed_legal_description link.
-  const fallbackCandidates = [
-    ...gisOnlyRowsRaw.map((r) => r.pin_normalized),
-    ...plrOnlyPinsRaw,
-  ];
-  const deedVerifiedElsewhere = new Set<string>();
-  if (fallbackCandidates.length > 0) {
-    const { data: conflicting } = await supabase
-      .from("property_subdivision_links")
-      .select("pin")
-      .in("pin", fallbackCandidates)
-      .eq("match_method", "deed_legal_description")
-      .neq("subdivision_id", subdivisionId);
-    (conflicting ?? []).forEach((r) =>
-      deedVerifiedElsewhere.add((r as Record<string, unknown>).pin as string)
-    );
-  }
-
-  const gisOnlyRows = gisOnlyRowsRaw.filter((r) => !deedVerifiedElsewhere.has(r.pin_normalized));
-  const plrOnlyPins = plrOnlyPinsRaw.filter((pin) => !deedVerifiedElsewhere.has(pin));
-
-  if (deedLinks.length === 0 && gisOnlyRows.length === 0 && plrOnlyPins.length === 0) return [];
-
-  // Fetch parcel data for PLR-only pins
-  let plrParcelRows: Array<{ pin_normalized: string; address: string | null; year_built: number | null; building_sqft: number | null; sale_count: number | null; permit_count: number | null; is_teardown_rebuild: boolean | null; teardown_confidence: string | null; has_deed_research: boolean | null }> = [];
-  if (plrOnlyPins.length > 0) {
-    const { data: plrParcels } = await supabase
-      .from("parcels")
-      .select("pin_normalized, address, year_built, building_sqft, sale_count, permit_count, is_teardown_rebuild, teardown_confidence, has_deed_research")
-      .in("pin_normalized", plrOnlyPins);
-    plrParcelRows = (plrParcels ?? []) as typeof plrParcelRows;
-  }
+  const deedPins = deedLinks.map((r) => r.pin);
 
   // Fetch lot-level detail from subdivision_lots for deed pins
   const lotsMap = new Map<string, Array<{ lot_number: string | null; block_number: string | null }>>();
-  if (deedLinks.length > 0) {
-    const deedPins = deedLinks.map((r) => r.pin);
-    const { data: lots } = await supabase
-      .from("subdivision_lots")
-      .select("current_pin, lot_number, block_number")
-      .eq("subdivision_id", subdivisionId)
-      .in("current_pin", deedPins);
-    (lots ?? []).forEach((l: Record<string, unknown>) => {
-      const p = String(l.current_pin ?? "");
-      if (!lotsMap.has(p)) lotsMap.set(p, []);
-      lotsMap.get(p)!.push({ lot_number: l.lot_number as string | null, block_number: l.block_number as string | null });
-    });
-  }
+  const { data: lots } = await supabase
+    .from("subdivision_lots")
+    .select("current_pin, lot_number, block_number")
+    .eq("subdivision_id", subdivisionId)
+    .in("current_pin", deedPins);
+  (lots ?? []).forEach((l: Record<string, unknown>) => {
+    const p = String(l.current_pin ?? "");
+    if (!lotsMap.has(p)) lotsMap.set(p, []);
+    lotsMap.get(p)!.push({ lot_number: l.lot_number as string | null, block_number: l.block_number as string | null });
+  });
 
   // Fetch parcel data for deed pins
   const parcelMap = new Map<string, Record<string, unknown>>();
-  if (deedLinks.length > 0) {
-    const { data: parcels } = await supabase
-      .from("parcels")
-      .select("pin_normalized, address, year_built, building_sqft, sale_count, permit_count, is_teardown_rebuild, teardown_confidence, has_deed_research")
-      .in("pin_normalized", deedLinks.map((r) => r.pin));
-    (parcels ?? []).forEach((p) => parcelMap.set((p as Record<string, unknown>).pin_normalized as string, p as Record<string, unknown>));
-  }
+  const { data: parcels } = await supabase
+    .from("parcels")
+    .select("pin_normalized, address, year_built, building_sqft, sale_count, permit_count, is_teardown_rebuild, teardown_confidence, has_deed_research")
+    .in("pin_normalized", deedPins);
+  (parcels ?? []).forEach((p) => parcelMap.set((p as Record<string, unknown>).pin_normalized as string, p as Record<string, unknown>));
 
-  const deedRows = deedLinks.map((link) => {
+  return deedLinks.map((link) => {
     const parcel = parcelMap.get(link.pin);
     const pinLots = lotsMap.get(link.pin) ?? [];
     const firstLot = pinLots[0] ?? link;
@@ -350,36 +275,6 @@ export async function fetchSubdivisionParcels(
       has_deed_research: (parcel?.has_deed_research as boolean | null) ?? null,
     };
   });
-
-  const gisRows = gisOnlyRows.map((p) => ({
-    pin: p.pin_normalized,
-    address: p.address,
-    year_built: p.year_built,
-    building_sqft: p.building_sqft,
-    sale_count: p.sale_count,
-    permit_count: p.permit_count,
-    lot_number: null,
-    block_number: null,
-    is_teardown_rebuild: p.is_teardown_rebuild,
-    teardown_confidence: p.teardown_confidence,
-    has_deed_research: p.has_deed_research,
-  }));
-
-  const plrRows = plrParcelRows.map((p) => ({
-    pin: p.pin_normalized,
-    address: p.address,
-    year_built: p.year_built,
-    building_sqft: p.building_sqft,
-    sale_count: p.sale_count,
-    permit_count: p.permit_count,
-    lot_number: null,
-    block_number: null,
-    is_teardown_rebuild: p.is_teardown_rebuild,
-    teardown_confidence: p.teardown_confidence,
-    has_deed_research: p.has_deed_research,
-  }));
-
-  return [...deedRows, ...gisRows, ...plrRows];
 }
 
 /** Parent subdivision for a given subdivision, if set. */
@@ -666,16 +561,11 @@ export async function fetchSubdivisionMapData(
 ): Promise<{ pins: string[]; bbox: [number, number, number, number] | null }> {
   if (!supabase) return { pins: [], bbox: null };
 
-  const [pinsResult, gisPinsResult, bboxResult] = await Promise.all([
+  const [pinsResult, bboxResult] = await Promise.all([
     supabase
       .from("property_subdivision_links")
       .select("pin")
       .eq("subdivision_id", subdivisionId),
-    supabase
-      .from("parcels")
-      .select("pin_normalized")
-      .eq("subdivision_id", subdivisionId)
-      .limit(1000),
     supabase
       .from("subdivision_geometries")
       .select("bbox")
@@ -683,13 +573,9 @@ export async function fetchSubdivisionMapData(
       .single(),
   ]);
 
-  const deedPins = ((pinsResult.data ?? []) as Array<{ pin: string }>)
+  const pins = ((pinsResult.data ?? []) as Array<{ pin: string }>)
     .map((r) => r.pin)
     .filter(Boolean);
-  const gisPins = ((gisPinsResult.data ?? []) as Array<{ pin_normalized: string }>)
-    .map((r) => r.pin_normalized)
-    .filter(Boolean);
-  const pins = [...new Set([...deedPins, ...gisPins])];
 
   const bboxData = (bboxResult.data?.bbox ?? null) as Record<string, number> | null;
   let bbox: [number, number, number, number] | null = bboxData
@@ -774,74 +660,6 @@ export async function fetchBboxForPins(
   const row = (data as Array<{ min_lng: number; min_lat: number; max_lng: number; max_lat: number }>)?.[0];
   if (!row?.min_lng) return null;
   return [row.min_lng, row.min_lat, row.max_lng, row.max_lat];
-}
-
-/** Fetch basic parcel data (address, year_built, etc.) for an arbitrary list of PINs. */
-export async function fetchParcelsForPins(pins: string[]): Promise<SubdivisionParcelRow[]> {
-  if (!supabase || !pins.length) return [];
-  const { data, error } = await supabase
-    .from("parcels")
-    .select("pin_normalized, address, year_built, building_sqft, sale_count, permit_count")
-    .in("pin_normalized", pins);
-  if (error || !data) return [];
-  return (data as Record<string, unknown>[]).map((p) => ({
-    pin: String(p.pin_normalized ?? ""),
-    address: (p.address as string | null) ?? null,
-    year_built: (p.year_built as number | null) ?? null,
-    building_sqft: (p.building_sqft as number | null) ?? null,
-    sale_count: (p.sale_count as number | null) ?? null,
-    permit_count: (p.permit_count as number | null) ?? null,
-    lot_number: null,
-    block_number: null,
-  }));
-}
-
-export type GisLotRow = {
-  id: string;
-  lot_number: string | null;
-  block_number: string | null;
-  pin_normalized: string | null;
-  relationship_type: string | null;
-  overlap_pct_of_parcel: number | null;
-  match_confidence: string | null;
-};
-
-export async function fetchSubdivisionGisLots(subdivisionId: string): Promise<GisLotRow[]> {
-  if (!supabase) return [];
-  try {
-    const { data, error } = await supabase.rpc("get_gis_lots_for_subdivision", {
-      p_subdivision_id: subdivisionId,
-    });
-    if (error || !data) return [];
-    return (data as Record<string, unknown>[]).map((row) => ({
-      id: String(row.id ?? ""),
-      lot_number: (row.lot_number as string | null) ?? null,
-      block_number: (row.block_number as string | null) ?? null,
-      pin_normalized: (row.pin_normalized as string | null) ?? null,
-      relationship_type: (row.relationship_type as string | null) ?? null,
-      overlap_pct_of_parcel: row.overlap_pct_of_parcel != null ? Number(row.overlap_pct_of_parcel) : null,
-      match_confidence: (row.match_confidence as string | null) ?? null,
-    }));
-  } catch {
-    return [];
-  }
-}
-
-/** Returns the subset of pins that are NOT deed-verified to a different subdivision.
- *  Used by the subdivision detail page to exclude GIS-lot pins that belong elsewhere. */
-export async function filterOutDeedVerifiedElsewhere(
-  pins: string[],
-  subdivisionId: string
-): Promise<string[]> {
-  if (!supabase || !pins.length) return pins;
-  const { data } = await supabase
-    .from("property_subdivision_links")
-    .select("pin")
-    .in("pin", pins)
-    .eq("match_method", "deed_legal_description")
-    .neq("subdivision_id", subdivisionId);
-  const excluded = new Set((data ?? []).map((r) => (r as Record<string, unknown>).pin as string));
-  return pins.filter((p) => !excluded.has(p));
 }
 
 // ─── Neighborhoods linked to a subdivision ────────────────────────────────────
