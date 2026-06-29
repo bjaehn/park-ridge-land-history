@@ -21,7 +21,7 @@ LANGUAGE sql STABLE SECURITY DEFINER AS $$
     p.description,
     p.status,
     p.date_issued::date,
-    (p.raw_record->>'amount')::numeric AS amount,
+    NULLIF(p.raw_record->>'amount', '')::numeric AS amount,
     par.address AS address
   FROM permits p
   LEFT JOIN parcels par ON par.pin_normalized = p.pin
