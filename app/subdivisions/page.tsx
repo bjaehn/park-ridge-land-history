@@ -39,11 +39,11 @@ export default async function SubdivisionsPage() {
 
       <SubdivisionsContent subdivisions={subdivisions} />
 
-      <section className="mt-12 pt-8 border-t border-surface-border">
+      <section className="mt-12 pt-8 border-t border-surface-border w-full">
         <h2 className="text-sm font-semibold text-text-secondary mb-3">
           About subdivision records
         </h2>
-        <div className="space-y-2 max-w-prose">
+        <div className="space-y-2">
           <p className="text-sm text-text-muted leading-relaxed">
             Subdivision records come from the Cook County Recorder of Deeds plat index, the Cook
             County Assessor parcel database, and GIS lot layer matching. Recording dates and
