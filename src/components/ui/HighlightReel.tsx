@@ -4,16 +4,31 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { formatAddress, formatNumber } from "@/lib/formatters";
 import { fetchHighlights } from "@/lib/data/highlights";
-import { YearBuiltIcon, SizeIcon, PermitIcon, SaleIcon } from "@/lib/icons";
 import type { HighlightScope, HighlightCategory, HighlightParcel } from "@/lib/data/highlights";
 
-const CATEGORY_ACCENT: Record<HighlightCategory, { border: string; heading: string }> = {
-  oldest:           { border: "#e6a64a", heading: "#e6a64a" },
-  most_active:      { border: "#4fb6a8", heading: "#4fb6a8" },
-  newest:           { border: "#8b7ff0", heading: "#8b7ff0" },
-  most_recent_sale: { border: "#c96a70", heading: "#c96a70" },
-  largest:          { border: "#4a90d9", heading: "#4a90d9" },
+const CATEGORY_ACCENT: Record<HighlightCategory, string> = {
+  oldest:           "#e6a64a",
+  most_active:      "#4fb6a8",
+  newest:           "#8b7ff0",
+  most_recent_sale: "#c96a70",
+  largest:          "#4a90d9",
 };
+
+function primaryMetric(category: HighlightCategory, item: HighlightParcel): string | null {
+  switch (category) {
+    case "oldest":
+    case "newest":
+      return item.yearBuilt != null ? `Built ${item.yearBuilt}` : null;
+    case "most_active":
+      return item.permitCount != null && item.permitCount > 0
+        ? `${item.permitCount} ${item.permitCount === 1 ? "permit" : "permits"}`
+        : null;
+    case "most_recent_sale":
+      return item.latestSaleYear != null ? `Sold ${item.latestSaleYear}` : null;
+    case "largest":
+      return item.buildingSqft != null ? `${formatNumber(item.buildingSqft)} sqft` : null;
+  }
+}
 
 export type HighlightGroup = {
   heading: string;
@@ -53,16 +68,20 @@ export function HighlightReel({ scope, scopeId, groups, limit = 5 }: Props) {
 
   if (loading) {
     return (
-      <div className="space-y-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {groups.map((g) => (
           <div key={g.category}>
             <p className="section-heading">{g.heading}</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {Array.from({ length: Math.min(limit, 3) }).map((_, i) => (
+            <div className="space-y-0">
+              {Array.from({ length: limit }).map((_, i) => (
                 <div
                   key={i}
-                  className="h-20 bg-surface-card border border-surface-border rounded-lg animate-pulse"
-                />
+                  className="flex items-center gap-3 py-2.5 border-b border-surface-border last:border-0"
+                >
+                  <div className="w-5 h-4 bg-surface-border rounded animate-pulse shrink-0" />
+                  <div className="flex-1 h-4 bg-surface-border rounded animate-pulse" />
+                  <div className="w-16 h-4 bg-surface-border rounded animate-pulse shrink-0" />
+                </div>
               ))}
             </div>
           </div>
@@ -74,53 +93,37 @@ export function HighlightReel({ scope, scopeId, groups, limit = 5 }: Props) {
   if (!groupData.length) return null;
 
   return (
-    <div className="space-y-8">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {groupData.map((g) => {
         if (!g.items.length) return null;
+        const accent = CATEGORY_ACCENT[g.category];
         return (
           <div key={g.category}>
-            <p className="section-heading" style={{ color: CATEGORY_ACCENT[g.category].heading }}>{g.heading}</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {g.items.map((item) => {
-                const accent = CATEGORY_ACCENT[g.category];
+            <p className="section-heading" style={{ color: accent }}>{g.heading}</p>
+            <div>
+              {g.items.map((item, i) => {
+                const metric = primaryMetric(g.category, item);
                 return (
-                <Link
-                  key={item.pin}
-                  href={`/properties/${encodeURIComponent(item.pin)}`}
-                  className="bg-surface-card border border-surface-border rounded-lg p-4 hover:bg-surface-raised transition-colors border-l-2"
-                  style={{ borderLeftColor: accent.border }}
-                >
-                  <p className="text-sm font-medium text-text-primary leading-snug mb-2">
-                    {formatAddress(item.address)}
-                  </p>
-                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-text-secondary">
-                    {item.yearBuilt != null && (
-                      <span className="flex items-center gap-1">
-                        <YearBuiltIcon size={11} strokeWidth={2} aria-hidden="true" />
-                        {item.yearBuilt}
-                      </span>
+                  <Link
+                    key={item.pin}
+                    href={`/properties/${encodeURIComponent(item.pin)}`}
+                    className="flex items-center gap-3 py-2.5 border-b border-surface-border last:border-0 hover:bg-surface-raised/50 transition-colors rounded px-1 -mx-1"
+                  >
+                    <span
+                      className="text-sm font-bold tabular-nums w-5 text-right shrink-0"
+                      style={{ color: accent }}
+                    >
+                      {i + 1}
+                    </span>
+                    <span className="flex-1 text-sm font-medium text-text-primary truncate">
+                      {formatAddress(item.address)}
+                    </span>
+                    {metric && (
+                      <span className="text-xs text-text-muted shrink-0">{metric}</span>
                     )}
-                    {item.buildingSqft != null && (
-                      <span className="flex items-center gap-1">
-                        <SizeIcon size={11} strokeWidth={2} aria-hidden="true" />
-                        {formatNumber(item.buildingSqft)} sqft
-                      </span>
-                    )}
-                    {item.saleCount != null && item.saleCount > 0 && (
-                      <span className="flex items-center gap-1">
-                        <SaleIcon size={11} strokeWidth={2} aria-hidden="true" />
-                        {item.saleCount} {item.saleCount === 1 ? "sale" : "sales"}
-                      </span>
-                    )}
-                    {item.permitCount != null && item.permitCount > 0 && (
-                      <span className="flex items-center gap-1">
-                        <PermitIcon size={11} strokeWidth={2} aria-hidden="true" />
-                        {item.permitCount} {item.permitCount === 1 ? "permit" : "permits"}
-                      </span>
-                    )}
-                  </div>
-                </Link>
-              );})}
+                  </Link>
+                );
+              })}
             </div>
           </div>
         );

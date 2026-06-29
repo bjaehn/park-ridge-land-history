@@ -7,6 +7,7 @@ export type HighlightParcel = {
   buildingSqft: number | null;
   saleCount: number | null;
   permitCount: number | null;
+  latestSaleYear: number | null;
 };
 
 export type HighlightCategory = "oldest" | "most_active" | "newest" | "most_recent_sale" | "largest";
@@ -55,6 +56,7 @@ export async function fetchHighlights(
         buildingSqft: extra?.building_sqft ?? null,
         saleCount: extra?.sale_count ?? null,
         permitCount: r.permit_count != null ? Number(r.permit_count) : null,
+        latestSaleYear: r.latest_sale_year != null ? Number(r.latest_sale_year) : null,
       };
     });
   } catch {
