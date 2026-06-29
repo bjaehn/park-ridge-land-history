@@ -533,6 +533,7 @@ export function DeedAnalysisPanel({
   const [dismissedChanges, setDismissedChanges] = useState<Set<number>>(new Set());
 
   const max = 5000;
+  const [applyingAll, setApplyingAll] = useState(false);
 
   async function handlePdfUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -546,13 +547,15 @@ export function DeedAnalysisPanel({
     if (pdfErr) { setPdfMsg(`Error: ${pdfErr}`); return; }
     if (text) {
       onDeedNotesChange(text);
-      setPdfMsg("Text extracted from PDF — review below and click Analyze.");
+      setPdfMsg("Text extracted — analyzing…");
+      await analyze(text);
+      setPdfMsg(null);
     }
     e.target.value = "";
   }
 
-  async function analyze() {
-    const liveText = deedNotes.trim();
+  async function analyze(textOverride?: string) {
+    const liveText = (textOverride ?? deedNotes).trim();
     if (!liveText) {
       setError("Paste or upload a deed legal description first.");
       return;
@@ -568,6 +571,78 @@ export function DeedAnalysisPanel({
     setLoading(false);
     if (r.error) { setError(r.error); return; }
     setResult(r.result ?? null);
+  }
+
+  async function applyAll() {
+    if (!result) return;
+    setApplyingAll(true);
+    setError(null);
+
+    for (const [i, link] of result.subdivision_links.entries()) {
+      if (dismissedLinks.has(i)) continue;
+      let resolvedId = link.subdivision_id ?? "";
+      if (!resolvedId && link.subdivision_name) {
+        const r = await ensureSubdivision(link.subdivision_name, "subdivision");
+        if (r.error) { setError(r.error); setApplyingAll(false); return; }
+        resolvedId = r.id ?? "";
+      }
+      if (!resolvedId) continue;
+      const fd = new FormData();
+      fd.set("subdivision_id", resolvedId);
+      fd.set("lot_number", link.lot_number ?? "");
+      fd.set("block_number", link.block_number ?? "");
+      fd.set("confidence_level", link.confidence);
+      fd.set("confidence_reason", link.confidence_reason);
+      fd.set("match_method", "deed_legal_description");
+      fd.set("source_name", "AI deed analysis");
+      fd.set("source_reference", deedNotes.slice(0, 500));
+      const r = await upsertSubdivisionLink(pin, null, fd);
+      if (r?.error) { setError(r.error); setApplyingAll(false); return; }
+    }
+
+    for (const [i, record] of result.lineage_records.entries()) {
+      if (dismissedLineage.has(i)) continue;
+      let resolvedChildId = record.child_subdivision_id ?? null;
+      if (!resolvedChildId && record.child_subdivision) {
+        const r = await ensureSubdivision(record.child_subdivision, "subdivision");
+        if (r.error) { setError(r.error); setApplyingAll(false); return; }
+        resolvedChildId = r.id ?? null;
+      }
+      let resolvedParentId = record.parent_subdivision_id ?? null;
+      if (!resolvedParentId && record.parent_subdivision) {
+        const r = await ensureSubdivision(record.parent_subdivision, "parent_plat");
+        if (r.error) { setError(r.error); setApplyingAll(false); return; }
+        resolvedParentId = r.id ?? null;
+      }
+      const r = await saveLineageRecord(pin, address, { ...record, child_subdivision_id: resolvedChildId, parent_subdivision_id: resolvedParentId }, deedNotes);
+      if (r.error) { setError(r.error); setApplyingAll(false); return; }
+    }
+
+    for (const [i, event] of result.change_events.entries()) {
+      if (dismissedChanges.has(i)) continue;
+      const fd = new FormData();
+      fd.set("event_type", event.event_type);
+      fd.set("event_year", event.event_year?.toString() ?? "");
+      fd.set("description", event.description);
+      fd.set("confidence_level", event.confidence);
+      fd.set("date_precision", event.event_year ? "year" : "unknown");
+      const r = await upsertChangeEvent(null, fd);
+      if (r.error) { setError(r.error); setApplyingAll(false); return; }
+      if (r.id && event.related_pins.length > 0) {
+        for (const relPin of event.related_pins) {
+          const edgeFd = new FormData();
+          edgeFd.set("pin", relPin);
+          edgeFd.set("side", "predecessor");
+          await upsertLineageEdge(r.id, null, edgeFd);
+        }
+      }
+    }
+
+    setDismissedLinks(new Set(result.subdivision_links.map((_, i) => i)));
+    setDismissedLineage(new Set(result.lineage_records.map((_, i) => i)));
+    setDismissedChanges(new Set(result.change_events.map((_, i) => i)));
+    setApplyingAll(false);
+    router.refresh();
   }
 
   function handleApplied() {
@@ -621,8 +696,8 @@ export function DeedAnalysisPanel({
         </label>
         <button
           type="button"
-          onClick={analyze}
-          disabled={loading}
+          onClick={() => analyze()}
+          disabled={loading || applyingAll}
           className="text-xs bg-accent-teal text-surface-base font-semibold px-4 py-1.5 rounded hover:opacity-90 transition-opacity disabled:opacity-50"
         >
           {loading ? "Analyzing…" : result ? "Re-analyze" : "Analyze Deed"}
@@ -640,7 +715,7 @@ export function DeedAnalysisPanel({
       {error && (
         <div className="bg-accent-red/10 border border-accent-red/30 rounded p-3 text-xs text-accent-red">
           {error}
-          <button type="button" onClick={analyze} className="ml-3 underline">
+          <button type="button" onClick={() => analyze()} className="ml-3 underline">
             Retry
           </button>
         </div>
@@ -654,6 +729,19 @@ export function DeedAnalysisPanel({
 
       {result && hasContent && (
         <div className="mt-2">
+          {/* Apply All shortcut */}
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-xs text-text-muted">Review below or save everything at once with AI defaults.</p>
+            <button
+              type="button"
+              onClick={applyAll}
+              disabled={applyingAll || loading}
+              className="text-xs bg-accent-teal text-surface-base font-semibold px-4 py-1.5 rounded hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              {applyingAll ? "Saving…" : "Apply All & Save"}
+            </button>
+          </div>
+
           {/* New subdivision names warning */}
           {result.new_subdivision_names.length > 0 && (
             <div className="bg-yellow-500/10 border border-yellow-500/30 rounded p-3 text-xs text-yellow-300 mb-4">
