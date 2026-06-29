@@ -16,6 +16,7 @@ const NAV_LINKS: NavLink[] = [
   { href: "/neighborhoods", label: "Neighborhoods" },
   { href: "/subdivisions",  label: "Subdivisions"  },
   { href: "/streets",       label: "Streets"       },
+  { href: "/permits",       label: "Permits"       },
   { href: "/city",          label: "City history"  },
 ];
 
