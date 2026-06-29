@@ -5,6 +5,11 @@ import Link from "next/link";
 import { PERMIT_CATEGORIES, type PermitListRow } from "@/lib/supabase/permitQueries";
 
 const LIST_LIMIT = 100;
+const HIGHLIGHT_LIMIT = 6;
+
+// Accent colors matching HighlightReel conventions
+const RESIDENTIAL_ACCENT = "#4a90d9";
+const COMMERCIAL_ACCENT  = "#e6a64a";
 
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return "Unknown date";
@@ -20,6 +25,41 @@ function formatAmount(amount: number | null): string | null {
 
 function formatPin(pin: string): string {
   return pin.replace(/(\d{2})(\d{2})(\d{3})(\d{3})(\d{4})/, "$1-$2-$3-$4-$5");
+}
+
+function topByAmount(permits: PermitListRow[], typeToken: string, limit: number): PermitListRow[] {
+  return permits
+    .filter((p) => (p.amount ?? 0) > 0 && p.permit_type?.toUpperCase().includes(typeToken))
+    .sort((a, b) => (b.amount ?? 0) - (a.amount ?? 0))
+    .slice(0, limit);
+}
+
+type HighlightCardProps = {
+  permit: PermitListRow;
+  accentColor: string;
+};
+
+function HighlightCard({ permit, accentColor }: HighlightCardProps) {
+  return (
+    <Link
+      href={`/properties/${encodeURIComponent(permit.pin)}`}
+      className="bg-surface-card border border-surface-border rounded-lg p-4 hover:bg-surface-raised transition-colors border-l-2 flex flex-col gap-2"
+      style={{ borderLeftColor: accentColor }}
+    >
+      <p className="text-sm font-medium text-text-primary leading-snug">
+        {permit.address ?? formatPin(permit.pin)}
+      </p>
+      <p className="text-xs text-text-secondary leading-snug line-clamp-2 flex-1">
+        {permit.description ?? "No description"}
+      </p>
+      <div className="flex items-center justify-between gap-2 mt-auto">
+        <span className="text-sm font-semibold text-text-primary">
+          {formatAmount(permit.amount)}
+        </span>
+        <span className="text-xs text-text-muted">{formatDate(permit.date_issued)}</span>
+      </div>
+    </Link>
+  );
 }
 
 type Props = {
@@ -44,6 +84,15 @@ export function PermitsContent({ permits }: Props) {
     return { total: permits.length, residential, commercial, minYear, maxYear };
   }, [permits]);
 
+  const topResidential = useMemo(
+    () => topByAmount(permits, "RESIDENTIAL", HIGHLIGHT_LIMIT),
+    [permits]
+  );
+  const topCommercial = useMemo(
+    () => topByAmount(permits, "COMMERCIAL", HIGHLIGHT_LIMIT),
+    [permits]
+  );
+
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const p of permits) {
@@ -61,7 +110,7 @@ export function PermitsContent({ permits }: Props) {
   const overflow = filtered.length - displayed.length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       {/* Page header */}
       <div>
         <p className="text-xs font-semibold text-text-muted tracking-widest uppercase mb-1">
@@ -103,10 +152,40 @@ export function PermitsContent({ permits }: Props) {
         </div>
       </div>
 
+      {/* Most expensive permits — highlight reel */}
+      <div className="space-y-8">
+        {topResidential.length > 0 && (
+          <div>
+            <p className="section-heading" style={{ color: RESIDENTIAL_ACCENT }}>
+              Most expensive residential permits
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {topResidential.map((p) => (
+                <HighlightCard key={p.id} permit={p} accentColor={RESIDENTIAL_ACCENT} />
+              ))}
+            </div>
+          </div>
+        )}
+        {topCommercial.length > 0 && (
+          <div>
+            <p className="section-heading" style={{ color: COMMERCIAL_ACCENT }}>
+              Most expensive commercial permits
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {topCommercial.map((p) => (
+                <HighlightCard key={p.id} permit={p} accentColor={COMMERCIAL_ACCENT} />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <hr className="border-surface-border" />
+
       {/* Category filter chips */}
       <div>
         <div className="text-xs font-semibold text-text-muted tracking-widest uppercase mb-2">
-          Work category
+          Browse by work category
         </div>
         <div className="flex flex-wrap gap-2">
           <button
@@ -119,9 +198,7 @@ export function PermitsContent({ permits }: Props) {
             }`}
           >
             All
-            <span className="ml-1.5 text-xs opacity-70">
-              {stats.total}
-            </span>
+            <span className="ml-1.5 text-xs opacity-70">{stats.total}</span>
           </button>
           {PERMIT_CATEGORIES.map((cat) => {
             const count = categoryCounts[cat.key] ?? 0;
