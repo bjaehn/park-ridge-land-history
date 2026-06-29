@@ -516,7 +516,7 @@ export function SubdivisionDetailContent({
                                 eraSwatch={getEraColor(p.year_built)}
                                 isTeardownRebuild={p.is_teardown_rebuild}
                                 teardownConfidence={p.teardown_confidence}
-                                hasDeedNotes={p.has_deed_notes}
+                                hasDeedNotes={p.has_deed_research}
                               />
                             );
                           })}

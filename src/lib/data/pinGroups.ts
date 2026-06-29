@@ -101,7 +101,7 @@ export async function getPinGroupDetail(prefix: string): Promise<PinGroupDetail 
   const pageCount = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
   const db = supabase;
-  const select = "pin_normalized, pin_original, address, year_built, decade_built, building_sqft, latest_assessed_total, sale_count, permit_count, is_teardown_rebuild, teardown_confidence, has_deed_notes, street_name_normalized, official_planning_neighborhood_label, official_planning_neighborhood_slug";
+  const select = "pin_normalized, pin_original, address, year_built, decade_built, building_sqft, latest_assessed_total, sale_count, permit_count, is_teardown_rebuild, teardown_confidence, has_deed_research, street_name_normalized, official_planning_neighborhood_label, official_planning_neighborhood_slug";
 
   const pages = await Promise.all(
     Array.from({ length: pageCount }, (_, i) =>
@@ -127,7 +127,7 @@ export async function getPinGroupDetail(prefix: string): Promise<PinGroupDetail 
     permitCount: (r.permit_count as number | null) ?? null,
     isTeardownRebuild: (r.is_teardown_rebuild as boolean | null) ?? null,
     teardownConfidence: (r.teardown_confidence as string | null) ?? null,
-    hasDeedNotes: (r.has_deed_notes as boolean | null) ?? null,
+    hasDeedNotes: (r.has_deed_research as boolean | null) ?? null,
     streetNameNormalized: (r.street_name_normalized as string | null) ?? null,
     neighborhoodLabel: (r.official_planning_neighborhood_label as string | null) ?? null,
     neighborhoodSlug: (r.official_planning_neighborhood_slug as string | null) ?? null,

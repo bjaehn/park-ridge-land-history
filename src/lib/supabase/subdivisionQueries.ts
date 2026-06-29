@@ -234,7 +234,7 @@ export async function fetchSubdivisionParcels(
       .limit(500),
     supabase
       .from("parcels")
-      .select("pin_normalized, address, year_built, building_sqft, sale_count, permit_count, is_teardown_rebuild, teardown_confidence, has_deed_notes")
+      .select("pin_normalized, address, year_built, building_sqft, sale_count, permit_count, is_teardown_rebuild, teardown_confidence, has_deed_research")
       .eq("subdivision_id", subdivisionId)
       .limit(1000),
     supabase
@@ -264,7 +264,7 @@ export async function fetchSubdivisionParcels(
   // GIS-linked parcels not already covered by deed links
   const gisOnlyRowsRaw = (gisLinked ?? []).filter(
     (p) => !deedPinSet.has((p as Record<string, unknown>).pin_normalized as string)
-  ) as Array<{ pin_normalized: string; address: string | null; year_built: number | null; building_sqft: number | null; sale_count: number | null; permit_count: number | null; is_teardown_rebuild: boolean | null; teardown_confidence: string | null; has_deed_notes: boolean | null }>;
+  ) as Array<{ pin_normalized: string; address: string | null; year_built: number | null; building_sqft: number | null; sale_count: number | null; permit_count: number | null; is_teardown_rebuild: boolean | null; teardown_confidence: string | null; has_deed_research: boolean | null }>;
   const gisPinSet = new Set(gisOnlyRowsRaw.map((r) => r.pin_normalized));
 
   // PLR-linked parcels not already covered by either deed or GIS links
@@ -296,11 +296,11 @@ export async function fetchSubdivisionParcels(
   if (deedLinks.length === 0 && gisOnlyRows.length === 0 && plrOnlyPins.length === 0) return [];
 
   // Fetch parcel data for PLR-only pins
-  let plrParcelRows: Array<{ pin_normalized: string; address: string | null; year_built: number | null; building_sqft: number | null; sale_count: number | null; permit_count: number | null; is_teardown_rebuild: boolean | null; teardown_confidence: string | null; has_deed_notes: boolean | null }> = [];
+  let plrParcelRows: Array<{ pin_normalized: string; address: string | null; year_built: number | null; building_sqft: number | null; sale_count: number | null; permit_count: number | null; is_teardown_rebuild: boolean | null; teardown_confidence: string | null; has_deed_research: boolean | null }> = [];
   if (plrOnlyPins.length > 0) {
     const { data: plrParcels } = await supabase
       .from("parcels")
-      .select("pin_normalized, address, year_built, building_sqft, sale_count, permit_count, is_teardown_rebuild, teardown_confidence, has_deed_notes")
+      .select("pin_normalized, address, year_built, building_sqft, sale_count, permit_count, is_teardown_rebuild, teardown_confidence, has_deed_research")
       .in("pin_normalized", plrOnlyPins);
     plrParcelRows = (plrParcels ?? []) as typeof plrParcelRows;
   }
@@ -326,7 +326,7 @@ export async function fetchSubdivisionParcels(
   if (deedLinks.length > 0) {
     const { data: parcels } = await supabase
       .from("parcels")
-      .select("pin_normalized, address, year_built, building_sqft, sale_count, permit_count, is_teardown_rebuild, teardown_confidence, has_deed_notes")
+      .select("pin_normalized, address, year_built, building_sqft, sale_count, permit_count, is_teardown_rebuild, teardown_confidence, has_deed_research")
       .in("pin_normalized", deedLinks.map((r) => r.pin));
     (parcels ?? []).forEach((p) => parcelMap.set((p as Record<string, unknown>).pin_normalized as string, p as Record<string, unknown>));
   }
@@ -347,7 +347,7 @@ export async function fetchSubdivisionParcels(
       lot_count: pinLots.length > 1 ? pinLots.length : undefined,
       is_teardown_rebuild: (parcel?.is_teardown_rebuild as boolean | null) ?? null,
       teardown_confidence: (parcel?.teardown_confidence as string | null) ?? null,
-      has_deed_notes: (parcel?.has_deed_notes as boolean | null) ?? null,
+      has_deed_research: (parcel?.has_deed_research as boolean | null) ?? null,
     };
   });
 
@@ -362,7 +362,7 @@ export async function fetchSubdivisionParcels(
     block_number: null,
     is_teardown_rebuild: p.is_teardown_rebuild,
     teardown_confidence: p.teardown_confidence,
-    has_deed_notes: p.has_deed_notes,
+    has_deed_research: p.has_deed_research,
   }));
 
   const plrRows = plrParcelRows.map((p) => ({
@@ -376,7 +376,7 @@ export async function fetchSubdivisionParcels(
     block_number: null,
     is_teardown_rebuild: p.is_teardown_rebuild,
     teardown_confidence: p.teardown_confidence,
-    has_deed_notes: p.has_deed_notes,
+    has_deed_research: p.has_deed_research,
   }));
 
   return [...deedRows, ...gisRows, ...plrRows];
@@ -762,7 +762,7 @@ export type SubdivisionParcelRow = {
   lot_count?: number;
   is_teardown_rebuild?: boolean | null;
   teardown_confidence?: string | null;
-  has_deed_notes?: boolean | null;
+  has_deed_research?: boolean | null;
 };
 
 /** Compute a lat/lng bounding box for an arbitrary list of PINs (uses pins_bbox RPC). */
