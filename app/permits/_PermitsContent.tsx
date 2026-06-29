@@ -1,17 +1,18 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import type { ReactNode } from "react";
 import Link from "next/link";
+import { PermitActivityChart } from "@/components/ui/PermitActivityChart";
+import type { PermitActivityRow } from "@/lib/supabase/cityQueries";
 import { PERMIT_CATEGORIES, type PermitListRow } from "@/lib/supabase/permitQueries";
 
 const LIST_LIMIT = 100;
-const HIGHLIGHT_LIMIT = 6;
+const HIGHLIGHT_LIMIT = 3;
 
-// Accent colors matching HighlightReel conventions
 const RESIDENTIAL_ACCENT = "#4a90d9";
 const COMMERCIAL_ACCENT  = "#e6a64a";
 
-// Per-category accent colors for the "by work category" highlight sections
 const CATEGORY_ACCENT: Record<string, string> = {
   "teardown":         "#c96a70",
   "new-construction": "#4fb6a8",
@@ -20,6 +21,10 @@ const CATEGORY_ACCENT: Record<string, string> = {
   "garage":           "#4a90d9",
   "mechanical":       "#6db86d",
   "fencing":          "#b07dc9",
+  "electrical":       "#f59e0b",
+  "plumbing":         "#38bdf8",
+  "exterior":         "#fb923c",
+  "interior":         "#a78bfa",
   "other":            "#8a9bb0",
 };
 
@@ -35,6 +40,12 @@ function formatAmount(amount: number | null): string | null {
   return "$" + amount.toLocaleString("en-US", { maximumFractionDigits: 0 });
 }
 
+function formatTotalValue(amount: number): string {
+  if (amount >= 1_000_000) return `$${(amount / 1_000_000).toFixed(1)}M`;
+  if (amount >= 1_000) return `$${Math.round(amount / 1_000)}K`;
+  return `$${amount.toLocaleString()}`;
+}
+
 function formatPin(pin: string): string {
   return pin.replace(/(\d{2})(\d{2})(\d{3})(\d{3})(\d{4})/, "$1-$2-$3-$4-$5");
 }
@@ -42,13 +53,6 @@ function formatPin(pin: string): string {
 function topByAmount(permits: PermitListRow[], typeToken: string, limit: number): PermitListRow[] {
   return permits
     .filter((p) => (p.amount ?? 0) > 0 && p.permit_type?.toUpperCase().includes(typeToken))
-    .sort((a, b) => (b.amount ?? 0) - (a.amount ?? 0))
-    .slice(0, limit);
-}
-
-function topByCategoryAmount(permits: PermitListRow[], categoryKey: string, limit: number): PermitListRow[] {
-  return permits
-    .filter((p) => (p.amount ?? 0) > 0 && p.category === categoryKey)
     .sort((a, b) => (b.amount ?? 0) - (a.amount ?? 0))
     .slice(0, limit);
 }
@@ -83,9 +87,10 @@ function HighlightCard({ permit, accentColor }: HighlightCardProps) {
 
 type Props = {
   permits: PermitListRow[];
+  mapSlot?: ReactNode;
 };
 
-export function PermitsContent({ permits }: Props) {
+export function PermitsContent({ permits, mapSlot }: Props) {
   const [selectedCategory, setSelectedCategory] = useState("all");
 
   const stats = useMemo(() => {
@@ -100,7 +105,32 @@ export function PermitsContent({ permits }: Props) {
       .filter((y): y is number => y != null);
     const minYear = years.length ? Math.min(...years) : null;
     const maxYear = years.length ? Math.max(...years) : null;
-    return { total: permits.length, residential, commercial, minYear, maxYear };
+    const totalValue = permits.reduce((sum, p) => sum + (p.amount ?? 0), 0);
+    const teardownCount = permits.filter((p) => p.category === "teardown").length;
+    const newConstructionCount = permits.filter((p) => p.category === "new-construction").length;
+    return { total: permits.length, residential, commercial, minYear, maxYear, totalValue, teardownCount, newConstructionCount };
+  }, [permits]);
+
+  const permitActivity = useMemo((): PermitActivityRow[] => {
+    const byYear = new Map<number, { residential: number; commercial: number }>();
+    for (const p of permits) {
+      if (!p.date_issued) continue;
+      const year = new Date(p.date_issued).getFullYear();
+      const entry = byYear.get(year) ?? { residential: 0, commercial: 0 };
+      if (p.permit_type?.toUpperCase().includes("RESIDENTIAL")) {
+        entry.residential++;
+      } else {
+        entry.commercial++;
+      }
+      byYear.set(year, entry);
+    }
+    return Array.from(byYear.entries())
+      .sort(([a], [b]) => a - b)
+      .map(([year, counts]) => ({
+        permitYear: year,
+        residentialCount: counts.residential,
+        commercialCount: counts.commercial,
+      }));
   }, [permits]);
 
   const topResidential = useMemo(
@@ -109,16 +139,6 @@ export function PermitsContent({ permits }: Props) {
   );
   const topCommercial = useMemo(
     () => topByAmount(permits, "COMMERCIAL", HIGHLIGHT_LIMIT),
-    [permits]
-  );
-
-  // Top N most expensive permits per work category
-  const topByCategory = useMemo(
-    () =>
-      PERMIT_CATEGORIES.map((cat) => ({
-        cat,
-        permits: topByCategoryAmount(permits, cat.key, HIGHLIGHT_LIMIT),
-      })).filter((g) => g.permits.length > 0),
     [permits]
   );
 
@@ -138,6 +158,15 @@ export function PermitsContent({ permits }: Props) {
   const displayed = filtered.slice(0, LIST_LIMIT);
   const overflow = filtered.length - displayed.length;
 
+  const insightParts = [
+    stats.teardownCount > 0
+      ? `${stats.teardownCount} teardown${stats.teardownCount !== 1 ? "s" : ""}`
+      : null,
+    stats.newConstructionCount > 0
+      ? `${stats.newConstructionCount} new home${stats.newConstructionCount !== 1 ? "s" : ""}`
+      : null,
+  ].filter(Boolean);
+
   return (
     <div className="space-y-10">
       {/* Page header */}
@@ -147,41 +176,85 @@ export function PermitsContent({ permits }: Props) {
         </p>
         <h1 className="text-2xl font-bold text-text-primary">Permits</h1>
         <p className="text-text-secondary text-sm mt-1">
-          Building permits issued in Park Ridge, grouped by work category.
+          Track how Park Ridge is being built, renovated, and rebuilt through county-filed building permits.
         </p>
       </div>
 
-      {/* Stat grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-surface-card border border-surface-border rounded-lg p-3">
-          <div className="text-xl font-bold text-text-primary">
-            {stats.total.toLocaleString()}
+      {/* Stat grid + insight */}
+      <div className="space-y-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          <div className="bg-surface-card border border-surface-border rounded-lg p-3">
+            <div className="text-xl font-bold text-text-primary">
+              {stats.total.toLocaleString()}
+            </div>
+            <div className="text-xs text-text-muted mt-0.5">Total permits</div>
           </div>
-          <div className="text-xs text-text-muted mt-0.5">Total permits</div>
-        </div>
-        <div className="bg-surface-card border border-surface-border rounded-lg p-3">
-          <div className="text-xl font-bold text-text-primary">
-            {stats.residential.toLocaleString()}
+          <div className="bg-surface-card border border-surface-border rounded-lg p-3">
+            <div className="text-xl font-bold text-text-primary">
+              {stats.residential.toLocaleString()}
+            </div>
+            <div className="text-xs text-text-muted mt-0.5">Residential</div>
           </div>
-          <div className="text-xs text-text-muted mt-0.5">Residential</div>
-        </div>
-        <div className="bg-surface-card border border-surface-border rounded-lg p-3">
-          <div className="text-xl font-bold text-text-primary">
-            {stats.commercial.toLocaleString()}
+          <div className="bg-surface-card border border-surface-border rounded-lg p-3">
+            <div className="text-xl font-bold text-text-primary">
+              {stats.commercial.toLocaleString()}
+            </div>
+            <div className="text-xs text-text-muted mt-0.5">Commercial</div>
           </div>
-          <div className="text-xs text-text-muted mt-0.5">Commercial</div>
-        </div>
-        <div className="bg-surface-card border border-surface-border rounded-lg p-3">
-          <div className="text-xl font-bold text-text-primary">
-            {stats.minYear && stats.maxYear
-              ? `${stats.minYear}–${stats.maxYear}`
-              : "—"}
+          <div className="bg-surface-card border border-surface-border rounded-lg p-3">
+            <div className="text-xl font-bold text-text-primary">
+              {stats.minYear && stats.maxYear
+                ? `${stats.minYear}–${stats.maxYear}`
+                : "—"}
+            </div>
+            <div className="text-xs text-text-muted mt-0.5">Year range</div>
           </div>
-          <div className="text-xs text-text-muted mt-0.5">Year range</div>
+          {stats.totalValue > 0 && (
+            <div className="bg-surface-card border border-surface-border rounded-lg p-3">
+              <div className="text-xl font-bold text-text-primary">
+                {formatTotalValue(stats.totalValue)}
+              </div>
+              <div className="text-xs text-text-muted mt-0.5">Permitted value</div>
+            </div>
+          )}
         </div>
+
+        {insightParts.length > 0 && (
+          <p className="text-sm text-text-secondary">
+            Includes {insightParts.join(" and ")} — Park Ridge is actively replacing and reinvesting in its housing stock.
+          </p>
+        )}
       </div>
 
-      {/* Most expensive by permit type (residential / commercial) */}
+      {/* Map */}
+      {mapSlot && (
+        <div>
+          <p className="text-xs font-semibold text-text-muted tracking-widest uppercase mb-2">
+            Where permits are concentrated
+          </p>
+          {mapSlot}
+        </div>
+      )}
+
+      {/* Permit activity by year */}
+      {permitActivity.length > 0 && (
+        <div>
+          <p className="section-heading">Permit activity by year</p>
+          <PermitActivityChart data={permitActivity} />
+          <div className="flex gap-4 mt-2 justify-end">
+            <span className="flex items-center gap-1.5 text-xs text-text-muted">
+              <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: "#a78bfa" }} />
+              Residential
+            </span>
+            <span className="flex items-center gap-1.5 text-xs text-text-muted">
+              <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: "#475569" }} />
+              Commercial
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Most expensive permits by type */}
       <div className="space-y-8">
         {topResidential.length > 0 && (
           <div>
@@ -208,32 +281,6 @@ export function PermitsContent({ permits }: Props) {
           </div>
         )}
       </div>
-
-      {/* Most expensive by work category */}
-      {topByCategory.length > 0 && (
-        <div className="space-y-8">
-          <div>
-            <p className="text-xs font-semibold text-text-muted tracking-widest uppercase mb-1">
-              Most expensive by work category
-            </p>
-          </div>
-          {topByCategory.map(({ cat, permits: catPermits }) => {
-            const accent = CATEGORY_ACCENT[cat.key] ?? "#8a9bb0";
-            return (
-              <div key={cat.key}>
-                <p className="section-heading" style={{ color: accent }}>
-                  {cat.label}
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {catPermits.map((p) => (
-                    <HighlightCard key={p.id} permit={p} accentColor={accent} />
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
 
       <hr className="border-surface-border" />
 

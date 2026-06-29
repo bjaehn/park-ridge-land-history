@@ -80,6 +80,7 @@ type Props = {
   /** @deprecated derived from scope internally; passing has no effect */
   compactLegend?: boolean;
   hideLensSelector?: boolean;
+  defaultLens?: MapLens;
 };
 
 // ---------------------------------------------------------------------------
@@ -118,12 +119,13 @@ export function MapView({
   height = "400px",
   showExpand = false,
   hideLensSelector = false,
+  defaultLens,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MaplibreMap | null>(null);
   const statsCallbackRef = useRef<(() => void) | null>(null);
 
-  const [lens, setLens] = useState<MapLens>(DEFAULT_LENS);
+  const [lens, setLens] = useState<MapLens>(defaultLens ?? DEFAULT_LENS);
   const [hoverFeature, setHoverFeature] = useState<HoverFeature>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);

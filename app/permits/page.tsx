@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { SourceNote } from "@/components/ui/SourceNote";
+import { MapView } from "@/components/MapView";
 import { fetchPermitList } from "@/lib/supabase/permitQueries";
 import { PermitsContent } from "./_PermitsContent";
 
@@ -13,6 +14,12 @@ export const metadata: Metadata = {
 export default async function PermitsPage() {
   const permits = await fetchPermitList().catch(() => []);
 
+  const mapSlot = (
+    <div className="map-full-bleed">
+      <MapView scope={{ kind: "city" }} defaultLens="permits" height="min(560px, 60vh)" showExpand />
+    </div>
+  );
+
   return (
     <div className="page-shell max-w-none">
       <Breadcrumb
@@ -22,7 +29,7 @@ export default async function PermitsPage() {
         ]}
       />
 
-      <PermitsContent permits={permits} />
+      <PermitsContent permits={permits} mapSlot={mapSlot} />
 
       <SourceNote
         sources={["permits", "assessor"]}
