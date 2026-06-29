@@ -683,8 +683,16 @@ export function DeedAnalysisPanel({
       />
       <p className="text-xs text-text-muted mt-1 mb-3 text-right">{deedNotes.length} / {max}</p>
 
-      {/* Action row: Upload PDF + Analyze + Recorder */}
+      {/* Action row: Recorder + Upload PDF + Analyze */}
       <div className="flex items-center gap-2 mb-4">
+        <a
+          href={`https://crs.cookcountyclerkil.gov/Search/ResultByPin?id1=${pin}`}
+          target="recorder"
+          rel="noopener noreferrer"
+          className="text-xs border border-surface-border text-text-muted font-medium px-3 py-1.5 rounded hover:text-text-primary hover:border-accent-teal/40 transition-colors"
+        >
+          Cook County Recorder ↗
+        </a>
         <label className={`text-xs border border-surface-border text-text-muted font-medium px-3 py-1.5 rounded cursor-pointer hover:text-text-primary hover:border-accent-teal/40 transition-colors ${pdfLoading ? "opacity-50 pointer-events-none" : ""}`}>
           {pdfLoading ? "Reading PDF…" : "Upload PDF"}
           <input
@@ -702,14 +710,6 @@ export function DeedAnalysisPanel({
         >
           {loading ? "Analyzing…" : result ? "Re-analyze" : "Analyze Deed"}
         </button>
-        <a
-          href={`https://crs.cookcountyclerkil.gov/Search/ResultByPin?id1=${pin}`}
-          target="recorder"
-          rel="noopener noreferrer"
-          className="text-xs border border-surface-border text-text-muted font-medium px-3 py-1.5 rounded hover:text-text-primary hover:border-accent-teal/40 transition-colors"
-        >
-          Cook County Recorder ↗
-        </a>
         {pdfMsg && <p className="text-xs text-accent-teal">{pdfMsg}</p>}
       </div>
 
