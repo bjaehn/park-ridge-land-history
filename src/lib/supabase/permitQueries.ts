@@ -11,6 +11,7 @@ export type PermitListRow = {
   date_issued: string | null;
   amount: number | null;
   address: string | null;
+  neighborhood_name: string | null;
   category: string;
 };
 
@@ -94,6 +95,7 @@ export async function fetchPermitList(): Promise<PermitListRow[]> {
     date_issued: (row.date_issued as string | null) ?? null,
     amount: row.amount != null ? Number(row.amount) : null,
     address: (row.address as string | null) ?? null,
+    neighborhood_name: (row.neighborhood_name as string | null) ?? null,
     category: categorizePermit((row.description as string | null) ?? null),
   }));
 }
