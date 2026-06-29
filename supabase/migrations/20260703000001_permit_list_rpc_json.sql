@@ -1,5 +1,7 @@
 -- Replace RETURNS TABLE with RETURNS json so PostgREST sees 1 row,
 -- bypassing the server-side max-rows cap that was truncating to 1000.
+-- DROP required because PostgreSQL cannot change a function's return type in-place.
+DROP FUNCTION IF EXISTS permit_list();
 CREATE OR REPLACE FUNCTION permit_list()
 RETURNS json
 LANGUAGE sql STABLE SECURITY DEFINER AS $$
