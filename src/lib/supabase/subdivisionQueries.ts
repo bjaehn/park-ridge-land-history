@@ -34,7 +34,7 @@ export async function fetchSubdivisionIndex(): Promise<SubdivisionSummary[]> {
       "id, name, normalized_name, recorded_year, confidence_level, confidence_reason, " +
       "source_name, original_owner, developer, parcel_count, notes, parent_subdivision_id, entity_type, earliest_year_built"
     )
-    .order("recorded_year", { ascending: true, nullsFirst: false })
+    .order("earliest_year_built", { ascending: true, nullsFirst: false })
     .order("normalized_name", { ascending: true });
 
   if (error || !data) return [];

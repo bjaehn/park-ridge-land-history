@@ -14,6 +14,7 @@ export type Subdivision = {
   alternate_names?: string[] | null;
   recorded_date?: string | null;
   recorded_year?: number | null;
+  earliest_year_built?: number | null;
   plat_book?: string | null;
   plat_page?: string | null;
   document_number?: string | null;

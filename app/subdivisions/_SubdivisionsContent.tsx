@@ -62,8 +62,8 @@ export function SubdivisionsContent({ subdivisions }: Props) {
   const availableDecades = useMemo(() => {
     const decades = new Set<number>();
     subdivisions.forEach((s) => {
-      if (s.recorded_year) {
-        decades.add(Math.floor(s.recorded_year / 10) * 10);
+      if (s.earliest_year_built) {
+        decades.add(Math.floor(s.earliest_year_built / 10) * 10);
       }
     });
     return Array.from(decades).sort((a, b) => a - b);
@@ -75,8 +75,8 @@ export function SubdivisionsContent({ subdivisions }: Props) {
       if (confidenceFilter && s.confidence_level !== confidenceFilter) return false;
       if (
         decadeFilter &&
-        (!s.recorded_year ||
-          Math.floor(s.recorded_year / 10) * 10 !== decadeFilter)
+        (!s.earliest_year_built ||
+          Math.floor(s.earliest_year_built / 10) * 10 !== decadeFilter)
       )
         return false;
       if (q.length >= 2) {
@@ -95,16 +95,16 @@ export function SubdivisionsContent({ subdivisions }: Props) {
   const grouped = useMemo(() => {
     const byDecade = new Map<string, SubdivisionSummary[]>();
     filtered.forEach((s) => {
-      const key = s.recorded_year
-        ? `${Math.floor(s.recorded_year / 10) * 10}s`
-        : "Date uncertain";
+      const key = s.earliest_year_built
+        ? `${Math.floor(s.earliest_year_built / 10) * 10}s`
+        : "Date unknown";
       const arr = byDecade.get(key) ?? [];
       arr.push(s);
       byDecade.set(key, arr);
     });
     return Array.from(byDecade.entries()).sort(([a], [b]) => {
-      if (a === "Date uncertain") return 1;
-      if (b === "Date uncertain") return -1;
+      if (a === "Date unknown") return 1;
+      if (b === "Date unknown") return -1;
       return a.localeCompare(b);
     });
   }, [filtered]);
@@ -238,7 +238,7 @@ export function SubdivisionsContent({ subdivisions }: Props) {
                     aria-hidden="true"
                   />
                   <span className="text-sm font-semibold text-text-secondary tracking-wide">
-                    {decade}
+                    {decadeYear ? `First built ${decade}` : decade}
                   </span>
                   <div className="flex-1 border-t border-surface-border" />
                   <span className="text-xs text-text-muted">
@@ -254,18 +254,6 @@ export function SubdivisionsContent({ subdivisions }: Props) {
                     const typeLabel = entityTypeLabel(s.entity_type);
 
                     const metaItems: MetaItem[] = [
-                      s.recorded_year
-                        ? {
-                            icon: (
-                              <YearBuiltIcon
-                                size={11}
-                                strokeWidth={1.8}
-                                aria-hidden="true"
-                              />
-                            ),
-                            value: `Recorded ${s.recorded_year}`,
-                          }
-                        : null,
                       s.earliest_year_built
                         ? {
                             icon: (
@@ -276,6 +264,18 @@ export function SubdivisionsContent({ subdivisions }: Props) {
                               />
                             ),
                             value: `First built ${s.earliest_year_built}`,
+                          }
+                        : null,
+                      s.recorded_year
+                        ? {
+                            icon: (
+                              <YearBuiltIcon
+                                size={11}
+                                strokeWidth={1.8}
+                                aria-hidden="true"
+                              />
+                            ),
+                            value: `Recorded ${s.recorded_year}`,
                           }
                         : null,
                       s.parcel_count && s.parcel_count > 0
@@ -316,7 +316,7 @@ export function SubdivisionsContent({ subdivisions }: Props) {
                           parentName ? `Part of ${parentName}` : undefined
                         }
                         metaItems={metaItems}
-                        eraSwatch={getEraColor(s.recorded_year) ?? undefined}
+                        eraSwatch={getEraColor(s.earliest_year_built) ?? undefined}
                       />
                     );
                   })}
