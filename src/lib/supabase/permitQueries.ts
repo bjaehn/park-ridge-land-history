@@ -28,6 +28,10 @@ export const PERMIT_CATEGORIES: PermitCategoryMeta[] = [
   { key: "garage",          label: "Garage",                description: "Garage construction and modifications" },
   { key: "mechanical",      label: "Mechanical / HVAC",     description: "Heating, cooling, and mechanical system work" },
   { key: "fencing",         label: "Fencing",               description: "Fence installation and replacement" },
+  { key: "electrical",      label: "Electrical",            description: "Electrical panels, wiring, and service upgrades" },
+  { key: "plumbing",        label: "Plumbing",              description: "Plumbing, sewer, and water service work" },
+  { key: "exterior",        label: "Exterior",              description: "Windows, doors, siding, and exterior repairs" },
+  { key: "interior",        label: "Interior Remodel",      description: "Interior renovations, kitchens, baths, and remodeling" },
   { key: "other",           label: "Other",                 description: "Miscellaneous permit work" },
 ];
 
@@ -37,13 +41,41 @@ export function categorizePermit(description: string | null): string {
   if (d.includes("deconstruction") || d.includes("demolition")) return "teardown";
   if (
     (d.includes("new") && d.includes("single family")) ||
-    d.includes("new construction")
+    d.includes("new construction") ||
+    d.includes("new house") ||
+    d.includes("new home") ||
+    d.includes("new sfr")
   ) return "new-construction";
   if (d.includes("addition")) return "addition";
-  if (d.includes("roof")) return "roofing";
+  if (d.includes("roof") || d.includes("shingle") || d.includes("gutter")) return "roofing";
   if (d.includes("garage")) return "garage";
-  if (d.includes("hvac") || d.includes("mechanical") || d.includes("furnace") || d.includes("boiler")) return "mechanical";
+  if (
+    d.includes("hvac") || d.includes("mechanical") || d.includes("furnace") ||
+    d.includes("boiler") || d.includes("air condition") || d.includes("heat pump") ||
+    d.includes("cooling") || d.includes("heating") || d.includes("water heater") ||
+    d.includes("hot water") || d.includes("air handler")
+  ) return "mechanical";
   if (d.includes("fence") || d.includes("fencing")) return "fencing";
+  if (
+    d.includes("electrical") || d.includes("electric panel") || d.includes("wiring") ||
+    d.includes("rewire") || d.includes("circuit") || d.includes("service upgrade") ||
+    d.includes("generator") || d.includes("panel upgrade") || d.includes("ev charger") ||
+    d.includes("solar panel") || d.includes("photovoltaic")
+  ) return "electrical";
+  if (
+    d.includes("plumbing") || d.includes("sewer") || d.includes("water service") ||
+    d.includes("water main") || d.includes("sanitary") || d.includes("drain")
+  ) return "plumbing";
+  if (
+    d.includes("window") || d.includes("door") || d.includes("siding") ||
+    d.includes("exterior") || d.includes("tuck-point") || d.includes("tuckpoint") ||
+    d.includes("masonry repair")
+  ) return "exterior";
+  if (
+    d.includes("remodel") || d.includes("renovation") || d.includes("interior") ||
+    d.includes("kitchen") || d.includes("bathroom") || d.includes("basement") ||
+    d.includes("drywall") || d.includes("flooring") || d.includes("insulation")
+  ) return "interior";
   return "other";
 }
 
