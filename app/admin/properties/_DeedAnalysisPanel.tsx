@@ -16,6 +16,7 @@ import {
   upsertSubdivisionLink,
   upsertChangeEvent,
   upsertLineageEdge,
+  saveDeedNotes,
 } from "../_actions/properties";
 
 const LABEL = "block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1";
@@ -577,6 +578,10 @@ export function DeedAnalysisPanel({
     if (!result) return;
     setApplyingAll(true);
     setError(null);
+
+    // Save deed_notes text first — "Apply All & Save" must persist the source text
+    const saveResult = await saveDeedNotes(pin, deedNotes);
+    if (saveResult?.error) { setError(saveResult.error); setApplyingAll(false); return; }
 
     for (const [i, link] of result.subdivision_links.entries()) {
       if (dismissedLinks.has(i)) continue;

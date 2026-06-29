@@ -22,6 +22,16 @@ function flt(fd: FormData, key: string): number | null {
 
 // ─── Parcel core fields ───────────────────────────────────────────────────────
 
+export async function saveDeedNotes(pin: string, notes: string) {
+  const { error } = await adminSupabase
+    .from("parcels")
+    .update({ deed_notes: notes.trim() || null })
+    .eq("pin_normalized", pin);
+  if (error) return { error: error.message };
+  revalidatePath(`/admin/properties/${encodeURIComponent(pin)}`);
+  return {};
+}
+
 export async function updateParcel(pin: string, formData: FormData) {
   const { error } = await adminSupabase
     .from("parcels")
