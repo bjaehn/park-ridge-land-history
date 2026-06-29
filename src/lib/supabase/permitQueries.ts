@@ -49,7 +49,7 @@ export function categorizePermit(description: string | null): string {
 
 export async function fetchPermitList(): Promise<PermitListRow[]> {
   if (!supabase) return [];
-  const { data, error } = await supabase.rpc("permit_list");
+  const { data, error } = await supabase.rpc("permit_list").range(0, 9999);
   if (error || !data) return [];
   return (data as Array<Record<string, unknown>>).map((row) => ({
     id: String(row.id),
