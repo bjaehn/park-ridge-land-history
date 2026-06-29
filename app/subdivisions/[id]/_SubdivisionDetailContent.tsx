@@ -34,6 +34,7 @@ import {
   fetchSubdivisionGisLots,
   fetchParcelsForPins,
   fetchNeighborhoodsForSubdivision,
+  filterOutDeedVerifiedElsewhere,
 } from "@/lib/supabase/subdivisionQueries";
 import { fetchBlockSalesStats } from "@/lib/supabase/blockQueries";
 import type {
@@ -94,9 +95,14 @@ export function SubdivisionDetailContent({
         setNeighborhoods(neighborhoodRows);
 
         const deedPinSet = new Set(deedRows.map((p) => p.pin).filter(Boolean));
-        const gisOnlyLots = lotRows.filter(
+        const candidateLots = lotRows.filter(
           (l) => l.pin_normalized && !deedPinSet.has(l.pin_normalized)
         );
+        const candidatePins = candidateLots.map((l) => l.pin_normalized!);
+        const allowedPins = new Set(
+          await filterOutDeedVerifiedElsewhere(candidatePins, subdivisionId)
+        );
+        const gisOnlyLots = candidateLots.filter((l) => allowedPins.has(l.pin_normalized!));
         const gisOnlyPins = gisOnlyLots.map((l) => l.pin_normalized!);
         const allPins = [...deedPinSet, ...gisOnlyPins].filter(Boolean);
 

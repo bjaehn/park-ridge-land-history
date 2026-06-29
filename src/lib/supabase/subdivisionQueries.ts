@@ -827,6 +827,23 @@ export async function fetchSubdivisionGisLots(subdivisionId: string): Promise<Gi
   }
 }
 
+/** Returns the subset of pins that are NOT deed-verified to a different subdivision.
+ *  Used by the subdivision detail page to exclude GIS-lot pins that belong elsewhere. */
+export async function filterOutDeedVerifiedElsewhere(
+  pins: string[],
+  subdivisionId: string
+): Promise<string[]> {
+  if (!supabase || !pins.length) return pins;
+  const { data } = await supabase
+    .from("property_subdivision_links")
+    .select("pin")
+    .in("pin", pins)
+    .eq("match_method", "deed_legal_description")
+    .neq("subdivision_id", subdivisionId);
+  const excluded = new Set((data ?? []).map((r) => (r as Record<string, unknown>).pin as string));
+  return pins.filter((p) => !excluded.has(p));
+}
+
 // ─── Neighborhoods linked to a subdivision ────────────────────────────────────
 
 export type SubdivisionNeighborhoodLink = {
