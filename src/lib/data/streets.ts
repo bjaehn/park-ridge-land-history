@@ -1,6 +1,21 @@
 import { supabase } from "../supabase/client";
 import type { DecadeRow } from "../../components/ui/ConstructionByDecadeChart";
 
+export type StreetListRow = {
+  street_name_normalized: string;
+  display_name: string;
+  parcel_count: number;
+  median_year: number | null;
+  oldest_year: number | null;
+  newest_year: number | null;
+  total_permits: number;
+  total_sales: number;
+  teardown_count: number;
+  neighborhood_id: string | null;
+  neighborhood_label: string | null;
+  neighborhood_slug: string | null;
+};
+
 export type StreetSummary = {
   name: string;
   normalizedName: string;
@@ -28,6 +43,26 @@ export type StreetDetail = StreetSummary & {
   decadeRows: DecadeRow[];
   parcels: StreetParcelRow[];
 };
+
+export async function fetchStreetList(): Promise<StreetListRow[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc("street_list");
+  if (error || !data) return [];
+  return (data as Array<Record<string, unknown>>).map((row) => ({
+    street_name_normalized: String(row.street_name_normalized ?? ""),
+    display_name: String(row.display_name ?? ""),
+    parcel_count: Number(row.parcel_count ?? 0),
+    median_year: row.median_year != null ? Number(row.median_year) : null,
+    oldest_year: row.oldest_year != null ? Number(row.oldest_year) : null,
+    newest_year: row.newest_year != null ? Number(row.newest_year) : null,
+    total_permits: Number(row.total_permits ?? 0),
+    total_sales: Number(row.total_sales ?? 0),
+    teardown_count: Number(row.teardown_count ?? 0),
+    neighborhood_id: (row.neighborhood_id as string | null) ?? null,
+    neighborhood_label: (row.neighborhood_label as string | null) ?? null,
+    neighborhood_slug: (row.neighborhood_slug as string | null) ?? null,
+  }));
+}
 
 export async function getStreetByName(rawName: string): Promise<StreetSummary> {
   const normalized = rawName.toLowerCase().trim().replace(/-/g, " ");
