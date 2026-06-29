@@ -11,6 +11,18 @@ const HIGHLIGHT_LIMIT = 6;
 const RESIDENTIAL_ACCENT = "#4a90d9";
 const COMMERCIAL_ACCENT  = "#e6a64a";
 
+// Per-category accent colors for the "by work category" highlight sections
+const CATEGORY_ACCENT: Record<string, string> = {
+  "teardown":         "#c96a70",
+  "new-construction": "#4fb6a8",
+  "addition":         "#8b7ff0",
+  "roofing":          "#e6a64a",
+  "garage":           "#4a90d9",
+  "mechanical":       "#6db86d",
+  "fencing":          "#b07dc9",
+  "other":            "#8a9bb0",
+};
+
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return "Unknown date";
   const d = new Date(dateStr);
@@ -30,6 +42,13 @@ function formatPin(pin: string): string {
 function topByAmount(permits: PermitListRow[], typeToken: string, limit: number): PermitListRow[] {
   return permits
     .filter((p) => (p.amount ?? 0) > 0 && p.permit_type?.toUpperCase().includes(typeToken))
+    .sort((a, b) => (b.amount ?? 0) - (a.amount ?? 0))
+    .slice(0, limit);
+}
+
+function topByCategoryAmount(permits: PermitListRow[], categoryKey: string, limit: number): PermitListRow[] {
+  return permits
+    .filter((p) => (p.amount ?? 0) > 0 && p.category === categoryKey)
     .sort((a, b) => (b.amount ?? 0) - (a.amount ?? 0))
     .slice(0, limit);
 }
@@ -93,6 +112,16 @@ export function PermitsContent({ permits }: Props) {
     [permits]
   );
 
+  // Top N most expensive permits per work category
+  const topByCategory = useMemo(
+    () =>
+      PERMIT_CATEGORIES.map((cat) => ({
+        cat,
+        permits: topByCategoryAmount(permits, cat.key, HIGHLIGHT_LIMIT),
+      })).filter((g) => g.permits.length > 0),
+    [permits]
+  );
+
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const p of permits) {
@@ -152,7 +181,7 @@ export function PermitsContent({ permits }: Props) {
         </div>
       </div>
 
-      {/* Most expensive permits — highlight reel */}
+      {/* Most expensive by permit type (residential / commercial) */}
       <div className="space-y-8">
         {topResidential.length > 0 && (
           <div>
@@ -179,6 +208,32 @@ export function PermitsContent({ permits }: Props) {
           </div>
         )}
       </div>
+
+      {/* Most expensive by work category */}
+      {topByCategory.length > 0 && (
+        <div className="space-y-8">
+          <div>
+            <p className="text-xs font-semibold text-text-muted tracking-widest uppercase mb-1">
+              Most expensive by work category
+            </p>
+          </div>
+          {topByCategory.map(({ cat, permits: catPermits }) => {
+            const accent = CATEGORY_ACCENT[cat.key] ?? "#8a9bb0";
+            return (
+              <div key={cat.key}>
+                <p className="section-heading" style={{ color: accent }}>
+                  {cat.label}
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {catPermits.map((p) => (
+                    <HighlightCard key={p.id} permit={p} accentColor={accent} />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       <hr className="border-surface-border" />
 
