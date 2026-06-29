@@ -2,8 +2,8 @@
 
 import { useState, useMemo } from "react";
 import type { ReactNode } from "react";
-import Link from "next/link";
 import { PermitActivityChart } from "@/components/ui/PermitActivityChart";
+import { EntityCard } from "@/components/ui/EntityCard";
 import type { PermitActivityRow } from "@/lib/supabase/cityQueries";
 import { PERMIT_CATEGORIES, type PermitListRow } from "@/lib/supabase/permitQueries";
 
@@ -11,7 +11,6 @@ const LIST_LIMIT = 100;
 const HIGHLIGHT_LIMIT = 3;
 
 const RESIDENTIAL_ACCENT = "#4a90d9";
-const COMMERCIAL_ACCENT  = "#e6a64a";
 
 const CATEGORY_ACCENT: Record<string, string> = {
   "teardown":         "#c96a70",
@@ -27,6 +26,10 @@ const CATEGORY_ACCENT: Record<string, string> = {
   "interior":         "#a78bfa",
   "other":            "#8a9bb0",
 };
+
+const CATEGORY_LABEL: Record<string, string> = Object.fromEntries(
+  PERMIT_CATEGORIES.map((c) => [c.key, c.label])
+);
 
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return "Unknown date";
@@ -44,6 +47,13 @@ function formatTotalValue(amount: number): string {
   if (amount >= 1_000_000) return `$${(amount / 1_000_000).toFixed(1)}M`;
   if (amount >= 1_000) return `$${Math.round(amount / 1_000)}K`;
   return `$${amount.toLocaleString()}`;
+}
+
+function formatYear(dateStr: string | null): string | null {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return null;
+  return String(d.getFullYear());
 }
 
 function formatPin(pin: string): string {
@@ -64,26 +74,25 @@ type HighlightCardProps = {
 
 function HighlightCard({ permit, accentColor }: HighlightCardProps) {
   return (
-    <Link
+    <EntityCard
       href={`/properties/${encodeURIComponent(permit.pin)}`}
-      className="bg-surface-card border border-surface-border rounded-lg p-4 hover:bg-surface-raised transition-colors border-l-2 flex flex-col gap-2"
-      style={{ borderLeftColor: accentColor }}
-    >
-      <p className="text-sm font-medium text-text-primary leading-snug">
-        {permit.address ?? formatPin(permit.pin)}
-      </p>
-      <p className="text-xs text-text-secondary leading-snug line-clamp-2 flex-1">
-        {permit.description ?? "No description"}
-      </p>
-      <div className="flex items-center justify-between gap-2 mt-auto">
-        <span className="text-sm font-semibold text-text-primary">
-          {formatAmount(permit.amount)}
-        </span>
-        <span className="text-xs text-text-muted">{formatDate(permit.date_issued)}</span>
-      </div>
-    </Link>
+      title={permit.address ?? formatPin(permit.pin)}
+      subtitle={permit.description ?? undefined}
+      meta={[formatDate(permit.date_issued), formatAmount(permit.amount)].filter(Boolean).join("  ·  ")}
+      eraSwatch={accentColor}
+    />
   );
 }
+
+type AddressGroup = {
+  pin: string;
+  address: string | null;
+  permits: PermitListRow[];
+  cats: string[];
+  minDate: string | null;
+  maxDate: string | null;
+  totalAmount: number;
+};
 
 type Props = {
   permits: PermitListRow[];
@@ -97,9 +106,6 @@ export function PermitsContent({ permits, mapSlot }: Props) {
     const residential = permits.filter(
       (p) => p.permit_type?.toUpperCase().includes("RESIDENTIAL")
     ).length;
-    const commercial = permits.filter(
-      (p) => p.permit_type?.toUpperCase().includes("COMMERCIAL")
-    ).length;
     const years = permits
       .map((p) => p.date_issued ? new Date(p.date_issued).getFullYear() : null)
       .filter((y): y is number => y != null);
@@ -108,7 +114,7 @@ export function PermitsContent({ permits, mapSlot }: Props) {
     const totalValue = permits.reduce((sum, p) => sum + (p.amount ?? 0), 0);
     const teardownCount = permits.filter((p) => p.category === "teardown").length;
     const newConstructionCount = permits.filter((p) => p.category === "new-construction").length;
-    return { total: permits.length, residential, commercial, minYear, maxYear, totalValue, teardownCount, newConstructionCount };
+    return { total: permits.length, residential, minYear, maxYear, totalValue, teardownCount, newConstructionCount };
   }, [permits]);
 
   const permitActivity = useMemo((): PermitActivityRow[] => {
@@ -137,10 +143,6 @@ export function PermitsContent({ permits, mapSlot }: Props) {
     () => topByAmount(permits, "RESIDENTIAL", HIGHLIGHT_LIMIT),
     [permits]
   );
-  const topCommercial = useMemo(
-    () => topByAmount(permits, "COMMERCIAL", HIGHLIGHT_LIMIT),
-    [permits]
-  );
 
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -155,8 +157,26 @@ export function PermitsContent({ permits, mapSlot }: Props) {
     return permits.filter((p) => p.category === selectedCategory);
   }, [permits, selectedCategory]);
 
-  const displayed = filtered.slice(0, LIST_LIMIT);
-  const overflow = filtered.length - displayed.length;
+  const addressGroups = useMemo((): AddressGroup[] => {
+    const groups = new Map<string, PermitListRow[]>();
+    for (const p of filtered) {
+      groups.set(p.pin, [...(groups.get(p.pin) ?? []), p]);
+    }
+    return Array.from(groups.entries()).map(([pin, ps]) => {
+      const sorted = [...ps].sort((a, b) =>
+        (b.date_issued ?? "").localeCompare(a.date_issued ?? "")
+      );
+      const cats = [...new Set(ps.map((p) => p.category))];
+      const dates = ps.map((p) => p.date_issued).filter(Boolean) as string[];
+      const minDate = dates.length ? dates.reduce((m, d) => (d < m ? d : m)) : null;
+      const maxDate = dates.length ? dates.reduce((m, d) => (d > m ? d : m)) : null;
+      const totalAmount = ps.reduce((s, p) => s + (p.amount ?? 0), 0);
+      return { pin, address: sorted[0].address, permits: sorted, cats, minDate, maxDate, totalAmount };
+    });
+  }, [filtered]);
+
+  const displayedGroups = addressGroups.slice(0, LIST_LIMIT);
+  const groupOverflow = addressGroups.length - displayedGroups.length;
 
   const insightParts = [
     stats.teardownCount > 0
@@ -182,7 +202,7 @@ export function PermitsContent({ permits, mapSlot }: Props) {
 
       {/* Stat grid + insight */}
       <div className="space-y-3">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="bg-surface-card border border-surface-border rounded-lg p-3">
             <div className="text-xl font-bold text-text-primary">
               {stats.total.toLocaleString()}
@@ -194,12 +214,6 @@ export function PermitsContent({ permits, mapSlot }: Props) {
               {stats.residential.toLocaleString()}
             </div>
             <div className="text-xs text-text-muted mt-0.5">Residential</div>
-          </div>
-          <div className="bg-surface-card border border-surface-border rounded-lg p-3">
-            <div className="text-xl font-bold text-text-primary">
-              {stats.commercial.toLocaleString()}
-            </div>
-            <div className="text-xs text-text-muted mt-0.5">Commercial</div>
           </div>
           <div className="bg-surface-card border border-surface-border rounded-lg p-3">
             <div className="text-xl font-bold text-text-primary">
@@ -240,47 +254,29 @@ export function PermitsContent({ permits, mapSlot }: Props) {
       {permitActivity.length > 0 && (
         <div>
           <p className="section-heading">Permit activity by year</p>
-          <PermitActivityChart data={permitActivity} />
+          <PermitActivityChart data={permitActivity} hideCommercial />
           <div className="flex gap-4 mt-2 justify-end">
             <span className="flex items-center gap-1.5 text-xs text-text-muted">
               <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: "#a78bfa" }} />
               Residential
             </span>
-            <span className="flex items-center gap-1.5 text-xs text-text-muted">
-              <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: "#475569" }} />
-              Commercial
-            </span>
           </div>
         </div>
       )}
 
-      {/* Most expensive permits by type */}
-      <div className="space-y-8">
-        {topResidential.length > 0 && (
-          <div>
-            <p className="section-heading" style={{ color: RESIDENTIAL_ACCENT }}>
-              Most expensive residential permits
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {topResidential.map((p) => (
-                <HighlightCard key={p.id} permit={p} accentColor={RESIDENTIAL_ACCENT} />
-              ))}
-            </div>
+      {/* Most expensive residential permits */}
+      {topResidential.length > 0 && (
+        <div>
+          <p className="section-heading" style={{ color: RESIDENTIAL_ACCENT }}>
+            Most expensive residential permits
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {topResidential.map((p) => (
+              <HighlightCard key={p.id} permit={p} accentColor={RESIDENTIAL_ACCENT} />
+            ))}
           </div>
-        )}
-        {topCommercial.length > 0 && (
-          <div>
-            <p className="section-heading" style={{ color: COMMERCIAL_ACCENT }}>
-              Most expensive commercial permits
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {topCommercial.map((p) => (
-                <HighlightCard key={p.id} permit={p} accentColor={COMMERCIAL_ACCENT} />
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
 
       <hr className="border-surface-border" />
 
@@ -325,67 +321,54 @@ export function PermitsContent({ permits, mapSlot }: Props) {
         </div>
       </div>
 
-      {/* Permit list */}
-      {displayed.length === 0 ? (
+      {/* Address-grouped permit cards */}
+      {displayedGroups.length === 0 ? (
         <div className="text-center py-12 text-text-muted text-sm">
           No permits found in this category.
         </div>
       ) : (
-        <div className="space-y-2">
-          {displayed.map((permit) => (
-            <div
-              key={permit.id}
-              className="bg-surface-card border border-surface-border rounded-lg px-4 py-3 flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4"
-            >
-              <div className="flex-1 min-w-0">
-                <div className="flex flex-wrap items-center gap-2 mb-1">
-                  <span className="text-sm font-semibold text-text-primary truncate">
-                    {permit.address ?? formatPin(permit.pin)}
-                  </span>
-                  {permit.permit_type && (
-                    <span
-                      className={`shrink-0 text-xs px-1.5 py-0.5 rounded font-medium ${
-                        permit.permit_type.toUpperCase().includes("RESIDENTIAL")
-                          ? "bg-blue-500/10 text-blue-400"
-                          : "bg-amber-500/10 text-amber-400"
-                      }`}
-                    >
-                      {permit.permit_type.toUpperCase().includes("RESIDENTIAL")
-                        ? "Residential"
-                        : "Commercial"}
-                    </span>
-                  )}
-                </div>
-                <p
-                  className="text-sm text-text-secondary leading-snug line-clamp-2"
-                  title={permit.description ?? undefined}
-                >
-                  {permit.description ?? "No description"}
-                </p>
-              </div>
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {displayedGroups.map((group) => {
+              const isSingle = group.permits.length === 1;
+              const singlePermit = isSingle ? group.permits[0] : null;
 
-              <div className="flex sm:flex-col items-center sm:items-end gap-3 sm:gap-1 shrink-0">
-                <div className="text-xs text-text-muted whitespace-nowrap">
-                  {formatDate(permit.date_issued)}
-                </div>
-                {formatAmount(permit.amount) && (
-                  <div className="text-xs font-medium text-text-secondary whitespace-nowrap">
-                    {formatAmount(permit.amount)}
-                  </div>
-                )}
-                <Link
-                  href={`/properties/${encodeURIComponent(permit.pin)}`}
-                  className="text-xs text-text-link hover:underline whitespace-nowrap"
-                >
-                  View property →
-                </Link>
-              </div>
-            </div>
-          ))}
+              const eyebrow = isSingle
+                ? CATEGORY_LABEL[group.cats[0]] ?? group.cats[0]
+                : `${group.permits.length} permits`;
 
-          {overflow > 0 && (
+              const subtitle = isSingle
+                ? (singlePermit?.description ?? undefined)
+                : group.cats.map((c) => CATEGORY_LABEL[c] ?? c).join(" · ");
+
+              const minYear = formatYear(group.minDate);
+              const maxYear = formatYear(group.maxDate);
+              const dateRange = minYear && maxYear && minYear !== maxYear
+                ? `${minYear} – ${maxYear}`
+                : isSingle
+                  ? formatDate(singlePermit?.date_issued ?? null)
+                  : (minYear ?? "");
+
+              const amountStr = formatAmount(group.totalAmount);
+              const meta = [dateRange, amountStr].filter(Boolean).join("  ·  ");
+
+              return (
+                <EntityCard
+                  key={group.pin}
+                  href={`/properties/${encodeURIComponent(group.pin)}`}
+                  eyebrow={eyebrow}
+                  title={group.address ?? formatPin(group.pin)}
+                  subtitle={subtitle}
+                  meta={meta || undefined}
+                  eraSwatch={CATEGORY_ACCENT[group.cats[0]] ?? "#8a9bb0"}
+                />
+              );
+            })}
+          </div>
+
+          {groupOverflow > 0 && (
             <p className="text-xs text-text-muted text-center pt-2">
-              {overflow.toLocaleString()} more permit{overflow !== 1 ? "s" : ""} not shown
+              {groupOverflow.toLocaleString()} more propert{groupOverflow !== 1 ? "ies" : "y"} not shown
             </p>
           )}
         </div>

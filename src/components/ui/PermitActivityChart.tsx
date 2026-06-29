@@ -10,9 +10,9 @@ import {
 } from "recharts";
 import type { PermitActivityRow } from "@/lib/supabase/cityQueries";
 
-type Props = { data: PermitActivityRow[] };
+type Props = { data: PermitActivityRow[]; hideCommercial?: boolean };
 
-export function PermitActivityChart({ data }: Props) {
+export function PermitActivityChart({ data, hideCommercial }: Props) {
   if (!data.length) return null;
   return (
     <ResponsiveContainer width="100%" height={220}>
@@ -46,13 +46,15 @@ export function PermitActivityChart({ data }: Props) {
           radius={[0, 0, 0, 0]}
           name="Residential"
         />
-        <Bar
-          dataKey="commercialCount"
-          stackId="a"
-          fill="#475569"
-          radius={[2, 2, 0, 0]}
-          name="Commercial"
-        />
+        {!hideCommercial && (
+          <Bar
+            dataKey="commercialCount"
+            stackId="a"
+            fill="#475569"
+            radius={[2, 2, 0, 0]}
+            name="Commercial"
+          />
+        )}
       </BarChart>
     </ResponsiveContainer>
   );
