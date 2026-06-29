@@ -650,7 +650,8 @@ export function DeedAnalysisPanel({
     router.refresh();
   }
 
-  function handleApplied() {
+  async function handleApplied() {
+    await saveDeedNotes(pin, deedNotes);
     router.refresh();
   }
 
