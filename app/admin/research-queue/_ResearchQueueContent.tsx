@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   refreshResearchQueue,
+  refreshBoundaryQueue,
   refreshSubdivisionQueue,
   updateQueueStatus,
 } from "../_actions/researchQueue";
@@ -19,11 +20,13 @@ type QueueEntry = {
   priority_score: number;
   source_pins: string[] | null;
   status: string;
+  queue_type: string;
+  adjacent_subdivision_names: string[] | null;
   created_at: string;
   updated_at: string;
 };
 
-type StatusFilter = "pending" | "all" | "skipped";
+type StatusFilter = "pending" | "boundary" | "all" | "skipped";
 
 export function ResearchQueueContent({
   initialEntries,
@@ -40,35 +43,56 @@ export function ResearchQueueContent({
     () =>
       initialEntries.filter((e) => {
         const status = localStatus[e.id] ?? e.status;
-        if (filter === "pending") return status === "pending";
+        if (filter === "pending") return status === "pending" && e.queue_type !== "boundary_edge";
+        if (filter === "boundary") return e.queue_type === "boundary_edge" && status === "pending";
         if (filter === "skipped") return status === "skipped";
         return true;
       }),
     [initialEntries, filter, localStatus]
   );
 
-  // Group by subdivision, sort groups by highest priority_score first
+  // In boundary mode, group by the top-two subdivision pair.
+  // In all other modes, group by the single suspected subdivision.
   const grouped = useMemo(() => {
     const map = new Map<
       string,
-      { name: string; id: string | null; entries: QueueEntry[] }
+      { name: string; id: string | null; entries: QueueEntry[]; isBoundaryPair: boolean }
     >();
+
     for (const e of filtered) {
-      const key = e.suspected_subdivision_id ?? "__none__";
+      let key: string;
+      let displayName: string;
+      let isBoundaryPair = false;
+
+      if (filter === "boundary" && (e.adjacent_subdivision_names?.length ?? 0) >= 2) {
+        const pair = [...(e.adjacent_subdivision_names ?? [])]
+          .slice(0, 2)
+          .sort()
+          .join(" ↔ ");
+        key = pair;
+        displayName = pair;
+        isBoundaryPair = true;
+      } else {
+        key = e.suspected_subdivision_id ?? "__none__";
+        displayName = e.suspected_subdivision_name ?? "Unknown subdivision";
+      }
+
       if (!map.has(key)) {
         map.set(key, {
-          name: e.suspected_subdivision_name ?? "Unknown subdivision",
-          id: e.suspected_subdivision_id ?? null,
+          name: displayName,
+          id: isBoundaryPair ? null : (e.suspected_subdivision_id ?? null),
           entries: [],
+          isBoundaryPair,
         });
       }
       map.get(key)!.entries.push(e);
     }
+
     return Array.from(map.values()).sort(
       (a, b) =>
         (b.entries[0]?.priority_score ?? 0) - (a.entries[0]?.priority_score ?? 0)
     );
-  }, [filtered]);
+  }, [filtered, filter]);
 
   function handleStatus(
     id: string,
@@ -98,6 +122,31 @@ export function ResearchQueueContent({
     });
   }
 
+  function handleRefreshBoundary() {
+    setRefreshMsg(null);
+    startTransition(async () => {
+      const { added, error } = await refreshBoundaryQueue();
+      if (error) {
+        setRefreshMsg(`Error: ${error}`);
+      } else {
+        setRefreshMsg(
+          added > 0
+            ? `Added ${added} boundary edge ${added === 1 ? "candidate" : "candidates"}.`
+            : "No new boundary candidates found."
+        );
+        setLocalStatus({});
+        router.refresh();
+      }
+    });
+  }
+
+  const tabs: { value: StatusFilter; label: string }[] = [
+    { value: "pending", label: "Pending" },
+    { value: "boundary", label: "Boundary edges" },
+    { value: "all", label: "All" },
+    { value: "skipped", label: "Skipped" },
+  ];
+
   return (
     <div>
       {/* Top controls */}
@@ -110,18 +159,26 @@ export function ResearchQueueContent({
           {isPending ? "Working…" : "Refresh queue"}
         </button>
 
+        <button
+          onClick={handleRefreshBoundary}
+          disabled={isPending}
+          className="px-4 py-2 bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-semibold rounded hover:bg-amber-500/30 disabled:opacity-50 transition-colors"
+        >
+          {isPending ? "Working…" : "Find boundary edges"}
+        </button>
+
         <div className="flex rounded border border-surface-border overflow-hidden text-xs">
-          {(["pending", "all", "skipped"] as StatusFilter[]).map((v) => (
+          {tabs.map(({ value, label }) => (
             <button
-              key={v}
-              onClick={() => setFilter(v)}
-              className={`px-3 py-1.5 font-medium capitalize transition-colors ${
-                filter === v
+              key={value}
+              onClick={() => setFilter(value)}
+              className={`px-3 py-1.5 font-medium transition-colors ${
+                filter === value
                   ? "bg-accent-teal text-surface-base"
                   : "bg-surface-raised text-text-muted hover:text-text-primary"
               }`}
             >
-              {v}
+              {label}
             </button>
           ))}
         </div>
@@ -131,7 +188,14 @@ export function ResearchQueueContent({
         )}
       </div>
 
-      {grouped.length === 0 ? (
+      {filter === "boundary" && grouped.length === 0 && (
+        <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg px-6 py-4 mb-6 text-sm text-amber-200/70">
+          No boundary edge candidates yet. Click <strong>Find boundary edges</strong> to scan for
+          unassigned properties sitting between two or more known subdivision territories.
+        </div>
+      )}
+
+      {grouped.length === 0 && filter !== "boundary" ? (
         <div className="bg-surface-raised border border-surface-border rounded-lg px-6 py-10 text-center">
           <p className="text-text-muted text-sm">
             {filter === "pending"
@@ -142,11 +206,13 @@ export function ResearchQueueContent({
       ) : (
         <div className="space-y-10">
           {grouped.map((group) => (
-            <div key={group.id ?? "__none__"}>
-              {/* Subdivision group header */}
+            <div key={group.isBoundaryPair ? group.name : (group.id ?? "__none__")}>
+              {/* Group header */}
               <div className="flex items-center gap-3 mb-3">
                 <span className="text-sm font-semibold text-text-secondary shrink-0">
-                  {group.id ? (
+                  {group.isBoundaryPair ? (
+                    <span className="text-amber-300">{group.name}</span>
+                  ) : group.id ? (
                     <Link
                       href={`/admin/subdivisions/${group.id}`}
                       className="hover:text-text-primary transition-colors"
@@ -161,7 +227,7 @@ export function ResearchQueueContent({
                 <span className="text-xs text-text-muted shrink-0">
                   {group.entries.length} candidate{group.entries.length !== 1 ? "s" : ""}
                 </span>
-                {group.id && (
+                {!group.isBoundaryPair && group.id && (
                   <RefreshSubdivisionButton subdivisionId={group.id} />
                 )}
               </div>
@@ -171,12 +237,17 @@ export function ResearchQueueContent({
                 {group.entries.map((entry) => {
                   const status = localStatus[entry.id] ?? entry.status;
                   const isDone = status !== "pending";
+                  const isBoundary = entry.queue_type === "boundary_edge";
+                  const subdivCount = entry.adjacent_subdivision_names?.length ?? 0;
+
                   return (
                     <div
                       key={entry.id}
                       className={`bg-surface-raised border rounded-lg px-5 py-4 transition-opacity ${
                         isDone
                           ? "opacity-40 border-surface-border"
+                          : isBoundary
+                          ? "border-amber-500/25"
                           : "border-surface-border"
                       }`}
                     >
@@ -187,6 +258,11 @@ export function ResearchQueueContent({
                               {entry.address ?? entry.pin}
                             </h3>
                             <PriorityDots score={entry.priority_score} />
+                            {isBoundary && subdivCount >= 2 && (
+                              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                                {subdivCount} subdivisions
+                              </span>
+                            )}
                             {isDone && (
                               <span className="text-[10px] font-semibold uppercase tracking-wide text-text-muted px-1.5 py-0.5 border border-surface-border rounded">
                                 {status.replace("_", " ")}
@@ -268,7 +344,7 @@ function PriorityDots({ score }: { score: number }) {
   return (
     <span
       className="flex items-center gap-0.5"
-      title={`Priority: ${score} neighboring anchors`}
+      title={`Priority score: ${score}`}
     >
       {Array.from({ length: 5 }).map((_, i) => (
         <span

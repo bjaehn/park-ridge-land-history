@@ -7,7 +7,7 @@ export default async function ResearchQueuePage() {
   const { data: rows } = await adminSupabase
     .from("deed_research_queue")
     .select(
-      "id, pin, address, suspected_subdivision_id, suspected_subdivision_name, ai_reasoning, priority_score, source_pins, status, created_at, updated_at"
+      "id, pin, address, suspected_subdivision_id, suspected_subdivision_name, ai_reasoning, priority_score, source_pins, status, queue_type, adjacent_subdivision_names, created_at, updated_at"
     )
     .order("priority_score", { ascending: false })
     .order("created_at", { ascending: true });
