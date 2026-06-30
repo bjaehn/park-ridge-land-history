@@ -17,14 +17,25 @@ export default async function SubdivisionsListPage({
 
   let query = adminSupabase
     .from("subdivisions")
-    .select("id, name, entity_type, recorded_year, confidence_level, status")
+    .select("id, name, entity_type, recorded_year, earliest_year_built, confidence_level, status")
     .order("recorded_year", { ascending: true, nullsFirst: false })
     .order("name");
 
   if (q) query = query.ilike("name", `%${q}%`);
 
-  const { data: subdivisionsRaw } = await query;
+  const [{ data: subdivisionsRaw }, { data: countsRaw }] = await Promise.all([
+    query,
+    adminSupabase
+      .from("subdivision_property_counts")
+      .select("subdivision_id, total_properties, deeded_properties"),
+  ]);
+
   const subdivisions = subdivisionsRaw ?? [];
+  const countsBySubId = Object.fromEntries(
+    (countsRaw ?? []).map((r) => [r.subdivision_id, r])
+  );
+
+  const HEADERS = ["Name", "Type", "Platted", "Properties", "Deeded", "First Built", "Confidence", "Status", ""];
 
   return (
     <div>
@@ -60,7 +71,7 @@ export default async function SubdivisionsListPage({
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-surface-border">
-              {["Name", "Type", "Year", "Confidence", "Status", ""].map((h) => (
+              {HEADERS.map((h) => (
                 <th
                   key={h}
                   className="text-left px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider"
@@ -73,44 +84,56 @@ export default async function SubdivisionsListPage({
           <tbody className="divide-y divide-surface-border">
             {subdivisions.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-sm text-text-muted">
+                <td colSpan={HEADERS.length} className="px-4 py-8 text-center text-sm text-text-muted">
                   {q ? "No subdivisions match your search." : "No subdivisions yet."}
                 </td>
               </tr>
             )}
-            {subdivisions.map((s) => (
-              <tr key={s.id} className="hover:bg-surface-card transition-colors">
-                <td className="px-4 py-3 font-medium text-text-primary max-w-xs truncate">
-                  {s.name}
-                </td>
-                <td className="px-4 py-3 text-text-secondary">
-                  {s.entity_type ?? <span className="text-text-muted">-</span>}
-                </td>
-                <td className="px-4 py-3 text-text-secondary tabular-nums">
-                  {s.recorded_year ?? <span className="text-text-muted">-</span>}
-                </td>
-                <td className="px-4 py-3">
-                  <span
-                    className={`inline-flex px-2 py-0.5 rounded border text-xs font-medium ${
-                      CONFIDENCE_COLORS[s.confidence_level] ?? CONFIDENCE_COLORS.unknown
-                    }`}
-                  >
-                    {s.confidence_level}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-text-secondary">
-                  {s.status ?? <span className="text-text-muted">-</span>}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <Link
-                    href={`/admin/subdivisions/${s.id}`}
-                    className="text-xs text-accent-teal hover:opacity-80 transition-opacity font-medium"
-                  >
-                    Edit
-                  </Link>
-                </td>
-              </tr>
-            ))}
+            {subdivisions.map((s) => {
+              const counts = countsBySubId[s.id];
+              return (
+                <tr key={s.id} className="hover:bg-surface-card transition-colors">
+                  <td className="px-4 py-3 font-medium text-text-primary max-w-xs truncate">
+                    {s.name}
+                  </td>
+                  <td className="px-4 py-3 text-text-secondary">
+                    {s.entity_type ?? <span className="text-text-muted">-</span>}
+                  </td>
+                  <td className="px-4 py-3 text-text-secondary tabular-nums">
+                    {s.recorded_year ?? <span className="text-text-muted">-</span>}
+                  </td>
+                  <td className="px-4 py-3 text-text-secondary tabular-nums">
+                    {counts ? counts.total_properties : <span className="text-text-muted">0</span>}
+                  </td>
+                  <td className="px-4 py-3 text-text-secondary tabular-nums">
+                    {counts ? counts.deeded_properties : <span className="text-text-muted">0</span>}
+                  </td>
+                  <td className="px-4 py-3 text-text-secondary tabular-nums">
+                    {s.earliest_year_built ?? <span className="text-text-muted">-</span>}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={`inline-flex px-2 py-0.5 rounded border text-xs font-medium ${
+                        CONFIDENCE_COLORS[s.confidence_level] ?? CONFIDENCE_COLORS.unknown
+                      }`}
+                    >
+                      {s.confidence_level}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-text-secondary">
+                    {s.status ?? <span className="text-text-muted">-</span>}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <Link
+                      href={`/admin/subdivisions/${s.id}`}
+                      className="text-xs text-accent-teal hover:opacity-80 transition-opacity font-medium"
+                    >
+                      Edit
+                    </Link>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
