@@ -30,26 +30,31 @@ type StatusFilter = "pending" | "boundary" | "all" | "skipped";
 
 export function ResearchQueueContent({
   initialEntries,
+  subdivisionId,
+  subdivisionName,
 }: {
   initialEntries: QueueEntry[];
+  subdivisionId?: string;
+  subdivisionName?: string;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [filter, setFilter] = useState<StatusFilter>("pending");
+  const [filter, setFilter] = useState<StatusFilter>(subdivisionId ? "all" : "pending");
   const [refreshMsg, setRefreshMsg] = useState<string | null>(null);
   const [localStatus, setLocalStatus] = useState<Record<string, string>>({});
 
-  const filtered = useMemo(
-    () =>
-      initialEntries.filter((e) => {
-        const status = localStatus[e.id] ?? e.status;
-        if (filter === "pending") return status === "pending";
-        if (filter === "boundary") return e.queue_type === "boundary_edge" && status === "pending";
-        if (filter === "skipped") return status === "skipped";
-        return true;
-      }),
-    [initialEntries, filter, localStatus]
-  );
+  const filtered = useMemo(() => {
+    const base = subdivisionId
+      ? initialEntries.filter((e) => e.suspected_subdivision_id === subdivisionId)
+      : initialEntries;
+    return base.filter((e) => {
+      const status = localStatus[e.id] ?? e.status;
+      if (filter === "pending") return status === "pending";
+      if (filter === "boundary") return e.queue_type === "boundary_edge" && status === "pending";
+      if (filter === "skipped") return status === "skipped";
+      return true;
+    });
+  }, [initialEntries, subdivisionId, filter, localStatus]);
 
   // In boundary mode, group by the top-two subdivision pair.
   // In all other modes, group by the single suspected subdivision.
@@ -161,6 +166,23 @@ export function ResearchQueueContent({
 
   return (
     <div>
+      {subdivisionId && (
+        <div className="flex items-center gap-3 mb-5 px-4 py-2.5 bg-accent-teal/10 border border-accent-teal/30 rounded-lg text-sm">
+          <span className="text-text-secondary">
+            Showing queue for{" "}
+            <span className="font-semibold text-text-primary">
+              {subdivisionName ?? "this subdivision"}
+            </span>
+          </span>
+          <Link
+            href="/admin/research-queue"
+            className="ml-auto text-xs text-text-muted hover:text-text-secondary transition-colors"
+          >
+            Clear ×
+          </Link>
+        </div>
+      )}
+
       {/* Top controls */}
       <div className="flex flex-wrap items-center gap-3 mb-6">
         <button

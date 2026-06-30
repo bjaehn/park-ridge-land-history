@@ -3,16 +3,32 @@ import { ResearchQueueContent } from "./_ResearchQueueContent";
 
 export const dynamic = "force-dynamic";
 
-export default async function ResearchQueuePage() {
-  const { data: rows } = await adminSupabase
-    .from("deed_research_queue")
-    .select(
-      "id, pin, address, suspected_subdivision_id, suspected_subdivision_name, ai_reasoning, priority_score, source_pins, status, queue_type, adjacent_subdivision_names, created_at, updated_at"
-    )
-    .order("priority_score", { ascending: false })
-    .order("created_at", { ascending: true });
+export default async function ResearchQueuePage({
+  searchParams,
+}: {
+  searchParams: { subdivision?: string };
+}) {
+  const subdivisionId = searchParams.subdivision?.trim() || null;
+
+  const [{ data: rows }, { data: subRow }] = await Promise.all([
+    adminSupabase
+      .from("deed_research_queue")
+      .select(
+        "id, pin, address, suspected_subdivision_id, suspected_subdivision_name, ai_reasoning, priority_score, source_pins, status, queue_type, adjacent_subdivision_names, created_at, updated_at"
+      )
+      .order("priority_score", { ascending: false })
+      .order("created_at", { ascending: true }),
+    subdivisionId
+      ? adminSupabase
+          .from("subdivisions")
+          .select("name")
+          .eq("id", subdivisionId)
+          .single()
+      : Promise.resolve({ data: null }),
+  ]);
 
   const entries = rows ?? [];
+  const subdivisionName = subRow?.name ?? null;
 
   const pending = entries.filter((e) => e.status === "pending").length;
   const researched = entries.filter((e) => e.status === "researched").length;
@@ -47,7 +63,11 @@ export default async function ResearchQueuePage() {
         ))}
       </div>
 
-      <ResearchQueueContent initialEntries={entries} />
+      <ResearchQueueContent
+        initialEntries={entries}
+        subdivisionId={subdivisionId ?? undefined}
+        subdivisionName={subdivisionName ?? undefined}
+      />
     </div>
   );
 }

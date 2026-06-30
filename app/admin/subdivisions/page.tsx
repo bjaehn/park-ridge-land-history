@@ -203,8 +203,13 @@ export default async function SubdivisionsListPage({
             )}
             {sorted.map((s) => (
               <tr key={s.id} className="hover:bg-surface-card transition-colors">
-                <td className="px-4 py-3 font-medium text-text-primary max-w-xs truncate">
-                  {s.name}
+                <td className="px-4 py-3 font-medium max-w-xs truncate">
+                  <Link
+                    href={`/admin/research-queue?subdivision=${s.id}`}
+                    className="text-text-primary hover:text-accent-teal transition-colors"
+                  >
+                    {s.name}
+                  </Link>
                 </td>
                 <td className="px-4 py-3 text-text-secondary">
                   {s.entity_type ?? <span className="text-text-muted">-</span>}
