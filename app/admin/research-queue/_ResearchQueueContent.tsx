@@ -43,7 +43,7 @@ export function ResearchQueueContent({
     () =>
       initialEntries.filter((e) => {
         const status = localStatus[e.id] ?? e.status;
-        if (filter === "pending") return status === "pending" && e.queue_type !== "boundary_edge";
+        if (filter === "pending") return status === "pending";
         if (filter === "boundary") return e.queue_type === "boundary_edge" && status === "pending";
         if (filter === "skipped") return status === "skipped";
         return true;
@@ -258,11 +258,10 @@ export function ResearchQueueContent({
                               {entry.address ?? entry.pin}
                             </h3>
                             <PriorityDots score={entry.priority_score} />
-                            {isBoundary && subdivCount >= 2 && (
-                              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                                {subdivCount} subdivisions
-                              </span>
-                            )}
+                            <BoundaryProbability
+                              queueType={entry.queue_type}
+                              subdivCount={subdivCount}
+                            />
                             {isDone && (
                               <span className="text-[10px] font-semibold uppercase tracking-wide text-text-muted px-1.5 py-0.5 border border-surface-border rounded">
                                 {status.replace("_", " ")}
@@ -354,6 +353,46 @@ function PriorityDots({ score }: { score: number }) {
           }`}
         />
       ))}
+    </span>
+  );
+}
+
+function BoundaryProbability({
+  queueType,
+  subdivCount,
+}: {
+  queueType: string;
+  subdivCount: number;
+}) {
+  if (queueType !== "boundary_edge") return null;
+
+  if (subdivCount >= 3) {
+    return (
+      <span
+        className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-300 border border-orange-500/30"
+        title={`Borders ${subdivCount} subdivision territories — high-priority boundary corner`}
+      >
+        ◆ {subdivCount}-plat corner
+      </span>
+    );
+  }
+  if (subdivCount === 2) {
+    return (
+      <span
+        className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30"
+        title="Borders 2 subdivision territories — likely sits on a subdivision boundary"
+      >
+        ◆ 2-plat edge
+      </span>
+    );
+  }
+  // subdivCount === 1 but queued as boundary_edge means near-major-road signal only
+  return (
+    <span
+      className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-surface-border/50 text-text-muted border border-surface-border"
+      title="Near a major road that may mark a plat boundary"
+    >
+      ◇ road edge
     </span>
   );
 }
