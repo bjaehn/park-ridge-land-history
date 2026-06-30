@@ -133,14 +133,18 @@ ${candidateList}`,
 // ─── Refresh entire queue ─────────────────────────────────────────────────────
 
 export async function refreshResearchQueue(): Promise<{ added: number; error?: string }> {
-  const { data: candidates, error: rpcError } = await adminSupabase.rpc(
-    "find_research_candidates"
-  );
+  try {
+    const { data: candidates, error: rpcError } = await adminSupabase.rpc(
+      "find_research_candidates"
+    );
 
-  if (rpcError) return { added: 0, error: rpcError.message };
-  if (!candidates?.length) return { added: 0 };
+    if (rpcError) return { added: 0, error: rpcError.message };
+    if (!candidates?.length) return { added: 0 };
 
-  return processAndUpsertCandidates(candidates as Candidate[]);
+    return processAndUpsertCandidates(candidates as Candidate[]);
+  } catch (e) {
+    return { added: 0, error: e instanceof Error ? e.message : "Unexpected error" };
+  }
 }
 
 // ─── Refresh one subdivision ──────────────────────────────────────────────────
@@ -162,6 +166,7 @@ export async function refreshSubdivisionQueue(
 // ─── Boundary edge queue ──────────────────────────────────────────────────────
 
 export async function refreshBoundaryQueue(): Promise<{ added: number; error?: string }> {
+  try {
   const { data: candidates, error: rpcError } = await adminSupabase.rpc(
     "find_boundary_edge_candidates"
   );
@@ -272,6 +277,9 @@ ${candidateList}`,
 
   revalidatePath("/admin/research-queue");
   return { added: inserted?.length ?? 0 };
+  } catch (e) {
+    return { added: 0, error: e instanceof Error ? e.message : "Unexpected error" };
+  }
 }
 
 // ─── Status update ────────────────────────────────────────────────────────────

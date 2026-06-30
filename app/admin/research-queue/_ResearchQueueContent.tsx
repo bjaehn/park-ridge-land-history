@@ -107,17 +107,23 @@ export function ResearchQueueContent({
   function handleRefresh() {
     setRefreshMsg(null);
     startTransition(async () => {
-      const { added, error } = await refreshResearchQueue();
-      if (error) {
-        setRefreshMsg(`Error: ${error}`);
-      } else {
-        setRefreshMsg(
-          added > 0
-            ? `Added ${added} new ${added === 1 ? "entry" : "entries"} to the queue.`
-            : "Queue is up to date — no new properties found."
-        );
-        setLocalStatus({});
-        router.refresh();
+      try {
+        const result = await refreshResearchQueue();
+        if (!result) throw new Error("no response");
+        const { added, error } = result;
+        if (error) {
+          setRefreshMsg(`Error: ${error}`);
+        } else {
+          setRefreshMsg(
+            added > 0
+              ? `Added ${added} new ${added === 1 ? "entry" : "entries"} to the queue.`
+              : "Queue is up to date — no new properties found."
+          );
+          setLocalStatus({});
+          router.refresh();
+        }
+      } catch {
+        setRefreshMsg("Server error — check that the database is reachable and try again.");
       }
     });
   }
@@ -125,17 +131,23 @@ export function ResearchQueueContent({
   function handleRefreshBoundary() {
     setRefreshMsg(null);
     startTransition(async () => {
-      const { added, error } = await refreshBoundaryQueue();
-      if (error) {
-        setRefreshMsg(`Error: ${error}`);
-      } else {
-        setRefreshMsg(
-          added > 0
-            ? `Added ${added} boundary edge ${added === 1 ? "candidate" : "candidates"}.`
-            : "No new boundary candidates found."
-        );
-        setLocalStatus({});
-        router.refresh();
+      try {
+        const result = await refreshBoundaryQueue();
+        if (!result) throw new Error("no response");
+        const { added, error } = result;
+        if (error) {
+          setRefreshMsg(`Error: ${error}`);
+        } else {
+          setRefreshMsg(
+            added > 0
+              ? `Added ${added} boundary edge ${added === 1 ? "candidate" : "candidates"}.`
+              : "No new boundary candidates found."
+          );
+          setLocalStatus({});
+          router.refresh();
+        }
+      } catch {
+        setRefreshMsg("Server error — check that the boundary RPC is deployed and try again.");
       }
     });
   }
