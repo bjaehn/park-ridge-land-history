@@ -10,6 +10,7 @@ const navLinks = [
   { href: "/admin/neighborhoods",      label: "Neighborhoods" },
   { href: "/admin/plat-mapping",       label: "Plat Index" },
   { href: "/admin/research-queue",     label: "Research Queue" },
+  { href: "/admin/subdivision-map",    label: "Subdivision Map" },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
