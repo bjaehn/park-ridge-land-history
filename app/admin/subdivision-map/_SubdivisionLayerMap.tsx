@@ -387,7 +387,7 @@ export function SubdivisionLayerMap({ subdivisions }: Props) {
 
         {/* Map */}
         <div className="flex-1 relative">
-          <div ref={containerRef} className="absolute inset-0" />
+          <div ref={containerRef} style={{ position: "absolute", inset: 0 }} />
 
           {/* Hover tooltip */}
           {hoverInfo && (
