@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS deed_parse_results (
 
 ALTER TABLE deed_parse_results ENABLE ROW LEVEL SECURITY;
 -- Admin-only: no public or authenticated access (service_role bypasses RLS).
+DROP POLICY IF EXISTS "admin_only" ON deed_parse_results;
 CREATE POLICY "admin_only" ON deed_parse_results USING (false);
 
 CREATE INDEX IF NOT EXISTS deed_parse_results_status_idx ON deed_parse_results (parse_status) WHERE NOT reviewed;

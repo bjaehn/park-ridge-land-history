@@ -4,6 +4,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { revalidatePath } from "next/cache";
 import { adminSupabase } from "@/lib/supabase/adminClient";
 import { refreshResearchQueue } from "./researchQueue";
+import { upsertSubdivisionLink } from "./properties";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -341,6 +342,137 @@ export async function recordParseResult(
 
   if (error) return { error: error.message };
   return {};
+}
+
+// ─── Batch processing (runs from Admin, no local script or API key needed) ────
+//
+// Reuses the exact same save path as the interactive per-property panel
+// (ensureSubdivision, saveLineageRecord, upsertSubdivisionLink,
+// recordParseResult) -- just looped over every parcel with deed_notes that
+// hasn't been parsed yet. Every result lands as parse_status='needs_review',
+// same as a single-property "Apply All & Save". Runs server-side using
+// whatever ANTHROPIC_API_KEY is already configured for this deployment --
+// the same one the interactive panel already relies on.
+
+export async function countUnparsedDeeds(): Promise<number> {
+  const { data: parcels } = await adminSupabase
+    .from("parcels")
+    .select("pin_normalized")
+    .eq("municipality", "CITY OF PARK RIDGE")
+    .not("deed_notes", "is", null);
+  const { data: parsed } = await adminSupabase.from("deed_parse_results").select("pin");
+  const parsedPins = new Set((parsed ?? []).map((r) => r.pin));
+  return (parcels ?? []).filter((p) => !parsedPins.has(p.pin_normalized)).length;
+}
+
+async function applyDeedAnalysisResult(
+  pin: string,
+  address: string | null,
+  deedNotes: string,
+  result: DeedAnalysisResult
+): Promise<{ error?: string }> {
+  for (const link of result.subdivision_links) {
+    let resolvedId = link.subdivision_id ?? "";
+    if (!resolvedId && link.subdivision_name) {
+      const r = await ensureSubdivision(link.subdivision_name, "subdivision");
+      if (r.error) return { error: r.error };
+      resolvedId = r.id ?? "";
+    }
+    if (!resolvedId) continue;
+    const fd = new FormData();
+    fd.set("subdivision_id", resolvedId);
+    fd.set("lot_number", link.lot_number ?? "");
+    fd.set("block_number", link.block_number ?? "");
+    fd.set("confidence_level", link.confidence);
+    fd.set("confidence_reason", link.confidence_reason);
+    fd.set("match_method", "deed_legal_description");
+    fd.set("source_name", "AI deed analysis (admin batch)");
+    fd.set("source_reference", deedNotes.slice(0, 500));
+    const r = await upsertSubdivisionLink(pin, null, fd);
+    if (r?.error) return { error: r.error };
+  }
+
+  for (const record of result.lineage_records) {
+    let resolvedChildId = record.child_subdivision_id ?? null;
+    if (!resolvedChildId && record.child_subdivision) {
+      const r = await ensureSubdivision(record.child_subdivision, "subdivision");
+      if (r.error) return { error: r.error };
+      resolvedChildId = r.id ?? null;
+    }
+    let resolvedParentId = record.parent_subdivision_id ?? null;
+    if (!resolvedParentId && record.parent_subdivision) {
+      const r = await ensureSubdivision(record.parent_subdivision, "parent_plat");
+      if (r.error) return { error: r.error };
+      resolvedParentId = r.id ?? null;
+    }
+    const r = await saveLineageRecord(
+      pin,
+      address,
+      { ...record, child_subdivision_id: resolvedChildId, parent_subdivision_id: resolvedParentId },
+      deedNotes
+    );
+    if (r.error) return { error: r.error };
+  }
+
+  await recordParseResult(pin, result, "claude-haiku-4-5-20251001");
+  return {};
+}
+
+export type DeedParseBatchItem = {
+  pin: string;
+  address: string | null;
+  linkCount: number;
+  lineageCount: number;
+  error?: string;
+};
+
+export async function processNextDeedParseBatch(
+  batchSize: number
+): Promise<{ processed: DeedParseBatchItem[]; remaining: number; error?: string }> {
+  const { data: knownSubdivisions } = await adminSupabase.from("subdivisions").select("id, name");
+  const subs = knownSubdivisions ?? [];
+
+  const { data: parcels } = await adminSupabase
+    .from("parcels")
+    .select("pin_normalized, address, deed_notes")
+    .eq("municipality", "CITY OF PARK RIDGE")
+    .not("deed_notes", "is", null);
+  const { data: parsedRows } = await adminSupabase.from("deed_parse_results").select("pin");
+  const parsedPins = new Set((parsedRows ?? []).map((r) => r.pin));
+
+  const todo = (parcels ?? [])
+    .filter((p) => p.deed_notes?.trim() && !parsedPins.has(p.pin_normalized))
+    .slice(0, batchSize);
+
+  const processed: DeedParseBatchItem[] = [];
+  for (const parcel of todo) {
+    const pin = parcel.pin_normalized as string;
+    const address = (parcel.address as string | null) ?? null;
+    const deedNotes = parcel.deed_notes as string;
+
+    const { result, error } = await analyzeDeedWithAI(pin, address, deedNotes, subs);
+    if (error || !result) {
+      processed.push({ pin, address, linkCount: 0, lineageCount: 0, error: error ?? "No result" });
+      await adminSupabase.from("deed_parse_results").upsert(
+        { pin, parse_status: "rejected", parse_notes: `Batch parse failed: ${error}`, ai_model: "claude-haiku-4-5-20251001", parsed_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+        { onConflict: "pin" }
+      );
+      continue;
+    }
+
+    const applyResult = await applyDeedAnalysisResult(pin, address, deedNotes, result);
+    processed.push({
+      pin,
+      address,
+      linkCount: result.subdivision_links.length,
+      lineageCount: result.lineage_records.length,
+      error: applyResult.error,
+    });
+  }
+
+  revalidatePath("/admin/data-quality");
+  const remaining = await countUnparsedDeeds();
+  return { processed, remaining };
 }
 
 // ─── PDF text extraction ──────────────────────────────────────────────────────

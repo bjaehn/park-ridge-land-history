@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { adminSupabase } from "@/lib/supabase/adminClient";
+import { countUnparsedDeeds } from "../_actions/aiDeedAnalysis";
+import { DeedParseBatchRunner } from "./_DeedParseBatchRunner";
 
 const SEVERITY_COLORS: Record<string, string> = {
   high:   "text-confidence-low    bg-confidence-low/10    border-confidence-low/30",
@@ -25,9 +27,10 @@ export default async function DataQualityPage({
 }) {
   const activeCheck = searchParams.check ?? null;
 
-  const [{ data: summaryRaw }, { data: detailRaw }] = await Promise.all([
+  const [{ data: summaryRaw }, { data: detailRaw }, unparsedDeedCount] = await Promise.all([
     adminSupabase.rpc("data_quality_summary"),
     adminSupabase.rpc("data_quality_report", { p_check_type: activeCheck, p_limit: 200 }),
+    countUnparsedDeeds(),
   ]);
 
   const summary = (summaryRaw ?? []) as SummaryRow[];
@@ -47,6 +50,8 @@ export default async function DataQualityPage({
           triage list, not an exhaustive export.
         </p>
       </div>
+
+      <DeedParseBatchRunner initialRemaining={unparsedDeedCount} />
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 mb-8">
         {summary.map((row) => (
