@@ -2,6 +2,7 @@ import Link from "next/link";
 import { adminSupabase } from "@/lib/supabase/adminClient";
 import { countUnparsedDeeds } from "../_actions/aiDeedAnalysis";
 import { DeedParseBatchRunner } from "./_DeedParseBatchRunner";
+import { AISubdivisionAnalysisPanel } from "./_AISubdivisionAnalysisPanel";
 
 const SEVERITY_COLORS: Record<string, string> = {
   high:   "text-confidence-low    bg-confidence-low/10    border-confidence-low/30",
@@ -52,6 +53,8 @@ export default async function DataQualityPage({
       </div>
 
       <DeedParseBatchRunner initialRemaining={unparsedDeedCount} />
+
+      <AISubdivisionAnalysisPanel />
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 mb-8">
         {summary.map((row) => (

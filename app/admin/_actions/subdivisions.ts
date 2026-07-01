@@ -1,5 +1,6 @@
 "use server";
 
+import Anthropic from "@anthropic-ai/sdk";
 import { revalidatePath } from "next/cache";
 import { adminSupabase } from "@/lib/supabase/adminClient";
 
@@ -271,4 +272,171 @@ export async function mergeSubdivisions(winnerId: string, loserId: string) {
   revalidatePath(`/admin/subdivisions/${loserId}`);
   if (error) return { error: error.message };
   return {};
+}
+
+// ─── AI-assisted subdivision analysis ──────────────────────────────────────────
+//
+// The trigram similarity check above (find_subdivision_duplicate_candidates)
+// is a mechanical name/alias match -- it flags pairs but can't tell you
+// *why*, or whether the right move is a merge, a parent/child link, or
+// leaving them alone. This reads the actual record content (aliases,
+// summaries, developer names, linked deed excerpts) for each candidate pair
+// and asks the model to reason about it, the same way a person cross-
+// referencing deed language by hand would.
+
+export type SubdivisionAIVerdict = "likely_same" | "parent_child" | "likely_different" | "unclear";
+
+export type SubdivisionAISuggestion = {
+  subdivision_a_id: string;
+  subdivision_a_name: string;
+  subdivision_b_id: string;
+  subdivision_b_name: string;
+  similarity_score: number;
+  verdict: SubdivisionAIVerdict;
+  reasoning: string;
+  recommended_action: string;
+};
+
+type SubRow = {
+  id: string;
+  name: string;
+  normalized_name: string;
+  alternate_names: string[] | null;
+  recorded_year: number | null;
+  entity_type: string | null;
+  historical_summary: string | null;
+  original_owner: string | null;
+  developer: string | null;
+  parent_subdivision_id: string | null;
+};
+
+export async function analyzeSubdivisionDuplicatesWithAI(
+  threshold = 0.4
+): Promise<{ suggestions?: SubdivisionAISuggestion[]; error?: string }> {
+  const { data: candidates, error: candErr } = await adminSupabase.rpc(
+    "find_subdivision_duplicate_candidates",
+    { similarity_threshold: threshold }
+  );
+  if (candErr) return { error: candErr.message };
+  if (!candidates || candidates.length === 0) return { suggestions: [] };
+
+  const ids = [...new Set(candidates.flatMap((c: { subdivision_a_id: string; subdivision_b_id: string }) => [c.subdivision_a_id, c.subdivision_b_id]))];
+
+  const [{ data: subsRaw }, { data: countsRaw }, { data: aliasesRaw }, { data: lineageAsChild }, { data: lineageAsParent }] = await Promise.all([
+    adminSupabase
+      .from("subdivisions")
+      .select("id, name, normalized_name, alternate_names, recorded_year, entity_type, historical_summary, original_owner, developer, parent_subdivision_id")
+      .in("id", ids),
+    adminSupabase.from("subdivision_property_counts").select("subdivision_id, total_properties, deeded_properties").in("subdivision_id", ids),
+    adminSupabase.from("subdivision_aliases").select("subdivision_id, alias").in("subdivision_id", ids),
+    adminSupabase.from("historical_subdivision_lineage").select("child_subdivision_id, source_text").in("child_subdivision_id", ids).limit(200),
+    adminSupabase.from("historical_subdivision_lineage").select("parent_subdivision_id, source_text").in("parent_subdivision_id", ids).limit(200),
+  ]);
+
+  const subsById = new Map<string, SubRow>((subsRaw ?? []).map((s: SubRow) => [s.id, s]));
+  const countsById = new Map<string, { total: number; deeded: number }>(
+    (countsRaw ?? []).map((c: { subdivision_id: string; total_properties: number; deeded_properties: number }) => [
+      c.subdivision_id,
+      { total: Number(c.total_properties), deeded: Number(c.deeded_properties) },
+    ])
+  );
+  const aliasesById = new Map<string, string[]>();
+  for (const a of (aliasesRaw ?? []) as { subdivision_id: string; alias: string }[]) {
+    aliasesById.set(a.subdivision_id, [...(aliasesById.get(a.subdivision_id) ?? []), a.alias]);
+  }
+  const excerptsById = new Map<string, string[]>();
+  for (const row of (lineageAsChild ?? []) as { child_subdivision_id: string; source_text: string }[]) {
+    const list = excerptsById.get(row.child_subdivision_id) ?? [];
+    if (list.length < 2 && row.source_text) list.push(row.source_text.slice(0, 300));
+    excerptsById.set(row.child_subdivision_id, list);
+  }
+  for (const row of (lineageAsParent ?? []) as { parent_subdivision_id: string; source_text: string }[]) {
+    const list = excerptsById.get(row.parent_subdivision_id) ?? [];
+    if (list.length < 2 && row.source_text) list.push(row.source_text.slice(0, 300));
+    excerptsById.set(row.parent_subdivision_id, list);
+  }
+
+  function describe(id: string): string {
+    const s = subsById.get(id);
+    if (!s) return `(id ${id}, record not found)`;
+    const counts = countsById.get(id);
+    const aliases = aliasesById.get(id) ?? [];
+    const excerpts = excerptsById.get(id) ?? [];
+    const lines = [
+      `Name: "${s.name}" (id: ${s.id})`,
+      s.alternate_names?.length ? `Alternate names on file: ${s.alternate_names.join(", ")}` : null,
+      aliases.length ? `Aliases on file: ${aliases.join(", ")}` : null,
+      s.entity_type ? `Entity type: ${s.entity_type}` : null,
+      s.recorded_year ? `Recorded year: ${s.recorded_year}` : `Recorded year: unknown`,
+      s.developer || s.original_owner ? `Developer/owner: ${s.developer ?? s.original_owner}` : null,
+      s.parent_subdivision_id ? `Has a parent subdivision on file (id: ${s.parent_subdivision_id})` : null,
+      counts ? `Linked properties: ${counts.total} total (${counts.deeded} deed-verified)` : `Linked properties: 0`,
+      s.historical_summary ? `Historical summary: ${s.historical_summary.slice(0, 500)}` : null,
+      excerpts.length ? `Deed text excerpt(s): ${excerpts.map((e) => `"${e}"`).join(" | ")}` : null,
+    ].filter(Boolean);
+    return lines.join("\n  ");
+  }
+
+  const pairsText = candidates
+    .map(
+      (c: { subdivision_a_id: string; subdivision_b_id: string; similarity_score: number; match_basis: string }, i: number) =>
+        `PAIR ${i + 1} (${Math.round(c.similarity_score * 100)}% ${c.match_basis} similarity):\nA:\n  ${describe(
+          c.subdivision_a_id
+        )}\nB:\n  ${describe(c.subdivision_b_id)}`
+    )
+    .join("\n\n");
+
+  const systemPrompt = `You are a historical land records analyst reviewing Cook County, Illinois subdivision records from a Park Ridge property history database. You are given pairs of subdivision records that a name/alias similarity check has already flagged as potentially the same real-world plat under different spellings or names.
+
+For EACH pair, decide one of:
+- "likely_same": these almost certainly describe the same recorded plat (e.g. spelling variants, one is clearly an alias of the other, deed excerpts corroborate).
+- "parent_child": these are legitimately related but distinct records -- one is a resubdivision, addition, or portion of the other, and both should be kept with a parent/child link rather than merged.
+- "likely_different": despite the name similarity, the evidence (different developers, different years, no corroborating deed text, generic name collision) suggests these are unrelated plats.
+- "unclear": not enough evidence either way to recommend an action.
+
+Return ONLY a single valid JSON array, no prose, no markdown fences, matching this schema exactly, one entry per pair in the same order given:
+[
+  {
+    "verdict": "likely_same" | "parent_child" | "likely_different" | "unclear",
+    "reasoning": string (1-3 sentences, cite the specific evidence you used),
+    "recommended_action": string (one concrete sentence telling the admin what to click/do next, e.g. "Merge B into A, keeping A as canonical since it has more deed-verified properties." or "Keep both; set B's parent_subdivision to A." or "Keep separate -- the shared word appears to be coincidental." or "Needs manual research before acting.")
+  }
+]`;
+
+  const client = new Anthropic();
+  let raw: string;
+  try {
+    const message = await client.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 4096,
+      messages: [{ role: "user", content: pairsText }],
+      system: systemPrompt,
+    });
+    raw = message.content.filter((b) => b.type === "text").map((b) => (b as { type: "text"; text: string }).text).join("");
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "AI analysis failed." };
+  }
+
+  let verdicts: { verdict: SubdivisionAIVerdict; reasoning: string; recommended_action: string }[];
+  try {
+    const jsonText = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
+    verdicts = JSON.parse(jsonText);
+  } catch {
+    return { error: "AI response could not be parsed as JSON." };
+  }
+
+  const suggestions: SubdivisionAISuggestion[] = candidates.map(
+    (c: { subdivision_a_id: string; subdivision_a_name: string; subdivision_b_id: string; subdivision_b_name: string; similarity_score: number }, i: number) => ({
+      subdivision_a_id: c.subdivision_a_id,
+      subdivision_a_name: c.subdivision_a_name,
+      subdivision_b_id: c.subdivision_b_id,
+      subdivision_b_name: c.subdivision_b_name,
+      similarity_score: c.similarity_score,
+      verdict: verdicts[i]?.verdict ?? "unclear",
+      reasoning: verdicts[i]?.reasoning ?? "No reasoning returned.",
+      recommended_action: verdicts[i]?.recommended_action ?? "Review manually.",
+    })
+  );
+
+  return { suggestions };
 }
