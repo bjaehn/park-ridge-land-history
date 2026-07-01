@@ -310,15 +310,35 @@ type SubRow = {
   parent_subdivision_id: string | null;
 };
 
+/**
+ * Analyzes ONE batch of candidate pairs at a time. The full candidate list
+ * routinely runs into the hundreds (249 at the default threshold as of this
+ * writing) -- sending all of them in one prompt overflows the AI's output
+ * token limit and truncates the JSON response mid-array. Batching keeps
+ * each call small and lets the UI show incremental progress with a stop
+ * button, the same pattern as the deed-parse batch runner.
+ */
 export async function analyzeSubdivisionDuplicatesWithAI(
-  threshold = 0.4
-): Promise<{ suggestions?: SubdivisionAISuggestion[]; error?: string }> {
-  const { data: candidates, error: candErr } = await adminSupabase.rpc(
+  threshold = 0.4,
+  offset = 0,
+  batchSize = 8
+): Promise<{
+  suggestions?: SubdivisionAISuggestion[];
+  total?: number;
+  nextOffset?: number;
+  hasMore?: boolean;
+  error?: string;
+}> {
+  const { data: allCandidates, error: candErr } = await adminSupabase.rpc(
     "find_subdivision_duplicate_candidates",
     { similarity_threshold: threshold }
   );
   if (candErr) return { error: candErr.message };
-  if (!candidates || candidates.length === 0) return { suggestions: [] };
+  if (!allCandidates || allCandidates.length === 0) return { suggestions: [], total: 0, hasMore: false };
+
+  const total = allCandidates.length;
+  const candidates = allCandidates.slice(offset, offset + batchSize);
+  if (candidates.length === 0) return { suggestions: [], total, hasMore: false };
 
   const ids = [...new Set(candidates.flatMap((c: { subdivision_a_id: string; subdivision_b_id: string }) => [c.subdivision_a_id, c.subdivision_b_id]))];
 
@@ -419,10 +439,9 @@ Return ONLY a single valid JSON array, no prose, no markdown fences, matching th
 
   let verdicts: { verdict: SubdivisionAIVerdict; reasoning: string; recommended_action: string }[];
   try {
-    const jsonText = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
-    verdicts = JSON.parse(jsonText);
+    verdicts = parseJsonArray(raw);
   } catch {
-    return { error: "AI response could not be parsed as JSON." };
+    return { error: `AI response could not be parsed as JSON. First 200 chars: ${raw.slice(0, 200)}` };
   }
 
   const suggestions: SubdivisionAISuggestion[] = candidates.map(
@@ -438,5 +457,19 @@ Return ONLY a single valid JSON array, no prose, no markdown fences, matching th
     })
   );
 
-  return { suggestions };
+  const nextOffset = offset + batchSize;
+  return { suggestions, total, nextOffset, hasMore: nextOffset < total };
+}
+
+/** Strips markdown fences if present, then falls back to extracting the outermost [...] span. */
+function parseJsonArray(raw: string): { verdict: SubdivisionAIVerdict; reasoning: string; recommended_action: string }[] {
+  const fenceStripped = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
+  try {
+    return JSON.parse(fenceStripped);
+  } catch {
+    const start = raw.indexOf("[");
+    const end = raw.lastIndexOf("]");
+    if (start === -1 || end === -1 || end < start) throw new Error("No JSON array found in response.");
+    return JSON.parse(raw.slice(start, end + 1));
+  }
 }

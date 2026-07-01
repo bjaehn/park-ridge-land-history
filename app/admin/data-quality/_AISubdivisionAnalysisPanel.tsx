@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -9,6 +9,8 @@ import {
   type SubdivisionAISuggestion,
   type SubdivisionAIVerdict,
 } from "../_actions/subdivisions";
+
+const BATCH_SIZE = 8;
 
 const VERDICT_STYLE: Record<SubdivisionAIVerdict, string> = {
   likely_same: "text-confidence-high bg-confidence-high/10 border-confidence-high/30",
@@ -27,25 +29,51 @@ const VERDICT_LABEL: Record<SubdivisionAIVerdict, string> = {
 export function AISubdivisionAnalysisPanel() {
   const router = useRouter();
   const [, startTransition] = useTransition();
-  const [loading, setLoading] = useState(false);
+  const [running, setRunning] = useState(false);
   const [suggestions, setSuggestions] = useState<SubdivisionAISuggestion[] | null>(null);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [mergedKeys, setMergedKeys] = useState<Set<string>>(new Set());
   const [busyKey, setBusyKey] = useState<string | null>(null);
+  const stopRef = useRef(false);
+  const offsetRef = useRef(0);
 
-  function run() {
-    setLoading(true);
-    setError(null);
+  function runOneBatch() {
     startTransition(() => {
-      analyzeSubdivisionDuplicatesWithAI().then((r) => {
-        setLoading(false);
-        if (r.error) { setError(r.error); return; }
-        setSuggestions(r.suggestions ?? []);
+      analyzeSubdivisionDuplicatesWithAI(0.4, offsetRef.current, BATCH_SIZE).then((r) => {
+        if (r.error) {
+          setError(r.error);
+          setRunning(false);
+          return;
+        }
+        setSuggestions((prev) => [...(prev ?? []), ...(r.suggestions ?? [])]);
+        const done = Math.min(r.nextOffset ?? offsetRef.current, r.total ?? 0);
+        setProgress({ done, total: r.total ?? 0 });
+        offsetRef.current = r.nextOffset ?? offsetRef.current;
+        if (r.hasMore && !stopRef.current) {
+          runOneBatch();
+        } else {
+          setRunning(false);
+        }
       }).catch((err) => {
-        setLoading(false);
         setError(err instanceof Error ? err.message : "Analysis failed unexpectedly.");
+        setRunning(false);
       });
     });
+  }
+
+  function run() {
+    setError(null);
+    setSuggestions([]);
+    setProgress(null);
+    offsetRef.current = 0;
+    stopRef.current = false;
+    setRunning(true);
+    runOneBatch();
+  }
+
+  function stop() {
+    stopRef.current = true;
   }
 
   function merge(winnerId: string, loserId: string, key: string, winnerName: string, loserName: string) {
@@ -77,21 +105,40 @@ export function AISubdivisionAnalysisPanel() {
               the duplicates page
             </Link>{" "}
             can&apos;t make on its own. Suggestions only — nothing merges without you clicking it.
+            Processes {BATCH_SIZE} pairs at a time; there can be a couple hundred candidates, so
+            this may take a few minutes and you can stop anytime.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={run}
-          disabled={loading}
-          className="shrink-0 text-xs bg-accent-teal/10 text-accent-teal border border-accent-teal/30 rounded px-3 py-1.5 hover:bg-accent-teal/20 transition-colors disabled:opacity-50"
-        >
-          {loading ? "Analyzing…" : suggestions ? "Re-analyze" : "Analyze candidates with AI"}
-        </button>
+        <div className="shrink-0 flex items-center gap-2">
+          {running ? (
+            <button
+              type="button"
+              onClick={stop}
+              className="text-xs bg-accent-red/10 text-accent-red border border-accent-red/30 rounded px-3 py-1.5 hover:bg-accent-red/20 transition-colors"
+            >
+              Stop after current batch
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={run}
+              className="text-xs bg-accent-teal/10 text-accent-teal border border-accent-teal/30 rounded px-3 py-1.5 hover:bg-accent-teal/20 transition-colors"
+            >
+              {suggestions ? "Re-analyze" : "Analyze candidates with AI"}
+            </button>
+          )}
+        </div>
       </div>
+
+      {progress && (
+        <p className="text-xs text-text-muted mb-2">
+          Analyzed {progress.done} of {progress.total} pair(s){running ? "…" : "."}
+        </p>
+      )}
 
       {error && <p className="text-accent-red text-xs mb-3">{error}</p>}
 
-      {suggestions && suggestions.length === 0 && (
+      {suggestions && suggestions.length === 0 && !running && (
         <p className="text-xs text-text-muted border-t border-surface-border pt-3 mt-3">
           No candidate pairs above the similarity threshold to analyze.
         </p>
