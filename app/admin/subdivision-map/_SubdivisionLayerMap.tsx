@@ -357,11 +357,15 @@ export function SubdivisionLayerMap({ subdivisions }: Props) {
                       >
                         {s.name}
                       </span>
-                      {(s.recorded_year || s.parcel_count) && (
+                      {(s.recorded_year || s.linked_parcel_count) && (
                         <span className="block text-xs text-text-muted mt-0.5">
                           {[
                             s.recorded_year ? `platted ${s.recorded_year}` : null,
-                            s.parcel_count ? `${s.parcel_count} parcels` : null,
+                            s.linked_parcel_count
+                              ? `${s.linked_parcel_count} linked${
+                                  s.deed_verified_count ? ` (${s.deed_verified_count} deed-verified)` : ""
+                                }`
+                              : null,
                           ]
                             .filter(Boolean)
                             .join(" · ")}

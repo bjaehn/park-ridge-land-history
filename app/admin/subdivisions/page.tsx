@@ -12,6 +12,7 @@ type SortKey =
   | "name"
   | "entity_type"
   | "recorded_year"
+  | "linked_parcel_count"
   | "total_properties"
   | "deeded_properties"
   | "earliest_year_built"
@@ -26,6 +27,7 @@ type Row = {
   recorded_year: number | null;
   earliest_year_built: number | null;
   confidence_level: string;
+  linked_parcel_count: number;
   total_properties: number;
   deeded_properties: number;
 };
@@ -35,6 +37,7 @@ function sortValue(row: Row, key: SortKey): string | number | null {
     case "name":               return row.name;
     case "entity_type":        return row.entity_type ?? null;
     case "recorded_year":      return row.recorded_year ?? null;
+    case "linked_parcel_count":return row.linked_parcel_count;
     case "total_properties":   return row.total_properties;
     case "deeded_properties":  return row.deeded_properties;
     case "earliest_year_built":return row.earliest_year_built ?? null;
@@ -102,7 +105,7 @@ export default async function SubdivisionsListPage({
 
   let subQuery = adminSupabase
     .from("subdivisions")
-    .select("id, name, entity_type, recorded_year, earliest_year_built, confidence_level");
+    .select("id, name, entity_type, recorded_year, earliest_year_built, confidence_level, linked_parcel_count");
 
   if (q) subQuery = subQuery.ilike("name", `%${q}%`);
 
@@ -126,6 +129,7 @@ export default async function SubdivisionsListPage({
       recorded_year: s.recorded_year,
       earliest_year_built: s.earliest_year_built,
       confidence_level: s.confidence_level,
+      linked_parcel_count: s.linked_parcel_count ?? 0,
       total_properties: counts ? Number(counts.total_properties) : 0,
       deeded_properties: counts ? Number(counts.deeded_properties) : 0,
     };
@@ -186,10 +190,13 @@ export default async function SubdivisionsListPage({
               <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider">
                 <SortableHeader label="Platted" sortKey="recorded_year" {...shProps} />
               </th>
-              <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider">
+              <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider" title="Parcels linked by any method: deed text, admin-assigned, or GIS-lot spatial match">
+                <SortableHeader label="Total linked" sortKey="linked_parcel_count" {...shProps} />
+              </th>
+              <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider" title="Parcels linked via property_subdivision_links (any match method)">
                 <SortableHeader label="Properties" sortKey="total_properties" {...shProps} />
               </th>
-              <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider">
+              <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider" title="Subset of Properties confirmed by reading deed legal description text">
                 <SortableHeader label="Deeded" sortKey="deeded_properties" {...shProps} />
               </th>
               <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider">
@@ -204,7 +211,7 @@ export default async function SubdivisionsListPage({
           <tbody className="divide-y divide-surface-border">
             {sorted.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-sm text-text-muted">
+                <td colSpan={9} className="px-4 py-8 text-center text-sm text-text-muted">
                   {q ? "No subdivisions match your search." : "No subdivisions yet."}
                 </td>
               </tr>
@@ -224,6 +231,9 @@ export default async function SubdivisionsListPage({
                 </td>
                 <td className="px-4 py-3 text-text-secondary tabular-nums">
                   {s.recorded_year ?? <span className="text-text-muted">-</span>}
+                </td>
+                <td className="px-4 py-3 text-text-secondary tabular-nums">
+                  {s.linked_parcel_count || <span className="text-text-muted">0</span>}
                 </td>
                 <td className="px-4 py-3 text-text-secondary tabular-nums">
                   {s.total_properties || <span className="text-text-muted">0</span>}

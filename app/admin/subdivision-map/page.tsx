@@ -6,17 +6,28 @@ export const dynamic = "force-dynamic";
 export type SubdivisionListItem = {
   id: string;
   name: string;
-  parcel_count: number | null;
+  linked_parcel_count: number | null;
+  deed_verified_count: number | null;
   recorded_year: number | null;
 };
 
 export default async function SubdivisionMapPage() {
-  const { data } = await adminSupabase
-    .from("subdivision_index_view")
-    .select("id, name, parcel_count, recorded_year")
-    .order("name", { ascending: true });
+  const [{ data }, { data: countsRaw }] = await Promise.all([
+    adminSupabase
+      .from("subdivision_index_view")
+      .select("id, name, linked_parcel_count, recorded_year")
+      .order("name", { ascending: true }),
+    adminSupabase.from("subdivision_property_counts").select("subdivision_id, total_properties"),
+  ]);
 
-  const subdivisions: SubdivisionListItem[] = (data ?? []) as SubdivisionListItem[];
+  const deedVerifiedById = new Map((countsRaw ?? []).map((c) => [c.subdivision_id, c.total_properties as number]));
+  const subdivisions: SubdivisionListItem[] = (data ?? []).map((s) => ({
+    id: s.id,
+    name: s.name,
+    linked_parcel_count: s.linked_parcel_count,
+    recorded_year: s.recorded_year,
+    deed_verified_count: deedVerifiedById.get(s.id) ?? 0,
+  }));
 
   return (
     <div>
