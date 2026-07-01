@@ -228,12 +228,20 @@ export async function fetchSubdivisionParcels(
     .from("property_subdivision_links")
     .select("pin, lot_number, block_number")
     .eq("subdivision_id", subdivisionId)
-    .limit(500);
+    .limit(5000);
 
   const deedLinks = (links ?? []) as Array<{ pin: string; lot_number: string | null; block_number: string | null }>;
   if (deedLinks.length === 0) return [];
 
-  const deedPins = deedLinks.map((r) => r.pin);
+  // Deduplicate by PIN so the count matches COUNT(DISTINCT pin) in subdivision_property_counts view.
+  const seen = new Set<string>();
+  const uniqueLinks = deedLinks.filter((r) => {
+    if (seen.has(r.pin)) return false;
+    seen.add(r.pin);
+    return true;
+  });
+
+  const deedPins = uniqueLinks.map((r) => r.pin);
 
   // Fetch lot-level detail from subdivision_lots for deed pins
   const lotsMap = new Map<string, Array<{ lot_number: string | null; block_number: string | null }>>();
@@ -256,7 +264,7 @@ export async function fetchSubdivisionParcels(
     .in("pin_normalized", deedPins);
   (parcels ?? []).forEach((p) => parcelMap.set((p as Record<string, unknown>).pin_normalized as string, p as Record<string, unknown>));
 
-  return deedLinks.map((link) => {
+  return uniqueLinks.map((link) => {
     const parcel = parcelMap.get(link.pin);
     const pinLots = lotsMap.get(link.pin) ?? [];
     const firstLot = pinLots[0] ?? link;
