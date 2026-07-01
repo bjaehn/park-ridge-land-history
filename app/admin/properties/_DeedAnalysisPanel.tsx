@@ -7,6 +7,7 @@ import {
   ensureSubdivision,
   saveLineageRecord,
   extractPdfText,
+  recordParseResult,
   type AIDeedSubdivisionLink,
   type AIDeedLineageRecord,
   type AIDeedChangeEvent,
@@ -642,6 +643,8 @@ export function DeedAnalysisPanel({
         }
       }
     }
+
+    await recordParseResult(pin, result, "claude-haiku-4-5-20251001");
 
     setDismissedLinks(new Set(result.subdivision_links.map((_, i) => i)));
     setDismissedLineage(new Set(result.lineage_records.map((_, i) => i)));

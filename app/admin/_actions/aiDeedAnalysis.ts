@@ -28,6 +28,7 @@ export type AIDeedLineageRecord = {
   parent_block: string | null;
   parent_portion: string | null;
   section: string | null;
+  quarter_section: string | null;
   township: string | null;
   range: string | null;
   meridian: string | null;
@@ -104,6 +105,7 @@ Your job is to return ONLY a single valid JSON object with no prose, no markdown
       "parent_block": string | null,
       "parent_portion": string | null,
       "section": string | null,
+      "quarter_section": string | null,
       "township": string | null,
       "range": string | null,
       "meridian": string | null,
@@ -134,6 +136,7 @@ Rules:
 - "parcel_label" is the raw label from the deed if present (e.g. "PARCEL ONE", "PARCEL TWO", "TRACT A"). Leave null for single-parcel deeds.
 - Each subdivision_link entry is the innermost / most specific named plat for that parcel (e.g. "Kinsey's Park Ridge Subdivision", not the section/township description).
 - "lineage_records" captures each parent-child chain. Produce one record per parent-child relationship found, across ALL parcels. If the deed shows A was carved from B which was carved from C, produce two records: A→B and B→C.
+- "quarter_section" captures phrases like "the Northeast Quarter" or "NE 1/4" when the deed describes a quarter-section of the federal survey; use a short normalized form like "NE 1/4" or "SW 1/4 of the NW 1/4". Leave null if no quarter-section language appears.
 - "relationship_type" should be one of: "resubdivision", "addition", "addition/resubdivision", "subdivision".
 - "development_chain" is an ordered array from oldest (county/section) to newest (the property), e.g. ["Cook County, IL", "Section 26, Township 41 North, Range 12 East", "Parent Subdivision", "Block X", "Lot Y", "Child Subdivision", "Lot Z", "526 N Washington Ave"].
 - Match subdivision names to the known list case-insensitively. If matched, set the _id field to the UUID from the list. If not matched, set _id to null and add the name to "new_subdivision_names".
@@ -243,6 +246,7 @@ export async function saveLineageRecord(
     parent_block: record.parent_block,
     parent_portion: record.parent_portion,
     section: record.section,
+    quarter_section: record.quarter_section,
     township: record.township,
     range: record.range,
     meridian: record.meridian,
@@ -282,6 +286,60 @@ export async function saveLineageRecord(
   // Fire-and-forget: rebuild the spatial research queue now that a new anchor exists
   refreshResearchQueue().catch(() => {});
 
+  return {};
+}
+
+// ─── Parse result tracking ─────────────────────────────────────────────────────
+
+const CONFIDENCE_WEIGHT: Record<string, number> = { high: 0.9, medium: 0.6, low: 0.3, unknown: 0.1 };
+
+/** Derives a numeric 0-1 confidence score from a set of categorical confidence labels. */
+function scoreConfidences(labels: string[]): number | null {
+  if (labels.length === 0) return null;
+  const weights = labels.map((l) => CONFIDENCE_WEIGHT[l] ?? 0.1);
+  return Math.round((weights.reduce((a, b) => a + b, 0) / weights.length) * 100) / 100;
+}
+
+/**
+ * Records that a deed parse ran for this PIN. Always lands as 'needs_review'
+ * -- this table tracks the parse attempt itself, not admin approval of the
+ * extracted facts (those still go through the existing per-fact confidence
+ * and subdivision status workflow).
+ */
+export async function recordParseResult(
+  pin: string,
+  result: DeedAnalysisResult,
+  aiModel: string
+): Promise<{ error?: string }> {
+  const labels = [
+    ...result.subdivision_links.map((l) => l.confidence),
+    ...result.lineage_records.map((l) => l.confidence),
+  ];
+  const confidenceScore = scoreConfidences(labels);
+  const notes =
+    `Extracted ${result.subdivision_links.length} subdivision link(s), ` +
+    `${result.lineage_records.length} lineage record(s), ` +
+    `${result.change_events.length} change event(s).` +
+    (result.new_subdivision_names.length
+      ? ` New subdivision names introduced: ${result.new_subdivision_names.join(", ")}.`
+      : "");
+
+  const { error } = await adminSupabase.from("deed_parse_results").upsert(
+    {
+      pin,
+      parse_status: "needs_review",
+      confidence_score: confidenceScore,
+      parse_notes: notes,
+      subdivision_link_count: result.subdivision_links.length,
+      lineage_record_count: result.lineage_records.length,
+      ai_model: aiModel,
+      parsed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "pin" }
+  );
+
+  if (error) return { error: error.message };
   return {};
 }
 
