@@ -14,6 +14,7 @@ export type TimelineEvent = {
   title: string;
   detail?: string | null;
   sourceLabel: string;
+  confidenceLabel?: string | null;
 };
 
 const EVENT_ICONS: Record<TimelineEvent["eventType"], LucideIcon> = {
@@ -57,7 +58,10 @@ export function PropertyTimeline({ events }: Props) {
               {event.detail && (
                 <p className="text-xs text-text-secondary mt-0.5 leading-snug">{event.detail}</p>
               )}
-              <p className="text-xs text-text-muted mt-1">{event.sourceLabel}</p>
+              <p className="text-xs text-text-muted mt-1">
+                {event.sourceLabel}
+                {event.confidenceLabel ? ` · Confidence: ${event.confidenceLabel}` : ""}
+              </p>
             </div>
           </li>
         );
@@ -70,7 +74,8 @@ export function buildTimelineEvents(
   props: Record<string, unknown>,
   subdivision?: { recorded_year?: number | null; name?: string; original_owner?: string | null } | null,
   sales?: PropertySale[],
-  permits?: PropertyPermit[]
+  permits?: PropertyPermit[],
+  subdivisionConfidenceLabel?: string | null
 ): TimelineEvent[] {
   const events: TimelineEvent[] = [];
 
@@ -82,6 +87,7 @@ export function buildTimelineEvents(
       title: `Lot created by plat: ${subdivision.name ?? "subdivision"}`,
       detail: subdivision.original_owner ? `Developer: ${subdivision.original_owner}` : null,
       sourceLabel: "Cook County Recorder of Deeds",
+      confidenceLabel: subdivisionConfidenceLabel ?? null,
     });
   }
 

@@ -11,7 +11,14 @@ const navLinks = [
   { href: "/admin/plat-mapping",       label: "Plat Index" },
   { href: "/admin/research-queue",     label: "Research Queue" },
   { href: "/admin/subdivision-map",    label: "Subdivision Map" },
+  { href: "/admin/data-quality",       label: "Data Quality" },
 ];
+
+const BUILD_SHA =
+  process.env.RAILWAY_GIT_COMMIT_SHA ??
+  process.env.VERCEL_GIT_COMMIT_SHA ??
+  process.env.GIT_COMMIT_SHA ??
+  null;
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -49,6 +56,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               Logout
             </button>
           </form>
+          <p className="px-3 pt-2 text-[10px] text-text-muted font-mono">
+            {BUILD_SHA ? `Build ${BUILD_SHA.slice(0, 7)}` : "Build: local/unknown"}
+          </p>
         </div>
       </aside>
 

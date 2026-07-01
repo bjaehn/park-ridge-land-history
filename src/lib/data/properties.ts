@@ -134,6 +134,14 @@ export type LandAncestryData = {
   source_name: string | null;
 };
 
+export type PropertyDataQuality = {
+  hasLegalDescription: boolean;
+  hasSubdivisionLink: boolean;
+  hasLandLineage: boolean;
+  hasConstructionYear: boolean;
+  citationCoverageScore: number;
+};
+
 export type PropertyNote = {
   id: string;
   event_type: string;
@@ -161,6 +169,7 @@ export type PropertyDetailData = {
   hargisRecords?: HargisRecord[];
   appealYears?: number[];
   propertyNotes?: PropertyNote[];
+  dataQuality?: PropertyDataQuality | null;
 };
 
 export type { LandLineageEntry, LandLot };
@@ -231,6 +240,7 @@ export async function getPropertyDetail(pin: string): Promise<PropertyDetailData
     appealYearsResult,
     landAncestryResult,
     propertyNotesResult,
+    dataQualityResult,
   ] = await Promise.allSettled([
     loadSubdivision(pin),
     loadLandLineage(pin),
@@ -241,6 +251,7 @@ export async function getPropertyDetail(pin: string): Promise<PropertyDetailData
     loadAppealYears(pin, props.latest_appeal_year as number | null),
     loadLandAncestry(pin),
     loadPropertyNotes(pin),
+    loadDataQuality(pin),
   ]);
 
   return {
@@ -254,6 +265,24 @@ export async function getPropertyDetail(pin: string): Promise<PropertyDetailData
     hargisRecords: hargisResult.status === "fulfilled" ? hargisResult.value : [],
     appealYears: appealYearsResult.status === "fulfilled" ? appealYearsResult.value : [],
     propertyNotes: propertyNotesResult.status === "fulfilled" ? propertyNotesResult.value : [],
+    dataQuality: dataQualityResult.status === "fulfilled" ? dataQualityResult.value : null,
+  };
+}
+
+async function loadDataQuality(pin: string): Promise<PropertyDataQuality | null> {
+  if (!supabase) return null;
+  const { data } = await supabase
+    .from("property_data_quality")
+    .select("has_legal_description, has_subdivision_link, has_land_lineage, has_construction_year, citation_coverage_score")
+    .eq("pin_normalized", pin)
+    .maybeSingle();
+  if (!data) return null;
+  return {
+    hasLegalDescription: Boolean(data.has_legal_description),
+    hasSubdivisionLink: Boolean(data.has_subdivision_link),
+    hasLandLineage: Boolean(data.has_land_lineage),
+    hasConstructionYear: Boolean(data.has_construction_year),
+    citationCoverageScore: Number(data.citation_coverage_score ?? 0),
   };
 }
 

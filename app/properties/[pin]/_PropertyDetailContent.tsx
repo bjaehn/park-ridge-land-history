@@ -9,6 +9,9 @@ import { LoadingSkeleton, EmptyState } from "@/components/ui/EmptyState";
 import { InlineSourceNote } from "@/components/ui/SourceNote";
 import { PropertyTimeline, buildTimelineEvents } from "@/components/ui/PropertyTimeline";
 import { SubdivisionLineageCard } from "@/components/ui/SubdivisionLineageCard";
+import { LandLineageVisual } from "@/components/ui/LandLineageVisual";
+import { confidenceLevelLabel } from "@/lib/subdivisionTypes";
+import type { SubdivisionConfidenceLevel } from "@/lib/subdivisionTypes";
 import {
   SaleIcon,
   SubdivisionIcon,
@@ -669,6 +672,15 @@ function PropertySummaryCard({
   );
 }
 
+function StoryGroupHeader({ title, subtitle }: { title: string; subtitle?: string }) {
+  return (
+    <div className="mb-4 pb-2 border-b border-surface-border">
+      <h2 className="text-lg font-bold text-text-primary">{title}</h2>
+      {subtitle && <p className="text-sm text-text-muted mt-0.5">{subtitle}</p>}
+    </div>
+  );
+}
+
 export function PropertyDetailContent({ pin, initialProps }: Props) {
   const [detail, setDetail] = useState<Awaited<ReturnType<typeof getPropertyDetail>> | null>(null);
   const [loading, setLoading] = useState(true);
@@ -763,7 +775,10 @@ export function PropertyDetailContent({ pin, initialProps }: Props) {
     latest_sale_year: latestSaleYear,
     latest_sale_price: latestSalePrice,
   };
-  const timeline = buildTimelineEvents(propsForTimeline, detail.subdivision, detail.sales, detail.permits);
+  const subdivisionConfidenceLabel = landLineage[0]?.subdivision?.confidence_level
+    ? confidenceLevelLabel(landLineage[0].subdivision.confidence_level as SubdivisionConfidenceLevel)
+    : null;
+  const timeline = buildTimelineEvents(propsForTimeline, detail.subdivision, detail.sales, detail.permits, subdivisionConfidenceLabel);
 
 
   const missingGaps: string[] = [];
@@ -921,168 +936,289 @@ export function PropertyDetailContent({ pin, initialProps }: Props) {
         <HistoricalNotesSection notes={propertyNotes} />
       )}
 
-      {/* Property timeline */}
-      {timeline.length > 0 && (
+      {/* ══════════════════════ Land Origins ══════════════════════ */}
+      {(landLineage.length > 0 || landAncestry || detail.subdivision || props.deed_notes) && (
         <section>
-          <h2 className="section-heading">Property timeline</h2>
-          <p className="text-sm text-text-muted mb-3">Key moments in this property's recorded history, from the original plat to the most recent transaction.</p>
-          <PropertyTimeline events={timeline} />
-        </section>
-      )}
-
-      {/* How this property compares — placed early so users see it */}
-      {detail.comparisons && detail.comparisons.length > 0 && (
-        <section>
-          <div className="flex items-center gap-2 mb-3">
-            <ComparisonIcon size={14} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />
-            <h2 className="section-heading !mb-0">How this property compares</h2>
-          </div>
-          <ComparisonList rows={detail.comparisons} />
-        </section>
-      )}
-
-      {/* Sale history */}
-      <SaleHistorySection
-        sales={sales}
-        chartSlot={sales.some((s) => s.sale_price != null && s.sale_price > 0) ? <SalesPriceChart sales={sales} /> : undefined}
-      />
-
-      {/* Assessment value chart */}
-      {assessmentTimeline.length >= 2 && (
-        <section>
-          <h2 className="section-heading">Assessed value history</h2>
-          <AssessmentChart
-            timeline={assessmentTimeline}
-            appealYears={appealYears}
-            totalReduction={props.total_assessment_reduction as number | null}
+          <StoryGroupHeader
+            title="Land Origins"
+            subtitle="Where this land came from — from the original plat down to this parcel."
           />
-          <InlineSourceNote className="mt-2">Cook County Assessor certified totals by assessment year</InlineSourceNote>
+          <div className="space-y-8">
+            {landLineage.length > 0 && (
+              <section>
+                <h2 className="section-heading">Ancestry chain</h2>
+                <LandLineageVisual entries={landLineage} />
+              </section>
+            )}
+
+            {landLineage.length > 0 ? (
+              <LandLineageSection lineage={landLineage} />
+            ) : detail.subdivision ? (
+              <section>
+                <h2 className="section-heading">Recorded plat</h2>
+                <div className="flex items-start gap-3 bg-surface-card border border-surface-border rounded-lg p-4">
+                  <SubdivisionIcon size={16} strokeWidth={1.8} className="text-text-muted shrink-0 mt-0.5" aria-hidden="true" />
+                  <div className="min-w-0">
+                    <Link
+                      href={`/subdivisions/${encodeURIComponent(detail.subdivision.id)}`}
+                      className="text-sm font-semibold text-text-primary hover:text-accent-purple transition-colors"
+                    >
+                      {detail.subdivision.name}
+                    </Link>
+                    <p className="text-xs text-text-secondary mt-0.5">
+                      {detail.subdivision.recorded_year
+                        ? `Recorded ${detail.subdivision.recorded_year}${detail.subdivision.original_owner ? `. Developer: ${detail.subdivision.original_owner}` : ""}`
+                        : "Recording date uncertain"}
+                    </p>
+                    <p className="text-xs text-text-muted mt-0.5">Cook County Recorder of Deeds</p>
+                  </div>
+                </div>
+              </section>
+            ) : null}
+
+            {landAncestry && <LandAncestryPanel data={landAncestry} />}
+
+            {props.deed_notes && (
+              <section>
+                <h2 className="section-heading">Deed record</h2>
+                <div className="bg-surface-card border border-surface-border rounded-lg p-4">
+                  <p className="text-sm text-text-secondary font-mono leading-relaxed whitespace-pre-wrap">
+                    {props.deed_notes}
+                  </p>
+                </div>
+              </section>
+            )}
+          </div>
         </section>
       )}
 
-      {/* Permit history */}
-      <PermitHistorySection permits={permits} />
+      {/* ══════════════════════ Home Evolution ══════════════════════ */}
+      <section>
+        <StoryGroupHeader
+          title="Home Evolution"
+          subtitle="How the house on this parcel has changed since it was built."
+        />
+        <div className="space-y-8">
+          {timeline.length > 0 && (
+            <section>
+              <h2 className="section-heading">Property timeline</h2>
+              <p className="text-sm text-text-muted mb-3">Key moments in this property's recorded history, from the original plat to the most recent transaction.</p>
+              <PropertyTimeline events={timeline} />
+            </section>
+          )}
 
-      {/* HARGIS survey records */}
-      <HargisSurveySection records={hargisRecords} />
+          <SaleHistorySection
+            sales={sales}
+            chartSlot={sales.some((s) => s.sale_price != null && s.sale_price > 0) ? <SalesPriceChart sales={sales} /> : undefined}
+          />
 
-      {/* Land lineage (deed-sourced) or recorded plat fallback */}
-      {landLineage.length > 0 ? (
-        <LandLineageSection lineage={landLineage} />
-      ) : detail.subdivision ? (
-        <section>
-          <h2 className="section-heading">Recorded plat</h2>
-          <div className="flex items-start gap-3 bg-surface-card border border-surface-border rounded-lg p-4">
-            <SubdivisionIcon size={16} strokeWidth={1.8} className="text-text-muted shrink-0 mt-0.5" aria-hidden="true" />
-            <div className="min-w-0">
-              <Link
-                href={`/subdivisions/${encodeURIComponent(detail.subdivision.id)}`}
-                className="text-sm font-semibold text-text-primary hover:text-accent-purple transition-colors"
-              >
-                {detail.subdivision.name}
-              </Link>
-              <p className="text-xs text-text-secondary mt-0.5">
-                {detail.subdivision.recorded_year
-                  ? `Recorded ${detail.subdivision.recorded_year}${detail.subdivision.original_owner ? `. Developer: ${detail.subdivision.original_owner}` : ""}`
-                  : "Recording date uncertain"}
-              </p>
-              <p className="text-xs text-text-muted mt-0.5">Cook County Recorder of Deeds</p>
+          {assessmentTimeline.length >= 2 && (
+            <section>
+              <h2 className="section-heading">Assessed value history</h2>
+              <AssessmentChart
+                timeline={assessmentTimeline}
+                appealYears={appealYears}
+                totalReduction={props.total_assessment_reduction as number | null}
+              />
+              <InlineSourceNote className="mt-2">Cook County Assessor certified totals by assessment year</InlineSourceNote>
+            </section>
+          )}
+
+          <PermitHistorySection permits={permits} />
+
+          <HargisSurveySection records={hargisRecords} />
+        </div>
+      </section>
+
+      {/* ══════════════════════ Place in Park Ridge ══════════════════════ */}
+      <section>
+        <StoryGroupHeader
+          title="Place in Park Ridge"
+          subtitle="How this property fits into its block, subdivision, and neighborhood."
+        />
+        <div className="space-y-8">
+          {detail.comparisons && detail.comparisons.length > 0 && (
+            <section>
+              <div className="flex items-center gap-2 mb-3">
+                <ComparisonIcon size={14} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />
+                <h2 className="section-heading !mb-0">How this property compares</h2>
+              </div>
+              <ComparisonList rows={detail.comparisons} />
+            </section>
+          )}
+
+          {(props.official_planning_neighborhood_id || props.business_district_id || props.local_neighborhood_id) && (
+            <section>
+              <h2 className="section-heading">Geographic context</h2>
+              <p className="text-sm text-text-secondary mb-3">This property sits within overlapping planning districts, business areas, and local neighborhoods.</p>
+              <div className="space-y-2">
+                {props.official_planning_neighborhood_id && props.official_planning_neighborhood_slug && (
+                  <NeighborhoodChip
+                    label={(props.official_planning_neighborhood_label as string | null) ?? (props.official_planning_neighborhood_id as string)}
+                    slug={props.official_planning_neighborhood_slug as string}
+                    typeLabel="Official Planning"
+                  />
+                )}
+                {props.business_district_id && props.business_district_slug && (
+                  <NeighborhoodChip
+                    label={(props.business_district_label as string | null) ?? (props.business_district_id as string)}
+                    slug={props.business_district_slug as string}
+                    typeLabel="Business District"
+                  />
+                )}
+                {props.local_neighborhood_id && props.local_neighborhood_slug && (
+                  <NeighborhoodChip
+                    label={(props.local_neighborhood_label as string | null) ?? (props.local_neighborhood_id as string)}
+                    slug={props.local_neighborhood_slug as string}
+                    typeLabel="Local Name"
+                  />
+                )}
+              </div>
+            </section>
+          )}
+
+          <section>
+            <h2 className="section-heading">Explore more</h2>
+            <div className="space-y-2">
+              {blockPrefix && (
+                <div>
+                  <Link
+                    href={`/pin/${encodeURIComponent(blockPrefix)}`}
+                    className="text-accent-purple hover:underline"
+                  >
+                    View all properties on this block →
+                  </Link>
+                </div>
+              )}
+              {props.street_name_normalized && (
+                <div>
+                  <Link
+                    href={`/streets/${encodeURIComponent(props.street_name_normalized as string)}`}
+                    className="text-accent-purple hover:underline"
+                  >
+                    View all properties on {streetDisplayName ?? (props.street_name_normalized as string)} →
+                  </Link>
+                </div>
+              )}
+              {neighborhoodSlug && neighborhoodLabel && (
+                <div>
+                  <Link
+                    href={`/neighborhoods/${encodeURIComponent(neighborhoodSlug)}`}
+                    className="text-accent-purple hover:underline"
+                  >
+                    Learn about the {neighborhoodLabel} neighborhood →
+                  </Link>
+                </div>
+              )}
+              <div className="pt-2 border-t border-surface-border space-y-2">
+                <p className="text-xs text-text-muted">External records for this parcel:</p>
+                <div>
+                  <a
+                    href={`https://www.cookcountyassessor.com/pin/${encodeURIComponent(pin)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-accent-purple hover:underline text-sm"
+                  >
+                    Cook County Assessor — view full assessment record ↗
+                  </a>
+                </div>
+                <div>
+                  <a
+                    href={`https://crs.cookcountyclerkil.gov/Search/ResultByPin?id1=${encodeURIComponent(pin)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-accent-purple hover:underline text-sm"
+                  >
+                    Cook County Recorder — search deed history ↗
+                  </a>
+                </div>
+              </div>
             </div>
-          </div>
-        </section>
-      ) : null}
+          </section>
+        </div>
+      </section>
 
-      {/* Deed record */}
-      {props.deed_notes && (
+      {/* ══════════════════════ Why This Matters ══════════════════════ */}
+      {(whatThisMeansBullets.length > 0 || missingGaps.length > 0 || questionsToConsider.length > 0 || detail.dataQuality) && (
         <section>
-          <h2 className="section-heading">Deed Record</h2>
-          <div className="bg-surface-card border border-surface-border rounded-lg p-4">
-            <p className="text-sm text-text-secondary font-mono leading-relaxed whitespace-pre-wrap">
-              {props.deed_notes}
-            </p>
-          </div>
-        </section>
-      )}
-
-      {/* Geographic context */}
-      {(props.official_planning_neighborhood_id || props.business_district_id || props.local_neighborhood_id) && (
-        <section>
-          <h2 className="section-heading">Geographic context</h2>
-          <p className="text-sm text-text-secondary mb-3">This property sits within overlapping planning districts, business areas, and local neighborhoods.</p>
-          <div className="space-y-2">
-            {props.official_planning_neighborhood_id && props.official_planning_neighborhood_slug && (
-              <NeighborhoodChip
-                label={(props.official_planning_neighborhood_label as string | null) ?? (props.official_planning_neighborhood_id as string)}
-                slug={props.official_planning_neighborhood_slug as string}
-                typeLabel="Official Planning"
-              />
+          <StoryGroupHeader
+            title="Why This Matters"
+            subtitle="A plain-language read of this property's story, built only from the verified facts above."
+          />
+          <div className="space-y-8">
+            {detail.dataQuality && (
+              <section>
+                <h2 className="section-heading">Source coverage</h2>
+                <p className="text-sm text-text-secondary mb-2">
+                  {Math.round(detail.dataQuality.citationCoverageScore * 100)}% of tracked source
+                  categories are on file for this property.
+                </p>
+                <ul className="flex flex-wrap gap-x-5 gap-y-1.5 text-xs">
+                  {[
+                    { label: "Legal description", present: detail.dataQuality.hasLegalDescription },
+                    { label: "Subdivision link", present: detail.dataQuality.hasSubdivisionLink },
+                    { label: "Land lineage record", present: detail.dataQuality.hasLandLineage },
+                    { label: "Construction year", present: detail.dataQuality.hasConstructionYear },
+                  ].map((item) => (
+                    <li
+                      key={item.label}
+                      className={item.present ? "text-text-secondary" : "text-text-muted"}
+                    >
+                      {item.present ? "✓" : "–"} {item.label}
+                    </li>
+                  ))}
+                </ul>
+              </section>
             )}
-            {props.business_district_id && props.business_district_slug && (
-              <NeighborhoodChip
-                label={(props.business_district_label as string | null) ?? (props.business_district_id as string)}
-                slug={props.business_district_slug as string}
-                typeLabel="Business District"
-              />
+
+            {whatThisMeansBullets.length > 0 && (
+              <section>
+                <h2 className="section-heading">What this means</h2>
+                <ul className="space-y-2">
+                  {whatThisMeansBullets.map((b, i) => (
+                    <li key={i} className="flex items-start gap-2.5 text-sm text-text-secondary">
+                      <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-accent-purple shrink-0" aria-hidden="true" />
+                      {b}
+                    </li>
+                  ))}
+                </ul>
+              </section>
             )}
-            {props.local_neighborhood_id && props.local_neighborhood_slug && (
-              <NeighborhoodChip
-                label={(props.local_neighborhood_label as string | null) ?? (props.local_neighborhood_id as string)}
-                slug={props.local_neighborhood_slug as string}
-                typeLabel="Local Name"
-              />
+
+            {missingGaps.length > 0 && (
+              <section>
+                <h2 className="section-heading">What we don't know yet</h2>
+                <ul className="space-y-2">
+                  {missingGaps.map((gap) => (
+                    <li key={gap} className="flex items-start gap-2.5 text-sm text-text-muted">
+                      <MissingIcon size={14} strokeWidth={1.8} className="shrink-0 mt-0.5" aria-hidden="true" />
+                      {gap}
+                    </li>
+                  ))}
+                </ul>
+                <InlineSourceNote className="mt-3">
+                  Missing records may be added as research progresses. If you know something about this property, contact us.
+                </InlineSourceNote>
+              </section>
+            )}
+
+            {questionsToConsider.length > 0 && (
+              <section>
+                <h2 className="section-heading">Questions to consider (based on available records)</h2>
+                <ul className="space-y-2">
+                  {questionsToConsider.map((q, i) => (
+                    <li key={i} className="flex items-start gap-2.5 text-sm text-text-secondary">
+                      <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-text-muted shrink-0" aria-hidden="true" />
+                      {q}
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-xs text-text-muted mt-3 italic">
+                  These are observations from county records, not legal or appraisal advice.
+                </p>
+              </section>
             )}
           </div>
-        </section>
-      )}
-
-      {/* What this means */}
-      {whatThisMeansBullets.length > 0 && (
-        <section>
-          <h2 className="section-heading">What this means</h2>
-          <ul className="space-y-2">
-            {whatThisMeansBullets.map((b, i) => (
-              <li key={i} className="flex items-start gap-2.5 text-sm text-text-secondary">
-                <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-accent-purple shrink-0" aria-hidden="true" />
-                {b}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {/* What we don't know yet */}
-      {missingGaps.length > 0 && (
-        <section>
-          <h2 className="section-heading">What we don't know yet</h2>
-          <ul className="space-y-2">
-            {missingGaps.map((gap) => (
-              <li key={gap} className="flex items-start gap-2.5 text-sm text-text-muted">
-                <MissingIcon size={14} strokeWidth={1.8} className="shrink-0 mt-0.5" aria-hidden="true" />
-                {gap}
-              </li>
-            ))}
-          </ul>
-          <InlineSourceNote className="mt-3">
-            Missing records may be added as research progresses. If you know something about this property, contact us.
-          </InlineSourceNote>
-        </section>
-      )}
-
-      {/* Questions to consider */}
-      {questionsToConsider.length > 0 && (
-        <section>
-          <h2 className="section-heading">Questions to consider (based on available records)</h2>
-          <ul className="space-y-2">
-            {questionsToConsider.map((q, i) => (
-              <li key={i} className="flex items-start gap-2.5 text-sm text-text-secondary">
-                <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-text-muted shrink-0" aria-hidden="true" />
-                {q}
-              </li>
-            ))}
-          </ul>
-          <p className="text-xs text-text-muted mt-3 italic">
-            These are observations from county records, not legal or appraisal advice.
-          </p>
         </section>
       )}
 
@@ -1125,7 +1261,6 @@ export function PropertyDetailContent({ pin, initialProps }: Props) {
             <PinBreakdown props={props as Record<string, unknown>} />
             <p className="text-xs text-text-muted mt-2">Cook County 14-digit PIN: township · section · block · parcel · unit</p>
           </section>
-          {landAncestry && <LandAncestryPanel data={landAncestry} />}
           <section>
             <h2 className="section-heading">Raw assessor record</h2>
             <InlineSourceNote>
@@ -1143,65 +1278,6 @@ export function PropertyDetailContent({ pin, initialProps }: Props) {
         </div>
       </details>
 
-      {/* Explore more */}
-      <section>
-        <h2 className="section-heading">Explore more</h2>
-        <div className="space-y-2">
-          {blockPrefix && (
-            <div>
-              <Link
-                href={`/pin/${encodeURIComponent(blockPrefix)}`}
-                className="text-accent-purple hover:underline"
-              >
-                View all properties on this block →
-              </Link>
-            </div>
-          )}
-          {props.street_name_normalized && (
-            <div>
-              <Link
-                href={`/streets/${encodeURIComponent(props.street_name_normalized as string)}`}
-                className="text-accent-purple hover:underline"
-              >
-                View all properties on {streetDisplayName ?? (props.street_name_normalized as string)} →
-              </Link>
-            </div>
-          )}
-          {neighborhoodSlug && neighborhoodLabel && (
-            <div>
-              <Link
-                href={`/neighborhoods/${encodeURIComponent(neighborhoodSlug)}`}
-                className="text-accent-purple hover:underline"
-              >
-                Learn about the {neighborhoodLabel} neighborhood →
-              </Link>
-            </div>
-          )}
-          <div className="pt-2 border-t border-surface-border space-y-2">
-            <p className="text-xs text-text-muted">External records for this parcel:</p>
-            <div>
-              <a
-                href={`https://www.cookcountyassessor.com/pin/${encodeURIComponent(pin)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-accent-purple hover:underline text-sm"
-              >
-                Cook County Assessor — view full assessment record ↗
-              </a>
-            </div>
-            <div>
-              <a
-                href={`https://crs.cookcountyclerkil.gov/Search/ResultByPin?id1=${encodeURIComponent(pin)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-accent-purple hover:underline text-sm"
-              >
-                Cook County Recorder — search deed history ↗
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
       <ScrollToTop />
     </div>
   );

@@ -248,3 +248,27 @@ export async function deleteLot(lotId: string, subdivisionId: string) {
   if (error) return { error: error.message };
   return {};
 }
+
+// ─── Duplicate detection & merge ───────────────────────────────────────────────
+
+export async function findDuplicateCandidates(threshold = 0.45) {
+  const { data, error } = await adminSupabase.rpc("find_subdivision_duplicate_candidates", {
+    similarity_threshold: threshold,
+  });
+  if (error) return { error: error.message, candidates: [] as never[] };
+  return { candidates: data ?? [] };
+}
+
+/** Reassigns all references from loserId to winnerId, then marks loserId deprecated. Never deletes. */
+export async function mergeSubdivisions(winnerId: string, loserId: string) {
+  const { error } = await adminSupabase.rpc("merge_subdivisions", {
+    winner_id: winnerId,
+    loser_id: loserId,
+  });
+  revalidatePath("/admin/subdivisions");
+  revalidatePath("/admin/subdivisions/duplicates");
+  revalidatePath(`/admin/subdivisions/${winnerId}`);
+  revalidatePath(`/admin/subdivisions/${loserId}`);
+  if (error) return { error: error.message };
+  return {};
+}

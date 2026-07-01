@@ -67,6 +67,18 @@ const tools = [
     description:
       "View Cook County Recorder plat index entries for T40N R12E. Link Recorder short names to subdivision records, or add notes for entries without a match.",
   },
+  {
+    href: "/admin/data-quality",
+    label: "Data Quality Report",
+    description:
+      "Missing addresses, duplicate PINs, unmatched permits, orphaned sales, and other data integrity checks across the dataset.",
+  },
+  {
+    href: "/admin/subdivisions/duplicates",
+    label: "Duplicate Subdivisions",
+    description:
+      "Name and alias similarity matches between subdivision records, with a manual merge workflow.",
+  },
 ];
 
 export default async function AdminDashboard() {

@@ -148,12 +148,20 @@ export default async function SubdivisionsListPage({
             {q ? ` matching "${q}"` : ""}
           </p>
         </div>
-        <Link
-          href="/admin/subdivisions/new"
-          className="shrink-0 bg-accent-teal text-surface-base font-semibold px-4 py-2 rounded text-sm hover:opacity-90 transition-opacity"
-        >
-          + New Subdivision
-        </Link>
+        <div className="flex items-center gap-3 shrink-0">
+          <Link
+            href="/admin/subdivisions/duplicates"
+            className="text-sm text-accent-teal hover:opacity-80 transition-opacity"
+          >
+            Find duplicates
+          </Link>
+          <Link
+            href="/admin/subdivisions/new"
+            className="bg-accent-teal text-surface-base font-semibold px-4 py-2 rounded text-sm hover:opacity-90 transition-opacity"
+          >
+            + New Subdivision
+          </Link>
+        </div>
       </div>
 
       <form method="GET" className="mb-6">
