@@ -25,11 +25,13 @@ export const HOME_HERO_SUBHEAD =
 // ---------------------------------------------------------------------------
 
 export const CITY_NARRATIVE =
-  "Park Ridge grew in three distinct waves. The first settlers arrived in the 1870s and 1880s, " +
-  "clustering near the railroad depot in what is now Uptown. A second wave of bungalows and two-flats " +
-  "filled the central and northeast sections through the 1920s and 1930s. After World War II, the postwar " +
-  "housing boom extended the city to its northwest and south edges, adding thousands of Cape Cods and " +
-  "ranches that define the character of those neighborhoods today.";
+  "Park Ridge grew in three distinct waves. Its earliest roots trace to 1854, when George Penny opened a " +
+  "brickworks near a new railroad depot; the small community that grew up around it, first called " +
+  "Pennyville and then Brickton, incorporated as the Village of Park Ridge in 1873. That original " +
+  "depot-era core is now Uptown. A second wave of bungalows and two-flats filled the central and " +
+  "northeast sections through the 1910s, '20s, and '30s. After World War II, the postwar housing boom " +
+  "extended the city to its northwest and south edges, adding thousands of Cape Cods and ranches that " +
+  "define the character of those neighborhoods today.";
 
 // ---------------------------------------------------------------------------
 // Neighborhood narratives and era labels (keyed by neighborhood slug)
