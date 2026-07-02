@@ -5,14 +5,18 @@ import {
   suggestPlatMatch,
   markNoMatch,
   linkPlatIndexEntry,
+  fetchPinsForGisPageCodes,
   type PlatMatchSuggestion,
 } from "../_actions/platMapping";
+import { fetchPinsForSubdivision } from "../_actions/subdivisionMap";
+import { ClusterMapCore } from "./_ClusterMapCore";
 
 type UnlinkedEntry = {
   id: string;
   short_name: string;
   full_name: string;
   section_ref: string;
+  gis_page_codes: string[] | null;
 };
 
 type SubdivisionForMatching = {
@@ -46,10 +50,44 @@ export function SuggestionQueue({
   const [loading, setLoading] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [highlightPins, setHighlightPins] = useState<string[]>([]);
+  const [comparePins, setComparePins] = useState<string[]>([]);
 
   const current = unlinkedEntries[currentIndex];
   const remaining = unlinkedEntries.length - currentIndex;
   const done = currentIndex >= unlinkedEntries.length;
+
+  // Highlight this entry's own GIS page code cluster, if it has one.
+  useEffect(() => {
+    const codes = current?.gis_page_codes ?? [];
+    if (!codes.length) {
+      setHighlightPins([]);
+      return;
+    }
+    let cancelled = false;
+    fetchPinsForGisPageCodes(codes).then((pins) => {
+      if (!cancelled) setHighlightPins(pins);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [current?.id, current?.gis_page_codes]);
+
+  // Overlay the currently-selected AI suggestion's existing linked footprint,
+  // so the admin can visually compare before accepting.
+  useEffect(() => {
+    if (!selectedId) {
+      setComparePins([]);
+      return;
+    }
+    let cancelled = false;
+    fetchPinsForSubdivision(selectedId).then((pins) => {
+      if (!cancelled) setComparePins(pins);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedId]);
 
   useEffect(() => {
     if (!current) return;
@@ -164,6 +202,20 @@ export function SuggestionQueue({
             </div>
           )}
         </div>
+
+        {/* Visual confirmation: this entry's GIS page code cluster vs. the
+            selected suggestion's existing linked footprint */}
+        {(highlightPins.length > 0 || comparePins.length > 0) && (
+          <div className="mb-4 rounded-lg overflow-hidden border border-surface-border">
+            <ClusterMapCore
+              highlightPins={highlightPins}
+              comparePins={comparePins}
+              highlightLabel={highlightPins.length ? "This entry's GIS codes" : undefined}
+              compareLabel={comparePins.length ? `${selectedSuggestion?.name ?? "Selected subdivision"} (existing)` : undefined}
+              height="220px"
+            />
+          </div>
+        )}
 
         {/* Actions */}
         <div className="flex items-center gap-2 flex-wrap">

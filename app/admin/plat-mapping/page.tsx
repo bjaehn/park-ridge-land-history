@@ -12,13 +12,18 @@ export default async function PlatMappingPage() {
         .order("section_ref")
         .order("full_name"),
       adminSupabase.from("subdivisions").select("id, name, normalized_name, alternate_names").order("name"),
-      adminSupabase.rpc("get_park_ridge_gis_page_codes"),
+      adminSupabase.rpc("get_gis_page_codes_with_status"),
     ]);
 
-  const pageCodes = (rawPageCodes ?? []).map((r: { code: string; cnt: number }) => ({
-    code: r.code,
-    cnt: Number(r.cnt),
-  }));
+  const pageCodes = (rawPageCodes ?? []).map(
+    (r: { code: string; cnt: number; linked_cnt: number; subdivision_id: string | null; subdivision_name: string | null }) => ({
+      code: r.code,
+      cnt: Number(r.cnt),
+      linkedCnt: Number(r.linked_cnt),
+      subdivisionId: r.subdivision_id,
+      subdivisionName: r.subdivision_name,
+    })
+  );
 
   const entries = (rawEntries ?? []).map((e) => ({
     ...e,

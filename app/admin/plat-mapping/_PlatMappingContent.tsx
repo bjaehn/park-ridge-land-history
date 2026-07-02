@@ -8,6 +8,7 @@ import {
   savePlatIndexGisCodes,
 } from "../_actions/platMapping";
 import { SuggestionQueue } from "./_SuggestionQueue";
+import { PlatSectionMap } from "./_PlatSectionMap";
 
 type PlatEntry = {
   id: string;
@@ -21,7 +22,13 @@ type PlatEntry = {
 };
 
 type SubOption = { id: string; name: string; normalized_name: string; alternate_names: string[] | null };
-type PageCode = { code: string; cnt: number };
+type PageCode = {
+  code: string;
+  cnt: number;
+  linkedCnt: number;
+  subdivisionId: string | null;
+  subdivisionName: string | null;
+};
 
 const PR_SECTIONS = ["01-40-12", "02-40-12", "11-40-12", "12-40-12"];
 type SectionFilter = "pr" | "all";
@@ -40,6 +47,7 @@ export function PlatMappingContent({
   const [linkedFilter, setLinkedFilter] = useState<LinkedFilter>("unlinked");
   const [search, setSearch] = useState("");
   const [isPending, startTransition] = useTransition();
+  const [view, setView] = useState<"table" | "map">("table");
 
   const filtered = useMemo(() => {
     return entries.filter((e) => {
@@ -106,8 +114,28 @@ export function PlatMappingContent({
             codes set.
           </p>
         </div>
+
+        <div className="flex rounded border border-surface-border overflow-hidden text-xs shrink-0">
+          {(["table", "map"] as const).map((v) => (
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              className={`px-3 py-1.5 font-medium capitalize transition-colors ${
+                view === v
+                  ? "bg-accent-teal text-surface-base"
+                  : "bg-surface-raised text-text-muted hover:text-text-primary"
+              }`}
+            >
+              {v === "table" ? "Table" : "Map"}
+            </button>
+          ))}
+        </div>
       </div>
 
+      {view === "map" ? (
+        <PlatSectionMap pageCodes={pageCodes} entries={entries} subdivisions={subdivisions} />
+      ) : (
+        <>
       <SuggestionQueue unlinkedEntries={queueEntries} allSubdivisions={subdivisions} />
 
       <div className="flex flex-wrap gap-3 mb-5">
@@ -204,6 +232,8 @@ export function PlatMappingContent({
         Source: Cook County Recorder of Deeds plat search, Township 40N Range 12E. Collected
         2026-06.
       </p>
+        </>
+      )}
     </div>
   );
 }

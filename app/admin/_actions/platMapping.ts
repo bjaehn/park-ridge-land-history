@@ -218,6 +218,17 @@ export async function savePlatIndexGisCodes(id: string, codes: string[]) {
   revalidatePath("/admin/plat-mapping");
 }
 
+// ─── Map view: pins for a set of GIS page codes ──────────────────────────────
+
+export async function fetchPinsForGisPageCodes(codes: string[]): Promise<string[]> {
+  if (!codes.length) return [];
+  const { data, error } = await adminSupabase.rpc("get_pins_for_gis_page_codes", {
+    p_codes: codes,
+  });
+  if (error || !data) return [];
+  return (data as Array<{ pin: string }>).map((r) => r.pin);
+}
+
 export async function bulkLinkParcelsByPageCodes(
   subdivisionId: string,
   gisPageCodes: string[]
