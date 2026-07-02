@@ -229,6 +229,43 @@ export async function fetchPinsForGisPageCodes(codes: string[]): Promise<string[
   return (data as Array<{ pin: string }>).map((r) => r.pin);
 }
 
+// ─── Map view: spatial/evidence-based GIS code suggestions ───────────────────
+
+export type GisCodeSuggestion = {
+  code: string;
+  cnt: number;
+  matchType: "direct_evidence" | "spatial_nearby";
+  evidenceCount: number;
+  evidenceTotal: number;
+  distanceM: number | null;
+};
+
+export async function fetchGisCodeSuggestionsForSubdivision(
+  subdivisionId: string
+): Promise<GisCodeSuggestion[]> {
+  const { data, error } = await adminSupabase.rpc("suggest_gis_page_codes_for_subdivision", {
+    p_subdivision_id: subdivisionId,
+  });
+  if (error || !data) return [];
+  return (
+    data as Array<{
+      code: string;
+      cnt: number;
+      match_type: "direct_evidence" | "spatial_nearby";
+      evidence_count: number;
+      evidence_total: number;
+      distance_m: number | null;
+    }>
+  ).map((r) => ({
+    code: r.code,
+    cnt: Number(r.cnt),
+    matchType: r.match_type,
+    evidenceCount: Number(r.evidence_count),
+    evidenceTotal: Number(r.evidence_total),
+    distanceM: r.distance_m === null ? null : Number(r.distance_m),
+  }));
+}
+
 export async function bulkLinkParcelsByPageCodes(
   subdivisionId: string,
   gisPageCodes: string[]

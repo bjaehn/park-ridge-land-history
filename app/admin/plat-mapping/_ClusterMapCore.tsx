@@ -72,7 +72,7 @@ export function ClusterMapCore({
           paint: { "line-color": "#3a3a50", "line-width": 0.4 },
         });
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const emptyFilter = ["match", ["get", "pin_normalized"], [], true, false] as any;
+        const emptyFilter = ["in", ["get", "pin_normalized"], ["literal", []]] as any;
         map.addLayer({
           id: "compare-fill",
           type: "fill",
@@ -156,9 +156,9 @@ export function ClusterMapCore({
     if (!map || !isMapLoadedRef.current) return;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const hFilter = ["match", ["get", "pin_normalized"], hPins, true, false] as any;
+    const hFilter = ["in", ["get", "pin_normalized"], ["literal", hPins]] as any;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const cFilter = ["match", ["get", "pin_normalized"], cPins, true, false] as any;
+    const cFilter = ["in", ["get", "pin_normalized"], ["literal", cPins]] as any;
 
     if (map.getLayer("highlight-fill")) map.setFilter("highlight-fill", hFilter);
     if (map.getLayer("highlight-stroke")) map.setFilter("highlight-stroke", hFilter);

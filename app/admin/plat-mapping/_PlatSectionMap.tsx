@@ -3,9 +3,11 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import {
   fetchPinsForGisPageCodes,
+  fetchGisCodeSuggestionsForSubdivision,
   bulkLinkParcelsByPageCodes,
   linkPlatIndexEntry,
   savePlatIndexGisCodes,
+  type GisCodeSuggestion,
 } from "../_actions/platMapping";
 import { fetchPinsForSubdivision } from "../_actions/subdivisionMap";
 import { ClusterMapCore } from "./_ClusterMapCore";
@@ -53,6 +55,9 @@ export function PlatSectionMap({
   const [subdivisionId, setSubdivisionId] = useState<string>("");
   const [comparePins, setComparePins] = useState<string[]>([]);
   const [loadingCompare, setLoadingCompare] = useState(false);
+
+  const [suggestions, setSuggestions] = useState<GisCodeSuggestion[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
   const [isPending, startTransition] = useTransition();
   const [linkedResult, setLinkedResult] = useState<number | null>(null);
@@ -120,6 +125,33 @@ export function PlatSectionMap({
     };
   }, [subdivisionId]);
 
+  // Fetch ranked GIS code suggestions for the selected subdivision, so the
+  // admin doesn't have to click through hundreds of raw codes.
+  useEffect(() => {
+    if (!subdivisionId) {
+      setSuggestions([]);
+      return;
+    }
+    let cancelled = false;
+    setLoadingSuggestions(true);
+    fetchGisCodeSuggestionsForSubdivision(subdivisionId).then((s) => {
+      if (!cancelled) {
+        setSuggestions(s);
+        setLoadingSuggestions(false);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [subdivisionId]);
+
+  const suggestedCodes = useMemo(() => new Set(suggestions.map((s) => s.code)), [suggestions]);
+
+  function applySuggestion(code: string) {
+    setLinkedResult(null);
+    setSelectedCodes((prev) => (prev.includes(code) ? prev : [...prev, code]));
+  }
+
   function handleLink() {
     if (!entryId || !subdivisionId || !selectedCodes.length) return;
     startTransition(async () => {
@@ -169,6 +201,11 @@ export function PlatSectionMap({
                         active ? "text-text-primary font-semibold" : "text-text-secondary"
                       }`}
                     >
+                      {suggestedCodes.has(c.code) && (
+                        <span className="text-amber-400 mr-1" title="Suggested match">
+                          ★
+                        </span>
+                      )}
                       {c.code}
                     </span>
                     {c.subdivisionName && (
@@ -218,6 +255,43 @@ export function PlatSectionMap({
                 </option>
               ))}
             </select>
+
+            {subdivisionId && (
+              <div className="rounded border border-surface-border bg-surface-base p-2 space-y-1.5">
+                <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wide">
+                  Suggested codes
+                </p>
+                {loadingSuggestions && (
+                  <p className="text-[11px] text-text-muted animate-pulse">Searching…</p>
+                )}
+                {!loadingSuggestions && suggestions.length === 0 && (
+                  <p className="text-[11px] text-text-muted italic">
+                    No deed-verified properties yet for this subdivision — pick a code manually
+                    above.
+                  </p>
+                )}
+                {!loadingSuggestions &&
+                  suggestions.map((s) => (
+                    <button
+                      key={s.code}
+                      type="button"
+                      onClick={() => applySuggestion(s.code)}
+                      disabled={selectedCodes.includes(s.code)}
+                      className="w-full flex items-center gap-2 text-left px-2 py-1 rounded border border-surface-border hover:border-accent-teal/60 disabled:opacity-40 disabled:cursor-default transition-colors"
+                    >
+                      <span className="font-mono text-[11px] text-text-primary">{s.code}</span>
+                      <span className="flex-1 text-[10px] text-text-muted">
+                        {s.matchType === "direct_evidence"
+                          ? `${s.evidenceCount} of ${s.evidenceTotal} deed-verified properties`
+                          : `~${s.distanceM}m away, unconfirmed`}
+                      </span>
+                      {selectedCodes.includes(s.code) && (
+                        <span className="text-[10px] text-accent-teal shrink-0">Selected</span>
+                      )}
+                    </button>
+                  ))}
+              </div>
+            )}
 
             <button
               type="button"
