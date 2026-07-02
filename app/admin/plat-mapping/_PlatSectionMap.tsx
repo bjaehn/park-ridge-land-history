@@ -152,11 +152,28 @@ export function PlatSectionMap({
     setSelectedCodes((prev) => (prev.includes(code) ? prev : [...prev, code]));
   }
 
+  function removeCode(code: string) {
+    setLinkedResult(null);
+    setSelectedCodes((prev) => prev.filter((c) => c !== code));
+  }
+
+  function clearSelection() {
+    setEntryId("");
+    setSubdivisionId("");
+    setSelectedCodes([]);
+    setLinkedResult(null);
+  }
+
   function handleLink() {
-    if (!entryId || !subdivisionId || !selectedCodes.length) return;
+    if (!subdivisionId || !selectedCodes.length) return;
     startTransition(async () => {
-      await savePlatIndexGisCodes(entryId, selectedCodes);
-      await linkPlatIndexEntry(entryId, subdivisionId);
+      // The plat index entry is optional metadata (ties the codes back to a
+      // Cook County Recorder search result) -- the parcel bulk-link itself
+      // only needs a subdivision and a set of codes.
+      if (entryId) {
+        await savePlatIndexGisCodes(entryId, selectedCodes);
+        await linkPlatIndexEntry(entryId, subdivisionId);
+      }
       const count = await bulkLinkParcelsByPageCodes(subdivisionId, selectedCodes);
       setLinkedResult(count);
     });
@@ -224,9 +241,42 @@ export function PlatSectionMap({
 
           {/* Link controls */}
           <div className="p-3 border-t border-surface-border space-y-2 bg-surface-card/40">
-            <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wide">
-              Link selection
-            </p>
+            <div className="flex items-center justify-between">
+              <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wide">
+                Link selection
+              </p>
+              {(entryId || subdivisionId || selectedCodes.length > 0) && (
+                <button
+                  type="button"
+                  onClick={clearSelection}
+                  className="text-[10px] text-text-muted hover:text-accent-red transition-colors"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+
+            {selectedCodes.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {selectedCodes.map((code) => (
+                  <span
+                    key={code}
+                    className="inline-flex items-center gap-1 bg-accent-teal/10 border border-accent-teal/20 rounded px-1.5 py-0.5 text-[10px] font-mono text-accent-teal"
+                  >
+                    {code}
+                    <button
+                      type="button"
+                      onClick={() => removeCode(code)}
+                      className="hover:text-red-400 transition-colors leading-none"
+                      aria-label={`Remove ${code}`}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
             <select
               value={entryId}
               onChange={(e) => selectEntry(e.target.value)}
@@ -296,7 +346,7 @@ export function PlatSectionMap({
             <button
               type="button"
               onClick={handleLink}
-              disabled={!entryId || !subdivisionId || !selectedCodes.length || isPending}
+              disabled={!subdivisionId || !selectedCodes.length || isPending}
               className="w-full px-3 py-1.5 bg-accent-teal text-surface-base text-xs font-semibold rounded hover:bg-accent-teal/80 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               {isPending
