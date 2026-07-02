@@ -14,6 +14,7 @@ import { getEraColor } from "@/lib/mapConfig";
 import { CITY_NARRATIVE } from "@/lib/content";
 import { InlineSourceNote } from "@/components/ui/SourceNote";
 import { HistoricalFactsPanel } from "@/components/ui/HistoricalFactsPanel";
+import { CommunityProfilePanel } from "@/components/ui/CommunityProfilePanel";
 import { SaleIcon, AssessmentIcon } from "@/lib/icons";
 import type { DecadeRow } from "@/components/ui/ConstructionByDecadeChart";
 import type { NeighborhoodSummary } from "@/lib/data/neighborhoods";
@@ -104,10 +105,13 @@ export function CityContent({ mapSlot }: { mapSlot?: React.ReactNode }) {
         <div>
           <HistoricalFactsPanel facts={historicalFacts} heading="Planning history" />
           <InlineSourceNote className="mt-1">
-            Comprehensive Plan for the City of Park Ridge (Teska Associates, Inc., 1996).
+            Comprehensive Plan for the City of Park Ridge (Teska Associates, Inc., 1996) and Park
+            Ridge Wonderful: The City of Park Ridge's Comprehensive Plan of 2020.
           </InlineSourceNote>
         </div>
       )}
+
+      <CommunityProfilePanel />
 
       <StatGrid columns={4} stats={statItems.slice(0, 4)} />
 
