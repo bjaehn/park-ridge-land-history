@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { MapView } from "@/components/MapView";
 import { NeighborhoodTypePanel } from "@/components/ui/NeighborhoodTypePanel";
+import { HistoricalFactsPanel } from "@/components/ui/HistoricalFactsPanel";
 import { InlineSourceNote } from "@/components/ui/SourceNote";
 import { NeighborhoodPage } from "./_NeighborhoodPage";
 import {
@@ -18,6 +19,7 @@ import {
   getNeighborhoodSalesHistory,
   getNeighborhoodPriceSummary,
 } from "@/lib/data/neighborhoodPage";
+import { getHistoricalFactsForNeighborhood } from "@/lib/data/historicalFacts";
 import { NEIGHBORHOOD_NARRATIVES, NEIGHBORHOOD_ERA_LABELS } from "@/lib/content";
 
 type Props = { params: { slug: string } };
@@ -50,7 +52,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   if (!meta) notFound();
 
   // Round 2: all data that depends on the neighborhood id, fully parallel
-  const [stats, buildHistory, linkedSubdivisions, mapData] = await Promise.all([
+  const [stats, buildHistory, linkedSubdivisions, mapData, historicalFacts] = await Promise.all([
     getNeighborhoodStats(meta.id).catch(() => ({
       parcelCount: 0,
       medianYear: undefined,
@@ -66,6 +68,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
         bbox: null,
       })
     ),
+    getHistoricalFactsForNeighborhood(meta.id).catch(() => []),
   ]);
 
   // Round 3: sales data that depends on pins; cap list for query safety
@@ -90,6 +93,8 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
       ? "Business District"
       : meta.neighborhoodType === "local_market"
       ? "Local Neighborhood"
+      : meta.neighborhoodType === "corridor"
+      ? "Road Corridor"
       : "Neighborhood";
 
   const computedSubtitle = [
@@ -151,6 +156,12 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
           hasBoundary={hasBoundary}
         />
       </div>
+
+      {historicalFacts.length > 0 && (
+        <div className="mb-8">
+          <HistoricalFactsPanel facts={historicalFacts} />
+        </div>
+      )}
 
       <NeighborhoodPage data={pageData} eraLabel={eraLabel} mapSlot={mapSlot} />
 

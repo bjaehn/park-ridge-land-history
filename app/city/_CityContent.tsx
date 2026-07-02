@@ -13,9 +13,11 @@ import { formatNumber } from "@/lib/formatters";
 import { getEraColor } from "@/lib/mapConfig";
 import { CITY_NARRATIVE } from "@/lib/content";
 import { InlineSourceNote } from "@/components/ui/SourceNote";
+import { HistoricalFactsPanel } from "@/components/ui/HistoricalFactsPanel";
 import { SaleIcon, AssessmentIcon } from "@/lib/icons";
 import type { DecadeRow } from "@/components/ui/ConstructionByDecadeChart";
 import type { NeighborhoodSummary } from "@/lib/data/neighborhoods";
+import type { HistoricalFact } from "@/lib/data/historicalFacts";
 import type {
   MarketHistoryRow,
   AssessmentTrendRow,
@@ -39,6 +41,7 @@ export function CityContent({ mapSlot }: { mapSlot?: React.ReactNode }) {
   const [assessmentTrend, setAssessmentTrend] = useState<AssessmentTrendRow[]>([]);
   const [subdivisions, setSubdivisions] = useState<Array<{ id: string; name: string; normalizedName: string; earliestBuilt: number | null }>>([]);
   const [platByDecade, setPlatByDecade] = useState<Array<{ decade: number; platCount: number }>>([]);
+  const [historicalFacts, setHistoricalFacts] = useState<HistoricalFact[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
@@ -51,8 +54,9 @@ export function CityContent({ mapSlot }: { mapSlot?: React.ReactNode }) {
       import("@/lib/supabase/cityQueries").then((m) => m.fetchAssessmentTrend()),
       import("@/lib/supabase/subdivisionQueries").then((m) => m.fetchSubdivisionsForCityList()),
       import("@/lib/supabase/subdivisionQueries").then((m) => m.fetchSubdivisionPlatByDecade()),
+      import("@/lib/data/historicalFacts").then((m) => m.getCityWideHistoricalFacts()),
     ])
-      .then(([s, d, n, mh, at, subdivList, platDecade]) => {
+      .then(([s, d, n, mh, at, subdivList, platDecade, facts]) => {
         if (s) setStats(s as unknown as HomeStatsSnapshot);
         setRows(d.map((r) => ({ decade: r.decade, count: r.count })));
         setNeighborhoods(
@@ -62,6 +66,7 @@ export function CityContent({ mapSlot }: { mapSlot?: React.ReactNode }) {
         setAssessmentTrend(at);
         setSubdivisions(subdivList);
         setPlatByDecade(platDecade);
+        setHistoricalFacts(facts);
       })
       .catch(() => setError(true))
       .finally(() => setLoading(false));
@@ -94,6 +99,15 @@ export function CityContent({ mapSlot }: { mapSlot?: React.ReactNode }) {
       <InlineSourceNote className="mt-2">
         Historical summary based on Cook County Assessor build-year distributions and Cook County Recorder subdivision records. Era characterizations are interpretive summaries of the data. Confidence: Medium.
       </InlineSourceNote>
+
+      {historicalFacts.length > 0 && (
+        <div>
+          <HistoricalFactsPanel facts={historicalFacts} heading="Planning history" />
+          <InlineSourceNote className="mt-1">
+            Comprehensive Plan for the City of Park Ridge (Teska Associates, Inc., 1996).
+          </InlineSourceNote>
+        </div>
+      )}
 
       <StatGrid columns={4} stats={statItems.slice(0, 4)} />
 

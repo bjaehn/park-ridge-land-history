@@ -5,12 +5,14 @@ const TYPE_LABELS: Record<string, string> = {
   official_planning: "Planning",
   business_district: "Business",
   local_market:      "Local",
+  corridor:          "Corridor",
 };
 
 const TYPE_COLORS: Record<string, string> = {
   official_planning: "bg-accent-teal/10 text-accent-teal",
   business_district: "bg-accent-orange/10 text-accent-orange",
   local_market:      "bg-accent-purple/10 text-accent-purple",
+  corridor:          "bg-accent-amber/10 text-accent-amber",
 };
 
 const FILTER_TABS = [
@@ -18,6 +20,7 @@ const FILTER_TABS = [
   { type: "official_planning", label: "Official Planning" },
   { type: "business_district", label: "Business District" },
   { type: "local_market",      label: "Local Market" },
+  { type: "corridor",          label: "Corridor" },
 ] as const;
 
 export default async function NeighborhoodsListPage({

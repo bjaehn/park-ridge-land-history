@@ -37,50 +37,41 @@ export const CITY_NARRATIVE =
 // Neighborhood narratives and era labels (keyed by neighborhood slug)
 // ---------------------------------------------------------------------------
 
+// Keyed by the 7 real official-planning neighborhood slugs from the 1996
+// City of Park Ridge Comprehensive Plan (see supabase/migrations/20260705000002).
+// Era characterizations here are interpretive, not sourced from the plan --
+// the plan names these neighborhoods by geography, not by construction era.
 export const NEIGHBORHOOD_ERA_LABELS: Record<string, string> = {
-  uptown_park_ridge: "Railroad-era core, 1870s to 1930s",
-  northeast:         "Bungalow-era expansion, 1910s to 1940s",
-  central:           "Mixed-era crossroads, 1920s to 1960s",
-  northwest_park:    "Postwar ranch country, 1940s to 1970s",
-  south_park:        "The city's last great build-out, 1950s to 1980s",
+  hodges_park:      "Railroad-era core and historic subdivisions, 1870s to 1930s",
+  northeast_park:   "Early estate and bungalow era, 1900s to 1930s",
+  maine_park:       "Mixed prewar and postwar development, 1920s to 1960s",
+  centennial_park:  "Postwar family neighborhood, 1950s to 1970s",
+  northwest_park:   "Postwar institutional growth, 1950s to 1960s",
+  ballard_church:   "Late-century growth and hospital expansion, 1960s to 1990s",
+  south_park:       "The city's last great build-out, 1950s to 1980s",
 };
 
+// Fallback prose, only shown when neighborhoods.historical_summary is null in
+// the database (see app/neighborhoods/[slug]/page.tsx). All 7 real
+// neighborhoods currently have a DB-sourced historical_summary, so these
+// rarely surface; kept as a safety net if a row's summary is ever cleared.
 export const NEIGHBORHOOD_NARRATIVES: Record<string, string> = {
-  uptown_park_ridge:
-    "Uptown is the oldest part of Park Ridge, built around the commuter rail stop that sparked " +
-    "the city's first settlement in the 1870s. The streets closest to the depot still hold some of " +
-    "the earliest surviving homes in Cook County. Development here peaked in the 1920s and slowed " +
-    "to a near stop by 1940.",
-  northeast:
-    "The Northeast filled in quickly after Uptown, as bungalow builders pushed outward from the " +
-    "railroad core through the 1910s and 1920s. The area reflects the working-class and middle-class " +
-    "optimism of Chicago's interwar years, with dense blocks of brick and frame bungalows interspersed " +
-    "with larger two-flats from the same era.",
-  central:
-    "Central Park Ridge bridges the prewar and postwar eras. Older Craftsman and Colonial Revival homes " +
-    "from the 1920s sit alongside Cape Cods built just after World War II. The neighborhood saw " +
-    "sustained construction across five decades, giving it a more mixed architectural character than " +
-    "any other part of the city.",
-  northwest_park:
-    "The Northwest is Park Ridge's ranch country. Nearly all of its homes were built in the fifteen " +
-    "years after World War II, when returning veterans and growing families pushed the city's footprint " +
-    "toward Des Plaines. Streets of nearly identical 1950s ranches and split-levels reflect how quickly " +
-    "this section was built and sold.",
   south_park:
     "South Park Ridge was the last area to develop, with most of its construction occurring from the " +
-    "1950s through the 1970s. It shares the postwar character of the Northwest but extends into a " +
-    "slightly later period, with split-levels and colonial revivals standing alongside the ranches " +
-    "that came first.",
+    "1950s through the 1970s, sharing the postwar character of ranches and split-levels seen elsewhere " +
+    "in the City's northwest.",
 };
 
 // Year ranges that define each neighborhood's "primary era" -- used to generate
 // the era context note on property pages. Add a new entry when a new neighborhood slug is created.
 export const NEIGHBORHOOD_ERA_YEAR_RANGE: Record<string, [number, number]> = {
-  uptown_park_ridge: [1860, 1939],
-  northeast:         [1900, 1949],
-  central:           [1910, 1969],
-  northwest_park:    [1930, 1979],
-  south_park:        [1940, 1989],
+  hodges_park:     [1870, 1939],
+  northeast_park:  [1900, 1939],
+  maine_park:      [1920, 1969],
+  centennial_park: [1945, 1979],
+  northwest_park:  [1945, 1969],
+  ballard_church:  [1960, 1999],
+  south_park:      [1940, 1989],
 };
 
 // ---------------------------------------------------------------------------

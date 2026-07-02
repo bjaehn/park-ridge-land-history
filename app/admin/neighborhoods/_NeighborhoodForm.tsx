@@ -15,6 +15,7 @@ const NEIGHBORHOOD_TYPE_OPTIONS = [
   { value: "official_planning", label: "Official Planning District" },
   { value: "business_district", label: "Business District" },
   { value: "local_market",      label: "Local / Market Neighborhood" },
+  { value: "corridor",          label: "Road Corridor" },
 ] as const;
 
 type NeighborhoodData = {

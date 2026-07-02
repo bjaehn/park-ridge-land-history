@@ -1,7 +1,7 @@
 import { supabase } from "../supabase/client";
 import type { DecadeRow } from "../../components/ui/ConstructionByDecadeChart";
 
-export type NeighborhoodType = "official_planning" | "business_district" | "local_market";
+export type NeighborhoodType = "official_planning" | "business_district" | "local_market" | "corridor";
 
 export type NeighborhoodSummary = {
   id: string;

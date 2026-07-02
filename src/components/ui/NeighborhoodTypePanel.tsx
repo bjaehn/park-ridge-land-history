@@ -21,6 +21,10 @@ const TYPE_EXPLANATIONS: Record<
     explanation:
       "This area name appears in local use, real estate listings, or historical records. The boundary is approximate.",
   },
+  corridor: {
+    explanation:
+      "This is a road corridor rather than a bounded area. The shape shown is a rough buffer around properties fronting the road, not a precise district boundary.",
+  },
 };
 
 export function NeighborhoodTypePanel({ neighborhoodType, hasBoundary }: Props) {
