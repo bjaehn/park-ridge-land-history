@@ -28,6 +28,10 @@ export type Subdivision = {
   confidence_reason?: string | null;
   notes?: string | null;
   parcel_count?: number | null;
+  /** Parcels linked by any method (deed text, admin-assigned FK, or GIS-lot
+   *  spatial match) -- the true total. Prefer this over parcel_count, which
+   *  is a stale, deed-only-scoped column kept only for legacy admin writes. */
+  linked_parcel_count?: number | null;
   parent_subdivision_id?: string | null;
   entity_type?: "subdivision" | "estate" | "parent_plat" | "plat" | "unknown" | null;
   geometry_status?: "not_started" | "needs_source" | "in_progress" | "complete" | "approximate" | null;
@@ -167,6 +171,7 @@ export type SubdivisionSummary = Pick<
   | "original_owner"
   | "developer"
   | "parcel_count"
+  | "linked_parcel_count"
   | "notes"
   | "parent_subdivision_id"
   | "entity_type"

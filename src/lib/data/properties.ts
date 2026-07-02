@@ -286,15 +286,8 @@ async function loadDataQuality(pin: string): Promise<PropertyDataQuality | null>
   };
 }
 
-async function loadSubdivision(pin: string): Promise<PropertyDetailData["subdivision"]> {
-  if (!supabase) return null;
-  const { data } = await supabase
-    .from("property_subdivision_links")
-    .select("subdivision_id, subdivisions(id, name, recorded_year, original_owner, source_reference)")
-    .eq("pin", pin)
-    .maybeSingle();
-  if (!data?.subdivisions) return null;
-  const sub = data.subdivisions as unknown as Record<string, unknown>;
+/** Format a raw subdivisions row into the shape this page expects. */
+function formatSubdivisionRow(sub: Record<string, unknown>): PropertyDetailData["subdivision"] {
   return {
     id: String(sub.id ?? ""),
     name: String(sub.name ?? ""),
@@ -302,6 +295,53 @@ async function loadSubdivision(pin: string): Promise<PropertyDetailData["subdivi
     original_owner: sub.original_owner as string | null,
     source_reference: sub.source_reference as string | null,
   };
+}
+
+/** Subdivision for this property, checked in the same priority order as the
+ *  rest of the app's linkage union: deed research first, then the direct
+ *  admin-assigned FK, then GIS-lot spatial matching. A property linked only
+ *  by the latter two methods still needs to show its subdivision here.
+ */
+async function loadSubdivision(pin: string): Promise<PropertyDetailData["subdivision"]> {
+  if (!supabase) return null;
+
+  const { data: deedLink } = await supabase
+    .from("property_subdivision_links")
+    .select("subdivision_id, subdivisions(id, name, recorded_year, original_owner, source_reference)")
+    .eq("pin", pin)
+    .maybeSingle();
+  if (deedLink?.subdivisions) {
+    return formatSubdivisionRow(deedLink.subdivisions as unknown as Record<string, unknown>);
+  }
+
+  const { data: parcelRow } = await supabase
+    .from("parcels")
+    .select("subdivision_id")
+    .eq("pin_normalized", pin)
+    .maybeSingle();
+  let subdivisionId = (parcelRow?.subdivision_id as string | null) ?? null;
+
+  if (!subdivisionId) {
+    const { data: plrRow } = await supabase
+      .from("parcel_lot_relationships")
+      .select("gis_lots(subdivision_id)")
+      .eq("pin_normalized", pin)
+      .eq("is_dominant_lot", true)
+      .maybeSingle();
+    subdivisionId =
+      ((plrRow?.gis_lots as unknown as Record<string, unknown> | null)?.subdivision_id as
+        | string
+        | null) ?? null;
+  }
+  if (!subdivisionId) return null;
+
+  const { data: sub } = await supabase
+    .from("subdivisions")
+    .select("id, name, recorded_year, original_owner, source_reference")
+    .eq("id", subdivisionId)
+    .maybeSingle();
+  if (!sub) return null;
+  return formatSubdivisionRow(sub as unknown as Record<string, unknown>);
 }
 
 async function loadComparisons(pin: string, yearBuilt: number | null): Promise<ComparisonRow[]> {

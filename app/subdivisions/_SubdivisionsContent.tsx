@@ -278,7 +278,7 @@ export function SubdivisionsContent({ subdivisions }: Props) {
                             value: `Recorded ${s.recorded_year}`,
                           }
                         : null,
-                      s.parcel_count && s.parcel_count > 0
+                      s.linked_parcel_count && s.linked_parcel_count > 0
                         ? {
                             icon: (
                               <PropertyIcon
@@ -288,7 +288,7 @@ export function SubdivisionsContent({ subdivisions }: Props) {
                               />
                             ),
                             value: formatCount(
-                              s.parcel_count,
+                              s.linked_parcel_count,
                               "property",
                               "properties"
                             ),

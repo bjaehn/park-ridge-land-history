@@ -32,7 +32,7 @@ export async function fetchSubdivisionIndex(): Promise<SubdivisionSummary[]> {
     .from("subdivision_index_view")
     .select(
       "id, name, normalized_name, recorded_year, confidence_level, confidence_reason, " +
-      "source_name, original_owner, developer, parcel_count, notes, parent_subdivision_id, entity_type, earliest_year_built"
+      "source_name, original_owner, developer, parcel_count, linked_parcel_count, notes, parent_subdivision_id, entity_type, earliest_year_built"
     )
     .order("earliest_year_built", { ascending: true, nullsFirst: false })
     .order("normalized_name", { ascending: true });
@@ -102,7 +102,7 @@ export async function searchSubdivisions(
     .from("subdivisions")
     .select(
       "id, name, normalized_name, recorded_year, confidence_level, confidence_reason, " +
-      "source_name, original_owner, developer, parcel_count, notes, parent_subdivision_id, entity_type"
+      "source_name, original_owner, developer, parcel_count, linked_parcel_count, notes, parent_subdivision_id, entity_type"
     )
     .ilike("normalized_name", `%${q}%`)
     .order("recorded_year", { ascending: true, nullsFirst: false })
@@ -199,7 +199,7 @@ export async function fetchSubdivisionsByDecade(
     .from("subdivisions")
     .select(
       "id, name, normalized_name, recorded_year, confidence_level, confidence_reason, " +
-      "source_name, original_owner, developer, parcel_count, notes, parent_subdivision_id"
+      "source_name, original_owner, developer, parcel_count, linked_parcel_count, notes, parent_subdivision_id"
     )
     .gte("recorded_year", decade)
     .lt("recorded_year", decade + 10)
