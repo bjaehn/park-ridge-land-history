@@ -47,7 +47,7 @@ export function PlatMappingContent({
   const [linkedFilter, setLinkedFilter] = useState<LinkedFilter>("unlinked");
   const [search, setSearch] = useState("");
   const [isPending, startTransition] = useTransition();
-  const [view, setView] = useState<"table" | "map">("table");
+  const [view, setView] = useState<"table" | "map">("map");
 
   const filtered = useMemo(() => {
     return entries.filter((e) => {

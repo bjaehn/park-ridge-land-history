@@ -61,6 +61,7 @@ export function PlatSectionMap({
 
   const [isPending, startTransition] = useTransition();
   const [linkedResult, setLinkedResult] = useState<number | null>(null);
+  const [manualBrowseOpen, setManualBrowseOpen] = useState(false);
 
   const sortedCodes = useMemo(
     () =>
@@ -184,66 +185,13 @@ export function PlatSectionMap({
   return (
     <div className="-mx-8 -mb-8 border-t border-surface-border">
       <div className="flex" style={{ height: "calc(100vh - 15rem)" }}>
-        {/* Left panel — GIS page code list */}
-        <div className="w-80 shrink-0 border-r border-surface-border flex flex-col bg-surface-raised">
-          <div className="p-3 border-b border-surface-border">
-            <input
-              type="search"
-              placeholder="Filter GIS page codes…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-surface-card border border-surface-border rounded px-3 py-1.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-teal/60"
-            />
-            <p className="text-[10px] text-text-muted mt-1.5">
-              Click one or more codes to highlight their parcels on the map.
-            </p>
-          </div>
-
-          <div className="flex-1 overflow-y-auto">
-            {sortedCodes.map((c) => {
-              const active = selectedCodes.includes(c.code);
-              return (
-                <button
-                  key={c.code}
-                  type="button"
-                  onClick={() => toggleCode(c.code)}
-                  className={`w-full text-left px-3 py-2 border-b border-surface-border flex items-center gap-2.5 transition-colors ${
-                    active ? "bg-surface-card" : "hover:bg-surface-card/50"
-                  }`}
-                >
-                  <span className={`w-2 h-2 rounded-full shrink-0 ${statusColor(c)}`} />
-                  <span className="flex-1 min-w-0">
-                    <span
-                      className={`block text-xs font-mono truncate ${
-                        active ? "text-text-primary font-semibold" : "text-text-secondary"
-                      }`}
-                    >
-                      {suggestedCodes.has(c.code) && (
-                        <span className="text-amber-400 mr-1" title="Suggested match">
-                          ★
-                        </span>
-                      )}
-                      {c.code}
-                    </span>
-                    {c.subdivisionName && (
-                      <span className="block text-[10px] text-text-muted truncate">
-                        {c.subdivisionName}
-                      </span>
-                    )}
-                  </span>
-                  <span className="text-[10px] text-text-muted shrink-0 tabular-nums">
-                    {c.linkedCnt > 0 ? `${c.linkedCnt}/${c.cnt}` : c.cnt}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Link controls */}
-          <div className="p-3 border-t border-surface-border space-y-2 bg-surface-card/40">
+        {/* Left panel */}
+        <div className="w-80 shrink-0 border-r border-surface-border flex flex-col bg-surface-raised overflow-y-auto">
+          {/* Step 1: pick a subdivision */}
+          <div className="p-3 border-b border-surface-border space-y-2">
             <div className="flex items-center justify-between">
               <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wide">
-                Link selection
+                Subdivision
               </p>
               {(entryId || subdivisionId || selectedCodes.length > 0) && (
                 <button
@@ -256,7 +204,82 @@ export function PlatSectionMap({
               )}
             </div>
 
-            {selectedCodes.length > 0 && (
+            <select
+              value={subdivisionId}
+              onChange={(e) => {
+                setSubdivisionId(e.target.value);
+                setLinkedResult(null);
+              }}
+              className="w-full bg-surface-base border border-surface-border rounded px-2 py-1.5 text-xs text-text-primary focus:outline-none focus:border-accent-teal/60"
+            >
+              <option value="">— Select a subdivision —</option>
+              {subdivisions.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={entryId}
+              onChange={(e) => selectEntry(e.target.value)}
+              className="w-full bg-surface-base border border-surface-border rounded px-2 py-1.5 text-xs text-text-muted focus:outline-none focus:border-accent-teal/60"
+            >
+              <option value="">— Plat index entry (optional) —</option>
+              {entries.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.full_name}
+                </option>
+              ))}
+            </select>
+            {selectedEntry?.subdivision_id && selectedEntry.subdivision_id !== subdivisionId && (
+              <p className="text-[10px] text-amber-300/80">
+                This entry is already linked to a different subdivision.
+              </p>
+            )}
+          </div>
+
+          {/* Step 2: suggested codes for the selected subdivision */}
+          {subdivisionId && (
+            <div className="p-3 border-b border-surface-border space-y-1.5">
+              <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wide">
+                Suggested codes
+              </p>
+              {loadingSuggestions && (
+                <p className="text-[11px] text-text-muted animate-pulse">Searching…</p>
+              )}
+              {!loadingSuggestions && suggestions.length === 0 && (
+                <p className="text-[11px] text-text-muted italic">
+                  No deed-verified properties yet for this subdivision — browse codes manually
+                  below.
+                </p>
+              )}
+              {!loadingSuggestions &&
+                suggestions.map((s) => (
+                  <button
+                    key={s.code}
+                    type="button"
+                    onClick={() => applySuggestion(s.code)}
+                    disabled={selectedCodes.includes(s.code)}
+                    className="w-full flex items-center gap-2 text-left px-2 py-1 rounded border border-surface-border hover:border-accent-teal/60 disabled:opacity-40 disabled:cursor-default transition-colors"
+                  >
+                    <span className="font-mono text-[11px] text-text-primary">{s.code}</span>
+                    <span className="flex-1 text-[10px] text-text-muted">
+                      {s.matchType === "direct_evidence"
+                        ? `${s.evidenceCount} of ${s.evidenceTotal} deed-verified properties`
+                        : `~${s.distanceM}m away, unconfirmed`}
+                    </span>
+                    {selectedCodes.includes(s.code) && (
+                      <span className="text-[10px] text-accent-teal shrink-0">Selected</span>
+                    )}
+                  </button>
+                ))}
+            </div>
+          )}
+
+          {/* Step 3: confirm selection and link */}
+          {selectedCodes.length > 0 && (
+            <div className="p-3 border-b border-surface-border space-y-2 bg-surface-card/40">
               <div className="flex flex-wrap gap-1">
                 {selectedCodes.map((code) => (
                   <span
@@ -275,97 +298,96 @@ export function PlatSectionMap({
                   </span>
                 ))}
               </div>
-            )}
 
-            <select
-              value={entryId}
-              onChange={(e) => selectEntry(e.target.value)}
-              className="w-full bg-surface-base border border-surface-border rounded px-2 py-1.5 text-xs text-text-primary focus:outline-none focus:border-accent-teal/60"
-            >
-              <option value="">— Plat index entry —</option>
-              {entries.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.full_name}
-                </option>
-              ))}
-            </select>
+              <button
+                type="button"
+                onClick={handleLink}
+                disabled={!subdivisionId || !selectedCodes.length || isPending}
+                className="w-full px-3 py-1.5 bg-accent-teal text-surface-base text-xs font-semibold rounded hover:bg-accent-teal/80 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                {isPending
+                  ? "Linking…"
+                  : `Link & bulk-assign ${selectedCodes.length || ""} code${
+                      selectedCodes.length === 1 ? "" : "s"
+                    }`}
+              </button>
 
-            <select
-              value={subdivisionId}
-              onChange={(e) => {
-                setSubdivisionId(e.target.value);
-                setLinkedResult(null);
-              }}
-              className="w-full bg-surface-base border border-surface-border rounded px-2 py-1.5 text-xs text-text-primary focus:outline-none focus:border-accent-teal/60"
-            >
-              <option value="">— Subdivision —</option>
-              {subdivisions.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-
-            {subdivisionId && (
-              <div className="rounded border border-surface-border bg-surface-base p-2 space-y-1.5">
-                <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wide">
-                  Suggested codes
+              {linkedResult !== null && (
+                <p className="text-[11px] text-accent-teal">
+                  {linkedResult} {linkedResult === 1 ? "parcel" : "parcels"} linked to{" "}
+                  {compareSubdivisionName ?? "subdivision"}.
                 </p>
-                {loadingSuggestions && (
-                  <p className="text-[11px] text-text-muted animate-pulse">Searching…</p>
-                )}
-                {!loadingSuggestions && suggestions.length === 0 && (
-                  <p className="text-[11px] text-text-muted italic">
-                    No deed-verified properties yet for this subdivision — pick a code manually
-                    above.
-                  </p>
-                )}
-                {!loadingSuggestions &&
-                  suggestions.map((s) => (
-                    <button
-                      key={s.code}
-                      type="button"
-                      onClick={() => applySuggestion(s.code)}
-                      disabled={selectedCodes.includes(s.code)}
-                      className="w-full flex items-center gap-2 text-left px-2 py-1 rounded border border-surface-border hover:border-accent-teal/60 disabled:opacity-40 disabled:cursor-default transition-colors"
-                    >
-                      <span className="font-mono text-[11px] text-text-primary">{s.code}</span>
-                      <span className="flex-1 text-[10px] text-text-muted">
-                        {s.matchType === "direct_evidence"
-                          ? `${s.evidenceCount} of ${s.evidenceTotal} deed-verified properties`
-                          : `~${s.distanceM}m away, unconfirmed`}
-                      </span>
-                      {selectedCodes.includes(s.code) && (
-                        <span className="text-[10px] text-accent-teal shrink-0">Selected</span>
-                      )}
-                    </button>
-                  ))}
-              </div>
-            )}
+              )}
+            </div>
+          )}
 
+          {/* Step 4: manual fallback — browse every GIS code directly */}
+          <div className="border-b border-surface-border">
             <button
               type="button"
-              onClick={handleLink}
-              disabled={!subdivisionId || !selectedCodes.length || isPending}
-              className="w-full px-3 py-1.5 bg-accent-teal text-surface-base text-xs font-semibold rounded hover:bg-accent-teal/80 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              onClick={() => setManualBrowseOpen((o) => !o)}
+              className="w-full flex items-center justify-between px-3 py-2.5 text-[11px] font-semibold text-text-muted uppercase tracking-wide hover:text-text-primary transition-colors"
             >
-              {isPending
-                ? "Linking…"
-                : `Link & bulk-assign ${selectedCodes.length || ""} code${
-                    selectedCodes.length === 1 ? "" : "s"
-                  }`}
+              <span>Browse all GIS codes manually</span>
+              <span>{manualBrowseOpen ? "▾" : "▸"}</span>
             </button>
 
-            {linkedResult !== null && (
-              <p className="text-[11px] text-accent-teal">
-                {linkedResult} {linkedResult === 1 ? "parcel" : "parcels"} linked to{" "}
-                {compareSubdivisionName ?? "subdivision"}.
-              </p>
-            )}
-            {selectedEntry?.subdivision_id && selectedEntry.subdivision_id !== subdivisionId && (
-              <p className="text-[10px] text-amber-300/80">
-                This entry is already linked to a different subdivision.
-              </p>
+            {manualBrowseOpen && (
+              <div className="border-t border-surface-border">
+                <div className="p-3 border-b border-surface-border">
+                  <input
+                    type="search"
+                    placeholder="Filter codes…"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="w-full bg-surface-card border border-surface-border rounded px-3 py-1.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-teal/60"
+                  />
+                  <p className="text-[10px] text-text-muted mt-1.5">
+                    Each code is a Cook County Assessor map-page group of parcels. Use this if a
+                    subdivision has no suggestions above, or to explore the raw list.
+                  </p>
+                </div>
+
+                <div className="max-h-80 overflow-y-auto">
+                  {sortedCodes.map((c) => {
+                    const active = selectedCodes.includes(c.code);
+                    return (
+                      <button
+                        key={c.code}
+                        type="button"
+                        onClick={() => toggleCode(c.code)}
+                        className={`w-full text-left px-3 py-2 border-b border-surface-border flex items-center gap-2.5 transition-colors ${
+                          active ? "bg-surface-card" : "hover:bg-surface-card/50"
+                        }`}
+                      >
+                        <span className={`w-2 h-2 rounded-full shrink-0 ${statusColor(c)}`} />
+                        <span className="flex-1 min-w-0">
+                          <span
+                            className={`block text-xs font-mono truncate ${
+                              active ? "text-text-primary font-semibold" : "text-text-secondary"
+                            }`}
+                          >
+                            {suggestedCodes.has(c.code) && (
+                              <span className="text-amber-400 mr-1" title="Suggested match">
+                                ★
+                              </span>
+                            )}
+                            {c.code}
+                          </span>
+                          {c.subdivisionName && (
+                            <span className="block text-[10px] text-text-muted truncate">
+                              {c.subdivisionName}
+                            </span>
+                          )}
+                        </span>
+                        <span className="text-[10px] text-text-muted shrink-0 tabular-nums">
+                          {c.linkedCnt > 0 ? `${c.linkedCnt}/${c.cnt}` : c.cnt}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             )}
           </div>
         </div>
