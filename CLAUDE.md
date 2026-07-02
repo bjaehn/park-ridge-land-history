@@ -60,10 +60,19 @@ The old `parcels.neighborhood_id` TEXT column is preserved but superseded by thr
 New neighborhoods are assigned via `assign_parcels_by_geometry()` (admin function).
 Legacy parcels are backfilled by migration `20260628000000_backfill_neighborhood_typed_ids.sql`.
 
-### highlight_parcels RPC — subdivision scope
-The subdivision scope in `highlight_parcels` unions **both** link sources:
+### Subdivision → parcel linkage — always union all 3 sources
+A parcel can be linked to a subdivision three different ways: deed research (`property_subdivision_links`), the direct admin-assigned FK (`parcels.subdivision_id`), or GIS-lot spatial matching (`parcel_lot_relationships` → `gis_lots`). **Any code that lists, counts, or maps a subdivision's parcels must union all three** — querying just one silently undercounts. This has broken three separate times (bulk-link filters, the public subdivision detail/index pages, `highlight_parcels`'s subdivision scope) from code written against only `property_subdivision_links`, the oldest and most familiar table.
+
+The canonical source is the `get_linked_pins_for_subdivision(p_subdivision_id uuid)` RPC (`supabase/migrations/20260703000018_get_linked_pins_for_subdivision.sql`) — prefer calling it over re-deriving the union. `subdivisions.linked_parcel_count` (trigger-maintained) is the reference figure; if a displayed count doesn't match it for a given subdivision, that's the first thing to check. `subdivisions.parcel_count` is a legacy, deed-only-scoped column kept only for old admin writes — never read it for a user-facing count.
+
+Where the union must be written inline as raw SQL (e.g. inside `highlight_parcels`'s dynamic `format()` scope clause), it must match:
 ```sql
 (p.pin_normalized IN (SELECT psl.pin FROM property_subdivision_links psl WHERE psl.subdivision_id = %L::uuid)
- OR p.subdivision_id::text = %L)
+ OR p.subdivision_id = %L::uuid
+ OR p.pin_normalized IN (
+   SELECT plr.pin_normalized FROM parcel_lot_relationships plr
+   JOIN gis_lots gl ON gl.id = plr.lot_id
+   WHERE gl.subdivision_id = %L::uuid
+ ))
 ```
-This mirrors `fetchSubdivisionParcels()`. Always keep these in sync.
+Always keep this in sync with `get_linked_pins_for_subdivision`.
