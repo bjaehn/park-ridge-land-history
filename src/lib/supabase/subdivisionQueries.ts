@@ -216,60 +216,67 @@ export async function fetchSubdivisionsByDecade(
 /** Alias for fetchSubdivisionIndex -- used by the Next.js SubdivisionsContent component. */
 export const fetchSubdivisions = fetchSubdivisionIndex;
 
-/** Parcels belonging to a specific subdivision, sourced exclusively from
- *  deed-researched property_subdivision_links.
+/** Parcels belonging to a specific subdivision, from any linking method: deed
+ *  research (property_subdivision_links), the direct admin-assigned FK
+ *  (parcels.subdivision_id), or GIS-lot spatial matching
+ *  (parcel_lot_relationships -> gis_lots). Uses the same union as
+ *  subdivisions.linked_parcel_count and the admin subdivision-map
+ *  (get_linked_pins_for_subdivision RPC) so this page's property list and
+ *  the "N properties linked" figures shown elsewhere can't drift apart.
+ *  Deed-verified lot/block numbers are attached where available; parcels
+ *  linked by other methods simply have no lot/block label.
  */
 export async function fetchSubdivisionParcels(
   subdivisionId: string
 ): Promise<Array<{ pin: string; address?: string | null; year_built?: number | null; building_sqft?: number | null; sale_count?: number | null; permit_count?: number | null; lot_number?: string | null; block_number?: string | null; lot_count?: number; is_teardown_rebuild?: boolean | null; teardown_confidence?: string | null }>> {
   if (!supabase) return [];
 
+  const { data: linkedPinsData } = await supabase
+    .rpc("get_linked_pins_for_subdivision", { p_subdivision_id: subdivisionId })
+    .limit(5000);
+  const allPins = ((linkedPinsData ?? []) as Array<{ pin: string }>)
+    .map((r) => r.pin)
+    .filter(Boolean);
+  if (allPins.length === 0) return [];
+
+  // Deed-verified lot/block metadata, attached where it exists.
   const { data: links } = await supabase
     .from("property_subdivision_links")
     .select("pin, lot_number, block_number")
     .eq("subdivision_id", subdivisionId)
     .limit(5000);
-
   const deedLinks = (links ?? []) as Array<{ pin: string; lot_number: string | null; block_number: string | null }>;
-  if (deedLinks.length === 0) return [];
+  const deedPins = deedLinks.map((r) => r.pin);
+  const deedLotFallback = new Map(deedLinks.map((r) => [r.pin, { lot_number: r.lot_number, block_number: r.block_number }]));
 
-  // Deduplicate by PIN so the count matches COUNT(DISTINCT pin) in subdivision_property_counts view.
-  const seen = new Set<string>();
-  const uniqueLinks = deedLinks.filter((r) => {
-    if (seen.has(r.pin)) return false;
-    seen.add(r.pin);
-    return true;
-  });
-
-  const deedPins = uniqueLinks.map((r) => r.pin);
-
-  // Fetch lot-level detail from subdivision_lots for deed pins
   const lotsMap = new Map<string, Array<{ lot_number: string | null; block_number: string | null }>>();
-  const { data: lots } = await supabase
-    .from("subdivision_lots")
-    .select("current_pin, lot_number, block_number")
-    .eq("subdivision_id", subdivisionId)
-    .in("current_pin", deedPins);
-  (lots ?? []).forEach((l: Record<string, unknown>) => {
-    const p = String(l.current_pin ?? "");
-    if (!lotsMap.has(p)) lotsMap.set(p, []);
-    lotsMap.get(p)!.push({ lot_number: l.lot_number as string | null, block_number: l.block_number as string | null });
-  });
+  if (deedPins.length > 0) {
+    const { data: lots } = await supabase
+      .from("subdivision_lots")
+      .select("current_pin, lot_number, block_number")
+      .eq("subdivision_id", subdivisionId)
+      .in("current_pin", deedPins);
+    (lots ?? []).forEach((l: Record<string, unknown>) => {
+      const p = String(l.current_pin ?? "");
+      if (!lotsMap.has(p)) lotsMap.set(p, []);
+      lotsMap.get(p)!.push({ lot_number: l.lot_number as string | null, block_number: l.block_number as string | null });
+    });
+  }
 
-  // Fetch parcel data for deed pins
+  // Fetch parcel data for every linked pin, not just deed-verified ones.
   const parcelMap = new Map<string, Record<string, unknown>>();
   const { data: parcels } = await supabase
     .from("parcels")
     .select("pin_normalized, address, year_built, building_sqft, sale_count, permit_count, is_teardown_rebuild, teardown_confidence, has_deed_research")
-    .in("pin_normalized", deedPins);
+    .in("pin_normalized", allPins);
   (parcels ?? []).forEach((p) => parcelMap.set((p as Record<string, unknown>).pin_normalized as string, p as Record<string, unknown>));
 
-  return uniqueLinks.map((link) => {
-    const parcel = parcelMap.get(link.pin);
-    const pinLots = lotsMap.get(link.pin) ?? [];
-    const firstLot = pinLots[0] ?? link;
+  return allPins.map((pin) => {
+    const parcel = parcelMap.get(pin);
+    const pinLots = lotsMap.get(pin) ?? [];
+    const firstLot = pinLots[0] ?? deedLotFallback.get(pin) ?? { lot_number: null, block_number: null };
     return {
-      pin: link.pin,
+      pin,
       address: (parcel?.address as string | null) ?? null,
       year_built: (parcel?.year_built as number | null) ?? null,
       building_sqft: (parcel?.building_sqft as number | null) ?? null,
@@ -563,7 +570,10 @@ export async function fetchSubdivisionFullDetail(
   } as SubdivisionFullDetail;
 }
 
-/** Fetch PINs and bbox for the subdivision map. */
+/** Fetch PINs and bbox for the subdivision map. Uses the same linked-pin
+ *  union as fetchSubdivisionParcels() (get_linked_pins_for_subdivision) so
+ *  the map shows every matched parcel, not just deed-verified ones.
+ */
 export async function fetchSubdivisionMapData(
   subdivisionId: string
 ): Promise<{ pins: string[]; bbox: [number, number, number, number] | null }> {
@@ -571,9 +581,8 @@ export async function fetchSubdivisionMapData(
 
   const [pinsResult, bboxResult] = await Promise.all([
     supabase
-      .from("property_subdivision_links")
-      .select("pin")
-      .eq("subdivision_id", subdivisionId),
+      .rpc("get_linked_pins_for_subdivision", { p_subdivision_id: subdivisionId })
+      .limit(5000),
     supabase
       .from("subdivision_geometries")
       .select("bbox")
