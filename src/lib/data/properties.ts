@@ -4,6 +4,7 @@ import type { ComparisonScope, ConfidenceLevel } from "../formatters";
 import { confidenceFor } from "../formatters";
 import type { LandLineageEntry, LandLot } from "../subdivisionTypes";
 import { fetchLineageForPin } from "../supabase/subdivisionQueries";
+import { getLandmarkFactForPin, type HistoricalFact } from "./historicalFacts";
 
 export type AssessmentPoint = { year: number; value: number };
 
@@ -170,6 +171,7 @@ export type PropertyDetailData = {
   appealYears?: number[];
   propertyNotes?: PropertyNote[];
   dataQuality?: PropertyDataQuality | null;
+  landmarkFact?: HistoricalFact | null;
 };
 
 export type { LandLineageEntry, LandLot };
@@ -241,6 +243,7 @@ export async function getPropertyDetail(pin: string): Promise<PropertyDetailData
     landAncestryResult,
     propertyNotesResult,
     dataQualityResult,
+    landmarkFactResult,
   ] = await Promise.allSettled([
     loadSubdivision(pin),
     loadLandLineage(pin),
@@ -252,6 +255,7 @@ export async function getPropertyDetail(pin: string): Promise<PropertyDetailData
     loadLandAncestry(pin),
     loadPropertyNotes(pin),
     loadDataQuality(pin),
+    getLandmarkFactForPin(pin),
   ]);
 
   return {
@@ -266,6 +270,7 @@ export async function getPropertyDetail(pin: string): Promise<PropertyDetailData
     appealYears: appealYearsResult.status === "fulfilled" ? appealYearsResult.value : [],
     propertyNotes: propertyNotesResult.status === "fulfilled" ? propertyNotesResult.value : [],
     dataQuality: dataQualityResult.status === "fulfilled" ? dataQualityResult.value : null,
+    landmarkFact: landmarkFactResult.status === "fulfilled" ? landmarkFactResult.value : null,
   };
 }
 

@@ -108,3 +108,20 @@ export async function getCityWideHistoricalFacts(): Promise<HistoricalFact[]> {
     return [];
   }
 }
+
+export async function getLandmarkFactForPin(pin: string): Promise<HistoricalFact | null> {
+  if (!supabase) return null;
+  try {
+    const { data, error } = await supabase
+      .from("historical_facts")
+      .select(COLUMNS)
+      .eq("pin_normalized", pin)
+      .eq("fact_type", "landmark")
+      .limit(1)
+      .maybeSingle();
+    if (error || !data) return null;
+    return mapFact(data as unknown as RawFact);
+  } catch {
+    return null;
+  }
+}

@@ -53,6 +53,12 @@ function factTypeBadge(fact: HistoricalFact): { label: string; className: string
       className: "bg-accent-amber/15 text-accent-amber border border-accent-amber/30",
     };
   }
+  if (fact.factType === "landmark") {
+    return {
+      label: "Designated Landmark",
+      className: "bg-accent-purple/15 text-accent-purple border border-accent-purple/30",
+    };
+  }
   if (!fact.category) return null;
   return {
     label: fact.category,

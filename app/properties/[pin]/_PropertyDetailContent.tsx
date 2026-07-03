@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { ConfidenceBadge } from "@/components/ui/ConfidenceBadge";
 import { TeardownBadge } from "@/components/ui/TeardownBadge";
+import { LandmarkBadge } from "@/components/ui/LandmarkBadge";
 import { ComparisonList } from "@/components/ui/ComparisonList";
 import { LoadingSkeleton, EmptyState } from "@/components/ui/EmptyState";
 import { InlineSourceNote } from "@/components/ui/SourceNote";
@@ -582,6 +583,7 @@ function PropertySummaryCard({
   confidence,
   isTeardownRebuild,
   teardownConfidence,
+  landmarkYear,
 }: {
   yearBuilt: number | null;
   eraNote: string | null;
@@ -597,6 +599,7 @@ function PropertySummaryCard({
   confidence: ConfidenceLevel;
   isTeardownRebuild: boolean | null;
   teardownConfidence: string | null;
+  landmarkYear?: number | null;
 }) {
   const vitals = [
     yearBuilt ? { label: "Year built", value: String(yearBuilt), note: eraNote } : null,
@@ -611,6 +614,7 @@ function PropertySummaryCard({
       <div className="flex flex-wrap items-start gap-2">
         <ConfidenceBadge level={confidence} showDescription />
         {isTeardownRebuild && <TeardownBadge confidence={teardownConfidence} />}
+        {landmarkYear && <LandmarkBadge year={landmarkYear} />}
       </div>
 
       {/* Vitals */}
@@ -929,6 +933,7 @@ export function PropertyDetailContent({ pin, initialProps }: Props) {
         confidence={confidence}
         isTeardownRebuild={props.is_teardown_rebuild as boolean | null}
         teardownConfidence={props.teardown_confidence as string | null}
+        landmarkYear={detail.landmarkFact?.dateStart ?? null}
       />
 
       {/* Historical notes (curated research from cited sources) */}
