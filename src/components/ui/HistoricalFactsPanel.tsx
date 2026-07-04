@@ -83,8 +83,21 @@ function factIcon(fact: HistoricalFact) {
 function markerStyle(fact: HistoricalFact): { className: string; style?: { color: string } } {
   if (isLandmark(fact.factType)) return { className: "text-accent-purple" };
   if (isProposal(fact.factType)) return { className: "text-accent-amber" };
-  const hex = getEraColor(fact.dateStart ?? undefined);
+  const hex = getEraColor(effectiveYear(fact) ?? undefined);
   return hex ? { className: "", style: { color: hex } } : { className: "text-text-muted" };
+}
+
+// ─── Effective year: many facts (esp. from the 1996 plan) only have a
+// date_text string like "1996" or "1920s", with no date_start integer --
+// falling back to Infinity for those pushed them to the END of the sort,
+// even though they're often the OLDEST facts on the page. Extract a year
+// from date_text so sorting/grouping reflects the real date, not just
+// whichever facts happen to have the structured column populated. ─────────
+
+function effectiveYear(fact: HistoricalFact): number | null {
+  if (fact.dateStart != null) return fact.dateStart;
+  const match = fact.dateText?.match(/\d{4}/);
+  return match ? parseInt(match[0], 10) : null;
 }
 
 function FactTimelineItem({ fact }: { fact: HistoricalFact }) {
@@ -176,12 +189,12 @@ export function HistoricalFactsPanel({ facts, heading = "From the historical rec
   if (facts.length === 0) return null;
 
   const sorted = [...facts].sort(
-    (a, b) => (a.dateStart ?? Infinity) - (b.dateStart ?? Infinity)
+    (a, b) => (effectiveYear(a) ?? Infinity) - (effectiveYear(b) ?? Infinity)
   );
 
   const groups = new Map<string, HistoricalFact[]>();
   for (const fact of sorted) {
-    const key = eraKey(fact.dateStart);
+    const key = eraKey(effectiveYear(fact));
     const arr = groups.get(key) ?? [];
     arr.push(fact);
     groups.set(key, arr);
