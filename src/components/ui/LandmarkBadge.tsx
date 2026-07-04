@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Landmark as LandmarkIcon } from "lucide-react";
+import { LandmarkDesignationIcon } from "@/lib/icons";
 
 type Props = {
   year?: number | string | null;
@@ -17,7 +17,7 @@ export function LandmarkBadge({ year }: Props) {
   return (
     <span className="relative inline-flex items-center gap-1">
       <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded border bg-accent-purple/15 text-accent-purple border-accent-purple/30">
-        <LandmarkIcon className="w-3 h-3 shrink-0" aria-hidden="true" />
+        <LandmarkDesignationIcon className="w-3 h-3 shrink-0" aria-hidden="true" />
         Designated Landmark
         {year && <span className="font-normal opacity-75"> · {year}</span>}
       </span>

@@ -96,7 +96,7 @@ export function CityContent({ mapSlot }: { mapSlot?: React.ReactNode }) {
 
   return (
     <div className="space-y-10">
-      <p className="text-text-secondary leading-relaxed max-w-prose">{CITY_NARRATIVE}</p>
+      <p className="text-text-secondary leading-relaxed">{CITY_NARRATIVE}</p>
       <InlineSourceNote className="mt-2">
         Historical summary based on Cook County Assessor build-year distributions and Cook County Recorder subdivision records. Era characterizations are interpretive summaries of the data. Confidence: Medium.
       </InlineSourceNote>

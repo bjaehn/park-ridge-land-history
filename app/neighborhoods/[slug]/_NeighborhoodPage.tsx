@@ -67,7 +67,7 @@ export function NeighborhoodPage({ data, eraLabel, mapSlot }: Props) {
     <div className="space-y-10">
       {/* Neighborhood narrative */}
       {narrative && (
-        <p className="text-sm text-text-secondary leading-relaxed max-w-prose">{narrative}</p>
+        <p className="text-sm text-text-secondary leading-relaxed">{narrative}</p>
       )}
 
       {/* Stat grid */}

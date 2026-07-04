@@ -11,7 +11,7 @@
 
 import { supabase } from "../supabase/client";
 import { fetchNeighborhoodPins, fetchNeighborhoodBbox } from "./neighborhoods";
-import { fetchSubdivisionMarketHistory } from "../supabase/subdivisionQueries";
+import { fetchSubdivisionMarketHistory, fetchBboxForPins } from "../supabase/subdivisionQueries";
 import { fetchBlockSalesByYear } from "../supabase/blockQueries";
 import type { NeighborhoodType } from "./neighborhoods";
 import type { DecadeRow } from "../../components/ui/ConstructionByDecadeChart";
@@ -261,7 +261,13 @@ export async function getNeighborhoodMapData(
     fetchNeighborhoodPins(id).catch(() => [] as string[]),
     fetchNeighborhoodBbox(id).catch(() => null),
   ]);
-  return { pins, bbox };
+  if (bbox) return { pins, bbox };
+
+  // neighborhood_bbox requires parcel geometry to be present; when it's
+  // missing/incomplete for this neighborhood, fall back to computing a bbox
+  // from the actual linked parcels, same as fetchSubdivisionMapData does.
+  const fallbackBbox = pins.length > 0 ? await fetchBboxForPins(pins).catch(() => null) : null;
+  return { pins, bbox: fallbackBbox };
 }
 
 // ---------------------------------------------------------------------------

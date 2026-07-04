@@ -142,7 +142,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
 
       {narrative && (
         <div className="mt-4 mb-6">
-          <p className="text-text-secondary leading-relaxed max-w-prose">{narrative}</p>
+          <p className="text-text-secondary leading-relaxed">{narrative}</p>
           <InlineSourceNote className="mt-2">
             Historical notes based on assessor build-year data and recorder subdivision records.
             Era characterizations are interpretive. Confidence: Medium.

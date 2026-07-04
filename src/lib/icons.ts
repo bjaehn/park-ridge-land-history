@@ -52,4 +52,8 @@ export {
   MessageSquare as StoryIcon,
   PenLine       as CorrectIcon,
   Star          as HighlightIcon,
+
+  // Designations and proposals
+  Award         as LandmarkDesignationIcon,
+  ClipboardList as ProposalIcon,
 } from "lucide-react";
