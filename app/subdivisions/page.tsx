@@ -10,6 +10,7 @@ import {
 import { SubdivisionsHero } from "./_SubdivisionsHero";
 import { SubdivisionCharts } from "./_SubdivisionCharts";
 import { SubdivisionsContent } from "./_SubdivisionsContent";
+import { NeighborhoodCharts } from "@/components/ui/NeighborhoodCharts";
 
 export const metadata: Metadata = {
   title: "Subdivisions",
@@ -34,6 +35,10 @@ export default async function SubdivisionsPage() {
       />
 
       <SubdivisionsHero totalCount={subdivisions.length} />
+
+      <div className="mb-10">
+        <NeighborhoodCharts />
+      </div>
 
       <SubdivisionCharts platData={platData} gapData={gapData} />
 
