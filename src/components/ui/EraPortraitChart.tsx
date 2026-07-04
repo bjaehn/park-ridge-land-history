@@ -8,6 +8,10 @@ type EraPortraitRow = {
   teens: number;
   recent: number;
   total: number;
+  /** Set to false when the entity has zero mapped properties (distinct from
+   *  having properties with no known build year). Renders an explicit
+   *  empty-state message instead of a blank/zero bar. */
+  hasProperties?: boolean;
 };
 
 type Props = { data: EraPortraitRow[] };
@@ -40,31 +44,39 @@ export function EraPortraitChart({ data }: Props) {
       {data.map((row) => (
         <div key={row.label} className="flex items-center gap-3">
           <span className="text-sm text-text-secondary w-24 shrink-0">{row.label}</span>
-          <div className="flex-1 flex h-7 rounded overflow-hidden gap-px">
-            {ERA_SEGMENTS.map((seg) => {
-              const pct = row.total > 0 ? (row[seg.key] / row.total) * 100 : 0;
-              if (pct < 0.5) return null;
-              const pctRounded = Math.round(pct);
-              return (
-                <div
-                  key={seg.key}
-                  title={`${seg.label}: ${pctRounded}%`}
-                  aria-label={`${seg.label}: ${pctRounded}%`}
-                  className="relative flex items-center justify-center overflow-hidden"
-                  style={{ width: `${pct}%`, background: seg.color }}
-                >
-                  {pct >= 12 && (
-                    <span className="text-[10px] font-semibold text-white/80 tabular-nums select-none">
-                      {pctRounded}%
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          <span className="text-xs text-text-muted w-10 text-right">
-            {row.total.toLocaleString()}
-          </span>
+          {row.hasProperties === false ? (
+            <span className="flex-1 text-xs text-text-muted italic">
+              No properties are currently included
+            </span>
+          ) : (
+            <>
+              <div className="flex-1 flex h-7 rounded overflow-hidden gap-px">
+                {ERA_SEGMENTS.map((seg) => {
+                  const pct = row.total > 0 ? (row[seg.key] / row.total) * 100 : 0;
+                  if (pct < 0.5) return null;
+                  const pctRounded = Math.round(pct);
+                  return (
+                    <div
+                      key={seg.key}
+                      title={`${seg.label}: ${pctRounded}%`}
+                      aria-label={`${seg.label}: ${pctRounded}%`}
+                      className="relative flex items-center justify-center overflow-hidden"
+                      style={{ width: `${pct}%`, background: seg.color }}
+                    >
+                      {pct >= 12 && (
+                        <span className="text-[10px] font-semibold text-white/80 tabular-nums select-none">
+                          {pctRounded}%
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              <span className="text-xs text-text-muted w-10 text-right">
+                {row.total.toLocaleString()}
+              </span>
+            </>
+          )}
         </div>
       ))}
     </div>
