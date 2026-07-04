@@ -65,13 +65,13 @@ export default function SourcesPage() {
             Each property, block, and neighborhood is assigned a development signal that summarizes recent activity. The signal is calculated from permit count, sale count, and teardown count using fixed thresholds.
           </p>
           <ul className="text-sm space-y-2 list-disc list-inside">
-            <li><strong className="text-text-primary">Rebuild pressure:</strong> One or more recent teardowns detected, or three or more recent permits on record. Indicates active redevelopment or high construction concentration.</li>
-            <li><strong className="text-text-primary">Reinvestment:</strong> Two or more total permits on record and no teardown detected. Suggests ongoing improvement activity.</li>
-            <li><strong className="text-text-primary">Turnover:</strong> Four or more recorded sales and no teardown or high-permit activity. Indicates a property that has changed hands frequently.</li>
-            <li><strong className="text-text-primary">Dormant:</strong> Fewer than two permits and three or fewer sales. No detected teardown or active permit work.</li>
+            <li><strong className="text-text-primary">Active redevelopment:</strong> One or more recent teardowns detected, or three or more recent permits on record. Indicates active redevelopment or high construction concentration.</li>
+            <li><strong className="text-text-primary">Ongoing improvements:</strong> Two or more total permits on record and no teardown detected. Suggests ongoing improvement activity.</li>
+            <li><strong className="text-text-primary">Frequently resold:</strong> Four or more recorded sales and no teardown or high-permit activity. Indicates a property that has changed hands frequently.</li>
+            <li><strong className="text-text-primary">No recent activity:</strong> Fewer than two permits and three or fewer sales. No detected teardown or active permit work.</li>
           </ul>
           <p className="text-sm mt-3">
-            These signals are computed automatically from available data. They are interpretive labels, not official designations. Permit records before 2018 are incomplete, which may cause some properties to show Dormant when earlier activity exists.
+            These signals are computed automatically from available data. They are interpretive labels, not official designations. Permit records before 2018 are incomplete, which may cause some properties to show No recent activity when earlier activity exists.
           </p>
         </section>
 

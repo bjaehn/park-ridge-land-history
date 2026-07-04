@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ChangeSignal } from "@/lib/formatters";
-import { SIGNAL_DESCRIPTION } from "@/lib/formatters";
+import { SIGNAL_DESCRIPTION, SIGNAL_LABEL } from "@/lib/formatters";
 import { TeardownBadge } from "./TeardownBadge";
 
 
@@ -99,7 +99,7 @@ export function EntityCard({
                   className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded ${SIGNAL_STYLES[signal]}`}
                   title={SIGNAL_DESCRIPTION[signal]}
                 >
-                  {signal}
+                  {SIGNAL_LABEL[signal]}
                 </span>
               )}
             </div>

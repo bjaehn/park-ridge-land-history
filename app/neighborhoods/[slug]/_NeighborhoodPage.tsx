@@ -80,10 +80,11 @@ export function NeighborhoodPage({ data, eraLabel, mapSlot }: Props) {
           {signal !== "Dormant" && (
             <p className="text-xs text-text-muted -mt-6">
               {signal === "Reinvestment" &&
-                "Elevated permit activity relative to the city median, suggesting ongoing improvement work."}
-              {signal === "Turnover" && "Elevated sale frequency relative to the city median."}
+                "Ongoing improvements: elevated permit activity relative to the city median, suggesting ongoing improvement work."}
+              {signal === "Turnover" &&
+                "Frequently resold: elevated sale frequency relative to the city median."}
               {signal === "Rebuild pressure" &&
-                "Recent teardown or significant reconstruction activity detected."}
+                "Active redevelopment: recent teardown or significant reconstruction activity detected."}
             </p>
           )}
         </>

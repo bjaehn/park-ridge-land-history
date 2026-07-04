@@ -207,7 +207,9 @@ type Props = {
 };
 
 export function SubdivisionHistoryPanel({ subdivision }: Props) {
-  const facts = subdivision.facts ?? [];
+  const facts = [...(subdivision.facts ?? [])].sort(
+    (a, b) => (a.event_year ?? Infinity) - (b.event_year ?? Infinity)
+  );
   const aliases = subdivision.aliases ?? [];
   const tasks = subdivision.research_tasks ?? [];
   const hasContent = facts.length > 0 || tasks.length > 0;

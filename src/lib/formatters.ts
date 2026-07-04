@@ -252,6 +252,16 @@ export const SIGNAL_DESCRIPTION: Record<ChangeSignal, string> = {
   "Rebuild pressure": "Recent teardown activity or high permit concentration nearby.",
 };
 
+// Plain-language text shown to readers in place of the internal signal name
+// (e.g. badges, prose). The internal ChangeSignal values above stay fixed --
+// only this display layer changes if the wording needs to be adjusted again.
+export const SIGNAL_LABEL: Record<ChangeSignal, string> = {
+  Dormant: "No recent activity",
+  Reinvestment: "Ongoing improvements",
+  Turnover: "Frequently resold",
+  "Rebuild pressure": "Active redevelopment",
+};
+
 // ---------------------------------------------------------------------------
 // Confidence model
 // Single function. All callers read this output.
