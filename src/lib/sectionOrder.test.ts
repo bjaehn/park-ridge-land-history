@@ -1,12 +1,14 @@
 /**
- * Regression test: /neighborhoods and /subdivisions each render their own
- * Era portrait + Median sale price chart section (NeighborhoodCharts on
- * /neighborhoods, SubdivisionEraPriceCharts on /subdivisions -- separate
- * components since they're scoped to different data, but both must keep
- * Era portrait before Median sale price, and both sections must sit right
- * after the page header/hero and before the primary listing component.
- * Nothing previously enforced this, so a future edit could silently move,
- * reorder, or drop the charts on just one page.
+ * Regression test: /neighborhoods renders an Era portrait + Median sale
+ * price chart section (NeighborhoodCharts) in that order, right after the
+ * page header/hero and before the primary listing component. /subdivisions
+ * used to render the same pair via SubdivisionEraPriceCharts, but its Era
+ * portrait ("Plats recorded by decade" in SubdivisionCharts and "Era
+ * portrait: when each subdivision was built" in SubdivisionEraPriceCharts)
+ * was removed -- it now renders only the Median sale price chart. Nothing
+ * previously enforced the ordering, so a future edit could silently move,
+ * reorder, or drop the remaining chart, or accidentally reintroduce the
+ * removed Era portrait heading.
  *
  * This is a static source scan, not a rendered-DOM check, matching the
  * precedent in pageWidth.test.ts.
@@ -17,24 +19,29 @@ import fs from "node:fs";
 import path from "node:path";
 
 describe("chart section order stays in sync between /neighborhoods and /subdivisions", () => {
-  it.each([
-    {
-      file: "src/components/ui/NeighborhoodCharts.tsx",
-      eraHeading: "Era portrait: when each neighborhood was built",
-      priceHeading: "Median sale price by neighborhood, 2015 vs. 2024",
-    },
-    {
-      file: "app/subdivisions/_SubdivisionEraPriceCharts.tsx",
-      eraHeading: "Era portrait: when each subdivision was built",
-      priceHeading: "Median sale price by subdivision, 2015 vs. 2024",
-    },
-  ])("$file renders Era portrait before Median sale price", ({ file, eraHeading, priceHeading }) => {
+  it("NeighborhoodCharts renders Era portrait before Median sale price", () => {
+    const file = "src/components/ui/NeighborhoodCharts.tsx";
+    const eraHeading = "Era portrait: when each neighborhood was built";
+    const priceHeading = "Median sale price by neighborhood, 2015 vs. 2024";
     const content = fs.readFileSync(path.resolve(process.cwd(), file), "utf-8");
     const eraIdx = content.indexOf(eraHeading);
     const priceIdx = content.indexOf(priceHeading);
     expect(eraIdx, `"${eraHeading}" not found in ${file}`).toBeGreaterThan(-1);
     expect(priceIdx, `"${priceHeading}" not found in ${file}`).toBeGreaterThan(-1);
     expect(eraIdx).toBeLessThan(priceIdx);
+  });
+
+  it("SubdivisionEraPriceCharts no longer renders an Era portrait section", () => {
+    const file = "app/subdivisions/_SubdivisionEraPriceCharts.tsx";
+    const content = fs.readFileSync(path.resolve(process.cwd(), file), "utf-8");
+    expect(content).not.toContain("Era portrait");
+    expect(content).toContain("Median sale price by subdivision, 2015 vs. 2024");
+  });
+
+  it("SubdivisionCharts no longer renders a Plats recorded by decade section", () => {
+    const file = "app/subdivisions/_SubdivisionCharts.tsx";
+    const content = fs.readFileSync(path.resolve(process.cwd(), file), "utf-8");
+    expect(content).not.toContain("Plats recorded by decade");
   });
 
   it.each([

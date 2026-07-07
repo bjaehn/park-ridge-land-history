@@ -4,7 +4,6 @@ import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { SourceNote } from "@/components/ui/SourceNote";
 import {
   fetchSubdivisionIndex,
-  fetchSubdivisionPlatByDecade,
   fetchSubdivisionBuildGap,
 } from "@/lib/supabase/subdivisionQueries";
 import { SubdivisionsHero } from "./_SubdivisionsHero";
@@ -19,9 +18,8 @@ export const metadata: Metadata = {
 };
 
 export default async function SubdivisionsPage() {
-  const [subdivisions, platData, gapData] = await Promise.all([
+  const [subdivisions, gapData] = await Promise.all([
     fetchSubdivisionIndex().catch(() => []),
-    fetchSubdivisionPlatByDecade().catch(() => []),
     fetchSubdivisionBuildGap().catch(() => []),
   ]);
 
@@ -40,7 +38,7 @@ export default async function SubdivisionsPage() {
         <SubdivisionEraPriceCharts subdivisions={subdivisions} />
       </div>
 
-      <SubdivisionCharts platData={platData} gapData={gapData} />
+      <SubdivisionCharts gapData={gapData} />
 
       <SubdivisionsContent subdivisions={subdivisions} />
 
