@@ -289,21 +289,23 @@ async function classifyMatchingParcels(
   subdivisionId: string,
   subdivisionNames: string[]
 ): Promise<Omit<BulkLinkResult, "linkedCount">> {
+  // parcels.subdivision_id has no formal foreign key constraint to
+  // subdivisions.id (confirmed against the live schema), so PostgREST's
+  // embedded-resource syntax (`subdivisions(name)`) can't resolve here --
+  // it returns a 400 "could not find a relationship" for every call. Look
+  // up subdivision_id values first, then names in a separate query.
   const { data, error } = await adminSupabase
     .from("parcels")
-    .select("subdivision_id, subdivisions(name)")
+    .select("subdivision_id")
     .eq("municipality", "CITY OF PARK RIDGE")
     .in("subdivision_name", subdivisionNames);
   if (error) throw new Error(error.message);
 
-  const rows = (data ?? []) as Array<{
-    subdivision_id: string | null;
-    subdivisions: { name: string } | { name: string }[] | null;
-  }>;
+  const rows = (data ?? []) as Array<{ subdivision_id: string | null }>;
 
   let alreadyLinkedSameCount = 0;
   let alreadyLinkedOtherCount = 0;
-  const conflictingNames = new Set<string>();
+  const otherSubdivisionIds = new Set<string>();
 
   for (const r of rows) {
     if (!r.subdivision_id) continue;
@@ -312,8 +314,18 @@ async function classifyMatchingParcels(
       continue;
     }
     alreadyLinkedOtherCount++;
-    const sub = Array.isArray(r.subdivisions) ? r.subdivisions[0] : r.subdivisions;
-    if (sub?.name) conflictingNames.add(sub.name);
+    otherSubdivisionIds.add(r.subdivision_id);
+  }
+
+  const conflictingNames = new Set<string>();
+  if (otherSubdivisionIds.size > 0) {
+    const { data: subs } = await adminSupabase
+      .from("subdivisions")
+      .select("name")
+      .in("id", Array.from(otherSubdivisionIds));
+    for (const s of (subs ?? []) as Array<{ name: string }>) {
+      conflictingNames.add(s.name);
+    }
   }
 
   return {
