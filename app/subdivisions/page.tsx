@@ -5,7 +5,6 @@ import { SourceNote } from "@/components/ui/SourceNote";
 import { fetchSubdivisionIndex } from "@/lib/supabase/subdivisionQueries";
 import { SubdivisionsHero } from "./_SubdivisionsHero";
 import { SubdivisionsContent } from "./_SubdivisionsContent";
-import { SubdivisionEraPriceCharts } from "./_SubdivisionEraPriceCharts";
 
 export const metadata: Metadata = {
   title: "Subdivisions",
@@ -26,10 +25,6 @@ export default async function SubdivisionsPage() {
       />
 
       <SubdivisionsHero totalCount={subdivisions.length} />
-
-      <div className="mb-10">
-        <SubdivisionEraPriceCharts subdivisions={subdivisions} />
-      </div>
 
       <SubdivisionsContent subdivisions={subdivisions} />
 
