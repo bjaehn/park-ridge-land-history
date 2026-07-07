@@ -5,7 +5,7 @@
 
 DROP FUNCTION IF EXISTS get_neighborhood_type_boundaries_geojson(text);
 
-CREATE FUNCTION get_neighborhood_type_boundaries_geojson(p_types text[])
+CREATE OR REPLACE FUNCTION get_neighborhood_type_boundaries_geojson(p_types text[])
 RETURNS json
 LANGUAGE sql
 STABLE
@@ -29,7 +29,7 @@ GRANT EXECUTE ON FUNCTION get_neighborhood_type_boundaries_geojson(text[]) TO an
 
 DROP FUNCTION IF EXISTS get_neighborhood_type_bbox(text);
 
-CREATE FUNCTION get_neighborhood_type_bbox(p_types text[])
+CREATE OR REPLACE FUNCTION get_neighborhood_type_bbox(p_types text[])
 RETURNS jsonb
 LANGUAGE sql
 STABLE
