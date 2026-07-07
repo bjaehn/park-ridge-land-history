@@ -2,13 +2,13 @@
  * Regression test: /neighborhoods renders an Era portrait + Median sale
  * price chart section (NeighborhoodCharts) in that order, right after the
  * page header/hero and before the primary listing component. /subdivisions
- * used to render the same pair via SubdivisionEraPriceCharts, but its Era
- * portrait ("Plats recorded by decade" in SubdivisionCharts and "Era
- * portrait: when each subdivision was built" in SubdivisionEraPriceCharts)
- * was removed -- it now renders only the Median sale price chart. Nothing
- * previously enforced the ordering, so a future edit could silently move,
- * reorder, or drop the remaining chart, or accidentally reintroduce the
- * removed Era portrait heading.
+ * used to render the same pair via SubdivisionEraPriceCharts plus a
+ * separate SubdivisionCharts component ("Plats recorded by decade" and
+ * "Longest wait: plat to first home built"), but all of that except the
+ * Median sale price chart has since been removed -- SubdivisionCharts and
+ * its build-gap chart were deleted entirely. Nothing previously enforced
+ * the ordering, so a future edit could silently move, reorder, or drop the
+ * remaining chart, or accidentally reintroduce a removed section.
  *
  * This is a static source scan, not a rendered-DOM check, matching the
  * precedent in pageWidth.test.ts.
@@ -38,10 +38,15 @@ describe("chart section order stays in sync between /neighborhoods and /subdivis
     expect(content).toContain("Median sale price by subdivision, 2015 vs. 2024");
   });
 
-  it("SubdivisionCharts no longer renders a Plats recorded by decade section", () => {
-    const file = "app/subdivisions/_SubdivisionCharts.tsx";
-    const content = fs.readFileSync(path.resolve(process.cwd(), file), "utf-8");
-    expect(content).not.toContain("Plats recorded by decade");
+  it("SubdivisionCharts (Plats recorded by decade / Longest wait) was removed entirely", () => {
+    const file = path.resolve(process.cwd(), "app/subdivisions/_SubdivisionCharts.tsx");
+    expect(fs.existsSync(file)).toBe(false);
+
+    const pageContent = fs.readFileSync(
+      path.resolve(process.cwd(), "app/subdivisions/page.tsx"),
+      "utf-8"
+    );
+    expect(pageContent).not.toContain("SubdivisionCharts");
   });
 
   it.each([
@@ -55,7 +60,7 @@ describe("chart section order stays in sync between /neighborhoods and /subdivis
       file: "app/subdivisions/page.tsx",
       heroTag: "<SubdivisionsHero",
       chartsTag: "<SubdivisionEraPriceCharts",
-      listTag: "<SubdivisionCharts",
+      listTag: "<SubdivisionsContent",
     },
   ])("$file renders its chart section between hero and primary listing", ({ file, heroTag, chartsTag, listTag }) => {
     const content = fs.readFileSync(path.resolve(process.cwd(), file), "utf-8");

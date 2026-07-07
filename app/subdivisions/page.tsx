@@ -2,12 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { SourceNote } from "@/components/ui/SourceNote";
-import {
-  fetchSubdivisionIndex,
-  fetchSubdivisionBuildGap,
-} from "@/lib/supabase/subdivisionQueries";
+import { fetchSubdivisionIndex } from "@/lib/supabase/subdivisionQueries";
 import { SubdivisionsHero } from "./_SubdivisionsHero";
-import { SubdivisionCharts } from "./_SubdivisionCharts";
 import { SubdivisionsContent } from "./_SubdivisionsContent";
 import { SubdivisionEraPriceCharts } from "./_SubdivisionEraPriceCharts";
 
@@ -18,10 +14,7 @@ export const metadata: Metadata = {
 };
 
 export default async function SubdivisionsPage() {
-  const [subdivisions, gapData] = await Promise.all([
-    fetchSubdivisionIndex().catch(() => []),
-    fetchSubdivisionBuildGap().catch(() => []),
-  ]);
+  const subdivisions = await fetchSubdivisionIndex().catch(() => []);
 
   return (
     <div className="page-shell max-w-none">
@@ -37,8 +30,6 @@ export default async function SubdivisionsPage() {
       <div className="mb-10">
         <SubdivisionEraPriceCharts subdivisions={subdivisions} />
       </div>
-
-      <SubdivisionCharts gapData={gapData} />
 
       <SubdivisionsContent subdivisions={subdivisions} />
 
