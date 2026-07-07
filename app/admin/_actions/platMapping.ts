@@ -3,6 +3,9 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { revalidatePath } from "next/cache";
 import { adminSupabase } from "@/lib/supabase/adminClient";
+import type { BulkLinkResult } from "@/lib/platMappingMessages";
+
+export type { BulkLinkResult };
 
 // ─── AI suggestion types ──────────────────────────────────────────────────────
 
@@ -266,12 +269,76 @@ export async function fetchGisCodeSuggestionsForSubdivision(
   }));
 }
 
+// ─── Bulk link / unlink / reassign by GIS page code ──────────────────────────
+//
+// "Linking a GIS code" bulk-sets parcels.subdivision_id (+ match_method,
+// confidence, source) for every parcel whose subdivision_name matches
+// 'Assessor subdivision area {CODE}'. subdivision_match_method = 'gis_page_code'
+// is written by this code path ONLY (verified: the historical ingestion
+// script writes deed-derived match_method values, and manual admin edits go
+// through property_subdivision_links and never touch this column at all) --
+// so it's a safe, exclusive discriminator for undoing exactly what this tool
+// did, without ever touching deed-verified, manually-confirmed, or GIS-lot
+// spatial-matched links.
+
+function pageCodesToSubdivisionNames(gisPageCodes: string[]): string[] {
+  return gisPageCodes.map((c) => `Assessor subdivision area ${c}`);
+}
+
+async function classifyMatchingParcels(
+  subdivisionId: string,
+  subdivisionNames: string[]
+): Promise<Omit<BulkLinkResult, "linkedCount">> {
+  const { data, error } = await adminSupabase
+    .from("parcels")
+    .select("subdivision_id, subdivisions(name)")
+    .eq("municipality", "CITY OF PARK RIDGE")
+    .in("subdivision_name", subdivisionNames);
+  if (error) throw new Error(error.message);
+
+  const rows = (data ?? []) as Array<{
+    subdivision_id: string | null;
+    subdivisions: { name: string } | { name: string }[] | null;
+  }>;
+
+  let alreadyLinkedSameCount = 0;
+  let alreadyLinkedOtherCount = 0;
+  const conflictingNames = new Set<string>();
+
+  for (const r of rows) {
+    if (!r.subdivision_id) continue;
+    if (r.subdivision_id === subdivisionId) {
+      alreadyLinkedSameCount++;
+      continue;
+    }
+    alreadyLinkedOtherCount++;
+    const sub = Array.isArray(r.subdivisions) ? r.subdivisions[0] : r.subdivisions;
+    if (sub?.name) conflictingNames.add(sub.name);
+  }
+
+  return {
+    totalMatchingCount: rows.length,
+    alreadyLinkedSameCount,
+    alreadyLinkedOtherCount,
+    conflictingSubdivisionNames: Array.from(conflictingNames).slice(0, 5),
+  };
+}
+
 export async function bulkLinkParcelsByPageCodes(
   subdivisionId: string,
   gisPageCodes: string[]
-): Promise<number> {
-  if (!gisPageCodes.length) return 0;
-  const subdivisionNames = gisPageCodes.map((c) => `Assessor subdivision area ${c}`);
+): Promise<BulkLinkResult> {
+  if (!gisPageCodes.length) {
+    return {
+      linkedCount: 0,
+      totalMatchingCount: 0,
+      alreadyLinkedSameCount: 0,
+      alreadyLinkedOtherCount: 0,
+      conflictingSubdivisionNames: [],
+    };
+  }
+  const subdivisionNames = pageCodesToSubdivisionNames(gisPageCodes);
+  const classification = await classifyMatchingParcels(subdivisionId, subdivisionNames);
 
   const { data, error } = await adminSupabase
     .from("parcels")
@@ -289,5 +356,96 @@ export async function bulkLinkParcelsByPageCodes(
   if (error) throw new Error(error.message);
   revalidatePath(`/admin/subdivisions/${subdivisionId}`);
   revalidatePath("/subdivisions");
+  revalidatePath("/admin/plat-mapping");
+  return { linkedCount: data?.length ?? 0, ...classification };
+}
+
+export async function unlinkParcelsByPageCodes(
+  subdivisionId: string,
+  gisPageCodes: string[]
+): Promise<number> {
+  if (!gisPageCodes.length) return 0;
+  const subdivisionNames = pageCodesToSubdivisionNames(gisPageCodes);
+
+  const { data, error } = await adminSupabase
+    .from("parcels")
+    .update({
+      subdivision_id: null,
+      subdivision_match_method: null,
+      subdivision_confidence: null,
+      subdivision_source: null,
+    })
+    .eq("municipality", "CITY OF PARK RIDGE")
+    .eq("subdivision_id", subdivisionId)
+    .eq("subdivision_match_method", "gis_page_code")
+    .in("subdivision_name", subdivisionNames)
+    .select("pin_normalized");
+
+  if (error) throw new Error(error.message);
+  revalidatePath(`/admin/subdivisions/${subdivisionId}`);
+  revalidatePath("/subdivisions");
+  revalidatePath("/admin/plat-mapping");
   return data?.length ?? 0;
+}
+
+export async function reassignParcelsByPageCodes(
+  fromSubdivisionId: string,
+  toSubdivisionId: string,
+  gisPageCodes: string[]
+): Promise<number> {
+  if (!gisPageCodes.length) return 0;
+  await unlinkParcelsByPageCodes(fromSubdivisionId, gisPageCodes);
+  const result = await bulkLinkParcelsByPageCodes(toSubdivisionId, gisPageCodes);
+  revalidatePath(`/admin/subdivisions/${fromSubdivisionId}`);
+  revalidatePath(`/admin/subdivisions/${toSubdivisionId}`);
+  revalidatePath("/subdivisions");
+  revalidatePath("/admin/plat-mapping");
+  return result.linkedCount;
+}
+
+// ─── Preview: which parcels a given code+subdivision unlink would affect ─────
+
+export async function fetchLinkedParcelsForPageCodes(
+  subdivisionId: string,
+  gisPageCodes: string[]
+): Promise<Array<{ pin_normalized: string; address: string | null }>> {
+  if (!gisPageCodes.length) return [];
+  const subdivisionNames = pageCodesToSubdivisionNames(gisPageCodes);
+
+  const { data, error } = await adminSupabase
+    .from("parcels")
+    .select("pin_normalized, address")
+    .eq("municipality", "CITY OF PARK RIDGE")
+    .eq("subdivision_id", subdivisionId)
+    .eq("subdivision_match_method", "gis_page_code")
+    .in("subdivision_name", subdivisionNames)
+    .order("address")
+    .limit(25);
+
+  if (error) return [];
+  return (data ?? []) as Array<{ pin_normalized: string; address: string | null }>;
+}
+
+// ─── Split-across-subdivisions drill-down ────────────────────────────────────
+
+export type GisPageCodeSubdivisionBreakdown = {
+  subdivisionId: string | null;
+  subdivisionName: string | null;
+  cnt: number;
+};
+
+export async function fetchGisPageCodeSubdivisionBreakdown(
+  code: string
+): Promise<GisPageCodeSubdivisionBreakdown[]> {
+  const { data, error } = await adminSupabase.rpc("get_gis_page_code_subdivision_breakdown", {
+    p_code: code,
+  });
+  if (error || !data) return [];
+  return (
+    data as Array<{ subdivision_id: string | null; subdivision_name: string | null; cnt: number }>
+  ).map((r) => ({
+    subdivisionId: r.subdivision_id,
+    subdivisionName: r.subdivision_name,
+    cnt: Number(r.cnt),
+  }));
 }

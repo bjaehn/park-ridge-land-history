@@ -16,12 +16,20 @@ export default async function PlatMappingPage() {
     ]);
 
   const pageCodes = (rawPageCodes ?? []).map(
-    (r: { code: string; cnt: number; linked_cnt: number; subdivision_id: string | null; subdivision_name: string | null }) => ({
+    (r: {
+      code: string;
+      cnt: number;
+      linked_cnt: number;
+      subdivision_id: string | null;
+      subdivision_name: string | null;
+      distinct_subdivision_cnt: number;
+    }) => ({
       code: r.code,
       cnt: Number(r.cnt),
       linkedCnt: Number(r.linked_cnt),
       subdivisionId: r.subdivision_id,
       subdivisionName: r.subdivision_name,
+      distinctSubdivisionCnt: Number(r.distinct_subdivision_cnt),
     })
   );
 

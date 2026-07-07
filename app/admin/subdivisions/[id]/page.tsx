@@ -71,27 +71,42 @@ export default async function EditSubdivisionPage({ params }: { params: { id: st
   // Fetch candidate parcels for all GIS page codes
   let candidateCount = 0;
   let alreadyLinkedCount = 0;
+  let gisLinkedHereCount = 0;
   let sampleAddresses: { address: string; pin_normalized: string }[] = [];
   if (gisPageCodes.length > 0) {
     const subdivisionNames = gisPageCodes.map((c) => `Assessor subdivision area ${c}`);
-    const [{ count: unlinkedCount, data: sample }, { count: linkedCount }] = await Promise.all([
-      adminSupabase
-        .from("parcels")
-        .select("address, pin_normalized", { count: "exact" })
-        .eq("municipality", "CITY OF PARK RIDGE")
-        .in("subdivision_name", subdivisionNames)
-        .is("subdivision_id", null)
-        .order("address")
-        .limit(20),
-      adminSupabase
-        .from("parcels")
-        .select("*", { count: "exact", head: true })
-        .eq("municipality", "CITY OF PARK RIDGE")
-        .in("subdivision_name", subdivisionNames)
-        .not("subdivision_id", "is", null),
-    ]);
+    const [{ count: unlinkedCount, data: sample }, { count: linkedCount }, { count: gisLinkedCount }] =
+      await Promise.all([
+        adminSupabase
+          .from("parcels")
+          .select("address, pin_normalized", { count: "exact" })
+          .eq("municipality", "CITY OF PARK RIDGE")
+          .in("subdivision_name", subdivisionNames)
+          .is("subdivision_id", null)
+          .order("address")
+          .limit(20),
+        adminSupabase
+          .from("parcels")
+          .select("*", { count: "exact", head: true })
+          .eq("municipality", "CITY OF PARK RIDGE")
+          .in("subdivision_name", subdivisionNames)
+          .not("subdivision_id", "is", null),
+        // Precise count of what an Unlink click would actually reverse: parcels
+        // linked to THIS subdivision specifically via this GIS-code tool (not
+        // any subdivision, and not deed/manual/spatial links) -- alreadyLinkedCount
+        // above is intentionally broader (any subdivision, any method) and stays
+        // that way for its own informational purpose.
+        adminSupabase
+          .from("parcels")
+          .select("*", { count: "exact", head: true })
+          .eq("municipality", "CITY OF PARK RIDGE")
+          .in("subdivision_name", subdivisionNames)
+          .eq("subdivision_id", id)
+          .eq("subdivision_match_method", "gis_page_code"),
+      ]);
     candidateCount = unlinkedCount ?? 0;
     alreadyLinkedCount = linkedCount ?? 0;
+    gisLinkedHereCount = gisLinkedCount ?? 0;
     sampleAddresses = (sample ?? []) as { address: string; pin_normalized: string }[];
   }
 
@@ -131,6 +146,7 @@ export default async function EditSubdivisionPage({ params }: { params: { id: st
         gisPageCodes={gisPageCodes}
         candidateCount={candidateCount}
         alreadyLinkedCount={alreadyLinkedCount}
+        gisLinkedHereCount={gisLinkedHereCount}
         sampleAddresses={sampleAddresses}
       />
     </div>

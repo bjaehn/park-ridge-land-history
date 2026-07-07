@@ -1,12 +1,15 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   bulkLinkParcelsByPageCodes,
+  unlinkParcelsByPageCodes,
   suggestPlatEntriesForSubdivision,
   linkPlatIndexEntry,
   type PlatEntrySuggestion,
+  type BulkLinkResult,
 } from "../_actions/platMapping";
 
 function confidenceClasses(confidence: string) {
@@ -22,6 +25,7 @@ export function CandidatePropertiesPanel({
   gisPageCodes,
   candidateCount,
   alreadyLinkedCount,
+  gisLinkedHereCount,
   sampleAddresses,
 }: {
   subdivisionId: string;
@@ -30,10 +34,16 @@ export function CandidatePropertiesPanel({
   gisPageCodes: string[];
   candidateCount: number;
   alreadyLinkedCount: number;
+  /** Parcels linked to THIS subdivision specifically via this GIS-code tool --
+   *  the precise count an Unlink click would reverse. Distinct from
+   *  alreadyLinkedCount, which is broader (any subdivision, any method). */
+  gisLinkedHereCount: number;
   sampleAddresses: { address: string; pin_normalized: string }[];
 }) {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [linkedCount, setLinkedCount] = useState<number | null>(null);
+  const [linkResult, setLinkResult] = useState<BulkLinkResult | null>(null);
+  const [unlinkedCount, setUnlinkedCount] = useState<number | null>(null);
 
   // AI suggestion state (only used when no GIS codes are set)
   const [suggestions, setSuggestions] = useState<PlatEntrySuggestion[] | null>(null);
@@ -44,8 +54,26 @@ export function CandidatePropertiesPanel({
 
   function handleBulkLink() {
     startTransition(async () => {
-      const count = await bulkLinkParcelsByPageCodes(subdivisionId, gisPageCodes);
-      setLinkedCount(count);
+      const result = await bulkLinkParcelsByPageCodes(subdivisionId, gisPageCodes);
+      setLinkResult(result);
+      setUnlinkedCount(null);
+      router.refresh();
+    });
+  }
+
+  function handleUnlink() {
+    if (
+      !confirm(
+        `Unlink ${gisLinkedHereCount} propert${gisLinkedHereCount === 1 ? "y" : "ies"} previously bulk-assigned to ${subdivisionName} via GIS code(s) ${gisPageCodes.join(", ")}? This only reverses assignments made by this GIS-code tool -- it will not touch deed-verified links, manual admin links, or spatial GIS-lot matches. Continue?`
+      )
+    ) {
+      return;
+    }
+    startTransition(async () => {
+      const count = await unlinkParcelsByPageCodes(subdivisionId, gisPageCodes);
+      setUnlinkedCount(count);
+      setLinkResult(null);
+      router.refresh();
     });
   }
 
@@ -177,9 +205,21 @@ export function CandidatePropertiesPanel({
                 ))}
               </div>
               <p className="text-sm text-text-primary">
-                {linkedCount !== null ? (
+                {linkResult !== null ? (
                   <span className="text-accent-teal font-medium">
-                    {linkedCount} {linkedCount === 1 ? "property" : "properties"} linked.
+                    {linkResult.linkedCount} {linkResult.linkedCount === 1 ? "property" : "properties"}{" "}
+                    linked.
+                    {linkResult.alreadyLinkedOtherCount > 0 && (
+                      <span className="text-text-muted ml-1 font-normal">
+                        ({linkResult.alreadyLinkedOtherCount} already linked elsewhere:{" "}
+                        {linkResult.conflictingSubdivisionNames.join(", ")})
+                      </span>
+                    )}
+                  </span>
+                ) : unlinkedCount !== null ? (
+                  <span className="text-accent-red font-medium">
+                    {unlinkedCount} {unlinkedCount === 1 ? "property" : "properties"} unlinked from{" "}
+                    {subdivisionName}.
                   </span>
                 ) : candidateCount === 0 ? (
                   <span className="text-text-muted">
@@ -202,20 +242,33 @@ export function CandidatePropertiesPanel({
               </p>
             </div>
 
-            {candidateCount > 0 && linkedCount === null && (
-              <button
-                onClick={handleBulkLink}
-                disabled={isPending}
-                className="shrink-0 px-4 py-2 bg-accent-teal text-surface-base text-xs font-semibold rounded hover:bg-accent-teal/80 disabled:opacity-50 transition-colors"
-              >
-                {isPending
-                  ? "Linking..."
-                  : `Link all ${candidateCount} ${candidateCount === 1 ? "property" : "properties"}`}
-              </button>
-            )}
+            <div className="shrink-0 flex items-center gap-2">
+              {candidateCount > 0 && linkResult === null && unlinkedCount === null && (
+                <button
+                  onClick={handleBulkLink}
+                  disabled={isPending}
+                  className="px-4 py-2 bg-accent-teal text-surface-base text-xs font-semibold rounded hover:bg-accent-teal/80 disabled:opacity-50 transition-colors"
+                >
+                  {isPending
+                    ? "Linking..."
+                    : `Link all ${candidateCount} ${candidateCount === 1 ? "property" : "properties"}`}
+                </button>
+              )}
+              {gisLinkedHereCount > 0 && linkResult === null && unlinkedCount === null && (
+                <button
+                  onClick={handleUnlink}
+                  disabled={isPending}
+                  className="px-4 py-2 border border-accent-red/40 text-accent-red text-xs font-semibold rounded hover:bg-accent-red/10 disabled:opacity-50 transition-colors"
+                >
+                  {isPending
+                    ? "Unlinking..."
+                    : `Unlink ${gisLinkedHereCount} propert${gisLinkedHereCount === 1 ? "y" : "ies"}`}
+                </button>
+              )}
+            </div>
           </div>
 
-          {sampleAddresses.length > 0 && linkedCount === null && (
+          {sampleAddresses.length > 0 && linkResult === null && unlinkedCount === null && (
             <ul className="divide-y divide-surface-border">
               {sampleAddresses.map((p) => (
                 <li key={p.pin_normalized} className="px-5 py-2 flex items-center justify-between gap-4">

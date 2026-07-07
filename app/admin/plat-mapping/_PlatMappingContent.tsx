@@ -28,6 +28,7 @@ type PageCode = {
   linkedCnt: number;
   subdivisionId: string | null;
   subdivisionName: string | null;
+  distinctSubdivisionCnt: number;
 };
 
 const PR_SECTIONS = ["01-40-12", "02-40-12", "11-40-12", "12-40-12"];
