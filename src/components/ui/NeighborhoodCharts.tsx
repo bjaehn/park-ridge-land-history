@@ -9,21 +9,28 @@ import {
   fetchNeighborhoodEraDistribution,
 } from "@/lib/supabase/neighborhoodComparisonQueries";
 import type { NeighborhoodPriceRow, NeighborhoodEraRow } from "@/lib/supabase/neighborhoodComparisonQueries";
+import type { NeighborhoodType } from "@/lib/data/neighborhoods";
 
-export function NeighborhoodCharts() {
+export function NeighborhoodCharts({ neighborhoodTypes }: { neighborhoodTypes: NeighborhoodType[] }) {
   const [priceData, setPriceData] = useState<NeighborhoodPriceRow[]>([]);
   const [eraData, setEraData] = useState<NeighborhoodEraRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const typesKey = neighborhoodTypes.join(",");
 
   useEffect(() => {
-    Promise.all([fetchNeighborhoodPriceComparison(), fetchNeighborhoodEraDistribution()])
+    setLoading(true);
+    Promise.all([
+      fetchNeighborhoodPriceComparison(neighborhoodTypes),
+      fetchNeighborhoodEraDistribution(neighborhoodTypes),
+    ])
       .then(([prices, eras]) => {
         setPriceData(prices);
         setEraData(eras);
       })
       .catch(() => null)
       .finally(() => setLoading(false));
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [typesKey]);
 
   if (loading) return <LoadingSkeleton rows={2} />;
 

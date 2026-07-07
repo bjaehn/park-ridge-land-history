@@ -1,12 +1,16 @@
+import Link from "next/link";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { InlineSourceNote } from "@/components/ui/SourceNote";
 import { EntityCard } from "@/components/ui/EntityCard";
+import { NeighborhoodCharts } from "@/components/ui/NeighborhoodCharts";
 import { MapView } from "@/components/MapView";
 import { getEraColor } from "@/lib/mapConfig";
 import { formatCount } from "@/lib/formatters";
 import { NEIGHBORHOOD_BOUNDARY_DISCLAIMER } from "@/lib/content";
 import type { NeighborhoodSummary, NeighborhoodType } from "@/lib/data/neighborhoods";
+
+type SiblingLink = { label: string; href: string };
 
 type OverviewProps = {
   neighborhoodTypes: NeighborhoodType[];
@@ -18,6 +22,7 @@ type Props = OverviewProps & {
   breadcrumbLabel: string;
   title: string;
   subtitle: string;
+  siblingLinks: SiblingLink[];
 };
 
 // Chronological by earliestYear (first built), Unknown last -- this is the
@@ -46,11 +51,33 @@ function groupByDecade(items: NeighborhoodSummary[]): [string, NeighborhoodSumma
 }
 
 /**
+ * The uniform "See X or Y." cross-link paragraph shown identically on
+ * /neighborhoods, /planning-districts, and /business-districts -- one
+ * component so the 3 pages can't drift into differently worded or
+ * differently placed versions of the same link.
+ */
+function NeighborhoodFamilyLinks({ links }: { links: SiblingLink[] }) {
+  if (links.length === 0) return null;
+  return (
+    <p data-section="links" className="text-sm text-text-secondary mb-8 -mt-6">
+      See{" "}
+      {links.map((link, i) => (
+        <span key={link.href}>
+          <Link href={link.href} className="text-text-link hover:underline">
+            {link.label}
+          </Link>
+          {i < links.length - 1 ? (links.length > 2 ? ", " : " ") : ""}
+          {i === links.length - 2 ? "or " : ""}
+        </span>
+      ))}
+      .
+    </p>
+  );
+}
+
+/**
  * Map + decade-grouped district cards, shared by /planning-districts,
- * /business-districts, and /neighborhoods (Corridor + Local/Market). Has no
- * breadcrumb/header/source-note of its own so a caller can embed it inside
- * a page with its own intro text or extra sections (e.g. /neighborhoods'
- * NeighborhoodCharts) while still sharing this exact map+legend+list layout.
+ * /business-districts, and /neighborhoods (Corridor + Local/Market).
  */
 export function NeighborhoodTypeOverview({ neighborhoodTypes, summaries, bbox }: OverviewProps) {
   const ordered = sortChronological(summaries);
@@ -59,7 +86,7 @@ export function NeighborhoodTypeOverview({ neighborhoodTypes, summaries, bbox }:
 
   return (
     <>
-      <div className="mb-10">
+      <div data-section="map" className="mb-10">
         <MapView
           scope={{ kind: "neighborhood-type-overview", neighborhoodTypes, bbox: bbox ?? undefined }}
           districts={legendDistricts}
@@ -69,54 +96,66 @@ export function NeighborhoodTypeOverview({ neighborhoodTypes, summaries, bbox }:
         />
       </div>
 
-      {summaries.length === 0 ? (
-        <p className="text-sm text-text-muted">No records yet.</p>
-      ) : (
-        <div className="space-y-8">
-          {decades.map(([decade, group]) => {
-            const decadeYear = decade === "Unknown" ? null : parseInt(decade);
-            return (
-              <div key={decade}>
-                <div className="flex items-center gap-3 mb-3">
-                  <span
-                    className="w-2.5 h-2.5 rounded-full shrink-0"
-                    style={{ background: getEraColor(decadeYear ?? undefined) ?? "#64748b" }}
-                    aria-hidden="true"
-                  />
-                  <span className="text-sm font-semibold text-text-secondary tracking-wide">
-                    {decadeYear ? decade : "Unknown era"}
-                  </span>
-                  <div className="flex-1 border-t border-surface-border" />
-                  <span className="text-xs text-text-muted">
-                    {formatCount(group.length, "district", "districts")}
-                  </span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {group.map((n) => (
-                    <EntityCard
-                      key={n.id}
-                      href={`/neighborhoods/${encodeURIComponent(n.slug)}`}
-                      eyebrow={`${n.parcelCount} properties`}
-                      title={n.label}
-                      subtitle={
-                        n.earliestYear
-                          ? `First built ${n.earliestYear}${n.medianYear ? ` · Median ${n.medianYear}` : ""}`
-                          : n.medianYear
-                          ? `Median ${n.medianYear}`
-                          : undefined
-                      }
+      <div data-section="list">
+        {summaries.length === 0 ? (
+          <p className="text-sm text-text-muted">No records yet.</p>
+        ) : (
+          <div className="space-y-8">
+            {decades.map(([decade, group]) => {
+              const decadeYear = decade === "Unknown" ? null : parseInt(decade);
+              return (
+                <div key={decade}>
+                  <div className="flex items-center gap-3 mb-3">
+                    <span
+                      className="w-2.5 h-2.5 rounded-full shrink-0"
+                      style={{ background: getEraColor(decadeYear ?? undefined) ?? "#64748b" }}
+                      aria-hidden="true"
                     />
-                  ))}
+                    <span className="text-sm font-semibold text-text-secondary tracking-wide">
+                      {decadeYear ? decade : "Unknown era"}
+                    </span>
+                    <div className="flex-1 border-t border-surface-border" />
+                    <span className="text-xs text-text-muted">
+                      {formatCount(group.length, "district", "districts")}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {group.map((n) => (
+                      <EntityCard
+                        key={n.id}
+                        href={`/neighborhoods/${encodeURIComponent(n.slug)}`}
+                        eyebrow={`${n.parcelCount} properties`}
+                        title={n.label}
+                        subtitle={
+                          n.earliestYear
+                            ? `First built ${n.earliestYear}${n.medianYear ? ` · Median ${n.medianYear}` : ""}`
+                            : n.medianYear
+                            ? `Median ${n.medianYear}`
+                            : undefined
+                        }
+                      />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        )}
+      </div>
     </>
   );
 }
 
+/**
+ * The one page body shared by /neighborhoods, /planning-districts, and
+ * /business-districts. Every one of those 3 routes must render ONLY this
+ * component -- no page may hand-assemble its own Breadcrumb/PageHeader/
+ * charts/source-note, or it can silently end up with content the other
+ * two don't have (this happened once already: /neighborhoods hand-rolled
+ * an extra intro paragraph and a NeighborhoodCharts block neither sibling
+ * page had). Section order fixed here matches CLAUDE.md's canonical order:
+ * intro links -> stat grid (charts) -> map -> sub-entity list -> source note.
+ */
 export function NeighborhoodTypeIndexPage({
   neighborhoodTypes,
   breadcrumbLabel,
@@ -124,20 +163,33 @@ export function NeighborhoodTypeIndexPage({
   subtitle,
   summaries,
   bbox,
+  siblingLinks,
 }: Props) {
   return (
     <div className="page-shell">
-      <Breadcrumb
-        items={[
-          { label: "Park Ridge", href: "/city" },
-          { label: breadcrumbLabel, current: true },
-        ]}
-      />
-      <PageHeader eyebrow="Park Ridge" title={title} subtitle={subtitle} />
+      <div data-section="breadcrumb">
+        <Breadcrumb
+          items={[
+            { label: "Park Ridge", href: "/city" },
+            { label: breadcrumbLabel, current: true },
+          ]}
+        />
+      </div>
+      <div data-section="header">
+        <PageHeader eyebrow="Park Ridge" title={title} subtitle={subtitle} />
+      </div>
+
+      <NeighborhoodFamilyLinks links={siblingLinks} />
+
+      <div data-section="charts" className="mb-10">
+        <NeighborhoodCharts neighborhoodTypes={neighborhoodTypes} />
+      </div>
 
       <NeighborhoodTypeOverview neighborhoodTypes={neighborhoodTypes} summaries={summaries} bbox={bbox} />
 
-      <InlineSourceNote>{NEIGHBORHOOD_BOUNDARY_DISCLAIMER}</InlineSourceNote>
+      <div data-section="source-note">
+        <InlineSourceNote>{NEIGHBORHOOD_BOUNDARY_DISCLAIMER}</InlineSourceNote>
+      </div>
     </div>
   );
 }

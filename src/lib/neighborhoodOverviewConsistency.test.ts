@@ -2,19 +2,18 @@
  * Drift guard for the 3 neighborhood-family overview pages:
  * /neighborhoods, /planning-districts, /business-districts.
  *
- * These must stay structurally identical -- same shared map+legend+list
- * component, same section order (Breadcrumb, PageHeader, map, source note),
- * and the same city-wide map extent (fetchAllNeighborhoodsBbox, not a
- * type-scoped bbox) so all 3 maps frame the same area at the same zoom.
- * The bbox requirement exists because this drifted once already: each page
- * fetched its OWN type's bbox, so /neighborhoods (3 narrow corridor
- * districts) zoomed to a tiny sliver of the city instead of showing the
- * whole map, while /planning-districts (7 districts spanning the city)
- * happened to look fine -- an inconsistency invisible from the code for
- * any single page in isolation, only visible comparing all 3.
+ * These must render ONLY <NeighborhoodTypeIndexPage ... /> -- no page may
+ * hand-assemble its own Breadcrumb/PageHeader/charts/source-note, because
+ * that fork is exactly what let /neighborhoods silently carry an extra
+ * intro paragraph and a NeighborhoodCharts block neither sibling page had.
+ * A page that can ONLY call the shared component can't drift from it.
  *
- * Static source scan, not a rendered-DOM check, matching the precedent in
- * pageWidth.test.ts / sectionOrder.test.ts / neighborhoodTypePages.test.ts.
+ * The bbox check exists because that drifted once too: each page fetched
+ * its OWN type's bbox, so /neighborhoods (3 narrow corridor districts)
+ * zoomed to a tiny sliver of the city instead of showing the whole map.
+ *
+ * Static source scan, not a rendered-DOM check -- see neighborhoodFamilyPage.test.tsx
+ * for the actual rendered structural-equality test across all 3 pages.
  */
 
 import { describe, it, expect } from "vitest";
@@ -32,11 +31,19 @@ function read(file: string): string {
 }
 
 describe("neighborhoods/planning-districts/business-districts stay in sync", () => {
-  it.each(OVERVIEW_PAGES)("%s renders the shared map+list component, not a hand-built one", (file) => {
+  it.each(OVERVIEW_PAGES)("%s renders exactly one <NeighborhoodTypeIndexPage> and nothing else structural", (file) => {
     const content = read(file);
-    const usesShared =
-      content.includes("<NeighborhoodTypeIndexPage") || content.includes("<NeighborhoodTypeOverview");
-    expect(usesShared, `${file} must render NeighborhoodTypeIndexPage or NeighborhoodTypeOverview`).toBe(true);
+    const opens = (content.match(/<NeighborhoodTypeIndexPage/g) ?? []).length;
+    expect(opens, `${file} must render NeighborhoodTypeIndexPage exactly once`).toBe(1);
+
+    // These must live ONLY inside NeighborhoodTypeIndexPage.tsx now. A page
+    // that contains any of these directly has forked away from the shared
+    // component again -- the exact regression this guard exists for.
+    for (const forbidden of ["<Breadcrumb", "<PageHeader", "<InlineSourceNote", "<NeighborhoodCharts", "<MapView"]) {
+      expect(content, `${file} must not render ${forbidden} directly -- it belongs in NeighborhoodTypeIndexPage`).not.toContain(
+        forbidden
+      );
+    }
   });
 
   it.each(OVERVIEW_PAGES)("%s fetches the city-wide bbox, not a type-scoped one", (file) => {
@@ -47,58 +54,25 @@ describe("neighborhoods/planning-districts/business-districts stay in sync", () 
     );
   });
 
-  // /planning-districts and /business-districts delegate their entire body
-  // to <NeighborhoodTypeIndexPage> (which itself renders Breadcrumb, then
-  // PageHeader, then the map, then the source note) rather than assembling
-  // those sections inline, so their own file has no literal Breadcrumb/
-  // PageHeader/InlineSourceNote tags to order-check -- verifying that
-  // wrapper's internal order once covers both. /neighborhoods assembles the
-  // sections inline (it has its own intro copy + NeighborhoodCharts before
-  // the map), so its order is checked directly against its own file.
-  it("NeighborhoodTypeIndexPage (used by /planning-districts and /business-districts) renders Breadcrumb, then PageHeader, then the map, then the source note, in order", () => {
-    const content = read("src/components/NeighborhoodTypeIndexPage.tsx");
-    const breadcrumbIdx = content.indexOf("<Breadcrumb");
-    const headerIdx = content.indexOf("<PageHeader");
-    const mapIdx = content.indexOf("<NeighborhoodTypeOverview");
-    const sourceNoteIdx = content.indexOf("<InlineSourceNote");
-
-    expect(breadcrumbIdx).toBeGreaterThan(-1);
-    expect(headerIdx).toBeGreaterThan(-1);
-    expect(mapIdx).toBeGreaterThan(-1);
-    expect(sourceNoteIdx).toBeGreaterThan(-1);
-
-    expect(breadcrumbIdx).toBeLessThan(headerIdx);
-    expect(headerIdx).toBeLessThan(mapIdx);
-    expect(mapIdx).toBeLessThan(sourceNoteIdx);
-  });
-
-  it("app/neighborhoods/page.tsx renders Breadcrumb, then PageHeader, then the map, then the source note, in order", () => {
-    const file = "app/neighborhoods/page.tsx";
+  it.each(OVERVIEW_PAGES)("%s passes siblingLinks pointing at the other 2 pages, never itself", (file) => {
     const content = read(file);
-    const breadcrumbIdx = content.indexOf("<Breadcrumb");
-    const headerIdx = content.indexOf("<PageHeader");
-    const mapIdx = content.indexOf("<NeighborhoodTypeOverview");
-    const sourceNoteIdx = content.indexOf("<InlineSourceNote");
-
-    expect(breadcrumbIdx, `<Breadcrumb not found in ${file}`).toBeGreaterThan(-1);
-    expect(headerIdx, `<PageHeader not found in ${file}`).toBeGreaterThan(-1);
-    expect(mapIdx, `<NeighborhoodTypeOverview not found in ${file}`).toBeGreaterThan(-1);
-    expect(sourceNoteIdx, `<InlineSourceNote not found in ${file}`).toBeGreaterThan(-1);
-
-    expect(breadcrumbIdx).toBeLessThan(headerIdx);
-    expect(headerIdx).toBeLessThan(mapIdx);
-    expect(mapIdx).toBeLessThan(sourceNoteIdx);
+    const hrefs = [...content.matchAll(/href:\s*"([^"]+)"/g)].map((m) => m[1]);
+    const ownRoute = "/" + file.split("/")[1];
+    expect(hrefs.length, `${file} must pass siblingLinks`).toBeGreaterThanOrEqual(2);
+    expect(hrefs, `${file} must not link to itself in siblingLinks`).not.toContain(ownRoute);
   });
 
-  it("NeighborhoodTypeOverview (the shared map+list block) defaults to the neighborhood color lens", () => {
+  // TopNav links, "/neighborhoods no longer sections official_planning/
+  // business_district", and "/neighborhoods shows corridor" are covered by
+  // neighborhoodTypePages.test.ts -- not duplicated here.
+
+  it("all 3 pages pass their own neighborhoodTypes through to NeighborhoodCharts (via the shared component), not a hardcoded type", () => {
+    // NeighborhoodCharts is now only ever instantiated once, inside
+    // NeighborhoodTypeIndexPage.tsx, always with the page's own
+    // neighborhoodTypes prop -- this catches a regression to a hardcoded
+    // official_planning-only call (the original bug: /neighborhoods showed
+    // Planning District chart data mislabeled as its own).
     const content = read("src/components/NeighborhoodTypeIndexPage.tsx");
-    expect(content).toContain('defaultLens="neighborhood"');
-  });
-
-  it("all 3 pages pass districts + defaultLens through to MapView via the shared components (no page hand-rolls its own MapView call)", () => {
-    for (const file of OVERVIEW_PAGES) {
-      const content = read(file);
-      expect(content, `${file} should not instantiate MapView directly`).not.toContain("<MapView");
-    }
+    expect(content).toContain("<NeighborhoodCharts neighborhoodTypes={neighborhoodTypes}");
   });
 });

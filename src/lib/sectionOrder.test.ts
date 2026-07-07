@@ -34,8 +34,14 @@ describe("chart section order stays in sync between /neighborhoods and /subdivis
     expect(eraIdx).toBeLessThan(priceIdx);
   });
 
-  it("app/neighborhoods/page.tsx renders NeighborhoodCharts between hero and primary listing", () => {
-    const file = "app/neighborhoods/page.tsx";
+  // /neighborhoods, /planning-districts, and /business-districts all
+  // render their body through the ONE shared NeighborhoodTypeIndexPage
+  // component now (see neighborhoodOverviewConsistency.test.ts -- none of
+  // the 3 page.tsx files may reference PageHeader/NeighborhoodCharts
+  // directly anymore), so this order only needs checking once, on the
+  // shared component, to cover all 3 pages.
+  it("NeighborhoodTypeIndexPage renders NeighborhoodCharts between the header and the map+list", () => {
+    const file = "src/components/NeighborhoodTypeIndexPage.tsx";
     const content = fs.readFileSync(path.resolve(process.cwd(), file), "utf-8");
     const heroIdx = content.indexOf("<PageHeader");
     const chartsIdx = content.indexOf("<NeighborhoodCharts");

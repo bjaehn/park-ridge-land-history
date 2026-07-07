@@ -1,4 +1,5 @@
 import { supabase } from "./client";
+import type { NeighborhoodType } from "../data/neighborhoods";
 
 export type NeighborhoodPriceRow = {
   neighborhoodId: string;
@@ -21,9 +22,11 @@ export type NeighborhoodEraRow = {
   total: number;
 };
 
-export async function fetchNeighborhoodPriceComparison(): Promise<NeighborhoodPriceRow[]> {
-  if (!supabase) return [];
-  const { data, error } = await supabase.rpc("neighborhood_price_comparison");
+export async function fetchNeighborhoodPriceComparison(
+  types: NeighborhoodType[]
+): Promise<NeighborhoodPriceRow[]> {
+  if (!supabase || types.length === 0) return [];
+  const { data, error } = await supabase.rpc("neighborhood_price_comparison", { p_types: types });
   if (error || !data) return [];
 
   const ids = (data as Array<{ neighborhood_id: string }>).map((r) => r.neighborhood_id);
@@ -57,9 +60,11 @@ export async function fetchNeighborhoodPriceComparison(): Promise<NeighborhoodPr
     .sort((a, b) => (b.year2024 ?? 0) - (a.year2024 ?? 0));
 }
 
-export async function fetchNeighborhoodEraDistribution(): Promise<NeighborhoodEraRow[]> {
-  if (!supabase) return [];
-  const { data, error } = await supabase.rpc("neighborhood_era_distribution");
+export async function fetchNeighborhoodEraDistribution(
+  types: NeighborhoodType[]
+): Promise<NeighborhoodEraRow[]> {
+  if (!supabase || types.length === 0) return [];
+  const { data, error } = await supabase.rpc("neighborhood_era_distribution", { p_types: types });
   if (error || !data) return [];
 
   const ids = [...new Set((data as Array<{ neighborhood_id: string }>).map((r) => r.neighborhood_id))];
