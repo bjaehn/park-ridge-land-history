@@ -24,7 +24,9 @@ import { NeighborhoodTypeIndexPage } from "../components/NeighborhoodTypeIndexPa
 // NeighborhoodCharts stub is a spy so a later test can assert it always
 // receives that page's OWN neighborhoodTypes (the original bug: /neighborhoods
 // showed Planning District chart data mislabeled as its own).
-const neighborhoodChartsSpy = vi.fn(() => <div data-testid="charts-mock" />);
+const neighborhoodChartsSpy = vi.fn((_props: { neighborhoodTypes: readonly string[] }) => (
+  <div data-testid="charts-mock" />
+));
 
 vi.mock("@/components/MapView", () => ({
   MapView: () => <div data-testid="map-mock" />,
@@ -132,6 +134,6 @@ describe("NeighborhoodTypeIndexPage renders identical section order for all 3 pa
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     render(<NeighborhoodTypeIndexPage {...(props as any)} />);
     expect(neighborhoodChartsSpy).toHaveBeenCalledTimes(1);
-    expect(neighborhoodChartsSpy.mock.calls[0][0].neighborhoodTypes).toEqual(props.neighborhoodTypes);
+    expect(neighborhoodChartsSpy).toHaveBeenCalledWith({ neighborhoodTypes: props.neighborhoodTypes });
   });
 });
