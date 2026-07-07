@@ -3,6 +3,18 @@ import type { DecadeRow } from "../../components/ui/ConstructionByDecadeChart";
 
 export type NeighborhoodType = "official_planning" | "business_district" | "local_market" | "corridor";
 
+// All four neighborhood taxonomies together -- used to fetch a city-wide
+// bbox so every overview map (/neighborhoods, /planning-districts,
+// /business-districts) frames the whole city at the same zoom, rather than
+// each cropping tightly to just its own (sometimes narrow, e.g. corridor)
+// subset of districts and looking like an arbitrarily zoomed fragment.
+export const ALL_NEIGHBORHOOD_TYPES: NeighborhoodType[] = [
+  "official_planning",
+  "business_district",
+  "corridor",
+  "local_market",
+];
+
 export type NeighborhoodSummary = {
   id: string;
   slug: string;
@@ -213,4 +225,13 @@ export async function fetchNeighborhoodTypeBbox(
   } catch {
     return null;
   }
+}
+
+/** City-wide bbox across every neighborhood of every type -- the shared
+ *  initial view for /neighborhoods, /planning-districts, and
+ *  /business-districts, so all 3 overview maps frame the same extent
+ *  regardless of how narrow that page's own highlighted subset is (e.g.
+ *  /neighborhoods' 3 corridor districts span only a sliver of the city). */
+export function fetchAllNeighborhoodsBbox(): Promise<[number, number, number, number] | null> {
+  return fetchNeighborhoodTypeBbox(ALL_NEIGHBORHOOD_TYPES);
 }

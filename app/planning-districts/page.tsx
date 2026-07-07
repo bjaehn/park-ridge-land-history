@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { fetchNeighborhoodSummaries, fetchNeighborhoodTypeBbox } from "@/lib/data/neighborhoods";
+import { fetchNeighborhoodSummaries, fetchAllNeighborhoodsBbox } from "@/lib/data/neighborhoods";
 import { NeighborhoodTypeIndexPage } from "@/components/NeighborhoodTypeIndexPage";
 
 export const metadata: Metadata = {
@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default async function PlanningDistrictsPage() {
   const [all, bbox] = await Promise.all([
     fetchNeighborhoodSummaries().catch(() => []),
-    fetchNeighborhoodTypeBbox(["official_planning"]).catch(() => null),
+    fetchAllNeighborhoodsBbox().catch(() => null),
   ]);
   const summaries = all.filter((n) => n.neighborhoodType === "official_planning");
 

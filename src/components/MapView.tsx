@@ -876,6 +876,16 @@ export function MapView({
           </div>
         )}
 
+        {/* Neighborhood district legend — pinned directly on the map canvas
+            (bottom-right) rather than below it, so it reads unambiguously as
+            "this is what the colors on THIS map mean" instead of a
+            disconnected block underneath. */}
+        {isLoaded && lens === "neighborhood" && neighborhoodLegend && neighborhoodLegend.length > 0 && (
+          <div className="absolute bottom-3 right-3 z-10 max-w-[220px]">
+            <NeighborhoodLegendPanel entries={neighborhoodLegend} />
+          </div>
+        )}
+
       </div>
 
       {/* Below-map: animation controls OR era filter + legend bar + stats */}
@@ -900,9 +910,6 @@ export function MapView({
               {lens === "era" && (
                 <MapLegendBar byDecade={stats?.byDecade ?? {}} eraFilter={eraFilter} />
               )}
-              {lens === "neighborhood" && neighborhoodLegend && neighborhoodLegend.length > 0 && (
-                <NeighborhoodLegendPanel entries={neighborhoodLegend} />
-              )}
               {stats && stats.total > 0 && (
                 <MapStatsPanel stats={stats} />
               )}
@@ -910,15 +917,6 @@ export function MapView({
           )}
         </div>
       )}
-
-      {/* Property-scope maps skip the full below-map panel above, but still
-          need the district legend when the neighborhood lens is active. */}
-      {!showBelowMap && isLoaded && !isFullscreen && lens === "neighborhood" &&
-        neighborhoodLegend && neighborhoodLegend.length > 0 && (
-          <div className="mt-3">
-            <NeighborhoodLegendPanel entries={neighborhoodLegend} />
-          </div>
-        )}
     </div>
   );
 }
@@ -1197,10 +1195,13 @@ function isDecadeInFilter(decade: string, filter: [number, number] | null): bool
 export function NeighborhoodLegendPanel({ entries }: { entries: NeighborhoodLegendEntry[] }) {
   return (
     <div
-      className="rounded-lg border border-surface-border bg-surface-raised px-3 py-2.5"
+      className="bg-surface-card/95 border border-surface-border rounded-lg shadow-xl p-3"
       aria-label="Neighborhood district legend"
     >
-      <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+      <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-1.5">
+        Map colors
+      </p>
+      <div className="flex flex-col gap-1">
         {entries.map((entry) => (
           <Link
             key={entry.id}
@@ -1212,7 +1213,7 @@ export function NeighborhoodLegendPanel({ entries }: { entries: NeighborhoodLege
               style={{ backgroundColor: entry.color }}
               aria-hidden="true"
             />
-            {entry.label}
+            <span className="truncate">{entry.label}</span>
           </Link>
         ))}
       </div>

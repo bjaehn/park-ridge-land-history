@@ -6,7 +6,7 @@ import { InlineSourceNote } from "@/components/ui/SourceNote";
 import { NEIGHBORHOOD_BOUNDARY_DISCLAIMER } from "@/lib/content";
 import { NeighborhoodTypeOverview } from "@/components/NeighborhoodTypeIndexPage";
 import { NeighborhoodCharts } from "@/components/ui/NeighborhoodCharts";
-import { fetchNeighborhoodSummaries, fetchNeighborhoodTypeBbox } from "@/lib/data/neighborhoods";
+import { fetchNeighborhoodSummaries, fetchAllNeighborhoodsBbox } from "@/lib/data/neighborhoods";
 import type { NeighborhoodType } from "@/lib/data/neighborhoods";
 
 export const metadata: Metadata = {
@@ -22,7 +22,7 @@ const NEIGHBORHOOD_TYPES: NeighborhoodType[] = ["corridor", "local_market"];
 export default async function NeighborhoodsPage() {
   const [all, bbox] = await Promise.all([
     fetchNeighborhoodSummaries().catch(() => []),
-    fetchNeighborhoodTypeBbox(NEIGHBORHOOD_TYPES).catch(() => null),
+    fetchAllNeighborhoodsBbox().catch(() => null),
   ]);
   const summaries = all.filter(
     (n) => n.neighborhoodType && NEIGHBORHOOD_TYPES.includes(n.neighborhoodType)
