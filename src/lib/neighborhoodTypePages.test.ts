@@ -34,14 +34,14 @@ describe("planning-districts and business-districts share one page layout", () =
   });
 
   it("/neighborhoods no longer sections Official Planning Neighborhoods or Business Districts (moved to their own pages)", () => {
-    const file = "app/neighborhoods/_NeighborhoodsGrid.tsx";
+    const file = "app/neighborhoods/page.tsx";
     const content = fs.readFileSync(path.resolve(process.cwd(), file), "utf-8");
     expect(content).not.toContain("official_planning");
     expect(content).not.toContain("business_district");
   });
 
   it("/neighborhoods shows Corridor Districts (regression guard for the pre-existing display bug)", () => {
-    const file = "app/neighborhoods/_NeighborhoodsGrid.tsx";
+    const file = "app/neighborhoods/page.tsx";
     const content = fs.readFileSync(path.resolve(process.cwd(), file), "utf-8");
     expect(content).toContain('"corridor"');
   });

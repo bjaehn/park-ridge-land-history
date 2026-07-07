@@ -5,7 +5,13 @@ Writes: public/data/park_ridge_parcels_map.geojson  (same file, updated)
 
 Changes made:
   - Adds neighborhood_id and street_name_normalized from Supabase
-  - Strips all properties except the 7 fields the map actually uses
+  - Adds the 4 typed neighborhood/district FK columns (official_planning_
+    neighborhood_id, business_district_id, local_neighborhood_id,
+    corridor_id) so the map's "Neighborhood" lens can color parcels by
+    district -- this file predates the neighborhood-model restructure and
+    never carried these columns, which is why that lens silently rendered
+    everything in the fallback gray color.
+  - Strips all properties except the fields the map actually uses
   - Result is ~3-5 MB instead of 29 MB
 
 Usage:
@@ -47,11 +53,24 @@ MAP_FIELDS = {
     "permit_count",
     "neighborhood_id",
     "street_name_normalized",
+    "official_planning_neighborhood_id",
+    "business_district_id",
+    "local_neighborhood_id",
+    "corridor_id",
 }
+
+ENRICHMENT_COLUMNS = [
+    "neighborhood_id",
+    "street_name_normalized",
+    "official_planning_neighborhood_id",
+    "business_district_id",
+    "local_neighborhood_id",
+    "corridor_id",
+]
 
 
 def fetch_enrichment(page_size: int = 1000) -> dict[str, dict]:
-    """Return {pin_normalized: {neighborhood_id, street_name_normalized}} for all parcels."""
+    """Return {pin_normalized: {...ENRICHMENT_COLUMNS}} for all parcels."""
     try:
         import requests
     except ImportError:
@@ -64,7 +83,7 @@ def fetch_enrichment(page_size: int = 1000) -> dict[str, dict]:
     }
     url = f"{SUPABASE_URL}/rest/v1/parcels"
     params = {
-        "select": "pin_normalized,neighborhood_id,street_name_normalized",
+        "select": "pin_normalized," + ",".join(ENRICHMENT_COLUMNS),
         "order": "pin_normalized",
     }
 
@@ -84,10 +103,7 @@ def fetch_enrichment(page_size: int = 1000) -> dict[str, dict]:
         for row in rows:
             pin = row.get("pin_normalized")
             if pin:
-                result[pin] = {
-                    "neighborhood_id": row.get("neighborhood_id"),
-                    "street_name_normalized": row.get("street_name_normalized"),
-                }
+                result[pin] = {col: row.get(col) for col in ENRICHMENT_COLUMNS}
         print(f"  fetched {offset + len(rows):,} parcels...", end="\r")
         if len(rows) < page_size:
             break
@@ -126,8 +142,8 @@ def main() -> None:
         extra = enrichment.get(pin, {})
 
         slim = {k: props.get(k) for k in MAP_FIELDS}
-        slim["neighborhood_id"] = extra.get("neighborhood_id") or props.get("neighborhood_id")
-        slim["street_name_normalized"] = extra.get("street_name_normalized") or props.get("street_name_normalized")
+        for col in ENRICHMENT_COLUMNS:
+            slim[col] = extra.get(col) if extra.get(col) is not None else props.get(col)
         feat["properties"] = slim
         if extra:
             updated += 1

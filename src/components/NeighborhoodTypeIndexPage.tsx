@@ -6,16 +6,26 @@ import { MapView } from "@/components/MapView";
 import { getEraColor } from "@/lib/mapConfig";
 import { formatCount } from "@/lib/formatters";
 import { NEIGHBORHOOD_BOUNDARY_DISCLAIMER } from "@/lib/content";
-import type { NeighborhoodSummary } from "@/lib/data/neighborhoods";
+import type { NeighborhoodSummary, NeighborhoodType } from "@/lib/data/neighborhoods";
 
-type Props = {
-  neighborhoodType: "official_planning" | "business_district";
-  breadcrumbLabel: string;
-  title: string;
-  subtitle: string;
+type OverviewProps = {
+  neighborhoodTypes: NeighborhoodType[];
   summaries: NeighborhoodSummary[];
   bbox: [number, number, number, number] | null;
 };
+
+type Props = OverviewProps & {
+  breadcrumbLabel: string;
+  title: string;
+  subtitle: string;
+};
+
+// Chronological by earliestYear (first built), Unknown last -- this is the
+// SAME order used to assign map/legend colors, so the map, the legend, and
+// this card list can never disagree about which district is which color.
+function sortChronological(items: NeighborhoodSummary[]): NeighborhoodSummary[] {
+  return [...items].sort((a, b) => (a.earliestYear ?? Infinity) - (b.earliestYear ?? Infinity));
+}
 
 // Same decade-grouping structure as app/pin/[prefix]/_PinGroupContent.tsx
 // (lines 310-352, per CLAUDE.md) -- grouped by earliestYear (first built),
@@ -35,29 +45,25 @@ function groupByDecade(items: NeighborhoodSummary[]): [string, NeighborhoodSumma
   });
 }
 
-export function NeighborhoodTypeIndexPage({
-  neighborhoodType,
-  breadcrumbLabel,
-  title,
-  subtitle,
-  summaries,
-  bbox,
-}: Props) {
-  const decades = groupByDecade(summaries);
+/**
+ * Map + decade-grouped district cards, shared by /planning-districts,
+ * /business-districts, and /neighborhoods (Corridor + Local/Market). Has no
+ * breadcrumb/header/source-note of its own so a caller can embed it inside
+ * a page with its own intro text or extra sections (e.g. /neighborhoods'
+ * NeighborhoodCharts) while still sharing this exact map+legend+list layout.
+ */
+export function NeighborhoodTypeOverview({ neighborhoodTypes, summaries, bbox }: OverviewProps) {
+  const ordered = sortChronological(summaries);
+  const decades = groupByDecade(ordered);
+  const legendDistricts = ordered.map((n) => ({ id: n.id, label: n.label, slug: n.slug }));
 
   return (
-    <div className="page-shell">
-      <Breadcrumb
-        items={[
-          { label: "Park Ridge", href: "/city" },
-          { label: breadcrumbLabel, current: true },
-        ]}
-      />
-      <PageHeader eyebrow="Park Ridge" title={title} subtitle={subtitle} />
-
+    <>
       <div className="mb-10">
         <MapView
-          scope={{ kind: "neighborhood-type-overview", neighborhoodType, bbox: bbox ?? undefined }}
+          scope={{ kind: "neighborhood-type-overview", neighborhoodTypes, bbox: bbox ?? undefined }}
+          districts={legendDistricts}
+          defaultLens="neighborhood"
           height="420px"
           showExpand
         />
@@ -107,6 +113,29 @@ export function NeighborhoodTypeIndexPage({
           })}
         </div>
       )}
+    </>
+  );
+}
+
+export function NeighborhoodTypeIndexPage({
+  neighborhoodTypes,
+  breadcrumbLabel,
+  title,
+  subtitle,
+  summaries,
+  bbox,
+}: Props) {
+  return (
+    <div className="page-shell">
+      <Breadcrumb
+        items={[
+          { label: "Park Ridge", href: "/city" },
+          { label: breadcrumbLabel, current: true },
+        ]}
+      />
+      <PageHeader eyebrow="Park Ridge" title={title} subtitle={subtitle} />
+
+      <NeighborhoodTypeOverview neighborhoodTypes={neighborhoodTypes} summaries={summaries} bbox={bbox} />
 
       <InlineSourceNote>{NEIGHBORHOOD_BOUNDARY_DISCLAIMER}</InlineSourceNote>
     </div>

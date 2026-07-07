@@ -12,6 +12,10 @@ import {
   BASEMAP_CONFIGS,
   eraFillExpression,
   getLensFillExpression,
+  buildNeighborhoodFillExpression,
+  neighborhoodPropertyGetter,
+  DEFAULT_NEIGHBORHOOD_TYPE,
+  NEIGHBORHOOD_FALLBACK_COLOR,
   MAP_LENSES,
   PARCEL_FILL_OPACITY,
   PARCEL_FILL_OPACITY_HOVER,
@@ -42,9 +46,13 @@ import {
   type MapLens,
   type MapScope,
   type BasemapMode,
+  type NeighborhoodLegendItem,
+  type NeighborhoodLegendEntry,
 } from "@/lib/mapConfig";
 import { formatDecade } from "@/lib/formatters";
+import { fetchNeighborhoodSummaries } from "@/lib/data/neighborhoods";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -80,6 +88,11 @@ type Props = {
   compactLegend?: boolean;
   hideLensSelector?: boolean;
   defaultLens?: MapLens;
+  /** Ordered district list for a "neighborhood-type-overview" scope — the
+   *  calling page already has these from its own summaries fetch, so this
+   *  avoids a redundant client fetch and guarantees the map/legend/card-list
+   *  colors agree (same list, same order). Ignored for other scope kinds. */
+  districts?: NeighborhoodLegendItem[];
 };
 
 // ---------------------------------------------------------------------------
@@ -119,6 +132,7 @@ export function MapView({
   showExpand = false,
   hideLensSelector = false,
   defaultLens,
+  districts,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MaplibreMap | null>(null);
@@ -138,9 +152,11 @@ export function MapView({
   const gisBuildingsAddedRef = useRef(false);
   const neighborhoodBoundaryAddedRef = useRef(false);
   const neighborhoodTypeOverviewAddedRef = useRef(false);
+  const officialPlanningDistrictsRef = useRef<NeighborhoodLegendItem[] | null>(null);
   const [eraFilter, setEraFilter] = useState<[number, number] | null>(null);
   const [stats, setStats] = useState<MapStats | null>(null);
   const [noDataLens, setNoDataLens] = useState(false);
+  const [neighborhoodLegend, setNeighborhoodLegend] = useState<NeighborhoodLegendEntry[] | null>(null);
   const [animMode, setAnimMode] = useState(false);
   const [animYear, setAnimYear] = useState<number>(ERA_FILTER_MIN);
   const [animPlaying, setAnimPlaying] = useState(false);
@@ -383,6 +399,9 @@ export function MapView({
   // Lens switching
   // ---------------------------------------------------------------------------
 
+  const overviewTypesKey =
+    scope.kind === "neighborhood-type-overview" ? scope.neighborhoodTypes.join(",") : null;
+
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !isLoaded) return;
@@ -393,15 +412,49 @@ export function MapView({
       map.setPaintProperty(FILL_LAYER, "fill-color", muted);
       map.setPaintProperty(SELECTED_FILL_LAYER, "fill-color", muted);
       setNoDataLens(true);
+      setNeighborhoodLegend(null);
       return;
     }
     setNoDataLens(false);
+
+    if (lens === "neighborhood") {
+      let cancelled = false;
+      (async () => {
+        let types: string[];
+        let districtList: NeighborhoodLegendItem[];
+        if (scope.kind === "neighborhood-type-overview" && districts) {
+          types = scope.neighborhoodTypes;
+          districtList = districts;
+        } else {
+          types = [DEFAULT_NEIGHBORHOOD_TYPE];
+          if (!officialPlanningDistrictsRef.current) {
+            const summaries = await fetchNeighborhoodSummaries();
+            officialPlanningDistrictsRef.current = summaries
+              .filter((s) => s.neighborhoodType === "official_planning")
+              .sort((a, b) => (a.earliestYear ?? 9999) - (b.earliestYear ?? 9999))
+              .map((s) => ({ id: s.id, label: s.label, slug: s.slug }));
+          }
+          districtList = officialPlanningDistrictsRef.current;
+        }
+        if (cancelled || !map.getLayer(FILL_LAYER)) return;
+        const { expression, legend } = buildNeighborhoodFillExpression(
+          neighborhoodPropertyGetter(types),
+          districtList
+        );
+        map.setPaintProperty(FILL_LAYER, "fill-color", expression as unknown as string);
+        map.setPaintProperty(SELECTED_FILL_LAYER, "fill-color", expression as unknown as string);
+        setNeighborhoodLegend(legend);
+      })();
+      return () => { cancelled = true; };
+    }
+
+    setNeighborhoodLegend(null);
     const expr = getLensFillExpression(lens);
     if (expr) {
       map.setPaintProperty(FILL_LAYER, "fill-color", expr);
       map.setPaintProperty(SELECTED_FILL_LAYER, "fill-color", expr);
     }
-  }, [lens, isLoaded]);
+  }, [lens, isLoaded, overviewTypesKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---------------------------------------------------------------------------
   // Basemap switching
@@ -575,23 +628,33 @@ export function MapView({
   // underneath, which already navigates to /properties/{pin} on click --
   // the list below the map is the click-through path to each district's
   // detail page instead.
-  const neighborhoodOverviewType =
-    scope.kind === "neighborhood-type-overview" ? scope.neighborhoodType : null;
+  //
+  // Each boundary is colored per-district (matching the legend/parcel
+  // colors) rather than a flat color, using the same districts list + fixed
+  // palette as buildNeighborhoodFillExpression, keyed on each boundary
+  // feature's "id" property (set by get_neighborhood_type_boundaries_geojson).
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !isLoaded || !neighborhoodOverviewType) return;
+    if (!map || !isLoaded || !overviewTypesKey) return;
     if (neighborhoodTypeOverviewAddedRef.current) return;
+
+    const types = overviewTypesKey.split(",");
+    const query = types.map((t) => `type=${encodeURIComponent(t)}`).join("&");
+
+    const boundaryColor = districts && districts.length > 0
+      ? (buildNeighborhoodFillExpression(["get", "id"], districts).expression as unknown as string)
+      : NEIGHBORHOOD_FALLBACK_COLOR;
 
     map.addSource(NEIGHBORHOOD_TYPE_OVERVIEW_SOURCE, {
       type: "geojson",
-      data: `/api/neighborhood-type-boundaries?type=${encodeURIComponent(neighborhoodOverviewType)}`,
+      data: `/api/neighborhood-type-boundaries?${query}`,
     });
     map.addLayer(
       {
         id: NEIGHBORHOOD_TYPE_OVERVIEW_FILL_LAYER,
         type: "fill",
         source: NEIGHBORHOOD_TYPE_OVERVIEW_SOURCE,
-        paint: { "fill-color": "#8b5cf6", "fill-opacity": 0.07 },
+        paint: { "fill-color": boundaryColor, "fill-opacity": 0.16 },
       } as LayerSpecification,
       FILL_MUTED_LAYER
     );
@@ -601,16 +664,16 @@ export function MapView({
         type: "line",
         source: NEIGHBORHOOD_TYPE_OVERVIEW_SOURCE,
         paint: {
-          "line-color": "#8b5cf6",
-          "line-width": 1.5,
-          "line-opacity": 0.5,
+          "line-color": boundaryColor,
+          "line-width": 1.75,
+          "line-opacity": 0.85,
           "line-dasharray": [4, 3],
         },
       } as LayerSpecification,
       LABELS_LAYER
     );
     neighborhoodTypeOverviewAddedRef.current = true;
-  }, [isLoaded, neighborhoodOverviewType]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isLoaded, overviewTypesKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---------------------------------------------------------------------------
   // Render
@@ -837,6 +900,9 @@ export function MapView({
               {lens === "era" && (
                 <MapLegendBar byDecade={stats?.byDecade ?? {}} eraFilter={eraFilter} />
               )}
+              {lens === "neighborhood" && neighborhoodLegend && neighborhoodLegend.length > 0 && (
+                <NeighborhoodLegendPanel entries={neighborhoodLegend} />
+              )}
               {stats && stats.total > 0 && (
                 <MapStatsPanel stats={stats} />
               )}
@@ -844,6 +910,15 @@ export function MapView({
           )}
         </div>
       )}
+
+      {/* Property-scope maps skip the full below-map panel above, but still
+          need the district legend when the neighborhood lens is active. */}
+      {!showBelowMap && isLoaded && !isFullscreen && lens === "neighborhood" &&
+        neighborhoodLegend && neighborhoodLegend.length > 0 && (
+          <div className="mt-3">
+            <NeighborhoodLegendPanel entries={neighborhoodLegend} />
+          </div>
+        )}
     </div>
   );
 }
@@ -1110,6 +1185,39 @@ function isDecadeInFilter(decade: string, filter: [number, number] | null): bool
   const year = parseInt(decade, 10);
   if (isNaN(year)) return true;
   return year >= filter[0] && year <= filter[1] + 9;
+}
+
+// ---------------------------------------------------------------------------
+// NeighborhoodLegendPanel — district color swatch + name, each linking to
+// that district's detail page. One color per entry, assigned by
+// buildNeighborhoodFillExpression in the same fixed order used to paint
+// the map, so this legend can never disagree with what's on screen.
+// ---------------------------------------------------------------------------
+
+export function NeighborhoodLegendPanel({ entries }: { entries: NeighborhoodLegendEntry[] }) {
+  return (
+    <div
+      className="rounded-lg border border-surface-border bg-surface-raised px-3 py-2.5"
+      aria-label="Neighborhood district legend"
+    >
+      <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+        {entries.map((entry) => (
+          <Link
+            key={entry.id}
+            href={`/neighborhoods/${encodeURIComponent(entry.slug)}`}
+            className="flex items-center gap-1.5 text-xs text-text-secondary hover:text-text-primary transition-colors"
+          >
+            <span
+              className="w-2.5 h-2.5 rounded-full shrink-0"
+              style={{ backgroundColor: entry.color }}
+              aria-hidden="true"
+            />
+            {entry.label}
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 // ---------------------------------------------------------------------------

@@ -4,8 +4,8 @@ import { createClient } from "@supabase/supabase-js";
 const EMPTY_FC = { type: "FeatureCollection", features: [] };
 
 export async function GET(request: NextRequest) {
-  const type = request.nextUrl.searchParams.get("type");
-  if (!type) {
+  const types = request.nextUrl.searchParams.getAll("type");
+  if (types.length === 0) {
     return NextResponse.json({ error: "type required" }, { status: 400 });
   }
 
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
 
   const supabase = createClient(url, key, { auth: { persistSession: false } });
   const { data, error } = await supabase.rpc("get_neighborhood_type_boundaries_geojson", {
-    p_type: type,
+    p_types: types,
   });
 
   if (error) {

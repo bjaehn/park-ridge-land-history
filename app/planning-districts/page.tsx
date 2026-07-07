@@ -11,13 +11,13 @@ export const metadata: Metadata = {
 export default async function PlanningDistrictsPage() {
   const [all, bbox] = await Promise.all([
     fetchNeighborhoodSummaries().catch(() => []),
-    fetchNeighborhoodTypeBbox("official_planning").catch(() => null),
+    fetchNeighborhoodTypeBbox(["official_planning"]).catch(() => null),
   ]);
   const summaries = all.filter((n) => n.neighborhoodType === "official_planning");
 
   return (
     <NeighborhoodTypeIndexPage
-      neighborhoodType="official_planning"
+      neighborhoodTypes={["official_planning"]}
       breadcrumbLabel="Planning Districts"
       title="Official Planning Districts"
       subtitle="The City of Park Ridge's official planning neighborhoods, each with its own construction history."

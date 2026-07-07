@@ -194,16 +194,16 @@ export async function fetchNeighborhoodBbox(
   }
 }
 
-/** Combined bbox across every neighborhood of one type (e.g. all 7 official
- *  planning districts), for the multi-boundary overview map. Keyed directly
- *  off neighborhoods.geometry, not the legacy parcels.neighborhood_id join
- *  fetchNeighborhoodBbox uses. */
+/** Combined bbox across every neighborhood of one or more types (e.g. all 7
+ *  official planning districts, or Corridor + Local/Market together), for
+ *  the multi-boundary overview map. Keyed directly off neighborhoods.geometry,
+ *  not the legacy parcels.neighborhood_id join fetchNeighborhoodBbox uses. */
 export async function fetchNeighborhoodTypeBbox(
-  neighborhoodType: NeighborhoodType
+  neighborhoodTypes: NeighborhoodType[]
 ): Promise<[number, number, number, number] | null> {
-  if (!supabase) return null;
+  if (!supabase || neighborhoodTypes.length === 0) return null;
   try {
-    const { data, error } = await supabase.rpc("get_neighborhood_type_bbox", { p_type: neighborhoodType });
+    const { data, error } = await supabase.rpc("get_neighborhood_type_bbox", { p_types: neighborhoodTypes });
     if (error || !data) return null;
     // PostgREST wraps scalar RPCs: [{get_neighborhood_type_bbox: {minLng, ...}}]
     const arr = data as Array<{ get_neighborhood_type_bbox: { minLng: number; minLat: number; maxLng: number; maxLat: number } | null }>;

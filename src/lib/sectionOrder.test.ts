@@ -39,11 +39,11 @@ describe("chart section order stays in sync between /neighborhoods and /subdivis
     const content = fs.readFileSync(path.resolve(process.cwd(), file), "utf-8");
     const heroIdx = content.indexOf("<PageHeader");
     const chartsIdx = content.indexOf("<NeighborhoodCharts");
-    const listIdx = content.indexOf("<NeighborhoodsGrid");
+    const listIdx = content.indexOf("<NeighborhoodTypeOverview");
 
     expect(heroIdx, `<PageHeader not found in ${file}`).toBeGreaterThan(-1);
     expect(chartsIdx, `<NeighborhoodCharts not found in ${file}`).toBeGreaterThan(-1);
-    expect(listIdx, `<NeighborhoodsGrid not found in ${file}`).toBeGreaterThan(-1);
+    expect(listIdx, `<NeighborhoodTypeOverview not found in ${file}`).toBeGreaterThan(-1);
     expect(chartsIdx).toBeGreaterThan(heroIdx);
     expect(chartsIdx).toBeLessThan(listIdx);
   });

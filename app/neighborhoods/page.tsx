@@ -4,15 +4,30 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { InlineSourceNote } from "@/components/ui/SourceNote";
 import { NEIGHBORHOOD_BOUNDARY_DISCLAIMER } from "@/lib/content";
-import { NeighborhoodsGrid } from "./_NeighborhoodsGrid";
+import { NeighborhoodTypeOverview } from "@/components/NeighborhoodTypeIndexPage";
 import { NeighborhoodCharts } from "@/components/ui/NeighborhoodCharts";
+import { fetchNeighborhoodSummaries, fetchNeighborhoodTypeBbox } from "@/lib/data/neighborhoods";
+import type { NeighborhoodType } from "@/lib/data/neighborhoods";
 
 export const metadata: Metadata = {
   title: "Neighborhoods",
   description: "Park Ridge's corridor districts and local/informal neighborhood names.",
 };
 
-export default function NeighborhoodsPage() {
+// Official Planning Neighborhoods and Business Districts have their own
+// dedicated pages (/planning-districts, /business-districts) -- not shown
+// here.
+const NEIGHBORHOOD_TYPES: NeighborhoodType[] = ["corridor", "local_market"];
+
+export default async function NeighborhoodsPage() {
+  const [all, bbox] = await Promise.all([
+    fetchNeighborhoodSummaries().catch(() => []),
+    fetchNeighborhoodTypeBbox(NEIGHBORHOOD_TYPES).catch(() => null),
+  ]);
+  const summaries = all.filter(
+    (n) => n.neighborhoodType && NEIGHBORHOOD_TYPES.includes(n.neighborhoodType)
+  );
+
   return (
     <div className="page-shell">
       <Breadcrumb
@@ -40,7 +55,11 @@ export default function NeighborhoodsPage() {
       <div className="mb-10">
         <NeighborhoodCharts />
       </div>
-      <NeighborhoodsGrid />
+      <NeighborhoodTypeOverview
+        neighborhoodTypes={NEIGHBORHOOD_TYPES}
+        summaries={summaries}
+        bbox={bbox}
+      />
       <InlineSourceNote>{NEIGHBORHOOD_BOUNDARY_DISCLAIMER}</InlineSourceNote>
     </div>
   );

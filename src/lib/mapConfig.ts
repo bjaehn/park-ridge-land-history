@@ -102,16 +102,75 @@ export const ERA_ORDER = [
 ] as const;
 
 // ---------------------------------------------------------------------------
-// Neighborhood color palette (for "neighborhood" lens - uses neighborhood_id)
+// Neighborhood color palette (for "neighborhood" lens)
+//
+// Categorical, colorblind-safe theme (dataviz skill's validated 8-hue dark-
+// mode default), assigned in this fixed order -- never cycled -- to
+// whichever districts are being shown. Replaces a stale hardcoded palette
+// keyed by pre-restructure neighborhood IDs (neighborhood:central, etc.)
+// that matched none of the current real neighborhood IDs.
 // ---------------------------------------------------------------------------
 
-export const NEIGHBORHOOD_PALETTE: Record<string, string> = {
-  "neighborhood:central":   "#4fb6a8",
-  "neighborhood:northeast": "#9ac35d",
-  "neighborhood:northwest": "#785f9a",
-  "neighborhood:south":     "#e6a64a",
-  "neighborhood:uptown":    "#df8252",
+export const NEIGHBORHOOD_CATEGORICAL_PALETTE = [
+  "#3987e5", // blue
+  "#199e70", // aqua
+  "#c98500", // yellow
+  "#008300", // green
+  "#9085e9", // violet
+  "#e66767", // red
+  "#d55181", // magenta
+  "#d95926", // orange
+];
+export const NEIGHBORHOOD_FALLBACK_COLOR = "#4b5563";
+
+// Which parcel column each neighborhood_type is colored by.
+export const NEIGHBORHOOD_TYPE_PROPERTY_KEYS: Record<string, string> = {
+  official_planning: "official_planning_neighborhood_id",
+  business_district: "business_district_id",
+  local_market: "local_neighborhood_id",
+  corridor: "corridor_id",
 };
+
+export const DEFAULT_NEIGHBORHOOD_TYPE = "official_planning";
+
+/** MapLibre "get"/"coalesce" expression selecting the right column(s) for
+ *  the given neighborhood_type(s). Falls back to the site-wide default
+ *  (official planning district, per CLAUDE.md's documented "primary"
+ *  taxonomy) when no types are given. */
+export function neighborhoodPropertyGetter(types: string[] = []): unknown[] {
+  const keys = types
+    .map((t) => NEIGHBORHOOD_TYPE_PROPERTY_KEYS[t])
+    .filter((k): k is string => !!k);
+  if (keys.length === 0) {
+    return ["get", NEIGHBORHOOD_TYPE_PROPERTY_KEYS[DEFAULT_NEIGHBORHOOD_TYPE]];
+  }
+  if (keys.length === 1) return ["get", keys[0]];
+  return ["coalesce", ...keys.map((k) => ["get", k])];
+}
+
+export type NeighborhoodLegendItem = { id: string; label: string; slug: string };
+export type NeighborhoodLegendEntry = NeighborhoodLegendItem & { color: string };
+
+/** Builds the "neighborhood" lens's fill expression and its legend entries
+ *  from ONE ordered district list, so the map paint and the legend can
+ *  never drift apart -- colors are assigned in fixed palette order to the
+ *  list as given (callers pass districts pre-sorted to match the on-page
+ *  list/decade order). */
+export function buildNeighborhoodFillExpression(
+  propertyGetter: unknown[],
+  districts: NeighborhoodLegendItem[]
+): { expression: unknown[]; legend: NeighborhoodLegendEntry[] } {
+  const legend: NeighborhoodLegendEntry[] = districts.map((d, i) => ({
+    ...d,
+    color: NEIGHBORHOOD_CATEGORICAL_PALETTE[i] ?? NEIGHBORHOOD_FALLBACK_COLOR,
+  }));
+  const expr: unknown[] = ["match", propertyGetter];
+  for (const entry of legend) {
+    expr.push(entry.id, entry.color);
+  }
+  expr.push(NEIGHBORHOOD_FALLBACK_COLOR);
+  return { expression: expr, legend };
+}
 
 // ---------------------------------------------------------------------------
 // Map lenses (mutually exclusive coloring modes)
@@ -181,21 +240,17 @@ export function permitFillExpression(): unknown[] {
   ];
 }
 
-export function neighborhoodFillExpression(): unknown[] {
-  const expr: unknown[] = ["match", ["get", "neighborhood_id"]];
-  for (const [id, color] of Object.entries(NEIGHBORHOOD_PALETTE)) {
-    expr.push(id, color);
-  }
-  expr.push("#374151");
-  return expr;
-}
+// The "neighborhood" lens needs a district list + property getter that vary
+// by page/scope (see buildNeighborhoodFillExpression above), so unlike the
+// other lenses it isn't handled by getLensFillExpression below -- MapView
+// calls buildNeighborhoodFillExpression directly with the right arguments
+// for its current scope.
 
 export function getLensFillExpression(lens: MapLens): unknown[] | null {
   switch (lens) {
     case "era":          return eraFillExpression();
     case "permits":      return permitFillExpression();
-    case "neighborhood": return neighborhoodFillExpression();
-    default:             return null; // lenses without data in map tiles
+    default:             return null; // "neighborhood": see note above; others: no data in map tiles
   }
 }
 
@@ -289,7 +344,7 @@ export type MapScope =
   | { kind: "neighborhood"; neighborhoodId: string; pins?: string[]; bbox?: [number, number, number, number] }
   | {
       kind: "neighborhood-type-overview";
-      neighborhoodType: "official_planning" | "business_district";
+      neighborhoodTypes: string[];
       bbox?: [number, number, number, number];
     }
   | { kind: "subdivision"; subdivisionId: string; pins?: string[]; bbox?: [number, number, number, number] }
