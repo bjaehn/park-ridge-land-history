@@ -147,7 +147,7 @@ export function MapView({
   const [layerToggles, setLayerToggles] = useState<LayerToggles>({
     boundary: true,
     permitHeatmap: false,
-    gisBuildings: true,
+    gisBuildings: defaultGisBuildings(scope),
   });
   const gisBuildingsAddedRef = useRef(false);
   const neighborhoodBoundaryAddedRef = useRef(false);
@@ -1384,6 +1384,22 @@ function AnimateIcon() {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+// Building outlines help orient a close-in property/street view, but on
+// boundary-driven maps (a subdivision, a single neighborhood, or the
+// district overview maps) they clutter the district/subdivision outline
+// they're meant to make legible -- default them off there. Still
+// user-toggleable via the Layers panel on every scope.
+function defaultGisBuildings(scope: MapScope): boolean {
+  switch (scope.kind) {
+    case "subdivision":
+    case "neighborhood":
+    case "neighborhood-type-overview":
+      return false;
+    default:
+      return true;
+  }
+}
 
 function buildScopeFilter(scope: MapScope): unknown[] {
   switch (scope.kind) {
