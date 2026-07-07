@@ -287,6 +287,11 @@ export type MapScope =
   | { kind: "property"; pin: string; bbox?: [number, number, number, number]; lat?: number; lng?: number }
   | { kind: "street"; streetName: string; bbox?: [number, number, number, number] }
   | { kind: "neighborhood"; neighborhoodId: string; pins?: string[]; bbox?: [number, number, number, number] }
+  | {
+      kind: "neighborhood-type-overview";
+      neighborhoodType: "official_planning" | "business_district";
+      bbox?: [number, number, number, number];
+    }
   | { kind: "subdivision"; subdivisionId: string; pins?: string[]; bbox?: [number, number, number, number] }
   | { kind: "city" };
 

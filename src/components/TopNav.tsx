@@ -13,11 +13,13 @@ type NavLink = {
 };
 
 const NAV_LINKS: NavLink[] = [
-  { href: "/neighborhoods", label: "Neighborhoods" },
-  { href: "/subdivisions",  label: "Subdivisions"  },
-  { href: "/streets",       label: "Streets"       },
-  { href: "/permits",       label: "Permits"       },
-  { href: "/city",          label: "City history"  },
+  { href: "/neighborhoods",       label: "Neighborhoods"      },
+  { href: "/planning-districts",  label: "Planning Districts" },
+  { href: "/business-districts",  label: "Business Districts" },
+  { href: "/subdivisions",        label: "Subdivisions"       },
+  { href: "/streets",             label: "Streets"            },
+  { href: "/permits",             label: "Permits"            },
+  { href: "/city",                label: "City history"       },
 ];
 
 const REFERENCE_LINKS = [

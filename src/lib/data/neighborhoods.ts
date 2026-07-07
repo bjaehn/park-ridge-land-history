@@ -9,6 +9,7 @@ export type NeighborhoodSummary = {
   label: string;
   neighborhoodType: NeighborhoodType | null;
   parcelCount: number;
+  earliestYear?: number;
   medianYear?: number;
   totalPermits?: number;
   totalSales?: number;
@@ -48,6 +49,7 @@ export async function fetchNeighborhoodSummaries(): Promise<NeighborhoodSummary[
       label,
       neighborhoodType: (r.neighborhood_type as NeighborhoodType) ?? null,
       parcelCount: Number(r.parcel_count ?? 0),
+      earliestYear: r.earliest_year ? Number(r.earliest_year) : undefined,
       medianYear: r.median_year ? Number(r.median_year) : undefined,
       totalPermits: r.total_permits ? Number(r.total_permits) : undefined,
       totalSales: r.total_sales ? Number(r.total_sales) : undefined,
@@ -185,6 +187,27 @@ export async function fetchNeighborhoodBbox(
     // PostgREST wraps scalar RPCs: [{neighborhood_bbox: {minLng, ...}}]
     const arr = data as Array<{ neighborhood_bbox: { minLng: number; minLat: number; maxLng: number; maxLat: number } | null }>;
     const b = arr[0]?.neighborhood_bbox;
+    if (!b || b.minLng == null) return null;
+    return [b.minLng, b.minLat, b.maxLng, b.maxLat];
+  } catch {
+    return null;
+  }
+}
+
+/** Combined bbox across every neighborhood of one type (e.g. all 7 official
+ *  planning districts), for the multi-boundary overview map. Keyed directly
+ *  off neighborhoods.geometry, not the legacy parcels.neighborhood_id join
+ *  fetchNeighborhoodBbox uses. */
+export async function fetchNeighborhoodTypeBbox(
+  neighborhoodType: NeighborhoodType
+): Promise<[number, number, number, number] | null> {
+  if (!supabase) return null;
+  try {
+    const { data, error } = await supabase.rpc("get_neighborhood_type_bbox", { p_type: neighborhoodType });
+    if (error || !data) return null;
+    // PostgREST wraps scalar RPCs: [{get_neighborhood_type_bbox: {minLng, ...}}]
+    const arr = data as Array<{ get_neighborhood_type_bbox: { minLng: number; minLat: number; maxLng: number; maxLat: number } | null }>;
+    const b = arr[0]?.get_neighborhood_type_bbox;
     if (!b || b.minLng == null) return null;
     return [b.minLng, b.minLat, b.maxLng, b.maxLat];
   } catch {

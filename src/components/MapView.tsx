@@ -99,6 +99,9 @@ const GIS_BUILDINGS_LAYER = "gis-buildings-stroke";
 const NEIGHBORHOOD_BOUNDARY_SOURCE = "neighborhood-boundary";
 const NEIGHBORHOOD_BOUNDARY_FILL_LAYER = "neighborhood-boundary-fill";
 const NEIGHBORHOOD_BOUNDARY_STROKE_LAYER = "neighborhood-boundary-stroke";
+const NEIGHBORHOOD_TYPE_OVERVIEW_SOURCE = "neighborhood-type-overview";
+const NEIGHBORHOOD_TYPE_OVERVIEW_FILL_LAYER = "neighborhood-type-overview-fill";
+const NEIGHBORHOOD_TYPE_OVERVIEW_STROKE_LAYER = "neighborhood-type-overview-stroke";
 
 // ---------------------------------------------------------------------------
 // Main component
@@ -134,6 +137,7 @@ export function MapView({
   });
   const gisBuildingsAddedRef = useRef(false);
   const neighborhoodBoundaryAddedRef = useRef(false);
+  const neighborhoodTypeOverviewAddedRef = useRef(false);
   const [eraFilter, setEraFilter] = useState<[number, number] | null>(null);
   const [stats, setStats] = useState<MapStats | null>(null);
   const [noDataLens, setNoDataLens] = useState(false);
@@ -561,6 +565,52 @@ export function MapView({
     );
     neighborhoodBoundaryAddedRef.current = true;
   }, [isLoaded, neighborhoodId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Multi-boundary overview — auto-loaded when scope is "neighborhood-type-overview".
+  // Unlike the single-neighborhood overlay above, every parcel on the map is
+  // in-scope here (buildScopeFilter returns "all"), so the stroke is anchored
+  // ABOVE the parcel fill layer (before LABELS_LAYER) instead of below it,
+  // or it would be hidden under the colored parcels. Deliberately has no
+  // click/hover handler: every point inside a district also hits a parcel
+  // underneath, which already navigates to /properties/{pin} on click --
+  // the list below the map is the click-through path to each district's
+  // detail page instead.
+  const neighborhoodOverviewType =
+    scope.kind === "neighborhood-type-overview" ? scope.neighborhoodType : null;
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !isLoaded || !neighborhoodOverviewType) return;
+    if (neighborhoodTypeOverviewAddedRef.current) return;
+
+    map.addSource(NEIGHBORHOOD_TYPE_OVERVIEW_SOURCE, {
+      type: "geojson",
+      data: `/api/neighborhood-type-boundaries?type=${encodeURIComponent(neighborhoodOverviewType)}`,
+    });
+    map.addLayer(
+      {
+        id: NEIGHBORHOOD_TYPE_OVERVIEW_FILL_LAYER,
+        type: "fill",
+        source: NEIGHBORHOOD_TYPE_OVERVIEW_SOURCE,
+        paint: { "fill-color": "#8b5cf6", "fill-opacity": 0.07 },
+      } as LayerSpecification,
+      FILL_MUTED_LAYER
+    );
+    map.addLayer(
+      {
+        id: NEIGHBORHOOD_TYPE_OVERVIEW_STROKE_LAYER,
+        type: "line",
+        source: NEIGHBORHOOD_TYPE_OVERVIEW_SOURCE,
+        paint: {
+          "line-color": "#8b5cf6",
+          "line-width": 1.5,
+          "line-opacity": 0.5,
+          "line-dasharray": [4, 3],
+        },
+      } as LayerSpecification,
+      LABELS_LAYER
+    );
+    neighborhoodTypeOverviewAddedRef.current = true;
+  }, [isLoaded, neighborhoodOverviewType]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---------------------------------------------------------------------------
   // Render
@@ -1236,6 +1286,7 @@ function buildScopeFilter(scope: MapScope): unknown[] {
         return ["in", ["get", "pin_normalized"], ["literal", scope.pins]];
       }
       return ["==", "1", "0"]; // no pins assigned - show nothing
+    case "neighborhood-type-overview": return ["all"];
     case "subdivision":
       if (scope.pins && scope.pins.length > 0) {
         return ["in", ["get", "pin_normalized"], ["literal", scope.pins]];
@@ -1266,6 +1317,13 @@ function flyToScope(map: MaplibreMap, scope: MapScope) {
       }
       break;
     case "neighborhood":
+      if (scope.bbox) {
+        map.fitBounds([[scope.bbox[0], scope.bbox[1]], [scope.bbox[2], scope.bbox[3]]], { padding: 56, ...animOpts });
+      } else {
+        map.flyTo({ center: MAP_CENTER, zoom: MAP_ZOOM_NEIGHBORHOOD, ...animOpts });
+      }
+      break;
+    case "neighborhood-type-overview":
       if (scope.bbox) {
         map.fitBounds([[scope.bbox[0], scope.bbox[1]], [scope.bbox[2], scope.bbox[3]]], { padding: 56, ...animOpts });
       } else {

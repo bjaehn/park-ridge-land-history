@@ -9,9 +9,15 @@ import { fetchNeighborhoodSummaries } from "@/lib/data/neighborhoods";
 import type { NeighborhoodSummary } from "@/lib/data/neighborhoods";
 import { NEIGHBORHOOD_ERA_LABELS } from "@/lib/content";
 
+// Official Planning Neighborhoods and Business Districts have their own
+// dedicated pages (/planning-districts, /business-districts) with a map
+// overview -- not listed here. "corridor" was previously missing from this
+// list entirely (a pre-existing bug: corridor-type rows have a
+// neighborhoodType set, so they were never caught by the "Other" section
+// below either, which only catches null-type rows -- they were invisible
+// site-wide until this fix).
 const TYPE_SECTIONS = [
-  { type: "official_planning" as const, title: "Official Planning Neighborhoods" },
-  { type: "business_district" as const, title: "Business Districts" },
+  { type: "corridor" as const, title: "Corridor Districts" },
   { type: "local_market" as const, title: "Local / Market Neighborhoods" },
 ];
 
