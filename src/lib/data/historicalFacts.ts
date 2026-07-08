@@ -1,14 +1,16 @@
 /**
  * Data access for the historical_facts table -- a general-purpose,
- * source-cited fact repository (see supabase/migrations/20260615161000 and
- * 20260705000000). Facts can be scoped to a neighborhood/business
- * district/corridor via neighborhood_id, or to the whole city via
- * city_wide = true.
+ * source-cited fact repository (see supabase/migrations/20260615161000,
+ * 20260705000000, and 20260708000000). Facts can be scoped to a
+ * neighborhood/business district/corridor via neighborhood_id, to the whole
+ * city via city_wide = true, to a specific parcel via pin_normalized, to a
+ * subdivision via subdivision_id, or to a street via street_name_normalized.
  */
 
 import { supabase } from "../supabase/client";
+import type { GenericConfidenceLevel } from "../confidencePresentation";
 
-export type HistoricalFactConfidence = "high" | "medium" | "low" | "unknown";
+export type HistoricalFactConfidence = GenericConfidenceLevel;
 
 export type HistoricalFactSource = {
   title: string;
@@ -101,6 +103,40 @@ export async function getCityWideHistoricalFacts(): Promise<HistoricalFact[]> {
       .from("historical_facts")
       .select(COLUMNS)
       .eq("city_wide", true)
+      .order("date_start", { ascending: true, nullsFirst: false });
+    if (error || !data) return [];
+    return (data as unknown as RawFact[]).map(mapFact);
+  } catch {
+    return [];
+  }
+}
+
+export async function getHistoricalFactsForSubdivision(
+  subdivisionId: string
+): Promise<HistoricalFact[]> {
+  if (!supabase) return [];
+  try {
+    const { data, error } = await supabase
+      .from("historical_facts")
+      .select(COLUMNS)
+      .eq("subdivision_id", subdivisionId)
+      .order("date_start", { ascending: true, nullsFirst: false });
+    if (error || !data) return [];
+    return (data as unknown as RawFact[]).map(mapFact);
+  } catch {
+    return [];
+  }
+}
+
+export async function getHistoricalFactsForStreet(
+  streetNameNormalized: string
+): Promise<HistoricalFact[]> {
+  if (!supabase) return [];
+  try {
+    const { data, error } = await supabase
+      .from("historical_facts")
+      .select(COLUMNS)
+      .eq("street_name_normalized", streetNameNormalized)
       .order("date_start", { ascending: true, nullsFirst: false });
     if (error || !data) return [];
     return (data as unknown as RawFact[]).map(mapFact);

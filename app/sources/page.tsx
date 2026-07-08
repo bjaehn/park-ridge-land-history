@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { SOURCES, NEIGHBORHOOD_BOUNDARY_DISCLAIMER } from "@/lib/content";
+import { CONFIDENCE_DESCRIPTION } from "@/lib/formatters";
 
 export const metadata: Metadata = {
   title: "Data sources",
@@ -50,12 +51,12 @@ export default function SourcesPage() {
             Each property record is assigned a confidence level based on the completeness and consistency of its data.
           </p>
           <ul className="text-sm space-y-2 list-disc list-inside">
-            <li><strong className="text-text-primary">High:</strong> The record is directly supported by official Cook County records. Key fields such as year built, address, and PIN are complete and consistent.</li>
-            <li><strong className="text-text-primary">Medium:</strong> The record is inferred from multiple consistent sources, or approximated from spatial joins. The data is plausible but relies on at least one step of interpretation.</li>
-            <li><strong className="text-text-primary">Low:</strong> Key facts are missing, inconsistent, or sourced from less authoritative data. The record may still be useful but should be treated with caution.</li>
+            <li><strong className="text-text-primary">High:</strong> The record is directly supported by official Cook County records. Key fields such as year built, address, and PIN are complete and consistent. {CONFIDENCE_DESCRIPTION.High}</li>
+            <li><strong className="text-text-primary">Medium:</strong> The record is inferred from multiple consistent sources, or approximated from spatial joins. The data is plausible but relies on at least one step of interpretation. {CONFIDENCE_DESCRIPTION.Medium}</li>
+            <li><strong className="text-text-primary">Low:</strong> Key facts are missing, inconsistent, or sourced from less authoritative data. The record may still be useful but should be treated with caution. {CONFIDENCE_DESCRIPTION.Low}</li>
           </ul>
           <p className="text-sm mt-3">
-            These definitions appear throughout the app wherever confidence badges are shown.
+            This is the property-level confidence model, shown wherever a property's confidence badge appears. Subdivision records, historical facts, and teardown detection each use a related but distinct confidence convention, suited to their own source types (deed and plat records for subdivisions; cited sources for historical facts; permit and assessment records for teardown detection) rather than one universal definition.
           </p>
         </section>
 

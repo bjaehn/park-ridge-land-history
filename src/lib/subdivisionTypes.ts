@@ -5,7 +5,10 @@
  * ensures the UI shows what is known vs. unknown.
  */
 
-export type SubdivisionConfidenceLevel = "high" | "medium" | "low" | "unknown";
+import type { GenericConfidenceLevel } from "./confidencePresentation";
+import { confidenceLabelFor, confidencePlainTextFor } from "./confidencePresentation";
+
+export type SubdivisionConfidenceLevel = GenericConfidenceLevel;
 
 export type Subdivision = {
   id: string;
@@ -204,27 +207,8 @@ export type SubdivisionQAStats = {
   total_lots: number;
 };
 
-/** Maps a SubdivisionConfidenceLevel to a ConfidenceLevel used by ConfidenceBadge. */
-export function toConfidenceBadgeLevel(
-  level: SubdivisionConfidenceLevel
-): "high" | "medium" | "limited" {
-  if (level === "high") return "high";
-  if (level === "medium") return "medium";
-  return "limited";
-}
-
 export function confidenceLevelLabel(level: SubdivisionConfidenceLevel): string {
-  return { high: "High", medium: "Medium", low: "Low", unknown: "Unknown" }[level] ?? "Unknown";
-}
-
-export function confidenceLevelDescription(level: SubdivisionConfidenceLevel): string {
-  const descriptions: Record<SubdivisionConfidenceLevel, string> = {
-    high: "Subdivision name and date verified from an official recorded plat or official Cook County GIS lot layer.",
-    medium: "Subdivision name from Cook County GIS or official assessor records. Recording date not confirmed.",
-    low: "Subdivision name inferred from spatial location or historical map. Not verified against recorded plat.",
-    unknown: "No subdivision match has been found yet for this property.",
-  };
-  return descriptions[level];
+  return confidenceLabelFor(level);
 }
 
 export function subdivisionPath(id: string): string {
@@ -374,11 +358,5 @@ export function factTypeIcon(factType: string): string {
 }
 
 export function confidencePlainText(level: SubdivisionConfidenceLevel): string {
-  const labels: Record<SubdivisionConfidenceLevel, string> = {
-    high: "Verified by official record",
-    medium: "Supported by cited source",
-    low: "Research lead, not yet verified",
-    unknown: "Unknown",
-  };
-  return labels[level] ?? "Unknown";
+  return confidencePlainTextFor(level);
 }

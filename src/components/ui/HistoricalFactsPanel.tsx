@@ -1,43 +1,17 @@
-import type { HistoricalFact, HistoricalFactConfidence } from "@/lib/data/historicalFacts";
+import type { HistoricalFact } from "@/lib/data/historicalFacts";
 import { ERA_PALETTE, ERA_ORDER, getEraColor } from "@/lib/mapConfig";
 import { LandmarkDesignationIcon, ProposalIcon, EventDotIcon } from "@/lib/icons";
+import {
+  confidenceDotClassFor as confidenceDotClass,
+  confidenceTextClassFor as confidenceTextClass,
+  confidencePlainTextFor,
+} from "@/lib/confidencePresentation";
 
-// ─── Confidence dot (mirrors SubdivisionHistoryPanel's convention) ───────────
-
-function confidenceDotClass(level: HistoricalFactConfidence): string {
-  switch (level) {
-    case "high":
-      return "bg-confidence-high";
-    case "medium":
-      return "bg-confidence-medium";
-    case "low":
-      return "bg-confidence-low";
-    default:
-      return "bg-confidence-unknown";
-  }
-}
-
-function confidenceTextClass(level: HistoricalFactConfidence): string {
-  switch (level) {
-    case "high":
-      return "text-confidence-high";
-    case "medium":
-      return "text-confidence-medium";
-    case "low":
-      return "text-confidence-low";
-    default:
-      return "text-confidence-unknown";
-  }
-}
-
-function confidencePlainText(level: HistoricalFactConfidence): string {
-  const labels: Record<HistoricalFactConfidence, string> = {
-    high: "Verified by cited source",
-    medium: "Supported by cited source",
-    low: "Research lead, not yet verified",
-    unknown: "Unknown",
-  };
-  return labels[level] ?? "Unknown";
+// A fact is corroborated by a cited source, not an "official record" the way
+// a subdivision plat can be -- so "high" reads differently here than in
+// SubdivisionHistoryPanel's shared confidencePlainTextFor() base string.
+function confidencePlainText(level: string | null | undefined): string {
+  return confidencePlainTextFor(level, { high: "Verified by cited source" });
 }
 
 // ─── Fact-type badge: 1996 plan proposals and landmarks get distinct badges ──

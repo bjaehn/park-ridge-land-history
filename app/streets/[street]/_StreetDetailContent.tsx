@@ -6,9 +6,13 @@ import { EntityCard, UnresolvableEntityCard } from "@/components/ui/EntityCard";
 import { LoadingSkeleton, EmptyState } from "@/components/ui/EmptyState";
 import { HighlightReel } from "@/components/ui/HighlightReel";
 import { DecadeGroup } from "@/components/ui/DecadeGroup";
+import { ConstructionByDecadeChart } from "@/components/ui/ConstructionByDecadeChart";
+import { InlineSourceNote } from "@/components/ui/SourceNote";
+import { HistoricalFactsPanel } from "@/components/ui/HistoricalFactsPanel";
 import { formatNumber, formatAddress, formatCount } from "@/lib/formatters";
 import { getEraColor } from "@/lib/mapConfig";
 import { getStreetDetail } from "@/lib/data/streets";
+import { getHistoricalFactsForStreet, type HistoricalFact } from "@/lib/data/historicalFacts";
 import type { HighlightGroup } from "@/components/ui/HighlightReel";
 
 const STREET_HIGHLIGHTS: readonly HighlightGroup[] = [
@@ -22,12 +26,19 @@ type Props = { streetName: string; displayName: string; mapSlot?: React.ReactNod
 
 export function StreetDetailContent({ streetName, displayName, mapSlot }: Props) {
   const [detail, setDetail] = useState<Awaited<ReturnType<typeof getStreetDetail>> | null>(null);
+  const [historicalFacts, setHistoricalFacts] = useState<HistoricalFact[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    getStreetDetail(streetName)
-      .then(setDetail)
+    Promise.all([
+      getStreetDetail(streetName),
+      getHistoricalFactsForStreet(streetName),
+    ])
+      .then(([streetDetail, facts]) => {
+        setDetail(streetDetail);
+        setHistoricalFacts(facts);
+      })
       .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, [streetName]);
@@ -44,6 +55,8 @@ export function StreetDetailContent({ streetName, displayName, mapSlot }: Props)
 
   return (
     <div className="space-y-10">
+      {historicalFacts.length > 0 && <HistoricalFactsPanel facts={historicalFacts} />}
+
       <StatGrid columns={(Math.max(2, Math.min(statItems.length, 4))) as 2 | 3 | 4} stats={statItems} />
 
       {mapSlot && (
@@ -52,13 +65,6 @@ export function StreetDetailContent({ streetName, displayName, mapSlot }: Props)
           {mapSlot}
         </div>
       )}
-
-      <HighlightReel
-        scope="street"
-        scopeId={streetName}
-        groups={STREET_HIGHLIGHTS}
-        limit={5}
-      />
 
       {(detail.medianYear || detail.eraSpan) && (
         <div>
@@ -73,6 +79,22 @@ export function StreetDetailContent({ streetName, displayName, mapSlot }: Props)
           </p>
         </div>
       )}
+
+      {detail.decadeRows.length > 0 && (
+        <div>
+          <ConstructionByDecadeChart rows={detail.decadeRows} />
+          <InlineSourceNote className="mt-3">
+            Cook County Assessor build-year data.
+          </InlineSourceNote>
+        </div>
+      )}
+
+      <HighlightReel
+        scope="street"
+        scopeId={streetName}
+        groups={STREET_HIGHLIGHTS}
+        limit={5}
+      />
 
       <div>
         <h2 className="section-heading">All properties on {displayName}</h2>
@@ -97,6 +119,9 @@ export function StreetDetailContent({ streetName, displayName, mapSlot }: Props)
             )
           }
         />
+        <InlineSourceNote className="mt-3">
+          Cook County Assessor parcel records, matched by street name.
+        </InlineSourceNote>
       </div>
     </div>
   );

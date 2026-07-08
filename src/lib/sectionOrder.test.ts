@@ -139,6 +139,58 @@ describe("chart colors are sourced from chartTheme.ts, not hardcoded hex literal
   });
 });
 
+describe("subdivision detail page has an explicit 'not yet linked' state (A3.2)", () => {
+  const file = "app/subdivisions/[id]/_SubdivisionDetailContent.tsx";
+
+  it("renders the new banner before the stat grid, and no longer repeats the old EmptyState at the bottom", () => {
+    const content = fs.readFileSync(path.resolve(process.cwd(), file), "utf-8");
+    const bannerIdx = content.indexOf("Not yet linked to any parcels.");
+    const statGridIdx = content.indexOf("<StatGrid");
+    expect(bannerIdx, `banner text not found in ${file}`).toBeGreaterThan(-1);
+    expect(statGridIdx, `<StatGrid not found in ${file}`).toBeGreaterThan(-1);
+    expect(bannerIdx).toBeLessThan(statGridIdx);
+    expect(content).not.toContain("No properties found");
+  });
+});
+
+describe("property page suppresses the redundant land-ancestry widget only when deed lineage exists (A3.3)", () => {
+  it("gates LandAncestryPanel on landLineage.length === 0, not just presence of landAncestry", () => {
+    const file = "app/properties/[pin]/_PropertyDetailContent.tsx";
+    const content = fs.readFileSync(path.resolve(process.cwd(), file), "utf-8");
+    expect(content).toContain("landAncestry && landLineage.length === 0 && <LandAncestryPanel");
+    expect(content).not.toMatch(/\{landAncestry && <LandAncestryPanel/);
+  });
+});
+
+describe("historical_facts scoping migration exists with the expected columns (A3.4)", () => {
+  it("adds subdivision_id and street_name_normalized", () => {
+    const file = "supabase/migrations/20260708000000_add_subdivision_and_street_scoping_to_historical_facts.sql";
+    expect(fs.existsSync(path.resolve(process.cwd(), file)), `${file} does not exist`).toBe(true);
+    const content = fs.readFileSync(path.resolve(process.cwd(), file), "utf-8");
+    expect(content).toContain("subdivision_id uuid REFERENCES subdivisions(id)");
+    expect(content).toContain("street_name_normalized text");
+  });
+});
+
+describe("street detail page has a construction chart, citations, and correct section order (A3.4)", () => {
+  const file = "app/streets/[street]/_StreetDetailContent.tsx";
+
+  it("renders ConstructionByDecadeChart before the highlight reel", () => {
+    const content = fs.readFileSync(path.resolve(process.cwd(), file), "utf-8");
+    const chartIdx = content.indexOf("<ConstructionByDecadeChart");
+    const highlightIdx = content.indexOf("<HighlightReel");
+    expect(chartIdx, `<ConstructionByDecadeChart not found in ${file}`).toBeGreaterThan(-1);
+    expect(highlightIdx, `<HighlightReel not found in ${file}`).toBeGreaterThan(-1);
+    expect(chartIdx).toBeLessThan(highlightIdx);
+  });
+
+  it("cites Cook County Assessor build-year data and street-matched parcel records", () => {
+    const content = fs.readFileSync(path.resolve(process.cwd(), file), "utf-8");
+    expect(content).toContain("Cook County Assessor build-year data.");
+    expect(content).toContain("Cook County Assessor parcel records, matched by street name.");
+  });
+});
+
 describe("PageHeader is used by every top-level page (A2.1)", () => {
   // These 4 pages used to hand-roll their own eyebrow/h1/subtitle markup
   // instead of using the shared PageHeader component, each drifting to a

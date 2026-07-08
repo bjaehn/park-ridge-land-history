@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { HighlightReel } from "@/components/ui/HighlightReel";
 import { DecadeGroup } from "@/components/ui/DecadeGroup";
 import { InlineSourceNote } from "@/components/ui/SourceNote";
+import { HistoricalFactsPanel } from "@/components/ui/HistoricalFactsPanel";
 import { MarketHistoryChart } from "@/components/ui/MarketHistoryChart";
 import {
   YearBuiltIcon,
@@ -35,6 +36,7 @@ import {
   fetchNeighborhoodsForSubdivision,
 } from "@/lib/supabase/subdivisionQueries";
 import { fetchBlockSalesStats } from "@/lib/supabase/blockQueries";
+import { getHistoricalFactsForSubdivision, type HistoricalFact } from "@/lib/data/historicalFacts";
 import type {
   SubdivisionParcelRow,
   SubdivisionNeighborhoodLink,
@@ -77,6 +79,7 @@ export function SubdivisionDetailContent({
     useState<BlockAssessmentStats | null>(null);
   const [marketHistory, setMarketHistory] = useState<MarketHistoryRow[]>([]);
   const [neighborhoods, setNeighborhoods] = useState<SubdivisionNeighborhoodLink[]>([]);
+  const [historicalFacts, setHistoricalFacts] = useState<HistoricalFact[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
@@ -84,10 +87,12 @@ export function SubdivisionDetailContent({
     Promise.all([
       fetchSubdivisionParcels(subdivisionId),
       fetchNeighborhoodsForSubdivision(subdivisionId),
+      getHistoricalFactsForSubdivision(subdivisionId),
     ])
-      .then(async ([deedRows, neighborhoodRows]) => {
+      .then(async ([deedRows, neighborhoodRows, facts]) => {
         setNeighborhoods(neighborhoodRows);
         setParcels(deedRows);
+        setHistoricalFacts(facts);
 
         const allPins = deedRows.map((p) => p.pin).filter(Boolean);
         if (!allPins.length) return;
@@ -216,6 +221,42 @@ export function SubdivisionDetailContent({
               <span>{w}</span>
             </div>
           ))}
+        </div>
+      )}
+
+      {/*
+        ---- Historical facts (distinct from the SubdivisionHistoryPanel
+        "What we know" / "What still needs research" panel rendered above
+        this component, in page.tsx -- that panel is backed by
+        subdivision_timeline_events, a schema purpose-built for subdivisions;
+        this one is backed by the general-purpose historical_facts table,
+        shared with city/neighborhood pages) ----
+      */}
+      {historicalFacts.length > 0 && (
+        <HistoricalFactsPanel facts={historicalFacts} heading="From the historical record" />
+      )}
+
+      {/*
+        ---- Not yet linked to any parcels ----
+        Estates and parent plats are expected to have zero directly-linked
+        parcels (their own callouts above already explain why), so this only
+        fires for a genuine subdivision/plat record that simply hasn't been
+        matched yet. Positioned here, before the stat grid, since everything
+        from the stat grid through the highlight reel below silently renders
+        nothing once parcels.length is 0 -- this is the one explanation for
+        all of it, so the empty-state message that used to repeat the same
+        idea at the bottom of the properties list has been removed as
+        redundant.
+      */}
+      {parcels.length === 0 && !isEstateOrParent && (
+        <div className="bg-surface-raised border border-surface-border rounded-lg p-6 text-center">
+          <p className="text-sm text-text-muted">
+            Not yet linked to any parcels.
+          </p>
+          <p className="text-xs text-text-muted mt-1">
+            This subdivision has not been matched to any properties yet. It may be a research
+            lead awaiting deed or GIS verification.
+          </p>
         </div>
       )}
 
@@ -476,12 +517,7 @@ export function SubdivisionDetailContent({
               </InlineSourceNote>
             </div>
           )
-        : !isEstateOrParent && (
-            <EmptyState
-              heading="No properties found"
-              body="Properties for this subdivision have not yet been matched. Deed research or GIS matching is still in progress."
-            />
-          )}
+        : null}
 
       {/* ---- 9. Related neighborhoods ---- */}
       {neighborhoods.length > 0 && (

@@ -1,5 +1,6 @@
 import type { SubdivisionFullDetail, SubdivisionHistoricalFact, SubdivisionResearchTask } from "@/lib/subdivisionTypes";
 import { statusLabel, confidencePlainText } from "@/lib/subdivisionTypes";
+import { confidenceDotClassFor as confidenceDotClass, confidenceTextClassFor as confidenceTextClass } from "@/lib/confidencePresentation";
 import {
   SourceIcon,
   SearchIcon,
@@ -41,34 +42,6 @@ function factTypeLabel(factType: string | null | undefined): string {
     newspaper: "Newspaper",
   };
   return labels[factType ?? ""] ?? (factType ?? "");
-}
-
-// ─── Confidence dot ───────────────────────────────────────────────────────────
-
-function confidenceDotClass(level: string | null | undefined): string {
-  switch (level) {
-    case "high":
-      return "bg-confidence-high";
-    case "medium":
-      return "bg-confidence-medium";
-    case "low":
-      return "bg-confidence-low";
-    default:
-      return "bg-confidence-unknown";
-  }
-}
-
-function confidenceTextClass(level: string | null | undefined): string {
-  switch (level) {
-    case "high":
-      return "text-confidence-high";
-    case "medium":
-      return "text-confidence-medium";
-    case "low":
-      return "text-confidence-low";
-    default:
-      return "text-confidence-unknown";
-  }
 }
 
 // ─── Status badge ─────────────────────────────────────────────────────────────

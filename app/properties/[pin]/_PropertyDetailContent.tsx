@@ -987,7 +987,16 @@ export function PropertyDetailContent({ pin, initialProps }: Props) {
               </section>
             ) : null}
 
-            {landAncestry && <LandAncestryPanel data={landAncestry} />}
+            {/*
+              Deed lineage (LandLineageSection above) is treated as primary
+              when present -- but a plain "Recorded plat" fallback card (shown
+              when landLineage is empty) carries no lot/block or spatial-
+              overlap data at all, so LandAncestryPanel's GIS-matched lot/
+              block and overlap percentage are the only source of that
+              information in that state. Only fully suppress this panel when
+              the richer LandLineageSection is actually present.
+            */}
+            {landAncestry && landLineage.length === 0 && <LandAncestryPanel data={landAncestry} />}
 
             {props.deed_notes && (
               <section>

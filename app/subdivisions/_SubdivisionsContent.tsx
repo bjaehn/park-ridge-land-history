@@ -8,6 +8,7 @@ import { DecadeGroup } from "@/components/ui/DecadeGroup";
 import { SearchIcon, YearBuiltIcon, PropertyIcon } from "@/lib/icons";
 import { formatCount } from "@/lib/formatters";
 import { getEraColor } from "@/lib/mapConfig";
+import { confidenceDotClassFor, confidenceShortLabelFor } from "@/lib/confidencePresentation";
 import type { SubdivisionSummary, SubdivisionConfidenceLevel } from "@/lib/subdivisionTypes";
 
 type Props = {
@@ -20,20 +21,6 @@ function entityTypeLabel(
   if (entityType === "estate") return "Estate";
   if (entityType === "parent_plat") return "Parent plat";
   return null;
-}
-
-function confidenceDotClass(level: SubdivisionConfidenceLevel): string {
-  if (level === "high") return "bg-confidence-high";
-  if (level === "medium") return "bg-confidence-medium";
-  if (level === "low") return "bg-confidence-low";
-  return "bg-confidence-unknown";
-}
-
-function shortConfidenceLabel(level: SubdivisionConfidenceLevel): string {
-  if (level === "high") return "Verified";
-  if (level === "medium") return "Sourced";
-  if (level === "low") return "Research lead";
-  return "Unknown source";
 }
 
 const CONFIDENCE_OPTIONS: Array<{
@@ -263,11 +250,11 @@ export function SubdivisionsContent({ subdivisions }: Props) {
               {
                 icon: (
                   <span
-                    className={`w-2 h-2 rounded-full shrink-0 ${confidenceDotClass(s.confidence_level)}`}
+                    className={`w-2 h-2 rounded-full shrink-0 ${confidenceDotClassFor(s.confidence_level)}`}
                     aria-hidden="true"
                   />
                 ),
-                value: shortConfidenceLabel(s.confidence_level),
+                value: confidenceShortLabelFor(s.confidence_level),
               },
             ].filter((x): x is MetaItem => x !== null);
 
