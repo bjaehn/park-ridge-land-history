@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import type { ReactNode } from "react";
 import { PermitActivityChart } from "@/components/ui/PermitActivityChart";
 import { EntityCard } from "@/components/ui/EntityCard";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { PermitIcon } from "@/lib/icons";
 import type { PermitActivityRow } from "@/lib/supabase/cityQueries";
 import { PERMIT_CATEGORIES, type PermitListRow } from "@/lib/supabase/permitQueries";
@@ -295,17 +296,12 @@ export function PermitsContent({ permits, mapSlot }: Props) {
 
   return (
     <div className="space-y-8">
-      {/* Compact header */}
-      <div className="flex items-start gap-3">
-        <PermitIcon size={22} strokeWidth={1.5} className="text-text-muted mt-1 shrink-0" aria-hidden="true" />
-        <div>
-          <p className="text-xs font-semibold text-text-muted tracking-widest uppercase mb-1">
-            Building activity
-          </p>
-          <h1 className="text-2xl font-bold text-text-primary">Permits</h1>
-          <p className="text-text-secondary text-sm mt-1">{statsLine}</p>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="Building activity"
+        icon={<PermitIcon size={22} strokeWidth={1.5} className="text-text-muted mt-1 shrink-0" aria-hidden="true" />}
+        title="Permits"
+        subtitle={statsLine}
+      />
 
       {/* Filter panel */}
       <div className="space-y-3">

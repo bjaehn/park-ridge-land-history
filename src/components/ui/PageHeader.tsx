@@ -6,6 +6,18 @@ type Props = {
   subtitle?: string;
   action?: ReactNode;
   icon?: ReactNode;
+  /** "hero" is for the homepage and section-index landing pages; every other page uses the default. */
+  variant?: "default" | "hero";
+};
+
+const TITLE_CLASSES: Record<"default" | "hero", string> = {
+  default: "text-2xl md:text-3xl font-bold text-text-primary leading-tight",
+  hero: "text-3xl md:text-4xl font-bold text-text-primary leading-tight",
+};
+
+const SUBTITLE_CLASSES: Record<"default" | "hero", string> = {
+  default: "mt-2 text-base text-text-secondary leading-relaxed",
+  hero: "mt-2 text-lg text-text-secondary leading-relaxed",
 };
 
 /**
@@ -13,7 +25,7 @@ type Props = {
  * Title casing and spacing are enforced here, not per page.
  * No em dashes allowed in any prop.
  */
-export function PageHeader({ eyebrow, title, subtitle, action, icon }: Props) {
+export function PageHeader({ eyebrow, title, subtitle, action, icon, variant = "default" }: Props) {
   return (
     <div className="flex items-start justify-between gap-6 mb-8">
       <div className="flex items-start gap-3 min-w-0">
@@ -24,11 +36,11 @@ export function PageHeader({ eyebrow, title, subtitle, action, icon }: Props) {
               {eyebrow}
             </p>
           )}
-          <h1 className="text-2xl md:text-3xl font-bold text-text-primary leading-tight">
+          <h1 className={TITLE_CLASSES[variant]}>
             {title}
           </h1>
           {subtitle && (
-            <p className="mt-2 text-base text-text-secondary leading-relaxed">
+            <p className={SUBTITLE_CLASSES[variant]}>
               {subtitle}
             </p>
           )}

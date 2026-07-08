@@ -9,6 +9,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import type { AppealsRow } from "@/lib/supabase/cityQueries";
+import { CHART_COLORS } from "@/lib/chartTheme";
 
 type Props = { data: AppealsRow[] };
 
@@ -17,15 +18,15 @@ export function AppealsChart({ data }: Props) {
   return (
     <ResponsiveContainer width="100%" height={220}>
       <BarChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: 8 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+        <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} />
         <XAxis
           dataKey="appealYear"
-          tick={{ fill: "#64748b", fontSize: 11 }}
+          tick={{ fill: CHART_COLORS.axisTick, fontSize: 11 }}
           axisLine={false}
           tickLine={false}
         />
         <YAxis
-          tick={{ fill: "#64748b", fontSize: 11 }}
+          tick={{ fill: CHART_COLORS.axisTick, fontSize: 11 }}
           axisLine={false}
           tickLine={false}
           width={40}
@@ -35,15 +36,15 @@ export function AppealsChart({ data }: Props) {
         />
         <Tooltip
           contentStyle={{
-            background: "#0f172a",
-            border: "1px solid #1e293b",
+            background: CHART_COLORS.tooltipBg,
+            border: `1px solid ${CHART_COLORS.tooltipBorder}`,
             borderRadius: "8px",
             fontSize: 12,
           }}
-          labelStyle={{ color: "#94a3b8" }}
+          labelStyle={{ color: CHART_COLORS.tooltipLabel }}
           formatter={(v) => [(typeof v === "number" ? v : 0).toLocaleString(), "Appeals filed"]}
         />
-        <Bar dataKey="appealCount" fill="#7c3aed" radius={[2, 2, 0, 0]} />
+        <Bar dataKey="appealCount" fill={CHART_COLORS.primary} radius={[2, 2, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );

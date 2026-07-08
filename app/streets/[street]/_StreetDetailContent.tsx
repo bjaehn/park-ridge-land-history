@@ -5,7 +5,8 @@ import { StatGrid } from "@/components/ui/StatGrid";
 import { EntityCard, UnresolvableEntityCard } from "@/components/ui/EntityCard";
 import { LoadingSkeleton, EmptyState } from "@/components/ui/EmptyState";
 import { HighlightReel } from "@/components/ui/HighlightReel";
-import { formatNumber, formatAddress } from "@/lib/formatters";
+import { DecadeGroup } from "@/components/ui/DecadeGroup";
+import { formatNumber, formatAddress, formatCount } from "@/lib/formatters";
 import { getEraColor } from "@/lib/mapConfig";
 import { getStreetDetail } from "@/lib/data/streets";
 import type { HighlightGroup } from "@/components/ui/HighlightReel";
@@ -75,63 +76,27 @@ export function StreetDetailContent({ streetName, displayName, mapSlot }: Props)
 
       <div>
         <h2 className="section-heading">All properties on {displayName}</h2>
-        {(() => {
-          const decadeMap = new Map<string, typeof detail.parcels>();
-          for (const p of detail.parcels) {
-            const key = p.yearBuilt ? `${Math.floor(p.yearBuilt / 10) * 10}s` : "Unknown";
-            if (!decadeMap.has(key)) decadeMap.set(key, []);
-            decadeMap.get(key)!.push(p);
+        <DecadeGroup
+          items={detail.parcels}
+          getYear={(p) => p.yearBuilt ?? null}
+          getKey={(p) => p.pin}
+          formatCount={(count) => formatCount(count, "property", "properties")}
+          renderItem={(p) =>
+            !p.address ? (
+              <UnresolvableEntityCard pin={p.pin} />
+            ) : (
+              <EntityCard
+                href={`/properties/${encodeURIComponent(p.pin)}`}
+                title={formatAddress(p.address)}
+                meta={p.yearBuilt ? `Built ${p.yearBuilt}` : undefined}
+                eraSwatch={getEraColor(p.yearBuilt)}
+                isTeardownRebuild={p.isTeardownRebuild}
+                teardownConfidence={p.teardownConfidence}
+                hasDeedNotes={p.hasDeedNotes}
+              />
+            )
           }
-          const decades = Array.from(decadeMap.entries()).sort(([a], [b]) => {
-            if (a === "Unknown") return 1;
-            if (b === "Unknown") return -1;
-            return parseInt(a) - parseInt(b);
-          });
-          return (
-            <div className="space-y-8">
-              {decades.map(([decade, group]) => {
-                const decadeYear = decade === "Unknown" ? null : parseInt(decade);
-                return (
-                  <div key={decade}>
-                    <div className="flex items-center gap-3 mb-3">
-                      <span
-                        className="w-2.5 h-2.5 rounded-full shrink-0"
-                        style={{ background: getEraColor(decadeYear) ?? "#64748b" }}
-                        aria-hidden="true"
-                      />
-                      <span className="text-sm font-semibold text-text-secondary tracking-wide">
-                        {decade === "Unknown" ? "Unknown era" : decade}
-                      </span>
-                      <div className="flex-1 border-t border-surface-border" />
-                      <span className="text-xs text-text-muted">
-                        {group.length} {group.length === 1 ? "property" : "properties"}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {group.map((p) => {
-                        if (!p.address) {
-                          return <UnresolvableEntityCard key={p.pin} pin={p.pin} />;
-                        }
-                        return (
-                          <EntityCard
-                            key={p.pin}
-                            href={`/properties/${encodeURIComponent(p.pin)}`}
-                            title={formatAddress(p.address)}
-                            meta={p.yearBuilt ? `Built ${p.yearBuilt}` : undefined}
-                            eraSwatch={getEraColor(p.yearBuilt)}
-                            isTeardownRebuild={p.isTeardownRebuild}
-                            teardownConfidence={p.teardownConfidence}
-                            hasDeedNotes={p.hasDeedNotes}
-                          />
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          );
-        })()}
+        />
       </div>
     </div>
   );

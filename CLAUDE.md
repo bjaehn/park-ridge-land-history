@@ -26,20 +26,30 @@ All discovery pages (city, neighborhood, street, subdivision, PIN group) MUST fo
 ## UI Style Conventions
 
 ### Decade grouping
-When grouping a list of items by construction decade, always use the pattern from
-`app/pin/[prefix]/_PinGroupContent.tsx` (lines 310–352). Never invent a new visual style for this.
+When grouping a list of items by construction decade, always use the shared
+`<DecadeGroup>` component (`src/components/ui/DecadeGroup.tsx`), backed by
+`src/lib/decadeGrouping.ts`'s `groupByDecade`/`groupByFixedBuckets`. Never
+reimplement the header row or bucketing logic per page.
 
-Structure:
+`<DecadeGroup>` owns:
 - Outer container: `space-y-8`
-- Header row: `flex items-center gap-3 mb-3` containing:
-  - Era color dot: `<span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: getEraColor(decadeYear) ?? "#64748b" }} aria-hidden="true" />`
-  - Decade label: `text-sm font-semibold text-text-secondary tracking-wide` — format as `"1990s"`, `"Unknown era"`
-  - Horizontal rule: `<div className="flex-1 border-t border-surface-border" />`
-  - Item count: `text-xs text-text-muted`
+- Header row: `flex items-center gap-3 mb-3` containing an era color dot
+  (`getEraColor()` from `src/lib/mapConfig.ts`, always rendered, `"#64748b"`
+  fallback), the decade label (`"1990s"`, or `"Unknown era"` for the unknown
+  bucket — never bare `"Unknown"`), a horizontal rule, and the item count.
 - Per-decade grid: `grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3`
-- Era colors: `getEraColor()` from `src/lib/mapConfig.ts`
-- Decade key: `p.year_built ? \`${Math.floor(p.year_built / 10) * 10}s\` : "Unknown"`
-- Sort: chronological ascending, `"Unknown"` always last
+- Decade key: `${Math.floor(year / 10) * 10}s`; sort chronological ascending,
+  unknown always last. Does not collapse pre-1900 years into a combined
+  bucket (that behavior is specific to the map legend's `formatDecade()`).
+
+Callers supply `items`, `getYear`, `getKey`, and a `renderItem` card-rendering
+callback (card shape varies too much across call sites — `meta` vs
+`metaItems`, `UnresolvableEntityCard` fallback, etc. — to be owned by the
+shared component). An optional `buckets` prop overrides the default
+single-decade bucketing with a fixed multi-decade scheme, used by the streets
+index (`app/streets/_StreetsContent.tsx`) for its 5-bucket era spans — treat
+that as a documented, intentional exception, not something to "fix" back to
+single-decade grouping.
 
 ### Teardown/rebuild badge
 Properties with `is_teardown_rebuild = true` display a `<TeardownBadge>` (amber/flame).

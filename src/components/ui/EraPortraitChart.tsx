@@ -1,3 +1,5 @@
+import { getEraColor } from "@/lib/mapConfig";
+
 type EraPortraitRow = {
   label: string;
   pre1920: number;
@@ -16,15 +18,20 @@ type EraPortraitRow = {
 
 type Props = { data: EraPortraitRow[] };
 
+// Each segment's color comes from getEraColor() at one representative year
+// per span, the same "one map-legend color per bucket" approach the streets
+// index uses for its own fixed multi-decade buckets. This makes every color
+// here traceable to the real per-decade ERA_PALETTE the map legend uses,
+// rather than a hand-picked palette with no relationship to it.
 const ERA_SEGMENTS = [
-  { key: "pre1920"  as const, label: "Pre-1920",  color: "#4c1d95" },
-  { key: "boom"     as const, label: "1920-1945",  color: "#7c3aed" },
-  { key: "postwar"  as const, label: "1946-1979",  color: "#0f766e" },
-  { key: "eighties" as const, label: "1980-1999",  color: "#e6a64a" },
-  { key: "aughts"   as const, label: "2000-2009",  color: "#c96a70" },
-  { key: "teens"    as const, label: "2010-2019",  color: "#a85f84" },
-  { key: "recent"   as const, label: "2020+",      color: "#6d617c" },
-];
+  { key: "pre1920"  as const, label: "Pre-1920",  repYear: 1910 },
+  { key: "boom"     as const, label: "1920-1945",  repYear: 1930 },
+  { key: "postwar"  as const, label: "1946-1979",  repYear: 1960 },
+  { key: "eighties" as const, label: "1980-1999",  repYear: 1985 },
+  { key: "aughts"   as const, label: "2000-2009",  repYear: 2005 },
+  { key: "teens"    as const, label: "2010-2019",  repYear: 2015 },
+  { key: "recent"   as const, label: "2020+",      repYear: 2025 },
+].map((segment) => ({ ...segment, color: getEraColor(segment.repYear) ?? "#64748b" }));
 
 export function EraPortraitChart({ data }: Props) {
   if (!data.length) return null;

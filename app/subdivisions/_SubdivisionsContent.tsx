@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { EntityCard } from "@/components/ui/EntityCard";
 import type { MetaItem } from "@/components/ui/EntityCard";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { DecadeGroup } from "@/components/ui/DecadeGroup";
 import { SearchIcon, YearBuiltIcon, PropertyIcon } from "@/lib/icons";
 import { formatCount } from "@/lib/formatters";
 import { getEraColor } from "@/lib/mapConfig";
@@ -91,23 +92,6 @@ export function SubdivisionsContent({ subdivisions }: Props) {
       return true;
     });
   }, [subdivisions, query, confidenceFilter, decadeFilter]);
-
-  const grouped = useMemo(() => {
-    const byDecade = new Map<string, SubdivisionSummary[]>();
-    filtered.forEach((s) => {
-      const key = s.earliest_year_built
-        ? `${Math.floor(s.earliest_year_built / 10) * 10}s`
-        : "Date unknown";
-      const arr = byDecade.get(key) ?? [];
-      arr.push(s);
-      byDecade.set(key, arr);
-    });
-    return Array.from(byDecade.entries()).sort(([a], [b]) => {
-      if (a === "Date unknown") return 1;
-      if (b === "Date unknown") return -1;
-      return a.localeCompare(b);
-    });
-  }, [filtered]);
 
   const isFiltered =
     query.trim().length >= 2 || confidenceFilter !== null || decadeFilter !== null;
@@ -222,109 +206,86 @@ export function SubdivisionsContent({ subdivisions }: Props) {
           body="Try a different name, developer, or remove a filter. Some subdivisions may not yet have full records."
         />
       ) : (
-        <div className="space-y-8">
-          {grouped.map(([decade, group]) => {
-            const decadeYear =
-              decade === "Date uncertain" ? null : parseInt(decade);
-            return (
-              <div key={decade} id={`decade-${decade.replace(/\s/g, "-")}`}>
-                <div className="flex items-center gap-3 mb-3">
+        <DecadeGroup
+          items={filtered}
+          getYear={(s) => s.earliest_year_built ?? null}
+          getKey={(s) => s.id}
+          formatLabel={(label) => (label === "Unknown era" ? label : `First built ${label}`)}
+          formatCount={(count) => formatCount(count, "plat", "plats")}
+          renderItem={(s) => {
+            const developer = s.original_owner ?? s.developer ?? null;
+            const parentName = s.parent_subdivision_id
+              ? (nameById.get(s.parent_subdivision_id) ?? null)
+              : null;
+            const typeLabel = entityTypeLabel(s.entity_type);
+
+            const metaItems: MetaItem[] = [
+              s.earliest_year_built
+                ? {
+                    icon: (
+                      <YearBuiltIcon
+                        size={11}
+                        strokeWidth={1.8}
+                        aria-hidden="true"
+                      />
+                    ),
+                    value: `First built ${s.earliest_year_built}`,
+                  }
+                : null,
+              s.recorded_year
+                ? {
+                    icon: (
+                      <YearBuiltIcon
+                        size={11}
+                        strokeWidth={1.8}
+                        aria-hidden="true"
+                      />
+                    ),
+                    value: `Recorded ${s.recorded_year}`,
+                  }
+                : null,
+              s.linked_parcel_count && s.linked_parcel_count > 0
+                ? {
+                    icon: (
+                      <PropertyIcon
+                        size={11}
+                        strokeWidth={1.8}
+                        aria-hidden="true"
+                      />
+                    ),
+                    value: formatCount(
+                      s.linked_parcel_count,
+                      "property",
+                      "properties"
+                    ),
+                  }
+                : null,
+              {
+                icon: (
                   <span
-                    className="w-2.5 h-2.5 rounded-full shrink-0"
-                    style={{
-                      background:
-                        getEraColor(decadeYear ?? undefined) ?? "#64748b",
-                    }}
+                    className={`w-2 h-2 rounded-full shrink-0 ${confidenceDotClass(s.confidence_level)}`}
                     aria-hidden="true"
                   />
-                  <span className="text-sm font-semibold text-text-secondary tracking-wide">
-                    {decadeYear ? `First built ${decade}` : decade}
-                  </span>
-                  <div className="flex-1 border-t border-surface-border" />
-                  <span className="text-xs text-text-muted">
-                    {formatCount(group.length, "plat", "plats")}
-                  </span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {group.map((s) => {
-                    const developer = s.original_owner ?? s.developer ?? null;
-                    const parentName = s.parent_subdivision_id
-                      ? (nameById.get(s.parent_subdivision_id) ?? null)
-                      : null;
-                    const typeLabel = entityTypeLabel(s.entity_type);
+                ),
+                value: shortConfidenceLabel(s.confidence_level),
+              },
+            ].filter((x): x is MetaItem => x !== null);
 
-                    const metaItems: MetaItem[] = [
-                      s.earliest_year_built
-                        ? {
-                            icon: (
-                              <YearBuiltIcon
-                                size={11}
-                                strokeWidth={1.8}
-                                aria-hidden="true"
-                              />
-                            ),
-                            value: `First built ${s.earliest_year_built}`,
-                          }
-                        : null,
-                      s.recorded_year
-                        ? {
-                            icon: (
-                              <YearBuiltIcon
-                                size={11}
-                                strokeWidth={1.8}
-                                aria-hidden="true"
-                              />
-                            ),
-                            value: `Recorded ${s.recorded_year}`,
-                          }
-                        : null,
-                      s.linked_parcel_count && s.linked_parcel_count > 0
-                        ? {
-                            icon: (
-                              <PropertyIcon
-                                size={11}
-                                strokeWidth={1.8}
-                                aria-hidden="true"
-                              />
-                            ),
-                            value: formatCount(
-                              s.linked_parcel_count,
-                              "property",
-                              "properties"
-                            ),
-                          }
-                        : null,
-                      {
-                        icon: (
-                          <span
-                            className={`w-2 h-2 rounded-full shrink-0 ${confidenceDotClass(s.confidence_level)}`}
-                            aria-hidden="true"
-                          />
-                        ),
-                        value: shortConfidenceLabel(s.confidence_level),
-                      },
-                    ].filter((x): x is MetaItem => x !== null);
-
-                    return (
-                      <EntityCard
-                        key={s.id}
-                        href={`/subdivisions/${encodeURIComponent(s.id)}`}
-                        eyebrow={typeLabel ?? undefined}
-                        title={s.name}
-                        subtitle={developer ?? undefined}
-                        meta={
-                          parentName ? `Part of ${parentName}` : undefined
-                        }
-                        metaItems={metaItems}
-                        eraSwatch={getEraColor(s.earliest_year_built) ?? undefined}
-                      />
-                    );
-                  })}
-                </div>
-              </div>
+            return (
+              <EntityCard
+                href={`/subdivisions/${encodeURIComponent(s.id)}`}
+                eyebrow={typeLabel ?? undefined}
+                title={s.name}
+                subtitle={developer ?? undefined}
+                meta={
+                  parentName ? `Part of ${parentName}` : undefined
+                }
+                metaItems={metaItems}
+                eraSwatch={getEraColor(s.earliest_year_built) ?? undefined}
+              />
             );
-          })}
-        </div>
+          }}
+        />
       )}
 
       {/* Caveat */}

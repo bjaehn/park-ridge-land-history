@@ -3,18 +3,21 @@
 import { useState, useMemo } from "react";
 import type { ReactNode } from "react";
 import { EntityCard } from "@/components/ui/EntityCard";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { DecadeGroup } from "@/components/ui/DecadeGroup";
+import { groupByFixedBuckets, type FixedBucketDef } from "@/lib/decadeGrouping";
 import { getEraColor } from "@/lib/mapConfig";
 import { StreetIcon } from "@/lib/icons";
 import type { StreetListRow } from "@/lib/data/streets";
 
-type EraBucket = {
-  key: string;
-  label: string;
-  repYear: number | null;
-  test: (medianYear: number | null) => boolean;
-};
-
-const ERA_BUCKETS: EraBucket[] = [
+// Streets are grouped into fixed multi-decade spans rather than single
+// decades -- 444 streets across ~190 years would otherwise produce a long
+// tail of near-empty single-decade groups. This is an intentional exception
+// to the default single-decade bucketing (see decadeGrouping.ts), expressed
+// through DecadeGroup's `buckets` override so it still shares the one
+// canonical header/grid rendering, not a copy-pasted reimplementation of it.
+const ERA_BUCKETS: FixedBucketDef[] = [
   {
     key: "pre1920",
     label: "Pre-1920s",
@@ -153,51 +156,33 @@ export function StreetsContent({ streets }: Props) {
   }, [filtered]);
 
   // ── Era groups ────────────────────────────────────────────────────────────
-  const eraGroups = useMemo(() => {
-    const toGroup = selectedEra
-      ? filtered.filter((s) => getStreetEraBucket(s.median_year) === selectedEra)
-      : filtered;
+  const toGroup = useMemo(
+    () =>
+      selectedEra
+        ? filtered.filter((s) => getStreetEraBucket(s.median_year) === selectedEra)
+        : filtered,
+    [filtered, selectedEra]
+  );
 
-    const byEra = new Map<string, StreetListRow[]>();
-    for (const bucket of ERA_BUCKETS) byEra.set(bucket.key, []);
-    for (const s of toGroup) {
-      byEra.get(getStreetEraBucket(s.median_year))?.push(s);
-    }
-
-    // Sort within each group: oldest_year ascending, nulls last
-    for (const list of byEra.values()) {
-      list.sort((a, b) => {
-        if (a.oldest_year == null && b.oldest_year == null) return 0;
-        if (a.oldest_year == null) return 1;
-        if (b.oldest_year == null) return -1;
-        return a.oldest_year - b.oldest_year;
-      });
-    }
-
-    return ERA_BUCKETS
-      .map((bucket) => ({ bucket, streets: byEra.get(bucket.key) ?? [] }))
-      .filter(({ streets }) => streets.length > 0);
-  }, [filtered, selectedEra]);
+  const eraGroups = useMemo(
+    () => groupByFixedBuckets(toGroup, (s) => s.median_year, ERA_BUCKETS),
+    [toGroup]
+  );
 
   const isFiltered = selectedNeighborhood != null || selectedEra != null;
-  const totalShown = eraGroups.reduce((sum, g) => sum + g.streets.length, 0);
+  const totalShown = eraGroups.reduce((sum, g) => sum + g.items.length, 0);
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-start gap-3">
-        <StreetIcon size={22} strokeWidth={1.5} className="text-text-muted mt-1 shrink-0" aria-hidden="true" />
-        <div>
-          <p className="text-xs font-semibold text-text-muted tracking-widest uppercase mb-1">
-            Park Ridge
-          </p>
-          <h1 className="text-2xl font-bold text-text-primary">Streets</h1>
-          <p className="text-text-secondary text-sm mt-1">{statsLine}</p>
-          <p className="text-text-muted text-xs mt-0.5">
-            Grouped by the era when most homes on each street were built.
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="Park Ridge"
+        icon={<StreetIcon size={22} strokeWidth={1.5} className="text-text-muted mt-1 shrink-0" aria-hidden="true" />}
+        title="Streets"
+        subtitle={statsLine}
+      />
+      <p className="text-text-muted text-xs -mt-6">
+        Grouped by the era when most homes on each street were built.
+      </p>
 
       {/* Filter panel */}
       <div className="space-y-3">
@@ -281,41 +266,16 @@ export function StreetsContent({ streets }: Props) {
 
       {/* Era groups */}
       {eraGroups.length === 0 ? (
-        <div className="text-center py-12 text-text-muted text-sm">
-          No streets match these filters.
-        </div>
+        <EmptyState heading="No streets match" body="Try a different filter." />
       ) : (
-        <div className="space-y-10">
-          {eraGroups.map(({ bucket, streets: group }) => {
-            const color = bucket.repYear
-              ? (getEraColor(bucket.repYear) ?? "#64748b")
-              : "#64748b";
-            return (
-              <div key={bucket.key}>
-                {/* Era section header — matches CLAUDE.md decade grouping pattern */}
-                <div className="flex items-center gap-3 mb-3">
-                  <span
-                    className="w-2.5 h-2.5 rounded-full shrink-0"
-                    style={{ background: color }}
-                    aria-hidden="true"
-                  />
-                  <span className="text-sm font-semibold text-text-secondary tracking-wide">
-                    {bucket.label}
-                  </span>
-                  <div className="flex-1 border-t border-surface-border" />
-                  <span className="text-xs text-text-muted">
-                    {group.length} {group.length === 1 ? "street" : "streets"}
-                  </span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {group.map((street) => (
-                    <StreetCard key={street.street_name_normalized} street={street} />
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <DecadeGroup
+          items={toGroup}
+          getYear={(s) => s.median_year}
+          getKey={(s) => s.street_name_normalized}
+          buckets={ERA_BUCKETS}
+          formatCount={(count) => `${count} ${count === 1 ? "street" : "streets"}`}
+          renderItem={(street) => <StreetCard street={street} />}
+        />
       )}
     </div>
   );

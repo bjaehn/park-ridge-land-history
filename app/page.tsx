@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { HOME_HERO_HEADLINE, HOME_HERO_SUBHEAD, COVERAGE_DISCLAIMER, CITY_NARRATIVE, CITY_NARRATIVE_SOURCE_NOTE } from "@/lib/content";
 import { InlineSourceNote } from "@/components/ui/SourceNote";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { HighlightReel } from "@/components/ui/HighlightReel";
 import { HomeSearch, HomeStats } from "./_components/HomeClientComponents";
 import { HighlightIcon } from "@/lib/icons";
@@ -25,12 +26,7 @@ export default function HomePage() {
     <div className="page-shell">
       {/* Hero + key facts */}
       <section className="py-12 md:py-16">
-        <h1 className="text-3xl md:text-4xl font-bold text-text-primary leading-tight mb-4">
-          {HOME_HERO_HEADLINE}
-        </h1>
-        <p className="text-lg text-text-secondary leading-relaxed mb-8">
-          {HOME_HERO_SUBHEAD}
-        </p>
+        <PageHeader variant="hero" title={HOME_HERO_HEADLINE} subtitle={HOME_HERO_SUBHEAD} />
         <HomeSearch />
         <div className="mt-8">
           <HomeStats />

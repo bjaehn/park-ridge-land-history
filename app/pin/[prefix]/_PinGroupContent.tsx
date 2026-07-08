@@ -7,6 +7,7 @@ import type { MetaItem } from "@/components/ui/EntityCard";
 import { EraPortraitChart } from "@/components/ui/EraPortraitChart";
 import { NeighborhoodPriceChart } from "@/components/ui/NeighborhoodPriceChart";
 import { LoadingSkeleton, EmptyState } from "@/components/ui/EmptyState";
+import { DecadeGroup } from "@/components/ui/DecadeGroup";
 import { InlineSourceNote } from "@/components/ui/SourceNote";
 import { PinScopedCharts } from "@/components/ui/PinScopedCharts";
 import { SaleIcon, YearBuiltIcon, SizeIcon, PermitIcon } from "@/lib/icons";
@@ -293,208 +294,98 @@ export function PinGroupContent({ prefix, initialDetail, mapSlot }: Props) {
 
         if (!blocks.length) return null;
 
-        const byDecade = new Map<string, typeof blocks>();
-        blocks.forEach((b) => {
-          const key = b.oldestYear ? `${Math.floor(b.oldestYear / 10) * 10}s` : "Unknown";
-          const arr = byDecade.get(key) ?? [];
-          arr.push(b);
-          byDecade.set(key, arr);
-        });
-        const decades = Array.from(byDecade.entries()).sort(([a], [b]) => {
-          if (a === "Unknown") return 1;
-          if (b === "Unknown") return -1;
-          return a.localeCompare(b);
-        });
-
         return (
           <div>
             <h2 className="section-heading">Blocks in this section</h2>
-            <div className="space-y-8">
-              {decades.map(([decade, decadeBlocks]) => {
-                const decadeYear = decade === "Unknown" ? null : parseInt(decade);
+            <DecadeGroup
+              items={blocks}
+              getYear={(b) => b.oldestYear}
+              getKey={(b) => b.blockPrefix}
+              renderItem={(b) => {
+                const yearRange = b.oldestYear && b.newestYear && b.oldestYear !== b.newestYear
+                  ? `${b.oldestYear}–${b.newestYear}`
+                  : b.oldestYear ? String(b.oldestYear) : null;
                 return (
-                  <div key={decade}>
-                    <div className="flex items-center gap-3 mb-3">
-                      {decadeYear && (
-                        <span
-                          className="w-2.5 h-2.5 rounded-full shrink-0"
-                          style={{ background: getEraColor(decadeYear) ?? "#64748b" }}
-                          aria-hidden="true"
-                        />
-                      )}
-                      <span className="text-sm font-semibold text-text-secondary tracking-wide">{decade}</span>
-                      <div className="flex-1 border-t border-surface-border" />
-                      <span className="text-xs text-text-muted">{decadeBlocks.length}</span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {decadeBlocks.map((b) => {
-                        const yearRange = b.oldestYear && b.newestYear && b.oldestYear !== b.newestYear
-                          ? `${b.oldestYear}–${b.newestYear}`
-                          : b.oldestYear ? String(b.oldestYear) : null;
-                        return (
-                          <EntityCard
-                            key={b.blockPrefix}
-                            href={`/pin/${encodeURIComponent(b.blockPrefix)}`}
-                            eyebrow="Block"
-                            title={`Block ${b.blockSegment}`}
-                            meta={[
-                              `${formatNumber(b.count)} ${b.count === 1 ? "property" : "properties"}`,
-                              yearRange ? `Built ${yearRange}` : undefined,
-                            ].filter(Boolean).join(" · ") || undefined}
-                            eraSwatch={getEraColor(b.oldestYear)}
-                          />
-                        );
-                      })}
-                    </div>
-                  </div>
+                  <EntityCard
+                    href={`/pin/${encodeURIComponent(b.blockPrefix)}`}
+                    eyebrow="Block"
+                    title={`Block ${b.blockSegment}`}
+                    meta={[
+                      `${formatNumber(b.count)} ${b.count === 1 ? "property" : "properties"}`,
+                      yearRange ? `Built ${yearRange}` : undefined,
+                    ].filter(Boolean).join(" · ") || undefined}
+                    eraSwatch={getEraColor(b.oldestYear)}
+                  />
                 );
-              })}
-            </div>
+              }}
+            />
           </div>
         );
       })()}
 
       {/* Block: decade timeline */}
-      {detail.level === "Block" && (() => {
-        const sorted = [...parcels].sort((a, b) => {
-          if (!a.yearBuilt && !b.yearBuilt) return 0;
-          if (!a.yearBuilt) return 1;
-          if (!b.yearBuilt) return -1;
-          return a.yearBuilt - b.yearBuilt;
-        });
-        const byDecade = new Map<string, typeof sorted>();
-        sorted.forEach((p) => {
-          const key = p.yearBuilt ? `${Math.floor(p.yearBuilt / 10) * 10}s` : "Unknown";
-          const arr = byDecade.get(key) ?? [];
-          arr.push(p);
-          byDecade.set(key, arr);
-        });
-        const decades = Array.from(byDecade.entries()).sort(([a], [b]) => {
-          if (a === "Unknown") return 1;
-          if (b === "Unknown") return -1;
-          return a.localeCompare(b);
-        });
-        if (!decades.length) return null;
-        return (
-          <div>
-            <h2 className="section-heading">Properties by decade</h2>
-            <div className="space-y-8">
-              {decades.map(([decade, props]) => {
-                const decadeYear = decade === "Unknown" ? null : parseInt(decade);
-                return (
-                  <div key={decade}>
-                    <div className="flex items-center gap-3 mb-3">
-                      {decadeYear && (
-                        <span
-                          className="w-2.5 h-2.5 rounded-full shrink-0"
-                          style={{ background: getEraColor(decadeYear) ?? "#64748b" }}
-                          aria-hidden="true"
-                        />
-                      )}
-                      <span className="text-sm font-semibold text-text-secondary tracking-wide">{decade}</span>
-                      <div className="flex-1 border-t border-surface-border" />
-                      <span className="text-xs text-text-muted">{props.length}</span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {props.map((p) => {
-                        if (!p.address) return <UnresolvableEntityCard key={p.pin} pin={p.pin} />;
-                        return (
-                          <EntityCard
-                            key={p.pin}
-                            href={`/properties/${encodeURIComponent(p.pin)}`}
-                            title={formatAddress(p.address)}
-                            metaItems={[
-                              p.yearBuilt    ? { icon: <YearBuiltIcon size={11} />, value: String(p.yearBuilt) } : null,
-                              p.buildingSqft ? { icon: <SizeIcon size={11} />,     value: `${formatNumber(p.buildingSqft)} sqft` } : null,
-                              p.saleCount    ? { icon: <SaleIcon size={11} />,     value: `${p.saleCount} sales` } : null,
-                              p.permitCount  ? { icon: <PermitIcon size={11} />,   value: `${p.permitCount} permits` } : null,
-                            ].filter((x): x is MetaItem => x !== null)}
-                            eraSwatch={getEraColor(p.yearBuilt)}
-                            isTeardownRebuild={p.isTeardownRebuild}
-                            teardownConfidence={p.teardownConfidence}
-                            hasDeedNotes={p.hasDeedNotes}
-                          />
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })()}
+      {detail.level === "Block" && parcels.length > 0 && (
+        <div>
+          <h2 className="section-heading">Properties by decade</h2>
+          <DecadeGroup
+            items={parcels}
+            getYear={(p) => p.yearBuilt}
+            getKey={(p) => p.pin}
+            renderItem={(p) =>
+              !p.address ? (
+                <UnresolvableEntityCard pin={p.pin} />
+              ) : (
+                <EntityCard
+                  href={`/properties/${encodeURIComponent(p.pin)}`}
+                  title={formatAddress(p.address)}
+                  metaItems={[
+                    p.yearBuilt    ? { icon: <YearBuiltIcon size={11} />, value: String(p.yearBuilt) } : null,
+                    p.buildingSqft ? { icon: <SizeIcon size={11} />,     value: `${formatNumber(p.buildingSqft)} sqft` } : null,
+                    p.saleCount    ? { icon: <SaleIcon size={11} />,     value: `${p.saleCount} sales` } : null,
+                    p.permitCount  ? { icon: <PermitIcon size={11} />,   value: `${p.permitCount} permits` } : null,
+                  ].filter((x): x is MetaItem => x !== null)}
+                  eraSwatch={getEraColor(p.yearBuilt)}
+                  isTeardownRebuild={p.isTeardownRebuild}
+                  teardownConfidence={p.teardownConfidence}
+                  hasDeedNotes={p.hasDeedNotes}
+                />
+              )
+            }
+          />
+        </div>
+      )}
 
       {/* Section: properties by decade */}
-      {detail.level === "Section" && (() => {
-        const sorted = [...parcels].sort((a, b) => {
-          if (!a.yearBuilt && !b.yearBuilt) return 0;
-          if (!a.yearBuilt) return 1;
-          if (!b.yearBuilt) return -1;
-          return a.yearBuilt - b.yearBuilt;
-        });
-        const byDecade = new Map<string, typeof sorted>();
-        sorted.forEach((p) => {
-          const key = p.yearBuilt ? `${Math.floor(p.yearBuilt / 10) * 10}s` : "Unknown";
-          const arr = byDecade.get(key) ?? [];
-          arr.push(p);
-          byDecade.set(key, arr);
-        });
-        const decades = Array.from(byDecade.entries()).sort(([a], [b]) => {
-          if (a === "Unknown") return 1;
-          if (b === "Unknown") return -1;
-          return a.localeCompare(b);
-        });
-        if (!decades.length) return null;
-        return (
-          <div>
-            <h2 className="section-heading">Properties in this section</h2>
-            <div className="space-y-8">
-              {decades.map(([decade, props]) => {
-                const decadeYear = decade === "Unknown" ? null : parseInt(decade);
-                return (
-                  <div key={decade}>
-                    <div className="flex items-center gap-3 mb-3">
-                      {decadeYear && (
-                        <span
-                          className="w-2.5 h-2.5 rounded-full shrink-0"
-                          style={{ background: getEraColor(decadeYear) ?? "#64748b" }}
-                          aria-hidden="true"
-                        />
-                      )}
-                      <span className="text-sm font-semibold text-text-secondary tracking-wide">{decade}</span>
-                      <div className="flex-1 border-t border-surface-border" />
-                      <span className="text-xs text-text-muted">{props.length}</span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {props.map((p) => {
-                        if (!p.address) return <UnresolvableEntityCard key={p.pin} pin={p.pin} />;
-                        return (
-                          <EntityCard
-                            key={p.pin}
-                            href={`/properties/${encodeURIComponent(p.pin)}`}
-                            title={formatAddress(p.address)}
-                            metaItems={[
-                              p.yearBuilt    ? { icon: <YearBuiltIcon size={11} />, value: String(p.yearBuilt) } : null,
-                              p.buildingSqft ? { icon: <SizeIcon size={11} />,     value: `${formatNumber(p.buildingSqft)} sqft` } : null,
-                              p.saleCount    ? { icon: <SaleIcon size={11} />,     value: `${p.saleCount} sales` } : null,
-                              p.permitCount  ? { icon: <PermitIcon size={11} />,   value: `${p.permitCount} permits` } : null,
-                            ].filter((x): x is MetaItem => x !== null)}
-                            eraSwatch={getEraColor(p.yearBuilt)}
-                            isTeardownRebuild={p.isTeardownRebuild}
-                            teardownConfidence={p.teardownConfidence}
-                            hasDeedNotes={p.hasDeedNotes}
-                          />
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })()}
+      {detail.level === "Section" && parcels.length > 0 && (
+        <div>
+          <h2 className="section-heading">Properties in this section</h2>
+          <DecadeGroup
+            items={parcels}
+            getYear={(p) => p.yearBuilt}
+            getKey={(p) => p.pin}
+            renderItem={(p) =>
+              !p.address ? (
+                <UnresolvableEntityCard pin={p.pin} />
+              ) : (
+                <EntityCard
+                  href={`/properties/${encodeURIComponent(p.pin)}`}
+                  title={formatAddress(p.address)}
+                  metaItems={[
+                    p.yearBuilt    ? { icon: <YearBuiltIcon size={11} />, value: String(p.yearBuilt) } : null,
+                    p.buildingSqft ? { icon: <SizeIcon size={11} />,     value: `${formatNumber(p.buildingSqft)} sqft` } : null,
+                    p.saleCount    ? { icon: <SaleIcon size={11} />,     value: `${p.saleCount} sales` } : null,
+                    p.permitCount  ? { icon: <PermitIcon size={11} />,   value: `${p.permitCount} permits` } : null,
+                  ].filter((x): x is MetaItem => x !== null)}
+                  eraSwatch={getEraColor(p.yearBuilt)}
+                  isTeardownRebuild={p.isTeardownRebuild}
+                  teardownConfidence={p.teardownConfidence}
+                  hasDeedNotes={p.hasDeedNotes}
+                />
+              )
+            }
+          />
+        </div>
+      )}
     </div>
   );
 }

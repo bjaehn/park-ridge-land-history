@@ -10,6 +10,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import type { AssessmentTrendRow } from "@/lib/supabase/cityQueries";
+import { CHART_COLORS } from "@/lib/chartTheme";
 
 const REASSESSMENT_YEARS = [2004, 2007, 2010, 2013, 2016, 2019, 2022, 2025];
 
@@ -26,20 +27,20 @@ export function AssessmentTrendChart({ data }: Props) {
       <AreaChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: 8 }}>
         <defs>
           <linearGradient id="assessGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#a78bfa" stopOpacity={0.25} />
-            <stop offset="95%" stopColor="#a78bfa" stopOpacity={0} />
+            <stop offset="5%" stopColor={CHART_COLORS.primary} stopOpacity={0.25} />
+            <stop offset="95%" stopColor={CHART_COLORS.primary} stopOpacity={0} />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+        <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} />
         <XAxis
           dataKey="assessmentYear"
-          tick={{ fill: "#64748b", fontSize: 11 }}
+          tick={{ fill: CHART_COLORS.axisTick, fontSize: 11 }}
           axisLine={false}
           tickLine={false}
         />
         <YAxis
           tickFormatter={formatK}
-          tick={{ fill: "#64748b", fontSize: 11 }}
+          tick={{ fill: CHART_COLORS.axisTick, fontSize: 11 }}
           axisLine={false}
           tickLine={false}
           width={48}
@@ -48,25 +49,25 @@ export function AssessmentTrendChart({ data }: Props) {
           <ReferenceLine
             key={yr}
             x={yr}
-            stroke="#334155"
+            stroke={CHART_COLORS.secondary}
             strokeDasharray="4 2"
-            label={{ value: "reassess", fill: "#475569", fontSize: 9, position: "top" }}
+            label={{ value: "reassess", fill: CHART_COLORS.secondary, fontSize: 9, position: "top" }}
           />
         ))}
         <Tooltip
           contentStyle={{
-            background: "#0f172a",
-            border: "1px solid #1e293b",
+            background: CHART_COLORS.tooltipBg,
+            border: `1px solid ${CHART_COLORS.tooltipBorder}`,
             borderRadius: "8px",
             fontSize: 12,
           }}
-          labelStyle={{ color: "#94a3b8" }}
+          labelStyle={{ color: CHART_COLORS.tooltipLabel }}
           formatter={(v) => [formatK(typeof v === "number" ? v : 0), "Avg assessed value"]}
         />
         <Area
           type="monotone"
           dataKey="avgTotal"
-          stroke="#a78bfa"
+          stroke={CHART_COLORS.primary}
           strokeWidth={2}
           fill="url(#assessGrad)"
           dot={false}

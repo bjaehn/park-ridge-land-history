@@ -11,6 +11,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import type { AssessmentPoint } from "@/lib/data/properties";
+import { CHART_COLORS } from "@/lib/chartTheme";
 
 function formatK(v: number) {
   return `$${(v / 1000).toFixed(0)}K`;
@@ -42,20 +43,20 @@ export function AssessmentChart({ timeline, appealYears, totalReduction }: Props
         <AreaChart data={points} margin={{ top: 4, right: 8, bottom: 0, left: 8 }}>
           <defs>
             <linearGradient id="propAssessGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#a78bfa" stopOpacity={0.25} />
-              <stop offset="95%" stopColor="#a78bfa" stopOpacity={0} />
+              <stop offset="5%" stopColor={CHART_COLORS.primary} stopOpacity={0.25} />
+              <stop offset="95%" stopColor={CHART_COLORS.primary} stopOpacity={0} />
             </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+          <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} />
           <XAxis
             dataKey="year"
-            tick={{ fill: "#64748b", fontSize: 11 }}
+            tick={{ fill: CHART_COLORS.axisTick, fontSize: 11 }}
             axisLine={false}
             tickLine={false}
           />
           <YAxis
             tickFormatter={formatK}
-            tick={{ fill: "#64748b", fontSize: 11 }}
+            tick={{ fill: CHART_COLORS.axisTick, fontSize: 11 }}
             axisLine={false}
             tickLine={false}
             width={56}
@@ -64,29 +65,29 @@ export function AssessmentChart({ timeline, appealYears, totalReduction }: Props
             <ReferenceLine
               key={yr}
               x={yr}
-              stroke="#d97706"
+              stroke={CHART_COLORS.nonMarketOrAppeal}
               strokeDasharray="3 3"
               strokeOpacity={0.8}
-              label={{ value: "appeal", fill: "#d97706", fontSize: 9, position: "top" }}
+              label={{ value: "appeal", fill: CHART_COLORS.nonMarketOrAppeal, fontSize: 9, position: "top" }}
             />
           ))}
           <Tooltip
             contentStyle={{
-              background: "#0f172a",
-              border: "1px solid #1e293b",
+              background: CHART_COLORS.tooltipBg,
+              border: `1px solid ${CHART_COLORS.tooltipBorder}`,
               borderRadius: "8px",
               fontSize: 12,
             }}
-            labelStyle={{ color: "#94a3b8" }}
+            labelStyle={{ color: CHART_COLORS.tooltipLabel }}
             formatter={(v) => [formatPrice(typeof v === "number" ? v : 0), "Assessed value"]}
           />
           <Area
             type="monotone"
             dataKey="value"
-            stroke="#a78bfa"
+            stroke={CHART_COLORS.primary}
             strokeWidth={2}
             fill="url(#propAssessGrad)"
-            dot={{ fill: "#a78bfa", r: 3 }}
+            dot={{ fill: CHART_COLORS.primary, r: 3 }}
             activeDot={{ r: 5 }}
           />
         </AreaChart>

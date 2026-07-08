@@ -1,5 +1,6 @@
 import { SubdivisionIcon } from "@/lib/icons";
 import { formatCount } from "@/lib/formatters";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 type Props = {
   totalCount: number;
@@ -8,22 +9,12 @@ type Props = {
 export function SubdivisionsHero({ totalCount }: Props) {
   return (
     <div className="mb-10">
-      <div className="flex items-start gap-3 mb-4">
-        <SubdivisionIcon
-          size={22}
-          strokeWidth={1.5}
-          className="text-text-muted mt-1 shrink-0"
-          aria-hidden="true"
-        />
-        <div>
-          <h1 className="text-3xl font-bold text-text-primary tracking-tight">
-            Park Ridge Subdivisions
-          </h1>
-          <p className="text-lg text-text-secondary mt-1 leading-relaxed">
-            The recorded plats that created Park Ridge's lots, blocks, streets, and homes.
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        variant="hero"
+        icon={<SubdivisionIcon size={22} strokeWidth={1.5} className="text-text-muted mt-1 shrink-0" aria-hidden="true" />}
+        title="Park Ridge Subdivisions"
+        subtitle="The recorded plats that created Park Ridge's lots, blocks, streets, and homes."
+      />
 
       <div className="space-y-3 mb-6">
         <p className="text-sm text-text-secondary leading-relaxed">

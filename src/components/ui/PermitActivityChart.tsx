@@ -10,6 +10,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import type { PermitActivityRow } from "@/lib/supabase/cityQueries";
+import { CHART_COLORS } from "@/lib/chartTheme";
 
 type Props = {
   data: PermitActivityRow[];
@@ -44,27 +45,27 @@ export function PermitActivityChart({
         onClick={onYearClick ? (payload) => handleClick(payload as Record<string, unknown>) : undefined}
         style={onYearClick ? { cursor: "pointer" } : undefined}
       >
-        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+        <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} />
         <XAxis
           dataKey="permitYear"
-          tick={{ fill: "#64748b", fontSize: 11 }}
+          tick={{ fill: CHART_COLORS.axisTick, fontSize: 11 }}
           axisLine={false}
           tickLine={false}
         />
         <YAxis
-          tick={{ fill: "#64748b", fontSize: 11 }}
+          tick={{ fill: CHART_COLORS.axisTick, fontSize: 11 }}
           axisLine={false}
           tickLine={false}
           width={36}
         />
         <Tooltip
           contentStyle={{
-            background: "#0f172a",
-            border: "1px solid #1e293b",
+            background: CHART_COLORS.tooltipBg,
+            border: `1px solid ${CHART_COLORS.tooltipBorder}`,
             borderRadius: "8px",
             fontSize: 12,
           }}
-          labelStyle={{ color: "#94a3b8" }}
+          labelStyle={{ color: CHART_COLORS.tooltipLabel }}
           cursor={{ fill: "rgba(255,255,255,0.04)" }}
         />
         <Bar
@@ -76,7 +77,7 @@ export function PermitActivityChart({
           {data.map((entry) => (
             <Cell
               key={`res-${entry.permitYear}`}
-              fill={!hasSelection || entry.permitYear === selectedYear ? "#a78bfa" : "#a78bfa30"}
+              fill={!hasSelection || entry.permitYear === selectedYear ? CHART_COLORS.primary : CHART_COLORS.primaryMuted}
             />
           ))}
         </Bar>
@@ -90,7 +91,7 @@ export function PermitActivityChart({
             {data.map((entry) => (
               <Cell
                 key={`com-${entry.permitYear}`}
-                fill={!hasSelection || entry.permitYear === selectedYear ? "#475569" : "#47556930"}
+                fill={!hasSelection || entry.permitYear === selectedYear ? CHART_COLORS.secondary : CHART_COLORS.secondaryMuted}
               />
             ))}
           </Bar>

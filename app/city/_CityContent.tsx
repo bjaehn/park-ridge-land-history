@@ -109,7 +109,9 @@ export function CityContent({ mapSlot }: { mapSlot?: React.ReactNode }) {
         </div>
       )}
 
+      <hr className="border-surface-border" />
       <CommunityProfilePanel />
+      <hr className="border-surface-border" />
 
       <StatGrid columns={4} stats={statItems.slice(0, 4)} />
 

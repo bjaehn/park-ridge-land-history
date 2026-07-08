@@ -8,6 +8,7 @@ import { EntityCard, UnresolvableEntityCard } from "@/components/ui/EntityCard";
 import type { MetaItem } from "@/components/ui/EntityCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { HighlightReel } from "@/components/ui/HighlightReel";
+import { DecadeGroup } from "@/components/ui/DecadeGroup";
 import { InlineSourceNote } from "@/components/ui/SourceNote";
 import { MarketHistoryChart } from "@/components/ui/MarketHistoryChart";
 import {
@@ -211,12 +212,28 @@ export function SubdivisionDetailContent({
               key={w}
               className="flex items-start gap-2 text-xs text-text-muted rounded-lg border border-surface-border bg-surface-raised px-3 py-2"
             >
-              <WarningIcon size={12} className="mt-0.5 shrink-0 text-amber-500" aria-hidden="true" />
+              <WarningIcon size={12} className="mt-0.5 shrink-0 text-accent-amber" aria-hidden="true" />
               <span>{w}</span>
             </div>
           ))}
         </div>
       )}
+
+      {/*
+        Numbered comments below (1-10) mark this page's canonical section
+        order per CLAUDE.md. The parent-subdivision/estate and quality-warning
+        callouts above this point, and the "Development timing note" between
+        sections 2 and 3, are page-specific contextual panels placed at their
+        most logical position -- they are deliberately unnumbered, not a
+        numbering oversight.
+
+        No median-sale-price, two-year comparison chart exists here, unlike
+        neighborhood/PIN-group pages: it was deliberately removed from
+        subdivision-adjacent surfaces before (see sectionOrder.test.ts), since
+        most subdivisions' small and inconsistent parcel counts make a
+        two-bar comparison noisy rather than informative. This is a documented
+        exemption, not a gap to fill back in.
+      */}
 
       {/* ---- 1. Stat grid ---- */}
       {statItems.length > 0 && <StatGrid columns={columns} stats={statItems} />}
@@ -337,17 +354,7 @@ export function SubdivisionDetailContent({
         </div>
       )}
 
-      {/* ---- 6. Highlight reel ---- */}
-      {parcels.length > 0 && (
-        <HighlightReel
-          scope="subdivision"
-          scopeId={subdivisionId}
-          groups={SUBDIVISION_HIGHLIGHTS}
-          limit={5}
-        />
-      )}
-
-      {/* ---- 7. Home sales market history ---- */}
+      {/* ---- 6. Home sales market history ---- */}
       {marketHistory.length > 0 && (
         <section>
           <div className="flex items-center gap-2 mb-3">
@@ -372,134 +379,103 @@ export function SubdivisionDetailContent({
         </section>
       )}
 
+      {/* ---- 7. Highlight reel ---- */}
+      {parcels.length > 0 && (
+        <HighlightReel
+          scope="subdivision"
+          scopeId={subdivisionId}
+          groups={SUBDIVISION_HIGHLIGHTS}
+          limit={5}
+        />
+      )}
+
       {/* ---- 8. Properties list (grouped by decade) ---- */}
       {parcels.length > 0
-        ? (() => {
-            const byDecade = new Map<string, typeof parcels>();
-            [...parcels].forEach((p) => {
-              const key = p.year_built
-                ? `${Math.floor(p.year_built / 10) * 10}s`
-                : "Unknown";
-              const arr = byDecade.get(key) ?? [];
-              arr.push(p);
-              byDecade.set(key, arr);
-            });
-            const decades = Array.from(byDecade.entries()).sort(([a], [b]) => {
-              if (a === "Unknown") return 1;
-              if (b === "Unknown") return -1;
-              return a.localeCompare(b);
-            });
-            return (
-              <div>
-                <h2 className="section-heading">Properties in this subdivision</h2>
-                <p className="text-sm text-text-muted mb-4">
-                  Properties are assigned based on available deed research and GIS lot matching.
-                  Assignment confidence varies by record.
-                </p>
-                {teardownCount > 0 && (
-                  <div className="mb-4 flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700">
-                    <span aria-hidden="true">🔥</span>
-                    <span>
-                      <strong>{teardownCount}</strong> of {parcels.length} lots in this
-                      subdivision{" "}
-                      {teardownCount === 1 ? "has" : "have"} been torn down and rebuilt since
-                      1990.
-                    </span>
-                  </div>
-                )}
-                <div className="space-y-8">
-                  {decades.map(([decade, group]) => {
-                    const decadeYear =
-                      decade === "Unknown" ? null : parseInt(decade);
-                    return (
-                      <div key={decade}>
-                        <div className="flex items-center gap-3 mb-3">
-                          <span
-                            className="w-2.5 h-2.5 rounded-full shrink-0"
-                            style={{
-                              background:
-                                getEraColor(decadeYear ?? undefined) ?? "#64748b",
-                            }}
-                            aria-hidden="true"
-                          />
-                          <span className="text-sm font-semibold text-text-secondary tracking-wide">
-                            {decade === "Unknown" ? "Unknown era" : decade}
-                          </span>
-                          <div className="flex-1 border-t border-surface-border" />
-                          <span className="text-xs text-text-muted">{group.length}</span>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                          {group.map((p) => {
-                            const lotLabel =
-                              p.lot_number && p.block_number
-                                ? `Lot ${p.lot_number}, Block ${p.block_number}`
-                                : p.lot_number
-                                ? `Lot ${p.lot_number}`
-                                : undefined;
-                            const multiLotSuffix =
-                              p.lot_count && p.lot_count > 1
-                                ? ` (+${p.lot_count - 1} more lot${p.lot_count > 2 ? "s" : ""})`
-                                : "";
-                            if (!p.address) {
-                              return (
-                                <UnresolvableEntityCard key={p.pin} pin={p.pin} />
-                              );
-                            }
-                            return (
-                              <EntityCard
-                                key={p.pin}
-                                href={`/properties/${encodeURIComponent(p.pin)}`}
-                                title={formatAddress(p.address)}
-                                meta={
-                                  lotLabel
-                                    ? `${lotLabel}${multiLotSuffix}`
-                                    : undefined
-                                }
-                                metaItems={[
-                                  p.year_built
-                                    ? {
-                                        icon: <YearBuiltIcon size={11} />,
-                                        value: String(p.year_built),
-                                      }
-                                    : null,
-                                  p.building_sqft
-                                    ? {
-                                        icon: <SizeIcon size={11} />,
-                                        value: `${formatNumber(p.building_sqft)} sqft`,
-                                      }
-                                    : null,
-                                  p.sale_count
-                                    ? {
-                                        icon: <SaleIcon size={11} />,
-                                        value: `${p.sale_count} sales`,
-                                      }
-                                    : null,
-                                  p.permit_count
-                                    ? {
-                                        icon: <PermitIcon size={11} />,
-                                        value: `${p.permit_count} permits`,
-                                      }
-                                    : null,
-                                ].filter((x): x is MetaItem => x !== null)}
-                                eraSwatch={getEraColor(p.year_built)}
-                                isTeardownRebuild={p.is_teardown_rebuild}
-                                teardownConfidence={p.teardown_confidence}
-                                hasDeedNotes={p.has_deed_research}
-                              />
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
+        ? (
+            <div>
+              <h2 className="section-heading">Properties in this subdivision</h2>
+              <p className="text-sm text-text-muted mb-4">
+                Properties are assigned based on available deed research and GIS lot matching.
+                Assignment confidence varies by record.
+              </p>
+              {teardownCount > 0 && (
+                <div className="mb-4 flex items-start gap-2 rounded-lg border border-accent-amber/30 bg-accent-amber/10 px-4 py-3 text-sm text-accent-amber">
+                  <span aria-hidden="true">🔥</span>
+                  <span>
+                    <strong>{teardownCount}</strong> of {parcels.length} lots in this
+                    subdivision{" "}
+                    {teardownCount === 1 ? "has" : "have"} been torn down and rebuilt since
+                    1990.
+                  </span>
                 </div>
-                <InlineSourceNote className="mt-3">
-                  GIS-matched parcels and deed-verified lot records. Lot and block numbers from
-                  Cook County GIS Lots layer or deed research.
-                </InlineSourceNote>
-              </div>
-            );
-          })()
+              )}
+              <DecadeGroup
+                items={parcels}
+                getYear={(p) => p.year_built ?? null}
+                getKey={(p) => p.pin}
+                renderItem={(p) => {
+                  const lotLabel =
+                    p.lot_number && p.block_number
+                      ? `Lot ${p.lot_number}, Block ${p.block_number}`
+                      : p.lot_number
+                      ? `Lot ${p.lot_number}`
+                      : undefined;
+                  const multiLotSuffix =
+                    p.lot_count && p.lot_count > 1
+                      ? ` (+${p.lot_count - 1} more lot${p.lot_count > 2 ? "s" : ""})`
+                      : "";
+                  if (!p.address) {
+                    return <UnresolvableEntityCard pin={p.pin} />;
+                  }
+                  return (
+                    <EntityCard
+                      href={`/properties/${encodeURIComponent(p.pin)}`}
+                      title={formatAddress(p.address)}
+                      meta={
+                        lotLabel
+                          ? `${lotLabel}${multiLotSuffix}`
+                          : undefined
+                      }
+                      metaItems={[
+                        p.year_built
+                          ? {
+                              icon: <YearBuiltIcon size={11} />,
+                              value: String(p.year_built),
+                            }
+                          : null,
+                        p.building_sqft
+                          ? {
+                              icon: <SizeIcon size={11} />,
+                              value: `${formatNumber(p.building_sqft)} sqft`,
+                            }
+                          : null,
+                        p.sale_count
+                          ? {
+                              icon: <SaleIcon size={11} />,
+                              value: `${p.sale_count} sales`,
+                            }
+                          : null,
+                        p.permit_count
+                          ? {
+                              icon: <PermitIcon size={11} />,
+                              value: `${p.permit_count} permits`,
+                            }
+                          : null,
+                      ].filter((x): x is MetaItem => x !== null)}
+                      eraSwatch={getEraColor(p.year_built)}
+                      isTeardownRebuild={p.is_teardown_rebuild}
+                      teardownConfidence={p.teardown_confidence}
+                      hasDeedNotes={p.has_deed_research}
+                    />
+                  );
+                }}
+              />
+              <InlineSourceNote className="mt-3">
+                GIS-matched parcels and deed-verified lot records. Lot and block numbers from
+                Cook County GIS Lots layer or deed research.
+              </InlineSourceNote>
+            </div>
+          )
         : !isEstateOrParent && (
             <EmptyState
               heading="No properties found"
@@ -545,7 +521,7 @@ export function SubdivisionDetailContent({
         </section>
       )}
 
-      {/* ---- 11. Sources and confidence panel ---- */}
+      {/* ---- 10. Sources and confidence panel ---- */}
       {sources.length > 0 && (
         <section>
           <div className="flex items-center gap-2 mb-3">
