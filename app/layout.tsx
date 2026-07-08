@@ -31,7 +31,7 @@ export default function RootLayout({
         </a>
         <ConditionalTopNav />
         <main id="main-content">{children}</main>
-        <footer className="border-t border-surface-border mt-auto py-8 text-sm text-text-muted">
+        <footer className="border-t border-surface-border mt-auto py-8 text-sm text-text-muted print:hidden">
           <div className="max-w-content mx-auto px-page-x flex flex-wrap gap-x-6 gap-y-2 items-center">
             <span>© {new Date().getFullYear()} Park Ridge Land History</span>
             <a href="/about" className="hover:text-text-secondary transition-colors">About</a>

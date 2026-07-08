@@ -6,6 +6,8 @@ import { ConfidenceBadge } from "@/components/ui/ConfidenceBadge";
 import { TeardownBadge } from "@/components/ui/TeardownBadge";
 import { LandmarkBadge } from "@/components/ui/LandmarkBadge";
 import { ComparisonList } from "@/components/ui/ComparisonList";
+import { EntityCard, UnresolvableEntityCard } from "@/components/ui/EntityCard";
+import type { MetaItem } from "@/components/ui/EntityCard";
 import { LoadingSkeleton, EmptyState } from "@/components/ui/EmptyState";
 import { InlineSourceNote } from "@/components/ui/SourceNote";
 import { PropertyTimeline, buildTimelineEvents } from "@/components/ui/PropertyTimeline";
@@ -13,19 +15,24 @@ import { SubdivisionLineageCard } from "@/components/ui/SubdivisionLineageCard";
 import { LandLineageVisual } from "@/components/ui/LandLineageVisual";
 import { confidenceLevelLabel } from "@/lib/subdivisionTypes";
 import type { SubdivisionConfidenceLevel } from "@/lib/subdivisionTypes";
+import { getEraColor } from "@/lib/mapConfig";
 import {
   SaleIcon,
   SubdivisionIcon,
   ComparisonIcon,
   MissingIcon,
   StreetIcon,
+  YearBuiltIcon,
+  SizeIcon,
+  PermitIcon,
 } from "@/lib/icons";
 import {
-  formatAddress,
   formatCurrency,
   formatSqft,
   formatYear,
   formatCount,
+  formatNumber,
+  formatAddress,
   confidenceFor,
   CONFIDENCE_TOOLTIP,
 } from "@/lib/formatters";
@@ -33,6 +40,8 @@ import type { ConfidenceLevel } from "@/lib/formatters";
 import { NEIGHBORHOOD_ERA_LABELS, NEIGHBORHOOD_ERA_YEAR_RANGE } from "@/lib/content";
 import { getPropertyDetail } from "@/lib/data/properties";
 import type { PropertySale, PropertyPermit, HargisRecord, LandLineageEntry, LandAncestryData, AssessmentPoint, PropertyPageData, PropertyNote } from "@/lib/data/properties";
+import { getPinGroupDetail } from "@/lib/data/pinGroups";
+import type { PinGroupDetail } from "@/lib/data/pinGroups";
 import { SalesPriceChart } from "./_SalesPriceChart";
 import { AssessmentChart } from "./_AssessmentChart";
 import { ScrollToTop } from "@/components/ui/ScrollToTop";
@@ -515,65 +524,6 @@ function getEraContextNote(
   return `${note} (editorial estimate)`;
 }
 
-function buildQuickSummary({
-  address,
-  yearBuilt,
-  buildingSqft,
-  latestSaleYear,
-  latestSalePrice,
-  subdivisionName,
-  neighborhoodLabel,
-  hargisCount,
-  assessmentTimeline,
-}: {
-  address: string | null;
-  yearBuilt: number | null;
-  buildingSqft: number | null;
-  latestSaleYear: number | null;
-  latestSalePrice: number | null;
-  subdivisionName: string | null;
-  neighborhoodLabel: string | null;
-  hargisCount: number;
-  assessmentTimeline: AssessmentPoint[];
-}): string | null {
-  if (!yearBuilt || !latestSaleYear) return null;
-  if (!subdivisionName && !neighborhoodLabel) return null;
-
-  const sqftPart = buildingSqft && buildingSqft > 0 ? `, ${formatSqft(buildingSqft)}` : "";
-  const firstLine = address
-    ? `${address}, built in ${yearBuilt}${sqftPart}.`
-    : `Built in ${yearBuilt}${sqftPart}.`;
-
-  const pricePart = latestSalePrice ? ` for ${formatCurrency(latestSalePrice)}` : "";
-  const saleLine = `Most recently sold in ${latestSaleYear}${pricePart}.`;
-
-  let locationLine = "";
-  if (subdivisionName && neighborhoodLabel) {
-    locationLine = `Part of the ${subdivisionName} subdivision in the ${neighborhoodLabel} neighborhood.`;
-  } else if (subdivisionName) {
-    locationLine = `Part of the ${subdivisionName} subdivision.`;
-  } else {
-    locationLine = `Located in the ${neighborhoodLabel} neighborhood.`;
-  }
-
-  const parts = [firstLine, saleLine, locationLine];
-
-  if (hargisCount > 0) {
-    parts.push("Documented in the Illinois Historic Architecture Survey.");
-  }
-  if (assessmentTimeline.length >= 2) {
-    const first = assessmentTimeline[0];
-    const last = assessmentTimeline[assessmentTimeline.length - 1];
-    if (first.value && last.value && first.year !== last.year) {
-      parts.push(
-        `Assessed value changed from ${formatCurrency(first.value)} to ${formatCurrency(last.value)} between ${first.year} and ${last.year}.`
-      );
-    }
-  }
-
-  return parts.join("\n");
-}
-
 function PropertySummaryCard({
   yearBuilt,
   eraNote,
@@ -693,13 +643,20 @@ function StoryGroupHeader({ title, subtitle }: { title: string; subtitle?: strin
 
 export function PropertyDetailContent({ pin, initialProps }: Props) {
   const [detail, setDetail] = useState<Awaited<ReturnType<typeof getPropertyDetail>> | null>(null);
+  const [nearbyBlock, setNearbyBlock] = useState<PinGroupDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [summaryCopied, setSummaryCopied] = useState(false);
 
   useEffect(() => {
-    getPropertyDetail(pin)
-      .then(setDetail)
+    const blockPrefix = pin.length >= 7 ? pin.slice(0, 7) : null;
+    Promise.all([
+      getPropertyDetail(pin),
+      blockPrefix ? getPinGroupDetail(blockPrefix) : Promise.resolve(null),
+    ])
+      .then(([propertyDetail, block]) => {
+        setDetail(propertyDetail);
+        setNearbyBlock(block);
+      })
       .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, [pin]);
@@ -823,20 +780,6 @@ export function PropertyDetailContent({ pin, initialProps }: Props) {
     (props.local_neighborhood_slug as string | null),
     (props.official_planning_neighborhood_slug as string | null),
   );
-  const quickSummaryText = (yearBuilt && sales.length > 0 && (subdivisionName || neighborhoodLabel))
-    ? buildQuickSummary({
-        address: props.address ? formatAddress(props.address as string) : null,
-        yearBuilt,
-        buildingSqft: props.building_sqft as number | null,
-        latestSaleYear,
-        latestSalePrice,
-        subdivisionName,
-        neighborhoodLabel: neighborhoodLabel ?? null,
-        hargisCount: hargisRecords.length,
-        assessmentTimeline,
-      })
-    : null;
-
   const currentYear = new Date().getFullYear();
   const recentSaleCount = sales.filter((s) => {
     const year = s.sale_date
@@ -1067,6 +1010,40 @@ export function PropertyDetailContent({ pin, initialProps }: Props) {
             </section>
           )}
 
+          {(() => {
+            const nearby = (nearbyBlock?.parcels ?? []).filter((p) => p.pin !== pin && p.address).slice(0, 6);
+            if (nearby.length === 0) return null;
+            return (
+              <section>
+                <h3 className="section-heading">Nearby homes on this block</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {nearby.map((p) =>
+                    !p.address ? (
+                      <UnresolvableEntityCard key={p.pin} pin={p.pin} />
+                    ) : (
+                      <EntityCard
+                        key={p.pin}
+                        href={`/properties/${encodeURIComponent(p.pin)}`}
+                        title={formatAddress(p.address)}
+                        metaItems={[
+                          p.yearBuilt ? { icon: <YearBuiltIcon size={11} />, value: String(p.yearBuilt) } : null,
+                          p.buildingSqft ? { icon: <SizeIcon size={11} />, value: `${formatNumber(p.buildingSqft)} sqft` } : null,
+                          p.saleCount ? { icon: <SaleIcon size={11} />, value: `${p.saleCount} sales` } : null,
+                          p.permitCount ? { icon: <PermitIcon size={11} />, value: `${p.permitCount} permits` } : null,
+                        ].filter((x): x is MetaItem => x !== null)}
+                        eraSwatch={getEraColor(p.yearBuilt)}
+                        isTeardownRebuild={p.isTeardownRebuild}
+                        teardownConfidence={p.teardownConfidence}
+                        hasDeedNotes={p.hasDeedNotes}
+                      />
+                    )
+                  )}
+                </div>
+                <InlineSourceNote className="mt-2">Cook County Assessor data for this block</InlineSourceNote>
+              </section>
+            );
+          })()}
+
           {(props.official_planning_neighborhood_id || props.business_district_id || props.local_neighborhood_id) && (
             <section>
               <h3 className="section-heading">Geographic context</h3>
@@ -1238,34 +1215,6 @@ export function PropertyDetailContent({ pin, initialProps }: Props) {
                 </p>
               </section>
             )}
-          </div>
-        </section>
-      )}
-
-      {/* Property summary for sharing */}
-      {quickSummaryText && (
-        <section>
-          <div className="flex items-center gap-2 mb-2">
-            <h2 className="section-heading !mb-0">Property summary</h2>
-            <span className="text-[10px] font-semibold uppercase tracking-wider bg-accent-purple/10 text-accent-purple px-2 py-0.5 rounded">
-              Copy for sharing
-            </span>
-          </div>
-          <div className="bg-surface-card border border-surface-border rounded-lg p-4">
-            <p className="text-sm text-text-secondary leading-relaxed whitespace-pre-line">
-              {quickSummaryText}
-            </p>
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(quickSummaryText).then(() => {
-                  setSummaryCopied(true);
-                  setTimeout(() => setSummaryCopied(false), 2000);
-                });
-              }}
-              className="mt-3 text-xs text-accent-purple hover:underline"
-            >
-              {summaryCopied ? "Copied!" : "Copy to clipboard"}
-            </button>
           </div>
         </section>
       )}

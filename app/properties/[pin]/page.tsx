@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
@@ -7,6 +8,7 @@ import { MapView } from "@/components/MapView";
 import { PropertyDetailContent } from "./_PropertyDetailContent";
 import { getPropertyByPin, fetchPropertyBbox } from "@/lib/data/properties";
 import { formatAddress } from "@/lib/formatters";
+import { ShareIcon } from "@/lib/icons";
 
 type Props = { params: { pin: string } };
 
@@ -62,6 +64,15 @@ export default async function PropertyDetailPage({ params }: Props) {
         eyebrow="Property"
         title={address}
         subtitle={property.yearBuilt ? `Built ${property.yearBuilt}` : undefined}
+        action={
+          <Link
+            href={`/properties/${encodeURIComponent(pin)}/summary`}
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-accent-purple hover:underline"
+          >
+            <ShareIcon size={16} strokeWidth={1.8} aria-hidden="true" />
+            Share
+          </Link>
+        }
       />
 
       <div className="mb-8">

@@ -48,6 +48,8 @@ export {
   Minimize2     as CollapseIcon,
   ExternalLink  as ExternalLinkIcon,
   Search        as SearchIcon,
+  Share2        as ShareIcon,
+  Copy          as CopyIcon,
 
   // Community / story
   Camera        as PhotoIcon,

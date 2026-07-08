@@ -207,3 +207,58 @@ describe("PageHeader is used by every top-level page (A2.1)", () => {
     expect(content, `old hand-rolled heading markup still present in ${file}`).not.toContain(removedMarkup);
   });
 });
+
+describe("Sparkline stat card components deleted, not wired (A4.2)", () => {
+  it.each([
+    "src/components/ui/SparklinePriceCard.tsx",
+    "src/components/ui/SparklinePermitCard.tsx",
+    "src/components/ui/SparklineSalesVolumeCard.tsx",
+  ])("%s does not exist", (file) => {
+    expect(fs.existsSync(path.resolve(process.cwd(), file))).toBe(false);
+  });
+});
+
+describe("shareable property-summary view (A4.1)", () => {
+  it("the summary route exists", () => {
+    expect(fs.existsSync(path.resolve(process.cwd(), "app/properties/[pin]/summary/page.tsx"))).toBe(true);
+    expect(fs.existsSync(path.resolve(process.cwd(), "app/properties/[pin]/summary/_PropertySummaryContent.tsx"))).toBe(true);
+  });
+
+  it("the main property page header links to the summary route", () => {
+    const file = "app/properties/[pin]/page.tsx";
+    const content = fs.readFileSync(path.resolve(process.cwd(), file), "utf-8");
+    expect(content).toContain("/summary");
+  });
+
+  it("_PropertyDetailContent.tsx no longer builds its own inline sharing blurb", () => {
+    const file = "app/properties/[pin]/_PropertyDetailContent.tsx";
+    const content = fs.readFileSync(path.resolve(process.cwd(), file), "utf-8");
+    expect(content).not.toContain("buildQuickSummary");
+    expect(content).not.toContain("Property summary for sharing");
+  });
+
+  it("nav and footer chrome are hidden on print", () => {
+    const navContent = fs.readFileSync(path.resolve(process.cwd(), "src/components/TopNav.tsx"), "utf-8");
+    const layoutContent = fs.readFileSync(path.resolve(process.cwd(), "app/layout.tsx"), "utf-8");
+    expect(navContent).toContain("print:hidden");
+    expect(layoutContent).toContain("print:hidden");
+  });
+});
+
+describe("compare-nearby-homes view (A4.3)", () => {
+  const file = "app/properties/[pin]/_PropertyDetailContent.tsx";
+
+  it("renders 'Nearby homes on this block' after 'How this property compares'", () => {
+    const content = fs.readFileSync(path.resolve(process.cwd(), file), "utf-8");
+    const comparesIdx = content.indexOf("How this property compares");
+    const nearbyIdx = content.indexOf("Nearby homes on this block");
+    expect(comparesIdx, `"How this property compares" not found in ${file}`).toBeGreaterThan(-1);
+    expect(nearbyIdx, `"Nearby homes on this block" not found in ${file}`).toBeGreaterThan(-1);
+    expect(nearbyIdx).toBeGreaterThan(comparesIdx);
+  });
+
+  it("excludes the current property by PIN, not just by styling", () => {
+    const content = fs.readFileSync(path.resolve(process.cwd(), file), "utf-8");
+    expect(content).toContain("p.pin !== pin");
+  });
+});
