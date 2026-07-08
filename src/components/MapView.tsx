@@ -150,8 +150,6 @@ export function MapView({
     gisBuildings: defaultGisBuildings(scope),
   });
   const gisBuildingsAddedRef = useRef(false);
-  const neighborhoodBoundaryAddedRef = useRef(false);
-  const neighborhoodTypeOverviewAddedRef = useRef(false);
   const officialPlanningDistrictsRef = useRef<NeighborhoodLegendItem[] | null>(null);
   const [eraFilter, setEraFilter] = useState<[number, number] | null>(null);
   const [stats, setStats] = useState<MapStats | null>(null);
@@ -582,16 +580,27 @@ export function MapView({
     }
   }, [layerToggles.gisBuildings, isLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Neighborhood boundary overlay — auto-loaded when scope is "neighborhood"
+  // Neighborhood boundary overlay — auto-loaded when scope is "neighborhood".
+  // Updates the existing source in place when neighborhoodId changes on an
+  // already-mounted MapView (see the neighborhood-type-overview effect below
+  // for why an add-once guard is wrong here too).
   const neighborhoodId = scope.kind === "neighborhood" ? scope.neighborhoodId : null;
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !isLoaded || !neighborhoodId) return;
-    if (neighborhoodBoundaryAddedRef.current) return;
+
+    const url = `/api/neighborhood-boundary?id=${encodeURIComponent(neighborhoodId)}`;
+    const existingSource = map.getSource(NEIGHBORHOOD_BOUNDARY_SOURCE) as unknown as
+      | { setData: (data: string) => void }
+      | undefined;
+    if (existingSource) {
+      existingSource.setData(url);
+      return;
+    }
 
     map.addSource(NEIGHBORHOOD_BOUNDARY_SOURCE, {
       type: "geojson",
-      data: `/api/neighborhood-boundary?id=${encodeURIComponent(neighborhoodId)}`,
+      data: url,
     });
     map.addLayer(
       {
@@ -616,7 +625,6 @@ export function MapView({
       } as LayerSpecification,
       FILL_LAYER
     );
-    neighborhoodBoundaryAddedRef.current = true;
   }, [isLoaded, neighborhoodId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Multi-boundary overview — auto-loaded when scope is "neighborhood-type-overview".
@@ -633,21 +641,42 @@ export function MapView({
   // colors) rather than a flat color, using the same districts list + fixed
   // palette as buildNeighborhoodFillExpression, keyed on each boundary
   // feature's "id" property (set by get_neighborhood_type_boundaries_geojson).
+  //
+  // Updates the existing source/layers in place when overviewTypesKey
+  // changes on an already-mounted MapView, instead of only ever adding them
+  // once and leaving a stale "add guard" ref permanently blocking further
+  // updates -- that previously meant if this MapView instance were ever
+  // reused across a scope change (e.g. a client-side navigation between two
+  // neighborhood-type-overview pages without a full remount), the boundary
+  // polygons and colors from whichever page loaded FIRST would stick around
+  // forever, displayed under the new page's title -- exactly the "wrong
+  // districts are showing under the wrong page" symptom this fixes.
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !isLoaded || !overviewTypesKey) return;
-    if (neighborhoodTypeOverviewAddedRef.current) return;
 
     const types = overviewTypesKey.split(",");
     const query = types.map((t) => `type=${encodeURIComponent(t)}`).join("&");
+    const url = `/api/neighborhood-type-boundaries?${query}`;
 
     const boundaryColor = districts && districts.length > 0
       ? (buildNeighborhoodFillExpression(["get", "id"], districts).expression as unknown as string)
       : NEIGHBORHOOD_FALLBACK_COLOR;
 
+    const existingSource = map.getSource(NEIGHBORHOOD_TYPE_OVERVIEW_SOURCE) as unknown as
+      | { setData: (data: string) => void }
+      | undefined;
+
+    if (existingSource) {
+      existingSource.setData(url);
+      map.setPaintProperty(NEIGHBORHOOD_TYPE_OVERVIEW_FILL_LAYER, "fill-color", boundaryColor);
+      map.setPaintProperty(NEIGHBORHOOD_TYPE_OVERVIEW_STROKE_LAYER, "line-color", boundaryColor);
+      return;
+    }
+
     map.addSource(NEIGHBORHOOD_TYPE_OVERVIEW_SOURCE, {
       type: "geojson",
-      data: `/api/neighborhood-type-boundaries?${query}`,
+      data: url,
     });
     map.addLayer(
       {
@@ -672,7 +701,6 @@ export function MapView({
       } as LayerSpecification,
       LABELS_LAYER
     );
-    neighborhoodTypeOverviewAddedRef.current = true;
   }, [isLoaded, overviewTypesKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---------------------------------------------------------------------------
