@@ -22,16 +22,27 @@ import fs from "node:fs";
 import path from "node:path";
 
 describe("chart section order stays in sync between /neighborhoods and /subdivisions", () => {
+  // Headings are parameterized by entityLabel (this component is shared by
+  // /neighborhoods, /planning-districts, /business-districts, each of which
+  // needs its own noun here, not a hardcoded "neighborhood" -- so this
+  // checks the stable surrounding text, not the full literal heading.
   it("NeighborhoodCharts renders Era portrait before Median sale price", () => {
     const file = "src/components/ui/NeighborhoodCharts.tsx";
-    const eraHeading = "Era portrait: when each neighborhood was built";
-    const priceHeading = "Median sale price by neighborhood, 2015 vs. 2024";
+    const eraHeading = "Era portrait: when each {entityLabel} was built";
+    const priceHeading = "Median sale price by {entityLabel}, 2015 vs. 2024";
     const content = fs.readFileSync(path.resolve(process.cwd(), file), "utf-8");
     const eraIdx = content.indexOf(eraHeading);
     const priceIdx = content.indexOf(priceHeading);
     expect(eraIdx, `"${eraHeading}" not found in ${file}`).toBeGreaterThan(-1);
     expect(priceIdx, `"${priceHeading}" not found in ${file}`).toBeGreaterThan(-1);
     expect(eraIdx).toBeLessThan(priceIdx);
+  });
+
+  it("NeighborhoodCharts labels each section by the page's own entity type, not a hardcoded 'neighborhood'", () => {
+    const file = "src/components/ui/NeighborhoodCharts.tsx";
+    const content = fs.readFileSync(path.resolve(process.cwd(), file), "utf-8");
+    expect(content).toContain('case "official_planning": return "planning district"');
+    expect(content).toContain('case "business_district":  return "business district"');
   });
 
   // /neighborhoods, /planning-districts, and /business-districts all
