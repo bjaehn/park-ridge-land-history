@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import type { ReactNode } from "react";
 import { EntityCard } from "@/components/ui/EntityCard";
 import { getEraColor } from "@/lib/mapConfig";
+import { StreetIcon } from "@/lib/icons";
 import type { StreetListRow } from "@/lib/data/streets";
 
 type EraBucket = {
@@ -184,15 +185,18 @@ export function StreetsContent({ streets }: Props) {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
-        <p className="text-xs font-semibold text-text-muted tracking-widest uppercase mb-1">
-          Park Ridge
-        </p>
-        <h1 className="text-2xl font-bold text-text-primary">Streets</h1>
-        <p className="text-text-secondary text-sm mt-1">{statsLine}</p>
-        <p className="text-text-muted text-xs mt-0.5">
-          Grouped by the era when most homes on each street were built.
-        </p>
+      <div className="flex items-start gap-3">
+        <StreetIcon size={22} strokeWidth={1.5} className="text-text-muted mt-1 shrink-0" aria-hidden="true" />
+        <div>
+          <p className="text-xs font-semibold text-text-muted tracking-widest uppercase mb-1">
+            Park Ridge
+          </p>
+          <h1 className="text-2xl font-bold text-text-primary">Streets</h1>
+          <p className="text-text-secondary text-sm mt-1">{statsLine}</p>
+          <p className="text-text-muted text-xs mt-0.5">
+            Grouped by the era when most homes on each street were built.
+          </p>
+        </div>
       </div>
 
       {/* Filter panel */}

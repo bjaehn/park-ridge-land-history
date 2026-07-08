@@ -3,29 +3,35 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useRef, useEffect, useCallback } from "react";
+import type { LucideIcon } from "lucide-react";
 import { SITE_NAME } from "@/lib/content";
+import {
+  NeighborhoodIcon,
+  PlanningDistrictIcon,
+  BusinessDistrictIcon,
+  SubdivisionIcon,
+  StreetIcon,
+  PermitIcon,
+  CityIcon,
+} from "@/lib/icons";
 import type { SearchResult } from "@/lib/supabase/homeQueries";
 
 type NavLink = {
   href: string;
   label: string;
+  icon: LucideIcon;
   isActive?: (pathname: string) => boolean;
 };
 
 const NAV_LINKS: NavLink[] = [
-  { href: "/neighborhoods",       label: "Neighborhoods"      },
-  { href: "/planning-districts",  label: "Planning Districts" },
-  { href: "/business-districts",  label: "Business Districts" },
-  { href: "/subdivisions",        label: "Subdivisions"       },
-  { href: "/streets",             label: "Streets"            },
-  { href: "/permits",             label: "Permits"            },
-  { href: "/city",                label: "City history"       },
+  { href: "/neighborhoods",       label: "Neighborhoods",      icon: NeighborhoodIcon      },
+  { href: "/planning-districts",  label: "Planning Districts", icon: PlanningDistrictIcon  },
+  { href: "/business-districts",  label: "Business Districts", icon: BusinessDistrictIcon  },
+  { href: "/subdivisions",        label: "Subdivisions",       icon: SubdivisionIcon       },
+  { href: "/streets",             label: "Streets",            icon: StreetIcon            },
+  { href: "/permits",             label: "Permits",            icon: PermitIcon            },
+  { href: "/city",                label: "City history",       icon: CityIcon              },
 ];
-
-const REFERENCE_LINKS = [
-  { href: "/sources", label: "Data sources" },
-  { href: "/about", label: "About" },
-] as const;
 
 
 export function TopNav() {
@@ -129,34 +135,22 @@ export function TopNav() {
         <nav className="hidden md:flex items-center gap-1 flex-1" aria-label="Main navigation">
           {NAV_LINKS.map((link) => {
             const active = link.isActive ? link.isActive(pathname) : pathname.startsWith(link.href);
+            const Icon = link.icon;
             return (
               <Link
                 key={link.label}
                 href={link.href}
-                className={`px-3 py-1.5 rounded text-sm transition-colors ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-sm transition-colors ${
                   active
                     ? "bg-accent-purple/15 text-accent-purple font-medium"
                     : "text-text-secondary hover:text-text-primary hover:bg-surface-raised"
                 }`}
               >
+                <Icon size={14} strokeWidth={1.8} aria-hidden="true" />
                 {link.label}
               </Link>
             );
           })}
-          <div className="flex-1" />
-          {REFERENCE_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`px-3 py-1.5 rounded text-sm transition-colors ${
-                pathname === link.href
-                  ? "text-text-primary font-medium"
-                  : "text-text-muted hover:text-text-secondary"
-              }`}
-            >
-              {link.label}
-            </Link>
-          ))}
         </nav>
 
         {/* Search */}
@@ -305,35 +299,23 @@ export function TopNav() {
           <ul className="max-w-content mx-auto px-page-x pb-3 flex flex-col gap-1">
             {NAV_LINKS.map((link) => {
               const active = link.isActive ? link.isActive(pathname) : pathname.startsWith(link.href);
+              const Icon = link.icon;
               return (
                 <li key={link.label}>
                   <Link
                     href={link.href}
-                    className={`block px-3 py-2.5 rounded text-sm transition-colors ${
+                    className={`flex items-center gap-2 px-3 py-2.5 rounded text-sm transition-colors ${
                       active
                         ? "bg-accent-purple/15 text-accent-purple font-medium"
                         : "text-text-secondary hover:text-text-primary hover:bg-surface-card"
                     }`}
                   >
+                    <Icon size={14} strokeWidth={1.8} aria-hidden="true" />
                     {link.label}
                   </Link>
                 </li>
               );
             })}
-            {REFERENCE_LINKS.map((link) => (
-              <li key={link.href}>
-                <Link
-                  href={link.href}
-                  className={`block px-3 py-2.5 rounded text-sm transition-colors ${
-                    pathname.startsWith(link.href)
-                      ? "bg-accent-purple/15 text-accent-purple font-medium"
-                      : "text-text-secondary hover:text-text-primary hover:bg-surface-card"
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              </li>
-            ))}
           </ul>
         </nav>
       )}

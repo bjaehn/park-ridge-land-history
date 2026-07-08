@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -23,6 +24,7 @@ type Props = OverviewProps & {
   title: string;
   subtitle: string;
   siblingLinks: SiblingLink[];
+  icon: ReactNode;
 };
 
 // Chronological by earliestYear (first built), Unknown last -- this is the
@@ -164,6 +166,7 @@ export function NeighborhoodTypeIndexPage({
   summaries,
   bbox,
   siblingLinks,
+  icon,
 }: Props) {
   return (
     <div className="page-shell">
@@ -176,7 +179,7 @@ export function NeighborhoodTypeIndexPage({
         />
       </div>
       <div data-section="header">
-        <PageHeader eyebrow="Park Ridge" title={title} subtitle={subtitle} />
+        <PageHeader eyebrow="Park Ridge" title={title} subtitle={subtitle} icon={icon} />
       </div>
 
       <NeighborhoodFamilyLinks links={siblingLinks} />

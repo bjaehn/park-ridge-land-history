@@ -3,6 +3,7 @@ import Link from "next/link";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { MapView } from "@/components/MapView";
+import { CityIcon } from "@/lib/icons";
 import { CityContent } from "./_CityContent";
 
 export const metadata: Metadata = {
@@ -20,6 +21,7 @@ export default async function CityPage() {
         eyebrow="Park Ridge, Illinois"
         title="City history"
         subtitle="How Park Ridge's 13,000+ properties took shape, decade by decade."
+        icon={<CityIcon size={22} strokeWidth={1.5} className="text-text-muted mt-1 shrink-0" aria-hidden="true" />}
       />
 
       <CityContent

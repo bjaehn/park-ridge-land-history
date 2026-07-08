@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { fetchNeighborhoodSummaries, fetchAllNeighborhoodsBbox } from "@/lib/data/neighborhoods";
 import { NeighborhoodTypeIndexPage } from "@/components/NeighborhoodTypeIndexPage";
 import type { NeighborhoodType } from "@/lib/data/neighborhoods";
+import { BusinessDistrictIcon } from "@/lib/icons";
 
 export const metadata: Metadata = {
   title: "Business Districts",
@@ -32,6 +33,7 @@ export default async function BusinessDistrictsPage() {
         { label: "Neighborhoods", href: "/neighborhoods" },
         { label: "Planning Districts", href: "/planning-districts" },
       ]}
+      icon={<BusinessDistrictIcon size={22} strokeWidth={1.5} className="text-text-muted mt-1 shrink-0" aria-hidden="true" />}
     />
   );
 }

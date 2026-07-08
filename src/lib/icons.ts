@@ -13,6 +13,8 @@ export {
   FileText      as SubdivisionIcon,
   Map           as MapIcon,
   Building2     as CityIcon,
+  LandPlot      as PlanningDistrictIcon,
+  Store         as BusinessDistrictIcon,
 
   // Timeline and dates
   Clock         as TimelineIcon,

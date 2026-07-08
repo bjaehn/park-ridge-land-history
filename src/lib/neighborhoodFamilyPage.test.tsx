@@ -47,6 +47,7 @@ const PAGE_PROPS = [
       subtitle: "Park Ridge's corridor districts and local, informal names, each with its own construction history.",
       summaries: [],
       bbox: null,
+      icon: <span data-testid="icon-mock" />,
       siblingLinks: [
         { label: "Planning Districts", href: "/planning-districts" },
         { label: "Business Districts", href: "/business-districts" },
@@ -62,6 +63,7 @@ const PAGE_PROPS = [
       subtitle: "Park Ridge's official planning neighborhoods, each with its own construction history.",
       summaries: [],
       bbox: null,
+      icon: <span data-testid="icon-mock" />,
       siblingLinks: [
         { label: "Neighborhoods", href: "/neighborhoods" },
         { label: "Business Districts", href: "/business-districts" },
@@ -77,6 +79,7 @@ const PAGE_PROPS = [
       subtitle: "Park Ridge's commercial and mixed-use districts, each with its own construction history.",
       summaries: [],
       bbox: null,
+      icon: <span data-testid="icon-mock" />,
       siblingLinks: [
         { label: "Neighborhoods", href: "/neighborhoods" },
         { label: "Planning Districts", href: "/planning-districts" },
