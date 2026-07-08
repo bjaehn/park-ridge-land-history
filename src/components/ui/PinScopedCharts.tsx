@@ -140,7 +140,7 @@ export function PinScopedCharts({ prefix, levelLabel }: Props) {
         <section>
           <div className="flex items-center gap-2 mb-3">
             <SaleIcon size={14} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />
-            <p className="section-heading !mb-0">Home sales on this {scopeLabel}</p>
+            <h2 className="section-heading !mb-0">Home sales on this {scopeLabel}</h2>
           </div>
           <p className="text-sm text-text-muted mb-4">
             Bars show annual sales volume. Line shows median sale price. Market sales only, $50K to $5M.
@@ -155,7 +155,7 @@ export function PinScopedCharts({ prefix, levelLabel }: Props) {
         <section>
           <div className="flex items-center gap-2 mb-3">
             <AssessmentIcon size={14} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />
-            <p className="section-heading !mb-0">Average assessed value by year</p>
+            <h2 className="section-heading !mb-0">Average assessed value by year</h2>
           </div>
           <p className="text-sm text-text-muted mb-4">
             Certified totals from Cook County for this {scopeLabel}. Dashed lines mark triennial reassessment years.
@@ -170,7 +170,7 @@ export function PinScopedCharts({ prefix, levelLabel }: Props) {
         <section>
           <div className="flex items-center gap-2 mb-3">
             <ComparisonIcon size={14} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />
-            <p className="section-heading !mb-0">Assessment appeals filed by year</p>
+            <h2 className="section-heading !mb-0">Assessment appeals filed by year</h2>
           </div>
           <AppealsChart data={appealsByYear} />
         </section>
@@ -180,7 +180,7 @@ export function PinScopedCharts({ prefix, levelLabel }: Props) {
         <section>
           <div className="flex items-center gap-2 mb-3">
             <PermitIcon size={14} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />
-            <p className="section-heading !mb-0">Building permits by year</p>
+            <h2 className="section-heading !mb-0">Building permits by year</h2>
           </div>
           <p className="text-sm text-text-muted mb-4">
             Residential permits in purple, commercial in slate.

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
-import { SITE_NAME, SITE_TAGLINE } from "@/lib/content";
+import { SITE_NAME, SITE_TAGLINE, NEIGHBORHOOD_BOUNDARY_DISCLAIMER } from "@/lib/content";
 
 export const metadata: Metadata = {
   title: "About",
@@ -56,9 +56,7 @@ export default function AboutPage() {
           </a>
           .
         </p>
-        <p>
-          Neighborhood boundaries are approximate and derived from Census tract groupings, not official city boundaries.
-        </p>
+        <p>{NEIGHBORHOOD_BOUNDARY_DISCLAIMER}</p>
       </div>
     </div>
   );

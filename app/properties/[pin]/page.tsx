@@ -43,11 +43,6 @@ export default async function PropertyDetailPage({ params }: Props) {
   const lat = property.lat;
   const lng = property.lng;
 
-  const pin_ = property.pinNormalized ?? pin;
-  const township = pin_.slice(0, 2);
-  const sectionId = pin_.slice(0, 4);
-  const blockId = pin_.slice(0, 7);
-
   return (
     <div className="page-shell">
       <Breadcrumb
@@ -59,9 +54,6 @@ export default async function PropertyDetailPage({ params }: Props) {
           ...(property.subdivision
             ? [{ label: property.subdivision.name, href: `/subdivisions/${encodeURIComponent(property.subdivision.id)}` }]
             : []),
-          ...(township ? [{ label: `Township ${township}`, href: `/pin/${encodeURIComponent(township)}` }] : []),
-          ...(sectionId.length >= 4 ? [{ label: `Section ${sectionId}`, href: `/sections/${encodeURIComponent(sectionId)}` }] : []),
-          ...(blockId.length >= 7 ? [{ label: `Block ${blockId}`, href: `/blocks/${encodeURIComponent(blockId)}` }] : []),
           { label: address, current: true as const },
         ]}
       />

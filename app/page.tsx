@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { HOME_HERO_HEADLINE, HOME_HERO_SUBHEAD, COVERAGE_DISCLAIMER, CITY_NARRATIVE } from "@/lib/content";
+import { HOME_HERO_HEADLINE, HOME_HERO_SUBHEAD, COVERAGE_DISCLAIMER, CITY_NARRATIVE, CITY_NARRATIVE_SOURCE_NOTE } from "@/lib/content";
 import { InlineSourceNote } from "@/components/ui/SourceNote";
 import { HighlightReel } from "@/components/ui/HighlightReel";
 import { HomeSearch, HomeStats } from "./_components/HomeClientComponents";
@@ -53,6 +53,7 @@ export default function HomePage() {
             Explore city history →
           </span>
         </Link>
+        <InlineSourceNote className="mt-2">{CITY_NARRATIVE_SOURCE_NOTE}</InlineSourceNote>
       </section>
 
       <hr className="border-surface-border" />

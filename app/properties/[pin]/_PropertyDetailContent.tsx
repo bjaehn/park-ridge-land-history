@@ -108,7 +108,7 @@ function SaleHistorySection({ sales, chartSlot }: { sales: PropertySale[]; chart
   const visible = expanded ? sales : sales.slice(0, 3);
   return (
     <section>
-      <h2 className="section-heading">Sale history</h2>
+      <h3 className="section-heading">Sale history</h3>
       {chartSlot}
       <div className="space-y-2">
         {visible.map((s) => (
@@ -154,7 +154,7 @@ function PermitHistorySection({ permits }: { permits: PropertyPermit[] }) {
   const visible = expanded ? permits : permits.slice(0, 3);
   return (
     <section>
-      <h2 className="section-heading">Permit history ({permits.length} on record)</h2>
+      <h3 className="section-heading">Permit history ({permits.length} on record)</h3>
       <div className="flex items-start gap-2 mb-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700">
         <span className="shrink-0 mt-0.5" aria-hidden="true">!</span>
         <span>Records shown are from 2018 onward only. Earlier permit history may exist but is not in this dataset. Do not rely on this list as a complete renovation record.</span>
@@ -201,7 +201,7 @@ function LandLineageSection({ lineage }: { lineage: LandLineageEntry[] }) {
   const legacyLineage = lineage.filter((entry) => !(entry.lineage_records?.length));
   return (
     <section>
-      <h2 className="section-heading">Subdivision ancestry</h2>
+      <h3 className="section-heading">Subdivision ancestry</h3>
       <div className="space-y-3">
         {richLineage.map((record) => (
           <SubdivisionLineageCard key={record.lineage_key} lineage={record} showAddress />
@@ -347,7 +347,7 @@ function LandAncestryPanel({ data }: { data: LandAncestryData }) {
 
   return (
     <section>
-      <h2 className="section-heading">Original plat lot</h2>
+      <h3 className="section-heading">Original plat lot</h3>
       <div className="bg-surface-card border border-surface-border rounded-lg p-4">
         <div className="flex items-start gap-3">
           <SubdivisionIcon size={16} strokeWidth={1.8} className="text-text-muted shrink-0 mt-0.5" aria-hidden="true" />
@@ -410,7 +410,7 @@ function HargisSurveySection({ records }: { records: HargisRecord[] }) {
   if (!records.length) return null;
   return (
     <section>
-      <h2 className="section-heading">Historic architecture survey</h2>
+      <h3 className="section-heading">Historic architecture survey</h3>
       <p className="text-xs text-text-muted mb-3">
         From the Illinois Historic Architectural Resources Geographic Information System (HARGIS), Illinois State Historic Preservation Office.
       </p>
@@ -494,19 +494,25 @@ function getEraContextNote(
 ): string | null {
   if (!yearBuilt) return null;
   const slug = localSlug ?? officialSlug;
+  let note: string | null = null;
   if (slug && NEIGHBORHOOD_ERA_LABELS[slug]) {
     const range = NEIGHBORHOOD_ERA_YEAR_RANGE[slug];
     if (!range || (yearBuilt >= range[0] && yearBuilt <= range[1])) {
-      return `Built during the ${NEIGHBORHOOD_ERA_LABELS[slug].toLowerCase()}.`;
+      note = `Built during the ${NEIGHBORHOOD_ERA_LABELS[slug].toLowerCase()}.`;
     }
   }
-  if (yearBuilt < 1890) return "Built during Park Ridge's pioneer era.";
-  if (yearBuilt < 1920) return "Built during Park Ridge's early growth period.";
-  if (yearBuilt < 1940) return "Built during Park Ridge's interwar period.";
-  if (yearBuilt < 1960) return "Built during the postwar era.";
-  if (yearBuilt < 1980) return "Built during the mid-century period.";
-  if (yearBuilt < 2000) return "Built in the late 20th century.";
-  return "Built in the modern era.";
+  if (!note) {
+    if (yearBuilt < 1890) note = "Built during Park Ridge's pioneer era.";
+    else if (yearBuilt < 1920) note = "Built during Park Ridge's early growth period.";
+    else if (yearBuilt < 1940) note = "Built during Park Ridge's interwar period.";
+    else if (yearBuilt < 1960) note = "Built during the postwar era.";
+    else if (yearBuilt < 1980) note = "Built during the mid-century period.";
+    else if (yearBuilt < 2000) note = "Built in the late 20th century.";
+    else note = "Built in the modern era.";
+  }
+  // This is an editorial interpretation of the build year, not a sourced fact,
+  // so it must read as distinct from the ConfidenceBadge shown alongside it.
+  return `${note} (editorial estimate)`;
 }
 
 function buildQuickSummary({
@@ -951,7 +957,7 @@ export function PropertyDetailContent({ pin, initialProps }: Props) {
           <div className="space-y-8">
             {landLineage.length > 0 && (
               <section>
-                <h2 className="section-heading">Ancestry chain</h2>
+                <h3 className="section-heading">Ancestry chain</h3>
                 <LandLineageVisual entries={landLineage} />
               </section>
             )}
@@ -960,7 +966,7 @@ export function PropertyDetailContent({ pin, initialProps }: Props) {
               <LandLineageSection lineage={landLineage} />
             ) : detail.subdivision ? (
               <section>
-                <h2 className="section-heading">Recorded plat</h2>
+                <h3 className="section-heading">Recorded plat</h3>
                 <div className="flex items-start gap-3 bg-surface-card border border-surface-border rounded-lg p-4">
                   <SubdivisionIcon size={16} strokeWidth={1.8} className="text-text-muted shrink-0 mt-0.5" aria-hidden="true" />
                   <div className="min-w-0">
@@ -985,7 +991,7 @@ export function PropertyDetailContent({ pin, initialProps }: Props) {
 
             {props.deed_notes && (
               <section>
-                <h2 className="section-heading">Deed record</h2>
+                <h3 className="section-heading">Deed record</h3>
                 <div className="bg-surface-card border border-surface-border rounded-lg p-4">
                   <p className="text-sm text-text-secondary font-mono leading-relaxed whitespace-pre-wrap">
                     {props.deed_notes}
@@ -1006,7 +1012,7 @@ export function PropertyDetailContent({ pin, initialProps }: Props) {
         <div className="space-y-8">
           {timeline.length > 0 && (
             <section>
-              <h2 className="section-heading">Property timeline</h2>
+              <h3 className="section-heading">Property timeline</h3>
               <p className="text-sm text-text-muted mb-3">Key moments in this property's recorded history, from the original plat to the most recent transaction.</p>
               <PropertyTimeline events={timeline} />
             </section>
@@ -1019,7 +1025,7 @@ export function PropertyDetailContent({ pin, initialProps }: Props) {
 
           {assessmentTimeline.length >= 2 && (
             <section>
-              <h2 className="section-heading">Assessed value history</h2>
+              <h3 className="section-heading">Assessed value history</h3>
               <AssessmentChart
                 timeline={assessmentTimeline}
                 appealYears={appealYears}
@@ -1046,7 +1052,7 @@ export function PropertyDetailContent({ pin, initialProps }: Props) {
             <section>
               <div className="flex items-center gap-2 mb-3">
                 <ComparisonIcon size={14} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />
-                <h2 className="section-heading !mb-0">How this property compares</h2>
+                <h3 className="section-heading !mb-0">How this property compares</h3>
               </div>
               <ComparisonList rows={detail.comparisons} />
             </section>
@@ -1054,7 +1060,7 @@ export function PropertyDetailContent({ pin, initialProps }: Props) {
 
           {(props.official_planning_neighborhood_id || props.business_district_id || props.local_neighborhood_id) && (
             <section>
-              <h2 className="section-heading">Geographic context</h2>
+              <h3 className="section-heading">Geographic context</h3>
               <p className="text-sm text-text-secondary mb-3">This property sits within overlapping planning districts, business areas, and local neighborhoods.</p>
               <div className="space-y-2">
                 {props.official_planning_neighborhood_id && props.official_planning_neighborhood_slug && (
@@ -1083,7 +1089,7 @@ export function PropertyDetailContent({ pin, initialProps }: Props) {
           )}
 
           <section>
-            <h2 className="section-heading">Explore more</h2>
+            <h3 className="section-heading">Explore more</h3>
             <div className="space-y-2">
               {blockPrefix && (
                 <div>
@@ -1153,7 +1159,7 @@ export function PropertyDetailContent({ pin, initialProps }: Props) {
           <div className="space-y-8">
             {detail.dataQuality && (
               <section>
-                <h2 className="section-heading">Source coverage</h2>
+                <h3 className="section-heading">Source coverage</h3>
                 <p className="text-sm text-text-secondary mb-2">
                   {Math.round(detail.dataQuality.citationCoverageScore * 100)}% of tracked source
                   categories are on file for this property.
@@ -1178,7 +1184,7 @@ export function PropertyDetailContent({ pin, initialProps }: Props) {
 
             {whatThisMeansBullets.length > 0 && (
               <section>
-                <h2 className="section-heading">What this means</h2>
+                <h3 className="section-heading">What this means</h3>
                 <ul className="space-y-2">
                   {whatThisMeansBullets.map((b, i) => (
                     <li key={i} className="flex items-start gap-2.5 text-sm text-text-secondary">
@@ -1192,7 +1198,7 @@ export function PropertyDetailContent({ pin, initialProps }: Props) {
 
             {missingGaps.length > 0 && (
               <section>
-                <h2 className="section-heading">What we don't know yet</h2>
+                <h3 className="section-heading">What we don't know yet</h3>
                 <ul className="space-y-2">
                   {missingGaps.map((gap) => (
                     <li key={gap} className="flex items-start gap-2.5 text-sm text-text-muted">
@@ -1209,7 +1215,7 @@ export function PropertyDetailContent({ pin, initialProps }: Props) {
 
             {questionsToConsider.length > 0 && (
               <section>
-                <h2 className="section-heading">Questions to consider (based on available records)</h2>
+                <h3 className="section-heading">Questions to consider (based on available records)</h3>
                 <ul className="space-y-2">
                   {questionsToConsider.map((q, i) => (
                     <li key={i} className="flex items-start gap-2.5 text-sm text-text-secondary">
@@ -1262,12 +1268,12 @@ export function PropertyDetailContent({ pin, initialProps }: Props) {
         </summary>
         <div className="px-4 pb-4 pt-2 space-y-6">
           <section>
-            <h2 className="section-heading">Parcel ID (PIN)</h2>
+            <h3 className="section-heading">Parcel ID (PIN)</h3>
             <PinBreakdown props={props as Record<string, unknown>} />
             <p className="text-xs text-text-muted mt-2">Cook County 14-digit PIN: township · section · block · parcel · unit</p>
           </section>
           <section>
-            <h2 className="section-heading">Raw assessor record</h2>
+            <h3 className="section-heading">Raw assessor record</h3>
             <InlineSourceNote>
               Raw fields from the Cook County assessor dataset. Owner names are omitted.
             </InlineSourceNote>

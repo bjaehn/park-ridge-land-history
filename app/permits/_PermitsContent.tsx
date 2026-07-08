@@ -487,9 +487,9 @@ export function PermitsContent({ permits, mapSlot }: Props) {
       {/* Most expensive residential — bottom */}
       {topResidential.length > 0 && (
         <div>
-          <p className="section-heading" style={{ color: RESIDENTIAL_ACCENT }}>
+          <h2 className="section-heading" style={{ color: RESIDENTIAL_ACCENT }}>
             Most expensive residential permits
-          </p>
+          </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {topResidential.map((p) => (
               <HighlightCard key={p.id} permit={p} accentColor={RESIDENTIAL_ACCENT} />

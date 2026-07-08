@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
-import { SOURCES } from "@/lib/content";
+import { SOURCES, NEIGHBORHOOD_BOUNDARY_DISCLAIMER } from "@/lib/content";
 
 export const metadata: Metadata = {
   title: "Data sources",
@@ -36,7 +36,7 @@ export default function SourcesPage() {
           <h2 className="text-base font-semibold text-text-primary mb-2">Known limitations</h2>
           <ul className="text-sm space-y-2 list-disc list-inside">
             <li>About 9% of parcels (approximately 1,190) could not be matched to a street address using the available data. These appear as "Address not on record" and are excluded from ranked lists unless otherwise noted.</li>
-            <li>Neighborhood boundaries are approximate. They are derived from Census tract groupings, not official Park Ridge boundaries. The five area labels are for orientation only.</li>
+            <li>{NEIGHBORHOOD_BOUNDARY_DISCLAIMER}</li>
             <li>Build year is sourced from the Cook County assessor. It reflects the year the primary improvement was first assessed, which may differ from the actual construction date by a year or two.</li>
             <li>Permit records have gaps, especially before 1990. The absence of a permit does not mean no work was done.</li>
             <li>Sale records come from assessor data and cover sales since approximately 1999. Earlier sales are not reflected.</li>

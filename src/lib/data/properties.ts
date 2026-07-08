@@ -196,7 +196,15 @@ export async function getPropertyByPin(pin: string): Promise<PropertyPageData> {
 
   const lat = props.lat as number | undefined;
   const lng = props.lng as number | undefined;
-  const neighborhoodId = props.neighborhood_id as string | undefined;
+  // Same precedence as the property page body (local informal name over the
+  // official planning district): the legacy `neighborhood_id` column is stale
+  // and no longer backfilled, so it must not be read here. Both the
+  // breadcrumb (this value) and the page body must derive from the same
+  // typed-FK fields or they can disagree about a property's neighborhood.
+  const localNeighborhoodLabel = props.local_neighborhood_label as string | undefined;
+  const localNeighborhoodSlug = props.local_neighborhood_slug as string | undefined;
+  const officialPlanningNeighborhoodLabel = props.official_planning_neighborhood_label as string | undefined;
+  const officialPlanningNeighborhoodSlug = props.official_planning_neighborhood_slug as string | undefined;
 
   const subdivisionResult = await loadSubdivision(pin).catch(() => null);
 
@@ -213,14 +221,14 @@ export async function getPropertyByPin(pin: string): Promise<PropertyPageData> {
     isTeardownRebuild: (props.is_teardown_rebuild as boolean | undefined) ?? null,
     teardownConfidence: (props.teardown_confidence as string | undefined) ?? null,
     confidence: confidenceFor(props),
-    neighborhoodLabel: (props.neighborhood_label as string | undefined) ?? null,
-    neighborhoodSlug: neighborhoodId?.replace("neighborhood:", "") ?? null,
-    officialPlanningNeighborhoodLabel: (props.official_planning_neighborhood_label as string | undefined) ?? null,
-    officialPlanningNeighborhoodSlug: (props.official_planning_neighborhood_slug as string | undefined) ?? null,
+    neighborhoodLabel: localNeighborhoodLabel ?? officialPlanningNeighborhoodLabel ?? null,
+    neighborhoodSlug: localNeighborhoodSlug ?? officialPlanningNeighborhoodSlug ?? null,
+    officialPlanningNeighborhoodLabel: officialPlanningNeighborhoodLabel ?? null,
+    officialPlanningNeighborhoodSlug: officialPlanningNeighborhoodSlug ?? null,
     businessDistrictLabel: (props.business_district_label as string | undefined) ?? null,
     businessDistrictSlug: (props.business_district_slug as string | undefined) ?? null,
-    localNeighborhoodLabel: (props.local_neighborhood_label as string | undefined) ?? null,
-    localNeighborhoodSlug: (props.local_neighborhood_slug as string | undefined) ?? null,
+    localNeighborhoodLabel: localNeighborhoodLabel ?? null,
+    localNeighborhoodSlug: localNeighborhoodSlug ?? null,
     streetName: (props.street_name_normalized as string | undefined) ?? null,
     pinNormalized: (props.pin_normalized as string | undefined) ?? null,
     subdivision: subdivisionResult ? { id: subdivisionResult.id, name: subdivisionResult.name } : null,

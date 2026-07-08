@@ -1127,3 +1127,107 @@ Sprint 0 order of implementation:
 4. Task 0.4 (About page contact): closes the feedback loop before any user testing.
 
 Do not start Sprint 1 until all Sprint 0 QA checks pass.
+
+---
+
+# Cycle 2 (2026-07-08): Post-Launch Follow-Up Audit
+
+A second, independent end-to-end evaluation was run against the live production app and the full codebase on 2026-07-08, using the 10-persona / 20-category scoring format. Full detail lives in `EVALUATION.md`; the itemized task backlog (task IDs A1.1-A5.4) lives in `BACKLOG.md`. This section is the 5-sprint execution plan from that evaluation, appended below the Cycle 1 record above rather than replacing it.
+
+**Relationship to Cycle 1 above**: most of Cycle 1's Sprint 0-3 fixes hold up — the neighborhood 404s, nav cleanup, `/streets` page, and About-page contact link were not flagged again in this pass. One notable regression was found: Cycle 1's task 2.5 ("Convert section heading `<p>` to `<h2>`/`<h3>`") is marked Complete and its own notes say "All public pages converted," but this audit found the same `<p className="section-heading">` pattern very much alive in several files — mostly shared components (`HighlightReel.tsx`, `HistoricalFactsPanel.tsx`, `SubdivisionHistoryPanel.tsx`, `CommunityProfilePanel.tsx`, `EraPortrait.tsx`, `NeighborhoodCharts.tsx`, `PinScopedCharts.tsx`) and two page bodies (`_PinGroupContent.tsx`, `_PermitsContent.tsx`) that weren't in that task's explicit file list, plus the property page's heading structure, which is flat (no `<h3>` nesting) rather than using `<p>` tags. The property-page detail component also appears to have been renamed/refactored since Cycle 1 (Cycle 1 references `_NeighborhoodDetailContent.tsx`; this audit found `_NeighborhoodPage.tsx`), consistent with the bug re-entering through later refactoring rather than the original fix being fake. Cycle 2's Sprint 1 (below) re-fixes this comprehensively across the newly-identified files.
+
+**Overall verdict this cycle**: Overall public launch readiness **5/10** — not ready to send to real users today, but fixable in one focused sprint, not a rebuild. See `EVALUATION.md` for the full scorecard, persona evaluations, and audits.
+
+## Cycle 2 — Sprint 1 (A1 launch blockers)
+
+**Goal**: eliminate the defects that actively damage trust and accessibility on the pages designed to build them.
+**User outcome**: a skeptical user reading `/sources`, `/about`, and a property page no longer finds the app contradicting itself or showing a real screen-reader-breaking defect.
+
+- Engineering: fix heading hierarchy (9 files + property page nesting) — **A1.1**; fix legacy-neighborhood-column read path — **A1.3**; remove/relabel raw Township/Section/Block breadcrumb segments — **A1.3**.
+- UX/design: rewrite the boundary-methodology paragraph as one shared string — **A1.2**; add a visual marker distinguishing editorial era-labels from sourced confidence claims — **A1.4**.
+- Data: none requiring migration — this is a read-path and copy fix, not a schema change.
+
+**Files/components**: `HighlightReel.tsx`, `_PinGroupContent.tsx`, `_PermitsContent.tsx`, `CommunityProfilePanel.tsx`, `HistoricalFactsPanel.tsx`, `SubdivisionHistoryPanel.tsx`, `_PropertyDetailContent.tsx`, `properties.ts`, `app/properties/[pin]/page.tsx`, `Breadcrumb.tsx`, `app/sources/page.tsx`, `app/about/page.tsx`, `NeighborhoodTypePanel.tsx`, `content.ts`.
+
+**Acceptance criteria**: heading-outline check passes on every page type; breadcrumb/in-page neighborhood label match (tested); no contradictory boundary-methodology claims across `/sources`, `/about`, `NeighborhoodTypePanel`; homepage narrative is cited or disclaimed.
+
+**Risks**: rewriting the boundary-methodology paragraph requires confirming the actual current methodology (7 boundaries, 1996 plan, `assign_parcels_by_geometry` edge cases) with the user — a content decision, not purely mechanical.
+
+**Definition of done**: `npm run build` and `npm run test` pass; manual screen-reader spot-check on the PIN page and property page confirms proper heading navigation; a real property is spot-checked to confirm breadcrumb/body neighborhood agreement.
+
+## Cycle 2 — Sprint 2 (A2 product clarity and consistency)
+
+**Goal**: make the product feel like one system across page types.
+**User outcome**: page headers, section order, and decade-grouping look and behave identically everywhere they appear.
+
+- Engineering: migrate 4 pages to `PageHeader` — **A2.1**; extract `<DecadeGroup>` and migrate 6 call sites — **A2.3**; extract `chartTheme.ts` and migrate 10 Recharts files + `EraPortraitChart` — **A2.4**; fix `TeardownBadge`/teardown-callout token usage — **A2.4**.
+- UX/design: decide `CommunityProfilePanel`'s place in the city-page hierarchy — **A2.2**; reorder subdivision-page highlight reel after its charts — **A2.2**; decide on a subdivision price-comparison section — **A2.2**.
+
+**Files/components**: `app/page.tsx`, `_PermitsContent.tsx`, `_StreetsContent.tsx`, `_SubdivisionsHero.tsx`, new `DecadeGroup.tsx`, new `chartTheme.ts`, the 10 Recharts chart files, `_SubdivisionDetailContent.tsx`, `_CityContent.tsx`, `TeardownBadge.tsx`.
+
+**Acceptance criteria**: extended `sectionOrder.test.ts` coverage passes for section order and `PageHeader` usage across all discovery page types; visual QA confirms identical decade-group rendering everywhere; chart colors visibly match surrounding UI and the map legend.
+
+**Risks**: touching 10+ chart files at once risks visual regressions — stage as small, reviewable commits per chart file.
+
+**Definition of done**: build/tests pass; a side-by-side visual review of all discovery page types shows consistent header, section order, and chart styling.
+
+## Cycle 2 — Sprint 3 (A3 data quality and storytelling)
+
+**Goal**: consolidate the confidence model and close the biggest content-depth gaps.
+**User outcome**: confidence language is explained consistently across every domain it appears in; street pages get the same sourcing depth other geography tiers have; empty/thin entities say so explicitly.
+
+- Engineering: dedupe confidence-level prose — **A3.1**; document (or begin wiring) the 4 confidence taxonomies against `source_registry` — **A3.1**; add an explicit "not yet linked" state for unresearched subdivisions — **A3.2**; remove the redundant subdivision-ancestry widget on property pages — **A3.3**; add source citations and at least a construction-by-decade chart to street pages — **A3.4**.
+- UX/design: extend `HistoricalFactsPanel` to subdivision/street pages where facts exist.
+
+**Files/components**: `formatters.ts`, `app/sources/page.tsx`, `subdivisionTypes.ts`, `_SubdivisionDetailContent.tsx`, `_PropertyDetailContent.tsx`, `_StreetDetailContent.tsx`, `HistoricalFactsPanel.tsx`.
+
+**Acceptance criteria**: one confidence-copy source of truth; street detail pages have at least one chart and one source citation; the Brickton-subdivision-style empty entity shows an explicit message instead of a blank section.
+
+**Risks**: extending `HistoricalFactsPanel` to more page types may reveal thin data coverage — scope to "where facts already exist," not a data-collection sprint.
+
+**Definition of done**: build/tests pass; a spot-check of 3 street pages and 2 subdivision pages (one populated, one thin) confirms honest, non-blank states.
+
+## Cycle 2 — Sprint 4 (A4 buyer, homeowner, and agent usefulness)
+
+**Goal**: turn the product's existing depth into practical, shareable tools.
+**User outcome**: a buyer or agent can generate a shareable property summary and compare nearby homes without reading the full research page.
+
+- Engineering: build a shareable/printable property-summary view — **A4.1**; build a basic "compare nearby homes" view — **A4.3**; wire up or delete the unused Sparkline stat card components — **A4.2**.
+
+**Files/components**: new summary component consuming `_PropertyDetailContent.tsx`'s existing data-fetch logic; new comparison view; `SparklinePriceCard.tsx`/`SparklinePermitCard.tsx`/`SparklineSalesVolumeCard.tsx`.
+
+**Acceptance criteria**: a user can generate a shareable single-screen property summary in ≤2 clicks; a comparison view shows at least 2-3 nearby properties side by side on a shared metric.
+
+**Risks**: scope creep — keep the summary view read-only and derived from existing data, not a new data-collection feature.
+
+**Definition of done**: build/tests pass; manual walkthrough of the buyer/agent journey end-to-end (search → property → summary/compare) with no missing step.
+
+## Cycle 2 — Sprint 5 (A5 scale, admin workflow, and polish)
+
+**Goal**: prepare for growth beyond a single admin and close remaining technical debt.
+**User outcome**: no direct end-user-visible change; the codebase and admin workflow are ready for a second contributor and for real performance measurement.
+
+- Engineering: delete dead code (`src/styles/global.css`, unused components, dead query functions) — **A5.2**; drop the legacy `neighborhood_id` column once confirmed fully unused; run a real Lighthouse/Core Web Vitals and axe accessibility audit — **A5.3**; extract the single-source `ERA_PALETTE` — **A5.4**.
+- Admin: basic audit-history/change-log table — **A5.1**.
+
+**Files/components**: `src/styles/global.css`, `SparklinePriceCard.tsx` (if not wired in Sprint 4, delete), `CoverageTable.tsx`, `fetchParcelsInSubdivision()`, `mapConfig.ts`, `tailwind.config.ts`, admin map components.
+
+**Acceptance criteria**: no dead files remain; a real performance report exists and its top findings are triaged; admin has a basic audit trail if a second editor is planned.
+
+**Risks**: dropping the legacy column is irreversible — confirm zero remaining reads (including admin paths) before the migration.
+
+**Definition of done**: build/tests pass; repo has no unused files flagged by the earlier audit; a documented performance baseline exists.
+
+## Cycle 2 — Immediate first task
+
+**A1.1 — Fix the section-heading tag bug (`<p className="section-heading">` → real `<h2>`/`<h3>`).**
+
+Highest-confidence, highest-impact A1 item: mechanical, touches a fully-enumerated set of files, has an unambiguous correct outcome, fixes a severe accessibility defect, and carries essentially zero visual-regression risk since the CSS class stays identical. Good first move before the judgment-dependent copy fixes (A1.2, A1.4) that need sign-off on the underlying facts.
+
+## Cycle 2 — Verification plan
+
+1. `npm run build` (runs `vitest run` via `prebuild`) must pass.
+2. Manual screen-reader spot check (NVDA or VoiceOver) on `/pin/09`, a property page, and `/permits`.
+3. Manual live-site check of the breadcrumb bug on `901 S Crescent Ave` (or another affected property) confirming breadcrumb and in-page neighborhood now agree.
+4. Manual read-through of `/sources`, `/about`, and one neighborhood page confirming the boundary-methodology description now matches across all three.
+5. Manual check of the homepage confirming the founding-narrative paragraph now carries a citation/source note.

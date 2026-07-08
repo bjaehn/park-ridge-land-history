@@ -54,7 +54,7 @@ export function CommunityProfilePanel() {
 
   return (
     <div>
-      <p className="section-heading">Community profile</p>
+      <h2 className="section-heading">Community profile</h2>
       <p className="text-sm text-text-muted mb-4">
         A demographic and economic snapshot of today's Park Ridge, distinct from the dated
         historical facts above.

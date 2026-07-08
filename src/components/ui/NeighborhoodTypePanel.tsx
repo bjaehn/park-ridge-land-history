@@ -11,7 +11,8 @@ const TYPE_EXPLANATIONS: Record<
 > = {
   official_planning: {
     explanation:
-      "This is an official City of Park Ridge planning district. The boundary reflects the city's formal planning geography.",
+      "This is one of the 7 official City of Park Ridge planning neighborhoods named in the 1996 Comprehensive Plan. " +
+      "The boundary shown is an approximation based on parcel locations, not a precise trace of the plan's map.",
   },
   business_district: {
     explanation:

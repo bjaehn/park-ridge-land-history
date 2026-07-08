@@ -71,7 +71,7 @@ export function HighlightReel({ scope, scopeId, groups, limit = 5 }: Props) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {groups.map((g) => (
           <div key={g.category}>
-            <p className="section-heading">{g.heading}</p>
+            <h2 className="section-heading">{g.heading}</h2>
             <div className="space-y-0">
               {Array.from({ length: limit }).map((_, i) => (
                 <div
@@ -99,7 +99,7 @@ export function HighlightReel({ scope, scopeId, groups, limit = 5 }: Props) {
         const accent = CATEGORY_ACCENT[g.category];
         return (
           <div key={g.category}>
-            <p className="section-heading" style={{ color: accent }}>{g.heading}</p>
+            <h2 className="section-heading" style={{ color: accent }}>{g.heading}</h2>
             <div>
               {g.items.map((item, i) => {
                 const metric = primaryMetric(g.category, item);

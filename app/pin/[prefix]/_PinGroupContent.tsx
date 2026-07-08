@@ -104,7 +104,7 @@ export function PinGroupContent({ prefix, initialDetail, mapSlot }: Props) {
 
       {mapSlot && (
         <div>
-          <p className="section-heading">Map</p>
+          <h2 className="section-heading">Map</h2>
           {mapSlot}
         </div>
       )}
@@ -130,7 +130,7 @@ export function PinGroupContent({ prefix, initialDetail, mapSlot }: Props) {
               <section>
                 <div className="flex items-center gap-2 mb-3">
                   <SaleIcon size={14} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />
-                  <p className="section-heading !mb-0">Median sale price, 2015 vs. 2024</p>
+                  <h2 className="section-heading !mb-0">Median sale price, 2015 vs. 2024</h2>
                 </div>
                 <NeighborhoodPriceChart data={priceRow} />
               </section>
@@ -139,7 +139,7 @@ export function PinGroupContent({ prefix, initialDetail, mapSlot }: Props) {
               <section>
                 <div className="flex items-center gap-2 mb-3">
                   <YearBuiltIcon size={14} strokeWidth={1.8} className="text-text-muted" aria-hidden="true" />
-                  <p className="section-heading !mb-0">Era portrait: when these properties were built</p>
+                  <h2 className="section-heading !mb-0">Era portrait: when these properties were built</h2>
                 </div>
                 <p className="text-sm text-text-muted mb-3">
                   Each bar shows 100% of properties with known build years, divided by era.
@@ -153,7 +153,7 @@ export function PinGroupContent({ prefix, initialDetail, mapSlot }: Props) {
 
       {salesStats && salesStats.totalSales > 0 && (
         <section>
-          <p className="section-heading">Sales activity</p>
+          <h2 className="section-heading">Sales activity</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="bg-surface-card border border-surface-border rounded-lg p-4">
               <p className="text-2xl font-semibold text-text-primary tabular-nums">
@@ -187,7 +187,7 @@ export function PinGroupContent({ prefix, initialDetail, mapSlot }: Props) {
 
       {permitStats && permitStats.totalPermits > 0 && (
         <section>
-          <p className="section-heading">Permit activity</p>
+          <h2 className="section-heading">Permit activity</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="bg-surface-card border border-surface-border rounded-lg p-4">
               <p className="text-2xl font-semibold text-text-primary tabular-nums">
@@ -210,7 +210,7 @@ export function PinGroupContent({ prefix, initialDetail, mapSlot }: Props) {
 
       {medianAssessed != null && (
         <section>
-          <p className="section-heading">Assessment snapshot</p>
+          <h2 className="section-heading">Assessment snapshot</h2>
           <div className="bg-surface-card border border-surface-border rounded-lg p-4 inline-block">
             <p className="text-2xl font-semibold text-text-primary tabular-nums">
               {formatCurrency(medianAssessed)}
@@ -246,7 +246,7 @@ export function PinGroupContent({ prefix, initialDetail, mapSlot }: Props) {
         if (!sections.length) return null;
         return (
           <div>
-            <p className="section-heading">Sections in this township</p>
+            <h2 className="section-heading">Sections in this township</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {sections.map((s) => {
                 const yr = s.oldestYear && s.newestYear && s.oldestYear !== s.newestYear
@@ -308,7 +308,7 @@ export function PinGroupContent({ prefix, initialDetail, mapSlot }: Props) {
 
         return (
           <div>
-            <p className="section-heading">Blocks in this section</p>
+            <h2 className="section-heading">Blocks in this section</h2>
             <div className="space-y-8">
               {decades.map(([decade, decadeBlocks]) => {
                 const decadeYear = decade === "Unknown" ? null : parseInt(decade);
@@ -377,7 +377,7 @@ export function PinGroupContent({ prefix, initialDetail, mapSlot }: Props) {
         if (!decades.length) return null;
         return (
           <div>
-            <p className="section-heading">Properties by decade</p>
+            <h2 className="section-heading">Properties by decade</h2>
             <div className="space-y-8">
               {decades.map(([decade, props]) => {
                 const decadeYear = decade === "Unknown" ? null : parseInt(decade);
@@ -448,7 +448,7 @@ export function PinGroupContent({ prefix, initialDetail, mapSlot }: Props) {
         if (!decades.length) return null;
         return (
           <div>
-            <p className="section-heading">Properties in this section</p>
+            <h2 className="section-heading">Properties in this section</h2>
             <div className="space-y-8">
               {decades.map(([decade, props]) => {
                 const decadeYear = decade === "Unknown" ? null : parseInt(decade);

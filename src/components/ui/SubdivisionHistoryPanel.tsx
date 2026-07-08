@@ -245,7 +245,7 @@ export function SubdivisionHistoryPanel({ subdivision }: Props) {
       {/* What we know */}
       {facts.length > 0 && (
         <div className="mb-6">
-          <p className="section-heading">What we know</p>
+          <h2 className="section-heading">What we know</h2>
           {facts.map((fact) => (
             <FactCard key={fact.id} fact={fact} />
           ))}
@@ -255,7 +255,7 @@ export function SubdivisionHistoryPanel({ subdivision }: Props) {
       {/* What still needs research */}
       {tasks.length > 0 && (
         <div>
-          <p className="section-heading">What still needs research</p>
+          <h2 className="section-heading">What still needs research</h2>
           <p className="text-xs text-text-muted mb-3">
             The following searches at archives and databases would improve the record for this
             subdivision.

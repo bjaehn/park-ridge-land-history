@@ -205,7 +205,7 @@ export function HistoricalFactsPanel({ facts, heading = "From the historical rec
   if (!useGrouping) {
     return (
       <div>
-        <p className="section-heading">{heading}</p>
+        <h2 className="section-heading">{heading}</h2>
         <FactTimeline facts={sorted} />
       </div>
     );
@@ -217,7 +217,7 @@ export function HistoricalFactsPanel({ facts, heading = "From the historical rec
 
   return (
     <div>
-      <p className="section-heading">{heading}</p>
+      <h2 className="section-heading">{heading}</h2>
       <div className="space-y-8">
         {orderedGroups.map(([era, eraFacts]) => (
           <div key={era}>

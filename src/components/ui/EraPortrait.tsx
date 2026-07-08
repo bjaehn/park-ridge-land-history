@@ -28,11 +28,11 @@ export function EraPortrait({ rows: initialRows, heading = "When Park Ridge was 
   return (
     <div className="two-col-layout">
       <div>
-        <p className="section-heading">{heading}</p>
+        <h2 className="section-heading">{heading}</h2>
         <ConstructionByDecadeChart rows={rows} />
       </div>
       <div>
-        <p className="section-heading">Homes by decade</p>
+        <h2 className="section-heading">Homes by decade</h2>
         <CoverageTable rows={rows} total={total} />
       </div>
     </div>

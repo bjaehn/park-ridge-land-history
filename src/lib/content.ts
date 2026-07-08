@@ -33,6 +33,10 @@ export const CITY_NARRATIVE =
   "extended the city to its northwest and south edges, adding thousands of Cape Cods and ranches that " +
   "define the character of those neighborhoods today.";
 
+export const CITY_NARRATIVE_SOURCE_NOTE =
+  "Historical summary based on Cook County Assessor build-year distributions and Cook County Recorder " +
+  "subdivision records. Era characterizations are interpretive summaries of the data. Confidence: Medium.";
+
 // ---------------------------------------------------------------------------
 // Neighborhood narratives and era labels (keyed by neighborhood slug)
 // ---------------------------------------------------------------------------
@@ -83,8 +87,12 @@ export const COVERAGE_DISCLAIMER =
   "About 9% of parcels (1,190) could not be matched to a street address and are excluded from address-based lists.";
 
 export const NEIGHBORHOOD_BOUNDARY_DISCLAIMER =
-  "Official planning district boundaries reflect the City of Park Ridge's planning areas. " +
-  "Business district and local neighborhood boundaries are approximate.";
+  "The 7 official planning neighborhoods use the real names and general areas defined in the 1996 City " +
+  "of Park Ridge Comprehensive Plan. Their exact edges are approximated as straight cuts along the major " +
+  "streets the plan cites as neighborhood boundaries (Devon Avenue, Touhy Avenue, Dempster Street, " +
+  "Greenwood Avenue), computed from this app's own parcel location data rather than traced from the " +
+  "plan's original map, so they are marked low confidence and under review. Business district and local " +
+  "neighborhood boundaries are also approximate.";
 
 export const DATA_CURRENCY_DISCLAIMER =
   "Data reflects the most recent assessor extract and permit records available at build time.";
