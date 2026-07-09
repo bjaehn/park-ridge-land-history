@@ -261,6 +261,14 @@ describe("compare-nearby-homes view (A4.3)", () => {
     const content = fs.readFileSync(path.resolve(process.cwd(), file), "utf-8");
     expect(content).toContain("p.pin !== pin");
   });
+
+  it("renders nearby homes through <DecadeGroup>, not a flat grid (B1.1)", () => {
+    const content = fs.readFileSync(path.resolve(process.cwd(), file), "utf-8");
+    const nearbyIdx = content.indexOf("Nearby homes on this block");
+    const decadeGroupIdx = content.indexOf("<DecadeGroup");
+    expect(decadeGroupIdx, `<DecadeGroup not found in ${file}`).toBeGreaterThan(-1);
+    expect(decadeGroupIdx).toBeGreaterThan(nearbyIdx);
+  });
 });
 
 describe("dead code removed (A5.2)", () => {

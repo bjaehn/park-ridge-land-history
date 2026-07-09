@@ -8,6 +8,7 @@ import { LandmarkBadge } from "@/components/ui/LandmarkBadge";
 import { ComparisonList } from "@/components/ui/ComparisonList";
 import { EntityCard, UnresolvableEntityCard } from "@/components/ui/EntityCard";
 import type { MetaItem } from "@/components/ui/EntityCard";
+import { DecadeGroup } from "@/components/ui/DecadeGroup";
 import { LoadingSkeleton, EmptyState } from "@/components/ui/EmptyState";
 import { InlineSourceNote } from "@/components/ui/SourceNote";
 import { PropertyTimeline, buildTimelineEvents } from "@/components/ui/PropertyTimeline";
@@ -1016,13 +1017,15 @@ export function PropertyDetailContent({ pin, initialProps }: Props) {
             return (
               <section>
                 <h3 className="section-heading">Nearby homes on this block</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {nearby.map((p) =>
+                <DecadeGroup
+                  items={nearby}
+                  getYear={(p) => p.yearBuilt}
+                  getKey={(p) => p.pin}
+                  renderItem={(p) =>
                     !p.address ? (
-                      <UnresolvableEntityCard key={p.pin} pin={p.pin} />
+                      <UnresolvableEntityCard pin={p.pin} />
                     ) : (
                       <EntityCard
-                        key={p.pin}
                         href={`/properties/${encodeURIComponent(p.pin)}`}
                         title={formatAddress(p.address)}
                         metaItems={[
@@ -1037,8 +1040,8 @@ export function PropertyDetailContent({ pin, initialProps }: Props) {
                         hasDeedNotes={p.hasDeedNotes}
                       />
                     )
-                  )}
-                </div>
+                  }
+                />
                 <InlineSourceNote className="mt-2">Cook County Assessor data for this block</InlineSourceNote>
               </section>
             );
