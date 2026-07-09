@@ -186,3 +186,172 @@ Priority: A5. Complexity: S.
 ## Immediate recommended first task
 
 **A1.1** — mechanical, unambiguous, high-impact, zero content decisions required. See `ROADMAP.md`'s "Cycle 2 — Immediate first task" section for the full rationale.
+
+---
+
+# Cycle 3 (2026-07-09) Backlog
+
+Itemized task backlog produced from the Cycle 3 follow-up audit (`EVALUATION.md`'s "Cycle 3" section) and its sprint plan (`ROADMAP.md`'s "Cycle 3" section). Task IDs are priority-tier based (B1 = fixes a live regression or standing-rule violation, through B5 = content decision needed before code can proceed), a separate namespace from Cycle 2's A1-A5.
+
+---
+
+**B1.1 — Group "Nearby homes on this block" by decade, not flat address order**
+User story: as any visitor, every property-card list in this app looks and behaves the same way.
+Problem: `_PropertyDetailContent.tsx:1013-1045`'s "Nearby homes on this block" section renders a flat grid sorted alphabetically by address — a direct violation of the user's standing instruction that property card lists must always be grouped by decade built via the shared `<DecadeGroup>` pattern.
+Implementation: replace the flat `grid` with `<DecadeGroup items={nearby} getYear={p => p.yearBuilt} getKey={p => p.pin} renderItem={...} />`, matching `_PinGroupContent.tsx`'s existing block-level card pattern exactly (same file this section was modeled on, but the grouping step was dropped).
+Files: `app/properties/[pin]/_PropertyDetailContent.tsx`.
+Data/schema: none.
+Acceptance criteria: nearby-homes cards render grouped by decade with the standard era-dot/label/rule/count header; a static-scan test asserts the section renders through `<DecadeGroup`, not a bare `grid`.
+Test cases: extend `sectionOrder.test.ts`'s existing A4.3 block to also assert `<DecadeGroup` appears between the section heading and the card markup.
+Priority: B1. Complexity: S.
+
+**B1.2 — Close the `linked_parcel_count` trigger gap on `gis_lots`**
+User story: as the admin, a subdivision's displayed parcel count is always correct without needing a manual resync.
+Problem: `linked_parcel_count`'s trigger-maintenance covers `property_subdivision_links`, `parcels`, and `parcel_lot_relationships`, but not `gis_lots` — the table anchoring the third union branch. Direct `UPDATE`s to `gis_lots.subdivision_id` silently bypass all three existing triggers, which is exactly what caused 3 separate manual resync migrations in one week.
+Implementation: add an `AFTER INSERT OR UPDATE OR DELETE` trigger on `gis_lots` mirroring the existing pattern in `20260703000003_earliest_year_built_column.sql`, recomputing `linked_parcel_count` for the affected subdivision(s) via the same logic `get_linked_pins_for_subdivision` uses.
+Files: new migration; no app code changes.
+Data/schema: new trigger + trigger function on `gis_lots`.
+Acceptance criteria: a direct `UPDATE gis_lots SET subdivision_id = ...` immediately updates the affected subdivisions' `linked_parcel_count` with no manual resync call.
+Test cases: manual verification — update a `gis_lots` row's `subdivision_id` in a test/staging context, confirm `linked_parcel_count` changes without running a resync script.
+Priority: B1. Complexity: M.
+
+**B2.1 — Extract a shared `<Card>` primitive**
+User story: n/a (engineering hygiene).
+Problem: `bg-surface-card border border-surface-border rounded-lg` is copy-pasted 45 times across 18 files — flagged in the Cycle 2 evaluation, never scoped into that cycle's backlog, and has grown since.
+Implementation: extract `src/components/ui/Card.tsx` and migrate the highest-traffic call sites (`EntityCard.tsx`, `StatGrid.tsx`, `_PropertyDetailContent.tsx`, `_SubdivisionDetailContent.tsx`) first; leave a follow-up note for the remaining sites rather than migrating all 45 in one pass.
+Files: new `Card.tsx`; the 4+ call sites above.
+Data/schema: none.
+Acceptance criteria: `Card` exists and is used by at least the 4 named call sites; visual output is unchanged (same classes, just centralized).
+Test cases: visual spot-check; no behavior to unit test.
+Priority: B2. Complexity: M.
+
+**B2.2 — Fix the subdivision detail page's remaining hand-rolled loading skeleton**
+User story: as a user, every page's loading state looks the same.
+Problem: `_SubdivisionDetailContent.tsx:112-119` still hand-rolls its own loading tiles instead of using `<LoadingSkeleton rows={N}>` — named in both the original and this follow-up evaluation.
+Implementation: swap the hand-rolled `<div className="space-y-4 animate-pulse">` block for `<LoadingSkeleton rows={3} />`.
+Files: `app/subdivisions/[id]/_SubdivisionDetailContent.tsx`.
+Data/schema: none.
+Acceptance criteria: loading state matches every other page's skeleton tile sizing.
+Test cases: static-scan test confirming the file imports and uses `LoadingSkeleton`, not a hand-rolled equivalent.
+Priority: B2. Complexity: S.
+
+**B2.3 — Consolidate remaining decade-bucketing reimplementations**
+User story: n/a (engineering hygiene, prevents future drift).
+Problem: `Math.floor(year/10)*10` logic has reappeared outside `decadeGrouping.ts` in ~6 places since A2.3 (chart data-prep in `_SubdivisionDetailContent.tsx:126-133`, decade filters in `_SubdivisionsContent.tsx`, `HistoricalFactsPanel.tsx`, `_StreetDetailContent.tsx`).
+Implementation: extract a shared `decadeKey(year: number | null): string` helper (or reuse `groupByDecade`'s internal key function, exported) from `decadeGrouping.ts`; replace each site's inline formula with a call to it.
+Files: `decadeGrouping.ts`, `_SubdivisionDetailContent.tsx`, `_SubdivisionsContent.tsx`, `HistoricalFactsPanel.tsx`, `_StreetDetailContent.tsx`.
+Data/schema: none.
+Acceptance criteria: zero remaining `Math.floor(*/10)*10` literals outside `decadeGrouping.ts` and the documented `mapConfig.ts`/`formatters.ts` map-legend exception.
+Test cases: grep-based static-scan test.
+Priority: B2. Complexity: S.
+
+**B2.4 — Extend `sectionOrder.test.ts` coverage gaps**
+User story: n/a (engineering hygiene — regression protection).
+Problem: no order test exists for the city page, neighborhood detail page, or pin-group page; the chart hex-literal guard only covers 8 of 12 chart files.
+Implementation: add order assertions for the 3 untested page types (matching CLAUDE.md's canonical order); add `ConstructionByDecadeChart.tsx`, `NeighborhoodCharts.tsx`, `NeighborhoodPriceChart.tsx`, `PinScopedCharts.tsx` to the existing hex-literal `it.each` list.
+Files: `src/lib/sectionOrder.test.ts`.
+Data/schema: none.
+Acceptance criteria: `npx vitest run` passes with the new assertions; each previously-uncovered file/page now has at least one regression test.
+Test cases: the new tests themselves.
+Priority: B2. Complexity: S.
+
+**B2.5 — Add `aria-live` to copy-to-clipboard button state changes**
+User story: as a screen-reader user, I know when "Copy summary" succeeded.
+Problem: the "Copied!" text swap has no `aria-live` region, so the state change is silent to screen readers.
+Implementation: wrap the button's status text in a visually-hidden `aria-live="polite"` region, or add the attribute directly to the button's text node.
+Files: `app/properties/[pin]/summary/_PropertySummaryContent.tsx` (and any other copy-to-clipboard button found via grep for `navigator.clipboard`).
+Data/schema: none.
+Acceptance criteria: a screen reader announces "Copied" when the button is activated.
+Test cases: manual VoiceOver/NVDA spot check.
+Priority: B2. Complexity: S.
+
+**B2.6 — Fix `Breadcrumb.tsx`'s stale "no Block level" doc comment**
+User story: n/a (prevents a future editor from "fixing" correct behavior).
+Problem: the component's doc comment claims no crumb ever shows a "Block" level; `pinGroups.ts`'s `buildBreadcrumbs` does exactly that for `/pin/[prefix]` pages, correctly.
+Implementation: update the comment to note the PIN-hierarchy exception.
+Files: `Breadcrumb.tsx`.
+Priority: B2. Complexity: S (docs only).
+
+**B3.1 — Expand the admin audit trail to cover higher-risk write paths**
+User story: as the admin, destructive or bulk edits are logged, not just the two rarest actions.
+Problem: Sprint 5's audit trail logs subdivision merges, boundary edits, and deed notes — the two *rarest* admin actions plus one narrow one — while leaving `updateParcel()`, `deleteSubdivision()` (a hard, irreversible delete), subdivision CRUD, subdivision-linkage writes (the exact surface that's broken production 3 times historically), and bulk neighborhood-assignment actions unlogged.
+Implementation: apply the same `logAdminChange()` pattern from `src/lib/adminAudit.ts` to `updateParcel()`, `deleteSubdivision()`, `upsertSubdivisionLink()`/`deleteSubdivisionLink()`, and the bulk neighborhood-assignment actions — prioritize the subdivision-linkage writes first given their history.
+Files: `app/admin/_actions/properties.ts`, `app/admin/_actions/subdivisions.ts`, `app/admin/_actions/neighborhoods.ts`.
+Data/schema: none (reuses the existing `admin_change_log` table).
+Acceptance criteria: a test edit through each newly-instrumented path produces a visible, queryable audit entry.
+Test cases: manual test edits per path.
+Priority: B3. Complexity: M.
+
+**B3.2 — Delete the dead `subdivisions.parcel_count` column reads/writes**
+User story: n/a (engineering hygiene).
+Problem: still fetched in 3 places and actively written by `syncParcelCount()`, never rendered anywhere — flagged in the original evaluation, untouched since.
+Implementation: remove the 3 `.select()`s that fetch it and the `syncParcelCount()` write path; confirm with the user before dropping the column itself (irreversible) versus just stopping the reads/writes.
+Files: `src/lib/supabase/subdivisionQueries.ts`, `app/admin/_actions/properties.ts`.
+Data/schema: possibly a column drop, pending user confirmation (irreversible — flag before doing).
+Acceptance criteria: `npm run build` passes with zero remaining references; `linked_parcel_count` remains the only parcel-count field read anywhere.
+Priority: B3. Complexity: S (app code) / requires confirmation for schema drop.
+
+**B3.3 — Add retention/pagination to `admin_change_log`**
+User story: n/a (engineering hygiene — prevents unbounded growth).
+Problem: no retention policy exists; the audit-log page hardcodes `.limit(200)` with no pagination.
+Implementation: add either a scheduled cleanup (delete rows older than N months) or simple pagination on `/admin/audit-log`; low urgency at current write volume, but no cleanup path exists today.
+Files: `app/admin/audit-log/page.tsx`; possibly a new migration for a cleanup function.
+Priority: B3. Complexity: S.
+
+**B3.4 — Add teardown-rebuild checks to `data_quality_report`**
+User story: as the admin, the data-quality report flags implausible teardown/rebuild data the same way it flags other implausible parcel data.
+Problem: the 7-check RPC has no check for `is_teardown_rebuild=true` with a null confidence, or medium/high heuristic disagreement, despite postdating that feature.
+Implementation: add an 8th check to `data_quality_report`/`data_quality_summary` following the existing check pattern.
+Files: new migration updating `data_quality_report`.
+Priority: B3. Complexity: S.
+
+**B3.5 — Route `TeardownBadge` confidence through `confidencePresentation.ts`, or document why not**
+User story: n/a (consistency).
+Problem: teardown confidence is the 4th independent confidence taxonomy and still doesn't use the shared presentation layer Sprint 3 built for subdivision/historical-fact confidence.
+Implementation: either extend `confidencePresentation.ts` to cover teardown confidence's 2-level (medium/high) scale, or add an explicit code comment (matching the one already on `app/sources/page.tsx:59` for property-level confidence) documenting why it's intentionally separate.
+Files: `confidencePresentation.ts`, `TeardownBadge.tsx`.
+Priority: B3. Complexity: S.
+
+**B3.6 — Remove the dead `neighborhood_id` select in admin properties list**
+User story: n/a (cleanup, closes the loop on A1.3).
+Problem: `app/admin/properties/page.tsx` still selects the legacy `neighborhood_id` column though it's never rendered.
+Implementation: remove it from the `.select()`.
+Files: `app/admin/properties/page.tsx`.
+Priority: B3. Complexity: S.
+
+**B4.1 — Build a real property-to-property comparison view**
+User story: as a buyer or agent, I can pick two or more specific properties (not just same-block neighbors) and see them side by side.
+Problem: no comparison view exists beyond the same-block "Nearby homes" list; comparing across streets/subdivisions requires opening separate tabs manually.
+Implementation: new route (e.g. `/compare?pins=a,b,c`) reusing `getPropertyDetail()` per PIN and a shared comparison-row component; needs a decision on how properties get added to the comparison (manual PIN entry, or paired with B4.2's watchlist).
+Files: new `app/compare/page.tsx` + client content; likely touches `_PropertyDetailContent.tsx`/summary page for an "Add to comparison" affordance.
+Data/schema: none required for a URL-param-based approach.
+Priority: B4. Complexity: L.
+
+**B4.2 — Add a lightweight session-based compare list / watchlist**
+User story: as a buyer, I can build a running list of properties I'm considering without creating an account.
+Problem: no favorites/watchlist concept exists anywhere in the app.
+Implementation: `localStorage`-backed list (no auth/schema needed), with an "Add to list" affordance on property cards/detail pages and a simple list view; natural pairing with B4.1's comparison view.
+Files: new `src/lib/watchlist.ts` (localStorage helper), UI affordances on `EntityCard`/property pages.
+Data/schema: none (client-only).
+Priority: B4. Complexity: M.
+
+**B4.3 — Add block-scoped, price-aware comparisons**
+User story: as a homeowner, I can see how my home compares to this block's recent sales, not just its build year across the whole street/neighborhood/city.
+Problem: `loadComparisons()` only ever returns year-built comparisons at street/neighborhood/city scope — never price/assessment, never block-level.
+Implementation: compute a block-level median sale price/assessed value from `getPinGroupDetail()`'s already-fetched data (no new query) and add it as an additional comparison sentence via `compareToScope()`.
+Files: `app/properties/[pin]/_PropertyDetailContent.tsx`, possibly `src/lib/formatters.ts`'s `compareToScope()`.
+Priority: B4. Complexity: M.
+
+**B4.4 — Add explicit sparse-data messaging to the property summary route**
+User story: as a user viewing a thin property record's summary, I understand why it's sparse rather than assuming something's broken.
+Problem: every section on `/properties/[pin]/summary` degrades silently; there's no "limited data available for this property" message, unlike the rest of the app's `EmptyState` convention.
+Implementation: if fewer than N sections have data, render an `EmptyState`-style note explaining the record is thin.
+Files: `app/properties/[pin]/summary/_PropertySummaryContent.tsx`.
+Priority: B4. Complexity: S.
+
+**B5.1 — Decide the fate of subdivision/street-scoped `historical_facts` columns**
+User story: n/a (product decision, not a code task).
+Problem: A3.4's migration added `subdivision_id`/`street_name_normalized` columns to `historical_facts` but populated zero rows — schema-only capability that could be mistaken for shipped functionality. It also risks future duplication with `subdivision_timeline_events`, which already covers subdivision-history storytelling.
+Implementation: requires a decision from the user — commit to authoring scoped fact content (and reconcile with `subdivision_timeline_events`'s overlapping purpose), or explicitly document this as deferred/exploratory so it isn't mistaken for a finished feature.
+Files: none yet — this is a scoping conversation before any implementation.
+Priority: B5 (blocked on user decision).

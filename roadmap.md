@@ -1231,3 +1231,75 @@ Highest-confidence, highest-impact A1 item: mechanical, touches a fully-enumerat
 3. Manual live-site check of the breadcrumb bug on `901 S Crescent Ave` (or another affected property) confirming breadcrumb and in-page neighborhood now agree.
 4. Manual read-through of `/sources`, `/about`, and one neighborhood page confirming the boundary-methodology description now matches across all three.
 5. Manual check of the homepage confirming the founding-narrative paragraph now carries a citation/source note.
+
+---
+
+# Cycle 3 (2026-07-09): Post-Sprint-5 Follow-Up Audit
+
+A targeted follow-up run after all 5 Cycle 2 sprints shipped — not a fresh 10-persona pass, but a verification of whether each Cycle 2 fix held plus an independent search for regressions/gaps in code Sprints 1-5 themselves introduced. Full findings in `EVALUATION.md`'s "Cycle 3" section; itemized tasks (B1.1-B5.1) in `BACKLOG.md`'s "Cycle 3" section.
+
+**Headline finding**: Sprint 4's "Nearby homes on this block" feature violates the user's own standing instruction that property-card lists must always be grouped by decade — shipped without being caught because no test enforces the pattern generically. **Second finding**: `linked_parcel_count`'s trigger coverage still has a gap (missing on `gis_lots`) that has already caused 3 manual resyncs and could cause a 4th.
+
+## Cycle 3 — Sprint 6 (B1 regression fixes)
+
+**Goal**: fix the two items that are live regressions or standing-rule violations, not judgment calls.
+**User outcome**: property-card lists are consistently decade-grouped everywhere, including the newest feature; subdivision parcel counts stay correct without manual intervention.
+
+- Engineering: group "Nearby homes on this block" by decade — **B1.1**; add a `gis_lots` trigger to close the `linked_parcel_count` gap — **B1.2**.
+
+**Files/components**: `_PropertyDetailContent.tsx`; new migration for the `gis_lots` trigger.
+
+**Acceptance criteria**: nearby-homes cards render through `<DecadeGroup>`; a direct `gis_lots.subdivision_id` update immediately reflects in `linked_parcel_count` with no manual resync.
+
+**Definition of done**: `npm run build` passes; a static-scan test enforces B1.1 going forward; B1.2 is manually verified against a test update.
+
+## Cycle 3 — Sprint 7 (B2 design-system consistency)
+
+**Goal**: close the consistency gaps that were flagged but not finished in Cycle 2 — a `<Card>` primitive, the last hand-rolled loading skeleton, decade-bucketing reimplementations, and test-coverage gaps.
+
+- Engineering: extract `<Card>` and migrate the top 4 call sites — **B2.1**; fix the subdivision detail loading skeleton — **B2.2**; consolidate remaining decade-bucketing logic — **B2.3**; extend `sectionOrder.test.ts` coverage (city/neighborhood/pin-group order, 4 missing chart files) — **B2.4**; add `aria-live` to copy-to-clipboard buttons — **B2.5**; fix `Breadcrumb.tsx`'s stale doc comment — **B2.6**.
+
+**Files/components**: new `Card.tsx`; `_SubdivisionDetailContent.tsx`; `decadeGrouping.ts` + 4 call sites; `sectionOrder.test.ts`; `_PropertySummaryContent.tsx`; `Breadcrumb.tsx`.
+
+**Definition of done**: `npm run build` and `npx vitest run` pass; manual screen-reader spot check on the copy-summary button.
+
+## Cycle 3 — Sprint 8 (B3 data quality and admin workflow)
+
+**Goal**: close the gaps in Sprint 5's audit trail and remaining dead-code/data-quality items.
+
+- Engineering: expand the audit trail to cover `updateParcel`, `deleteSubdivision`, subdivision-linkage writes, and bulk neighborhood assignment — **B3.1**; remove dead `subdivisions.parcel_count` reads/writes (confirm with user before any column drop) — **B3.2**; add retention/pagination to `admin_change_log` — **B3.3**; add teardown-rebuild checks to `data_quality_report` — **B3.4**; resolve or document `TeardownBadge`'s confidence taxonomy — **B3.5**; remove the dead `neighborhood_id` select in admin properties list — **B3.6**.
+
+**Files/components**: `app/admin/_actions/{properties,subdivisions,neighborhoods}.ts`; `subdivisionQueries.ts`; `app/admin/audit-log/page.tsx`; new migration for the 8th data-quality check; `confidencePresentation.ts`/`TeardownBadge.tsx`; `app/admin/properties/page.tsx`.
+
+**Risks**: B3.2's column drop is irreversible — confirm with the user before dropping vs. just removing reads/writes.
+
+**Definition of done**: `npm run build` passes; a test edit through each newly-instrumented write path produces a visible audit entry.
+
+## Cycle 3 — Sprint 9 (B4 buyer/agent/homeowner usefulness, continued)
+
+**Goal**: close the gaps the persona analysis found in Sprint 4's summary/comparison work — no cross-property comparison, no watchlist, comparisons still year-built-only.
+**User outcome**: a buyer or agent can compare specific chosen properties (not just same-block neighbors) and keep a running list across a session; a homeowner sees a block-level, price-aware comparison, not just build-year.
+
+- Product/engineering: real property-to-property comparison view — **B4.1**; session-based compare list/watchlist (no auth) — **B4.2**; block-scoped price-aware comparisons — **B4.3**; sparse-data messaging on the summary route — **B4.4**.
+
+**Files/components**: new `app/compare/page.tsx`; new `src/lib/watchlist.ts`; `_PropertyDetailContent.tsx`; `_PropertySummaryContent.tsx`.
+
+**Risks**: B4.1 and B4.2 are the largest-complexity items in this cycle (L/M) and may need their own plan-mode pass to settle the exact interaction design (how properties get added to a comparison) before implementation.
+
+**Definition of done**: `npm run build` passes; manual check that a buyer can add 2+ properties from different streets to a comparison and see them side by side.
+
+## Cycle 3 — Not yet sprint-scheduled
+
+**B5.1** — deciding the fate of the unused subdivision/street-scoped `historical_facts` columns is a content/product decision, not an engineering task. Needs a direct conversation with the user before it can be scheduled into a sprint.
+
+## Cycle 3 — Immediate first task
+
+**B1.1 — Group "Nearby homes on this block" by decade.** Smallest, highest-confidence item in this cycle: one file, mechanical (the exact pattern already exists one file over in `_PinGroupContent.tsx`), and directly fixes a standing-rule violation rather than a judgment call. Good first move before B1.2's migration work.
+
+## Cycle 3 — Verification plan
+
+1. `npm run build` (runs `vitest run` via `prebuild`) must pass after each sprint.
+2. B1.1: static-scan test confirms `<DecadeGroup` renders in the nearby-homes section; manual visual check.
+3. B1.2: manual `gis_lots` update in a test/staging context confirms `linked_parcel_count` updates without a manual resync call.
+4. B3.1: manual test edit through each newly-instrumented admin write path, confirmed visible on `/admin/audit-log`.
+5. B4.1/B4.2: manual check that a buyer can build and view a cross-property comparison.

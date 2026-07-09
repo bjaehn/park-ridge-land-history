@@ -150,3 +150,48 @@ The full top-10 improvement list, trust-builder, and rejection-trigger for each 
 ---
 
 *See `ROADMAP.md` for the 5-sprint execution plan and `BACKLOG.md` for the full itemized task list (A1.1 through A5.4).*
+
+---
+
+# Cycle 3 (2026-07-09): Post-Sprint-5 Follow-Up Audit
+
+A third evaluation, run after all 5 Cycle 2 sprints shipped. Unlike Cycle 1→2 (a fresh 10-persona/20-category pass), this audit is targeted: four parallel research passes verified whether each Cycle 2 fix actually held, and independently searched for regressions and gaps introduced by Sprints 1-5's own changes — code the original evaluation never saw. Full detail lives in the itemized task list below and in `BACKLOG.md`'s new "Cycle 3" section (task IDs B1.1-B5.1); `ROADMAP.md`'s "Cycle 3" section has the sprint plan.
+
+**Headline finding**: Sprint 4's "Nearby homes on this block" feature (`_PropertyDetailContent.tsx:1013-1045`) renders a flat, alphabetically-sorted grid of property cards — directly violating the user's own standing instruction (recorded 2026-06-24) that "property card lists must always be grouped by decade built... flat address-ordered lists are not acceptable." This shipped in Sprint 4 without being caught by review or by `sectionOrder.test.ts`, because no test asserts "every property-card grid must use `<DecadeGroup>`" as a systemic rule — each existing test checks one specific previously-fixed instance, not the underlying pattern. This is the highest-priority item in Cycle 3.
+
+**Second-highest priority**: `subdivisions.linked_parcel_count` — the trigger-maintained figure CLAUDE.md documents as the reference count for a subdivision's linked parcels — still has an incomplete trigger surface. Triggers exist on `property_subdivision_links`, `parcels`, and `parcel_lot_relationships`, but not on `gis_lots`, the table anchoring the third union branch. This exact gap caused three separate manual resync migrations in one week (`20260707000002`, `20260707000007`, `20260707000020`) and nothing structurally prevents a fourth. This is the same class of bug CLAUDE.md already flags as having broken production three times historically — worth closing at the trigger level rather than continuing to patch reactively.
+
+## Verified status of Cycle 2 fixes
+
+| Item | Status | Evidence |
+|---|---|---|
+| A1.1 heading hierarchy | **Fixed** | Zero `<p className="section-heading">` remain; new Sprint 4 code (`_PropertySummaryContent.tsx`) also compliant. |
+| A1.3 breadcrumb/neighborhood mismatch | **Fixed** | Both breadcrumb and page body now derive from the same precedence, with a code comment tying them together. Stale doc comment remains in `Breadcrumb.tsx` ("No 'Block' level ever appears") — contradicted by `/pin/[prefix]` pages. |
+| A2.1 PageHeader standardization | **Fixed** (public pages) | All 4 originally-named pages plus new Sprint 4/5 routes use it. Admin's 17 pages never did and still don't — a separate, internally-consistent convention, not a regression. |
+| A2.3 unified decade grouping | **Partially fixed** | Card-list call sites are clean. But `Math.floor(year/10)*10` has been reimplemented independently in ~6 more places since (chart data-prep in `_SubdivisionDetailContent.tsx`, decade filters) — the same class of drift relocated, not eliminated. And Sprint 4 itself added a new flat, non-grouped list (see headline finding). |
+| A2.4 chart color theme | **Fixed**, test gap | `chartTheme.ts` and `ERA_PALETTE`-derived Tailwind tokens (A5.4) are both real. But `sectionOrder.test.ts`'s hex-literal regression guard only covers 8 of 12 chart files — `ConstructionByDecadeChart.tsx`, `NeighborhoodCharts.tsx`, `NeighborhoodPriceChart.tsx`, `PinScopedCharts.tsx` are unprotected (currently clean, but a regression there wouldn't be caught). |
+| EmptyState/LoadingSkeleton standardization | **Partially fixed** | Streets index fixed. Subdivision detail page's loading skeleton is *still* hand-rolled — named in the original audit, the file was touched for the DecadeGroup migration, and it's still not fixed. |
+| `<Card>` primitive extraction | **Never scoped** | Flagged in the original evaluation's UX consistency audit but never entered the A1-A5 backlog. The copy-pasted `bg-surface-card border border-surface-border rounded-lg` pattern has grown from ~30 to 45 occurrences across 18 files since. |
+| Confidence taxonomy consolidation | **Partially fixed** | Sprint 3 unified *display copy* for subdivision/historical-fact confidence (`confidencePresentation.ts`) and documented that property-level confidence is intentionally separate. The underlying data-model fragmentation (4 independent heuristics, `source_registry.confidence_default` built but read by zero queries) is untouched. Teardown confidence still doesn't route through the shared presentation layer. |
+| Legacy `parcels.neighborhood_id` | **Fixed** (risky path) | No longer read on the property page. One dead-but-harmless `.select()` remains in `app/admin/properties/page.tsx` (not rendered). |
+| `subdivisions.parcel_count` (legacy, deed-only) | **Not fixed** | Still fetched in 3 places and actively written by `syncParcelCount()`, never rendered anywhere. Flagged in the original audit, untouched since. |
+
+## New issues found (introduced by, or newly visible after, Sprints 1-5)
+
+1. **[B1] "Nearby homes on this block" violates the standing decade-grouping rule** — see headline finding above. `_PropertyDetailContent.tsx:1013-1045`, sourced from `getPinGroupDetail()` which orders `.order("address", { ascending: true })` (`pinGroups.ts:112`).
+2. **[B1] `linked_parcel_count` trigger gap on `gis_lots`** — see headline finding above. Root cause of 3 historical resync migrations; no trigger currently prevents a 4th.
+3. **[B2] `<Card>` primitive never extracted, actively growing (45 occurrences, 18 files)** — flagged in Cycle 2's evaluation, silently dropped from that cycle's backlog.
+4. **[B2] Subdivision detail page's loading skeleton still hand-rolled** — named twice now (original audit + this one) without being fixed, despite the file being touched for an unrelated migration.
+5. **[B2] `sectionOrder.test.ts` has real coverage gaps** — no order test exists for the city page, neighborhood detail page, or pin-group page (any of the "out-of-hierarchy panel" class of bug could silently reappear there); 4 of 12 chart files aren't covered by the hex-literal regression guard.
+6. **[B2] "Copied!" button state changes have no `aria-live` announcement** — screen-reader users get no feedback that the copy succeeded, on the property summary page and any other copy-to-clipboard button.
+7. **[B3] Admin audit trail (Sprint 5, A5.1) covers the two rarest write actions and skips the routine/bulk/destructive ones** — logged: subdivision merge, boundary edit, deed notes. Unlogged: `updateParcel()` (address/year/sqft/all 3 neighborhood FKs), `deleteSubdivision()` (hard delete, irreversible), subdivision CRUD, subdivision-linkage writes (`upsertSubdivisionLink`/`deleteSubdivisionLink` — the exact surface CLAUDE.md flags as having broken production 3 times historically), and bulk neighborhood-assignment actions. The audit-log UI is honest about this ("Other admin writes are not yet logged") but the scope reads as arbitrary rather than risk-prioritized.
+8. **[B3] `data_quality_report`'s 7 checks don't cover teardown-rebuild fields** — no check flags `is_teardown_rebuild=true` with a null confidence, or medium/high heuristic disagreement, despite postdating that feature.
+9. **[B3] `admin_change_log` has no retention policy** — unbounded growth, hardcoded `.limit(200)` on the read side with no pagination. Low risk at current volume, but no cleanup path exists.
+10. **[B4] No property-to-property comparison view exists** — a real estate agent or buyer comparing two *specific* chosen properties (not just "6 nearest on the same block") has no tool for it; they'd have to open two summary pages in separate tabs.
+11. **[B4] No favorites/watchlist concept anywhere** — confirmed via repo-wide grep. A buyer comparing houses across sessions starts from search every time.
+12. **[B4] Property comparisons are year-built-only, never price/assessment, and never block-scoped** — `loadComparisons()` only ever returns year-built comparisons at street/neighborhood/city scope. A homeowner can't see "my home vs. this block's median sale price."
+13. **[B4] Property summary route is visually lightweight but not backend-lightweight** — it calls the same 11-way `getPropertyDetail()` fan-out as the full page; nothing was actually saved on load cost.
+14. **[B4] Sparse-data properties get no explanatory empty state on the summary route** — every section degrades silently to "just show less," with no "limited data available" message, unlike the rest of the app's `EmptyState` convention.
+15. **[B5] Historical-facts subdivision/street scoping (A3.4, Sprint 3) is schema-only** — the migration's own header comment states no existing rows use the new columns and it inserts no new facts; "authoring subdivision- or street-scoped fact content is a separate, future task." Zero subsequent migration has populated it. This is a content-authoring decision, not a code task — flagged here so it isn't mistaken for shipped functionality.
+
+*See `BACKLOG.md`'s "Cycle 3" section for itemized tasks (B1.1-B5.1) and `ROADMAP.md`'s "Cycle 3" section for the sprint plan.*
