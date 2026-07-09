@@ -1,4 +1,11 @@
 import type { Config } from "tailwindcss";
+import { ERA_PALETTE } from "./src/lib/mapConfig";
+
+// Derived from ERA_PALETTE so Tailwind's era-* tokens can never drift from
+// the hex values map/chart consumers actually read via getEraColor().
+const eraColors = Object.fromEntries(
+  Object.entries(ERA_PALETTE).map(([key, hex]) => [key.toLowerCase().replace(/-/g, ""), hex])
+);
 
 const config: Config = {
   content: [
@@ -29,24 +36,8 @@ const config: Config = {
           amber: "#e6a64a",
           red: "#c96a70",
         },
-        // Era decade palette (matches colorScales.ts)
-        era: {
-          "pre1900": "#4c3b4d",
-          "1900s": "#6b4e71",
-          "1910s": "#785f9a",
-          "1920s": "#6d7eb8",
-          "1930s": "#4f9db8",
-          "1940s": "#4fb6a8",
-          "1950s": "#68bd7d",
-          "1960s": "#9ac35d",
-          "1970s": "#d0bd4d",
-          "1980s": "#e6a64a",
-          "1990s": "#df8252",
-          "2000s": "#c96a70",
-          "2010s": "#a85f84",
-          "2020s": "#6d617c",
-          "unknown": "#9ca3af",
-        },
+        // Era decade palette, derived from ERA_PALETTE (src/lib/mapConfig.ts)
+        era: eraColors,
         // Confidence signals
         confidence: {
           high: "#4fb6a8",

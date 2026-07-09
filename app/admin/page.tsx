@@ -79,6 +79,12 @@ const tools = [
     description:
       "Name and alias similarity matches between subdivision records, with a manual merge workflow.",
   },
+  {
+    href: "/admin/audit-log",
+    label: "Audit Log",
+    description:
+      "Recent tracked admin changes: subdivision merges, neighborhood boundary edits, and deed research notes.",
+  },
 ];
 
 export default async function AdminDashboard() {

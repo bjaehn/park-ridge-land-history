@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { adminSupabase } from "@/lib/supabase/adminClient";
+import { logAdminChange } from "@/lib/adminAudit";
 
 function str(fd: FormData, key: string): string | null {
   const v = fd.get(key);
@@ -23,12 +24,29 @@ function flt(fd: FormData, key: string): number | null {
 // ─── Parcel core fields ───────────────────────────────────────────────────────
 
 export async function saveDeedNotes(pin: string, notes: string) {
+  const { data: existing } = await adminSupabase
+    .from("parcels")
+    .select("deed_notes")
+    .eq("pin_normalized", pin)
+    .maybeSingle();
+
+  const newNotes = notes.trim() || null;
   const { error } = await adminSupabase
     .from("parcels")
-    .update({ deed_notes: notes.trim() || null })
+    .update({ deed_notes: newNotes })
     .eq("pin_normalized", pin);
   if (error) return { error: error.message };
   revalidatePath(`/admin/properties/${encodeURIComponent(pin)}`);
+  await logAdminChange([
+    {
+      tableName: "parcels",
+      rowId: pin,
+      fieldName: "deed_notes",
+      oldValue: (existing?.deed_notes as string | null) ?? null,
+      newValue: newNotes,
+      action: "update",
+    },
+  ]);
   return {};
 }
 

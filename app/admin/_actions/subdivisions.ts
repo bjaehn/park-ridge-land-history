@@ -3,6 +3,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { revalidatePath } from "next/cache";
 import { adminSupabase } from "@/lib/supabase/adminClient";
+import { logAdminChange } from "@/lib/adminAudit";
 
 function str(fd: FormData, key: string): string | null {
   const v = fd.get(key);
@@ -271,6 +272,16 @@ export async function mergeSubdivisions(winnerId: string, loserId: string) {
   revalidatePath(`/admin/subdivisions/${winnerId}`);
   revalidatePath(`/admin/subdivisions/${loserId}`);
   if (error) return { error: error.message };
+  await logAdminChange([
+    {
+      tableName: "subdivisions",
+      rowId: loserId,
+      fieldName: "merged_into",
+      oldValue: loserId,
+      newValue: winnerId,
+      action: "merge",
+    },
+  ], { changeGroup: crypto.randomUUID() });
   return {};
 }
 

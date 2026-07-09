@@ -114,58 +114,6 @@ export async function searchSubdivisions(
 
 // ─── Parcels in a subdivision ─────────────────────────────────────────────────
 
-export async function fetchParcelsInSubdivision(
-  subdivisionId: string,
-  limit = 50
-): Promise<Array<{ pin: string; address: string | null; year_built: number | null; building_sqft: number | null; sale_count: number | null; permit_count: number | null; lot_number: string | null; block_number: string | null }>> {
-  if (!supabase || !subdivisionId) return [];
-  const { data, error } = await supabase
-    .from("property_subdivision_links")
-    .select("pin, address, lot_number, block_number")
-    .eq("subdivision_id", subdivisionId)
-    .limit(limit);
-
-  if (error || !data) return [];
-
-  const pins = data.map((r) => r.pin).filter(Boolean) as string[];
-  if (!pins.length) return [];
-
-  const { data: parcels, error: parcelError } = await supabase
-    .from("parcels")
-    .select("pin_normalized, address, year_built, building_sqft, sale_count, permit_count")
-    .in("pin_normalized", pins);
-
-  if (parcelError || !parcels) {
-    return data.map((r) => ({
-      pin: r.pin as string,
-      address: r.address as string | null,
-      year_built: null,
-      building_sqft: null,
-      sale_count: null,
-      permit_count: null,
-      lot_number: r.lot_number as string | null,
-      block_number: r.block_number as string | null,
-    }));
-  }
-
-  const parcelMap = new Map(
-    (parcels as Array<Record<string, unknown>>).map((p) => [p.pin_normalized, p])
-  );
-  return data.map((r) => {
-    const parcel = parcelMap.get(r.pin as string);
-    return {
-      pin: r.pin as string,
-      address: ((parcel?.address ?? r.address) as string | null),
-      year_built: (parcel?.year_built as number | null) ?? null,
-      building_sqft: (parcel?.building_sqft as number | null) ?? null,
-      sale_count: (parcel?.sale_count as number | null) ?? null,
-      permit_count: (parcel?.permit_count as number | null) ?? null,
-      lot_number: r.lot_number as string | null,
-      block_number: r.block_number as string | null,
-    };
-  });
-}
-
 // ─── Subdivisions by decade ───────────────────────────────────────────────────
 
 export async function fetchSubdivisionDecadeDistribution(): Promise<

@@ -262,3 +262,19 @@ describe("compare-nearby-homes view (A4.3)", () => {
     expect(content).toContain("p.pin !== pin");
   });
 });
+
+describe("dead code removed (A5.2)", () => {
+  it.each([
+    "src/styles/global.css",
+    "src/components/ui/CoverageTable.tsx",
+    "src/components/ui/EraPortrait.tsx",
+  ])("%s does not exist", (file) => {
+    expect(fs.existsSync(path.resolve(process.cwd(), file))).toBe(false);
+  });
+
+  it("fetchParcelsInSubdivision is no longer defined", () => {
+    const file = "src/lib/supabase/subdivisionQueries.ts";
+    const content = fs.readFileSync(path.resolve(process.cwd(), file), "utf-8");
+    expect(content).not.toContain("fetchParcelsInSubdivision");
+  });
+});

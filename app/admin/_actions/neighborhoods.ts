@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { adminSupabase } from "@/lib/supabase/adminClient";
+import { logAdminChange } from "@/lib/adminAudit";
 
 function str(fd: FormData, key: string): string | null {
   const v = fd.get(key);
@@ -58,7 +59,31 @@ export async function updateNeighborhood(id: string, formData: FormData) {
 // Supabase PostgREST accepts a raw GeoJSON string for geometry columns.
 // The geojson field should be a valid GeoJSON Geometry object string.
 
+// Geometry blobs are too large for the audit log's old_value/new_value
+// columns, so log a type+point-count summary instead of the raw GeoJSON.
+function countPoints(coords: unknown): number {
+  if (!Array.isArray(coords)) return 0;
+  if (typeof coords[0] === "number") return 1;
+  return coords.reduce((sum: number, c) => sum + countPoints(c), 0);
+}
+function describeGeometry(geometry: string | null | undefined): string {
+  if (!geometry) return "<null>";
+  try {
+    const geom = JSON.parse(geometry);
+    return `${geom.type} (${countPoints(geom.coordinates)} points)`;
+  } catch {
+    return "<present>";
+  }
+}
+
 export async function updateNeighborhoodGeometry(id: string, formData: FormData) {
+  const { data: existing } = await adminSupabase
+    .from("neighborhoods")
+    .select("geometry")
+    .eq("id", id)
+    .maybeSingle();
+  const oldValue = describeGeometry(existing?.geometry as string | null);
+
   const geojsonStr = str(formData, "geojson");
   if (!geojsonStr) {
     const { error } = await adminSupabase
@@ -67,6 +92,9 @@ export async function updateNeighborhoodGeometry(id: string, formData: FormData)
       .eq("id", id);
     revalidatePath(`/admin/neighborhoods/${encodeURIComponent(id)}`);
     if (error) return { error: error.message };
+    await logAdminChange([
+      { tableName: "neighborhoods", rowId: id, fieldName: "geometry", oldValue, newValue: "<null>", action: "update" },
+    ]);
     return {};
   }
 
@@ -97,6 +125,9 @@ export async function updateNeighborhoodGeometry(id: string, formData: FormData)
 
   revalidatePath(`/admin/neighborhoods/${encodeURIComponent(id)}`);
   if (error) return { error: error.message };
+  await logAdminChange([
+    { tableName: "neighborhoods", rowId: id, fieldName: "geometry", oldValue, newValue: describeGeometry(finalGeojson), action: "update" },
+  ]);
   return {};
 }
 
