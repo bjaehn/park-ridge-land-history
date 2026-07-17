@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   title: "Permits",
   description:
     "Building permits issued in Park Ridge, grouped by work category. Sourced from the Cook County Assessor permits dataset.",
+  alternates: { canonical: "/permits" },
 };
 
 export default async function PermitsPage() {

@@ -8,6 +8,7 @@ export const metadata: Metadata = {
   title: "Streets",
   description:
     "Every street in Park Ridge grouped by construction era — explore how the city was built decade by decade.",
+  alternates: { canonical: "/streets" },
 };
 
 export default async function StreetsPage() {

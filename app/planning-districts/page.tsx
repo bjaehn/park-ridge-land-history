@@ -8,6 +8,7 @@ export const metadata: Metadata = {
   title: "Planning Districts",
   description:
     "Park Ridge's official planning neighborhoods, sorted by first built year, with a map of every district's boundary.",
+  alternates: { canonical: "/planning-districts" },
 };
 
 const NEIGHBORHOOD_TYPES: NeighborhoodType[] = ["official_planning"];

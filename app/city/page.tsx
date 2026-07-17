@@ -9,6 +9,7 @@ import { CityContent } from "./_CityContent";
 export const metadata: Metadata = {
   title: "City history",
   description: "How Park Ridge grew, decade by decade. Development history for the full city.",
+  alternates: { canonical: "/city" },
 };
 
 export default async function CityPage() {

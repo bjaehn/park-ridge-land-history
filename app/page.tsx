@@ -12,6 +12,7 @@ export const metadata: Metadata = {
   title: "Park Ridge Land History",
   description:
     "Find your property's story. Park Ridge Land History traces every property in Park Ridge, Illinois from its recorded plat to today.",
+  alternates: { canonical: "/" },
 };
 
 const CITY_HIGHLIGHTS: readonly HighlightGroup[] = [

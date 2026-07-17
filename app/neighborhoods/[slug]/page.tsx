@@ -1,4 +1,4 @@
-export const dynamic = "force-dynamic";
+export const revalidate = 86400;
 
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -10,6 +10,8 @@ import { NeighborhoodTypePanel } from "@/components/ui/NeighborhoodTypePanel";
 import { HistoricalFactsPanel } from "@/components/ui/HistoricalFactsPanel";
 import { InlineSourceNote } from "@/components/ui/SourceNote";
 import { NeighborhoodPage } from "./_NeighborhoodPage";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { breadcrumbJsonLd, placeJsonLd } from "@/lib/seo";
 import {
   getNeighborhoodMeta,
   getNeighborhoodStats,
@@ -35,6 +37,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: meta.label,
     description,
+    alternates: { canonical: `/neighborhoods/${encodeURIComponent(slug)}` },
     openGraph: {
       title: meta.label,
       description,
@@ -129,14 +132,24 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
       />
     ) : undefined;
 
+  const breadcrumbItems = [
+    { label: "Park Ridge", href: "/city" },
+    { label: meta.label, current: true as const },
+  ];
+  const path = `/neighborhoods/${encodeURIComponent(slug)}`;
+
   return (
     <div className="page-shell">
-      <Breadcrumb
-        items={[
-          { label: "Park Ridge", href: "/city" },
-          { label: meta.label, current: true },
-        ]}
+      <JsonLd data={breadcrumbJsonLd(breadcrumbItems, path)} />
+      <JsonLd
+        data={placeJsonLd({
+          name: meta.label,
+          description: narrative ?? `The ${meta.label} neighborhood of Park Ridge, Illinois.`,
+          path,
+          bbox: mapData.bbox,
+        })}
       />
+      <Breadcrumb items={breadcrumbItems} />
 
       <PageHeader eyebrow={eyebrow} title={meta.label} subtitle={subtitle} />
 

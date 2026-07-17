@@ -7,6 +7,8 @@ import { getPropertyByPin } from "@/lib/data/properties";
 import { formatAddress } from "@/lib/formatters";
 import { PropertySummaryContent } from "./_PropertySummaryContent";
 
+export const revalidate = 86400;
+
 type Props = { params: { pin: string } };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -20,6 +22,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${address} — Summary`,
     description,
+    // This is a condensed duplicate of /properties/[pin] for sharing, not a distinct
+    // page worth indexing separately -- canonicalize to the full page and keep it
+    // out of search results.
+    alternates: { canonical: `/properties/${encodeURIComponent(pin)}` },
+    robots: { index: false, follow: true },
     openGraph: {
       title: `${address} — Summary`,
       description,

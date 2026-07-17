@@ -21,6 +21,11 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <link rel="stylesheet" href="/maplibre-gl.css" />
+        <script
+          defer
+          data-domain="parkridgelandhistory.com"
+          src="https://plausible.io/js/script.js"
+        />
       </head>
       <body>
         <a

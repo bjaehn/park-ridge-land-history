@@ -657,3 +657,21 @@ async function loadPropertyProps(pin: string): Promise<ParcelProperties | null> 
     return null;
   }
 }
+
+/** All parcel PINs, paginated past PostgREST's default row cap. Used to build the sitemap. */
+export async function fetchAllParcelPins(): Promise<string[]> {
+  if (!supabase) return [];
+  const pins: string[] = [];
+  const pageSize = 1000;
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await supabase
+      .from("parcels")
+      .select("pin_normalized")
+      .not("pin_normalized", "is", null)
+      .range(from, from + pageSize - 1);
+    if (error || !data || data.length === 0) break;
+    pins.push(...(data as Array<{ pin_normalized: string }>).map((r) => r.pin_normalized));
+    if (data.length < pageSize) break;
+  }
+  return pins;
+}

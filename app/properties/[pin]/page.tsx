@@ -9,6 +9,10 @@ import { PropertyDetailContent } from "./_PropertyDetailContent";
 import { getPropertyByPin, fetchPropertyBbox } from "@/lib/data/properties";
 import { formatAddress } from "@/lib/formatters";
 import { ShareIcon } from "@/lib/icons";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { breadcrumbJsonLd } from "@/lib/seo";
+
+export const revalidate = 86400;
 
 type Props = { params: { pin: string } };
 
@@ -23,6 +27,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: address,
     description,
+    alternates: { canonical: `/properties/${encodeURIComponent(pin)}` },
     openGraph: {
       title: address,
       description,
@@ -44,20 +49,23 @@ export default async function PropertyDetailPage({ params }: Props) {
   const address = formatAddress(property.address);
   const lat = property.lat;
   const lng = property.lng;
+  const path = `/properties/${encodeURIComponent(pin)}`;
+  const breadcrumbItems = [
+    { label: "Park Ridge", href: "/city" },
+    ...(property.neighborhoodLabel && property.neighborhoodSlug
+      ? [{ label: property.neighborhoodLabel, href: `/neighborhoods/${encodeURIComponent(property.neighborhoodSlug)}` }]
+      : []),
+    ...(property.subdivision
+      ? [{ label: property.subdivision.name, href: `/subdivisions/${encodeURIComponent(property.subdivision.id)}` }]
+      : []),
+    { label: address, current: true as const },
+  ];
 
   return (
     <div className="page-shell">
+      <JsonLd data={breadcrumbJsonLd(breadcrumbItems, path)} />
       <Breadcrumb
-        items={[
-          { label: "Park Ridge", href: "/city" },
-          ...(property.neighborhoodLabel && property.neighborhoodSlug
-            ? [{ label: property.neighborhoodLabel, href: `/neighborhoods/${encodeURIComponent(property.neighborhoodSlug)}` }]
-            : []),
-          ...(property.subdivision
-            ? [{ label: property.subdivision.name, href: `/subdivisions/${encodeURIComponent(property.subdivision.id)}` }]
-            : []),
-          { label: address, current: true as const },
-        ]}
+        items={breadcrumbItems}
       />
 
       <PageHeader

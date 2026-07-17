@@ -8,6 +8,7 @@ export const metadata: Metadata = {
   title: "Business Districts",
   description:
     "Park Ridge's business districts, sorted by first built year, with a map of every district's boundary.",
+  alternates: { canonical: "/business-districts" },
 };
 
 const NEIGHBORHOOD_TYPES: NeighborhoodType[] = ["business_district"];

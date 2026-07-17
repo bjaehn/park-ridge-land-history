@@ -7,6 +7,7 @@ import { SITE_NAME, SITE_TAGLINE, NEIGHBORHOOD_BOUNDARY_DISCLAIMER } from "@/lib
 export const metadata: Metadata = {
   title: "About",
   description: `About the ${SITE_NAME} project.`,
+  alternates: { canonical: "/about" },
 };
 
 export default function AboutPage() {

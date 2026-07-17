@@ -6,6 +6,10 @@ import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { MapView } from "@/components/MapView";
 import { StreetDetailContent } from "./_StreetDetailContent";
 import { getStreetByName, fetchStreetBbox } from "@/lib/data/streets";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { breadcrumbJsonLd, placeJsonLd } from "@/lib/seo";
+
+export const revalidate = 86400;
 
 type Props = { params: { street: string } };
 
@@ -15,6 +19,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: name,
     description,
+    alternates: { canonical: `/streets/${encodeURIComponent(name)}` },
     openGraph: {
       title: name,
       description,
@@ -34,15 +39,25 @@ export default async function StreetDetailPage({ params }: Props) {
 
   if (!street) notFound();
 
+  const path = `/streets/${encodeURIComponent(streetName)}`;
+  const breadcrumbItems = [
+    { label: "Park Ridge", href: "/city" },
+    { label: "Streets", href: "/streets" },
+    { label: street.name, current: true as const },
+  ];
+
   return (
     <div className="page-shell">
-      <Breadcrumb
-        items={[
-          { label: "Park Ridge", href: "/city" },
-          { label: "Streets", href: "/streets" },
-          { label: street.name, current: true },
-        ]}
+      <JsonLd data={breadcrumbJsonLd(breadcrumbItems, path)} />
+      <JsonLd
+        data={placeJsonLd({
+          name: street.name,
+          description: `${street.name}, a street in Park Ridge, Illinois${street.eraSpan ? ` built ${street.eraSpan}` : ""}.`,
+          path,
+          bbox: streetBbox,
+        })}
       />
+      <Breadcrumb items={breadcrumbItems} />
       <PageHeader
         eyebrow="Street"
         title={street.name}

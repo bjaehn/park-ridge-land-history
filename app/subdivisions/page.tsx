@@ -10,6 +10,7 @@ export const metadata: Metadata = {
   title: "Subdivisions",
   description:
     "Recorded Park Ridge subdivision plats. Each plat names the developer, recording date, and lots created.",
+  alternates: { canonical: "/subdivisions" },
 };
 
 export default async function SubdivisionsPage() {

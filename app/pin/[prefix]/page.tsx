@@ -7,6 +7,10 @@ import { MapView } from "@/components/MapView";
 import { PinGroupContent } from "./_PinGroupContent";
 import { getPinGroupSummary, getPinGroupDetail, fetchPinPrefixBbox } from "@/lib/data/pinGroups";
 import { formatCount } from "@/lib/formatters";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { breadcrumbJsonLd } from "@/lib/seo";
+
+export const revalidate = 86400;
 
 function mostCommon<T>(values: (T | null)[]): T | null {
   const counts = new Map<T, number>();
@@ -29,6 +33,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `PIN ${prefix}`,
     description,
+    alternates: { canonical: `/pin/${encodeURIComponent(prefix)}` },
     openGraph: {
       title: `PIN ${prefix} — Park Ridge Land History`,
       description,
@@ -66,6 +71,7 @@ export default async function PinGroupPage({ params }: Props) {
 
   return (
     <div className="page-shell">
+      <JsonLd data={breadcrumbJsonLd(summary.breadcrumbParts, `/pin/${encodeURIComponent(prefix)}`)} />
       <Breadcrumb items={summary.breadcrumbParts} />
 
       <PageHeader

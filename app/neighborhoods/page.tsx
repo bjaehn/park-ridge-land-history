@@ -7,6 +7,7 @@ import { NeighborhoodIcon } from "@/lib/icons";
 export const metadata: Metadata = {
   title: "Neighborhoods",
   description: "Park Ridge's corridor districts and local/informal neighborhood names.",
+  alternates: { canonical: "/neighborhoods" },
 };
 
 // Official Planning Neighborhoods and Business Districts have their own

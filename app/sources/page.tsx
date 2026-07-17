@@ -3,15 +3,35 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { SOURCES, NEIGHBORHOOD_BOUNDARY_DISCLAIMER } from "@/lib/content";
 import { CONFIDENCE_DESCRIPTION } from "@/lib/formatters";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { absoluteUrl } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Data sources",
   description: "Sources, methodology, and known limitations for Park Ridge Land History.",
+  alternates: { canonical: "/sources" },
+};
+
+const datasetJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Dataset",
+  name: "Park Ridge Land History property dataset",
+  description:
+    "Property, subdivision, permit, and sale records for Park Ridge, Illinois, joined from Cook County assessor, recorder, and permit sources by Cook County PIN.",
+  url: absoluteUrl("/sources"),
+  creator: { "@type": "Organization", name: "Park Ridge Land History" },
+  spatialCoverage: { "@type": "Place", name: "Park Ridge, Illinois" },
+  isBasedOn: Object.values(SOURCES).map((src) => ({
+    "@type": "CreativeWork",
+    name: src.label,
+    description: src.detail,
+  })),
 };
 
 export default function SourcesPage() {
   return (
     <div className="page-shell max-w-prose">
+      <JsonLd data={datasetJsonLd} />
       <Breadcrumb items={[{ label: "Data sources", current: true }]} />
       <PageHeader
         title="Data sources"

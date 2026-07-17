@@ -16,13 +16,16 @@ import {
 } from "@/lib/supabase/subdivisionQueries";
 import { statusLabel } from "@/lib/subdivisionTypes";
 import type { ConfidenceLevel } from "@/lib/formatters";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { breadcrumbJsonLd, placeJsonLd } from "@/lib/seo";
+
+export const revalidate = 86400;
 
 type Props = { params: { id: string } };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const sub = await fetchSubdivisionFullDetail(
-    decodeURIComponent(params.id)
-  ).catch(() => null);
+  const id = decodeURIComponent(params.id);
+  const sub = await fetchSubdivisionFullDetail(id).catch(() => null);
   if (!sub) return { title: "Subdivision not found" };
   const year = sub.recorded_year ? ` (${sub.recorded_year})` : "";
   const title = sub.display_name ?? sub.name;
@@ -30,6 +33,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title,
     description,
+    alternates: { canonical: `/subdivisions/${encodeURIComponent(id)}` },
     openGraph: {
       title,
       description,
@@ -79,15 +83,25 @@ export default async function SubdivisionDetailPage({ params }: Props) {
   const hasHistoryContent =
     (sub.facts?.length ?? 0) > 0 || (sub.research_tasks?.length ?? 0) > 0;
 
+  const path = `/subdivisions/${encodeURIComponent(id)}`;
+  const breadcrumbItems = [
+    { label: "Park Ridge", href: "/city" },
+    { label: "Subdivisions", href: "/subdivisions" },
+    { label: sub.display_name ?? sub.name, current: true as const },
+  ];
+
   return (
     <div className="page-shell max-w-none">
-      <Breadcrumb
-        items={[
-          { label: "Park Ridge", href: "/city" },
-          { label: "Subdivisions", href: "/subdivisions" },
-          { label: sub.display_name ?? sub.name, current: true },
-        ]}
+      <JsonLd data={breadcrumbJsonLd(breadcrumbItems, path)} />
+      <JsonLd
+        data={placeJsonLd({
+          name: sub.display_name ?? sub.name,
+          description: sub.historical_summary ?? sub.notes ?? `The ${sub.name} subdivision plat in Park Ridge, Illinois.`,
+          path,
+          bbox: allBbox,
+        })}
       />
+      <Breadcrumb items={breadcrumbItems} />
 
       {/* ---- Header ---- */}
       <div className="flex items-start justify-between gap-4 mb-4 flex-wrap">

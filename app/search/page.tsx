@@ -13,6 +13,10 @@ export function generateMetadata({ searchParams }: Props): Metadata {
   return {
     title: q ? `Search: ${q}` : "Search",
     description: "Search Park Ridge properties by address or Cook County PIN.",
+    // Query-driven results produce unbounded thin/duplicate variations of this page;
+    // canonicalize to the bare page and keep it out of the index.
+    alternates: { canonical: "/search" },
+    robots: { index: false, follow: true },
   };
 }
 
